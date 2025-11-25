@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imóveis Maceió - Paraíso das Águas</title>
+    <style>
+        :root {
+            --primary: #0077b6;
+            --secondary: #00b4d8;
+            --accent: #90e0ef;
+            --text: #333;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: var(--secondary);
+            font-size: 1.2rem;
+        }
+        
+        .filters {
+            background: white;
+            padding: 1rem;
+            margin: 1rem auto;
+            max-width: 1200px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .property-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .property-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        
+        .property-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, var(--accent), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .property-content {
+            padding: 1.5rem;
+        }
+        
+        .property-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .property-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+        
+        .property-location {
+            color: #666;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .property-features {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-tag {
+            background: var(--accent);
+            color: var(--primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .contact-btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
+        }
+        
+        .video-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .property-grid {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🌊 Imóveis Maceió - Paraíso das Águas</h1>
+        <p>Encontre seu imóvel dos sonhos na orla mais bonita do Brasil</p>
+    </header>
+
+    <div class="filters">
+        <h3>🎯 Filtros</h3>
+        <p>Em breve: Filtros por bairro, preço e tipo de imóvel</p>
+    </div>
+    
+    <main class="property-grid" id="properties">
+        <!-- Os imóveis serão carregados aqui via JavaScript -->
+    </main>
+
+    <script>
+        // Banco de dados dos imóveis
+        const properties = [
+            {
+                id: 1,
+                title: "Apartamento Vista Mar - Ponta Verde",
+                price: "R$ 450.000",
+                location: "Ponta Verde, Maceió-AL",
+                description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió.",
+                features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda"],
+                hasVideo: true
+            },
+            {
+                id: 2,
+                title: "Cobertura Duplex - Jatiúca",
+                price: "R$ 680.000",
+                location: "Jatiúca, Maceió-AL",
+                description: "Cobertura luxuosa com amplo espaço, perfeita para quem busca conforto e sofisticação.",
+                features: ["3 Quartos", "2 Vagas", "Varanda Gourmet", "Sacada", "Vista Mar"],
+                hasVideo: false
+            },
+            {
+                id: 3,
+                title: "Casa na Pajuçara",
+                price: "R$ 320.000",
+                location: "Pajuçara, Maceió-AL",
+                description: "Casa aconchegante a poucos metros da famosa orla de Pajuçara e suas piscinas naturais.",
+                features: ["2 Quartos", "Quintal", "Área de Serviço", "Garagem", "Próximo à Praia"],
+                hasVideo: true
+            },
+            {
+                id: 4,
+                title: "Kitnet Mobiliado - Cruz das Almas",
+                price: "R$ 185.000",
+                location: "Cruz das Almas, Maceió-AL",
+                description: "Kitnet completamente mobiliado, ideal para investimento ou primeira moradia.",
+                features: ["1 Quarto", "Mobiliado", "Área de Lazer", "Portaria 24h", "Próximo ao Shopping"],
+                hasVideo: false
+            }
+        ];
+
+        // Função para renderizar os imóveis
+        function renderProperties() {
+            const container = document.getElementById('properties');
+            
+            properties.forEach(property => {
+                const card = `
+                    <div class="property-card" onclick="viewProperty(${property.id})">
+                        <div class="property-image">
+                            🏠 Imóvel ${property.id}
+                            ${property.hasVideo ? `
+                                <div class="video-indicator">
+                                    📹 TEM VÍDEO
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="property-content">
+                            <div class="property-price">${property.price}</div>
+                            <h3 class="property-title">${property.title}</h3>
+                            <div class="property-location">
+                                📍 ${property.location}
+                            </div>
+                            <p>${property.description}</p>
+                            <div class="property-features">
+                                ${property.features.map(feature => 
+                                    `<span class="feature-tag">${feature}</span>`
+                                ).join('')}
+                            </div>
+                            <button class="contact-btn" onclick="event.stopPropagation(); contactAgent(${property.id})">
+                                📞 Entrar em Contato
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // Funções de interação
+        function viewProperty(id) {
+            alert(`Visualizando imóvel ID: ${id}\n\nEm breve: Página detalhada com fotos reais e vídeos!`);
+        }
+
+        function contactAgent(id) {
+            const property = properties.find(p => p.id === id);
+            const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${property.price}`;
+            const whatsappURL = `https://wa.me/5582999999999?text=${encodeURIComponent(message)}`;
+            window.open(whatsappURL, '_blank');
+        }
+
+        // Inicializar o site
+        document.addEventListener('DOMContentLoaded', renderProperties);
+    </script>
+</body>
+</html>
