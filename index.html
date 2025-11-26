@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WEBER LESSA CORRETORA E INCORPORAÇÕES - Imóveis Maceió - Paraíso das Águas</title>
+    <title>WEBER LESSA CORRETORA E INCORPORAÇÕES - Imóveis Maceió</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #0077b6;
-            --secondary: #00b4d8;
-            --accent: #90e0ef;
-            --text: #333;
+            --primary: #1a5276;
+            --secondary: #2980b9;
+            --accent: #3498db;
+            --gold: #f39c12;
+            --text: #2c3e50;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
         }
         
         * {
@@ -22,43 +27,220 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: var(--text);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
             min-height: 100vh;
         }
         
+        /* Header e Navegação */
         .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 2rem 1rem;
-            text-align: center;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.98);
+            padding: 1.5rem 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
             backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
         
-        .header h1 {
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .logo-text h1 {
             color: var(--primary);
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+            margin-bottom: 0.2rem;
         }
         
-        .header p {
+        .logo-text p {
             color: var(--secondary);
-            font-size: 1.2rem;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .contact-info {
+            text-align: right;
+        }
+        
+        .contact-info .phone {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+        }
+        
+        .contact-info .address {
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(26, 82, 118, 0.8), rgba(41, 128, 185, 0.8)), url('https://images.unsplash.com/photo-1544984243-ec57ea16fe25?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: var(--gold);
+            color: white;
+            padding: 0.9rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+        }
+        
+        /* Serviços Section */
+        .services {
+            background: white;
+            padding: 4rem 1rem;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .section-title h2 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .section-title p {
+            color: var(--dark);
+            max-width: 700px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .service-card {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .service-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .service-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .service-card p {
+            color: var(--dark);
+        }
+        
+        /* Imóveis Section */
+        .properties {
+            padding: 4rem 1rem;
+            background: #f8f9fa;
         }
         
         .filters {
             background: white;
-            padding: 1rem;
-            margin: 1rem auto;
+            padding: 1.5rem;
+            margin: 0 auto 2rem;
             max-width: 1200px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .filter-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .filter-btn {
+            background: var(--light);
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
         }
         
         .property-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 25px;
-            padding: 20px;
             max-width: 1200px;
             margin: 0 auto;
         }
@@ -74,7 +256,7 @@
         
         .property-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
         }
         
         .property-image {
@@ -88,6 +270,18 @@
             font-size: 1.5rem;
             position: relative;
             overflow: hidden;
+        }
+        
+        .property-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--gold);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
         }
         
         .property-content {
@@ -124,7 +318,7 @@
         
         .feature-tag {
             background: var(--accent);
-            color: var(--primary);
+            color: white;
             padding: 0.3rem 0.8rem;
             border-radius: 20px;
             font-size: 0.9rem;
@@ -141,10 +335,14 @@
             cursor: pointer;
             width: 100%;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .contact-btn:hover {
-            transform: scale(1.05);
+            transform: scale(1.02);
             box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
         }
         
@@ -162,33 +360,306 @@
             gap: 5px;
         }
         
+        /* Sobre Section */
+        .about {
+            background: white;
+            padding: 4rem 1rem;
+        }
+        
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            align-items: center;
+        }
+        
+        .about-text h2 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .about-text p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+        
+        .about-image {
+            background: linear-gradient(45deg, var(--accent), var(--secondary));
+            height: 400px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 1rem;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .footer-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--gold);
+        }
+        
+        .footer-section p, .footer-section a {
+            color: #bbb;
+            margin-bottom: 0.8rem;
+            display: block;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-section a:hover {
+            color: white;
+        }
+        
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 1rem;
+        }
+        
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .social-icon:hover {
+            background: var(--accent);
+            transform: translateY(-3px);
+        }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #999;
+        }
+        
+        /* Responsividade */
         @media (max-width: 768px) {
-            .property-grid {
-                grid-template-columns: 1fr;
-                padding: 10px;
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
             }
             
-            .header h1 {
-                font-size: 2rem;
+            .contact-info {
+                text-align: center;
+            }
+            
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .about-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .property-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .filter-btn {
+                width: 100%;
+                max-width: 250px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Header -->
     <header class="header">
-        <h1> WEBER LESSA CORRETORA E INCORPORAÇÕES</h1>
-        <h1> 🌊Imóveis Maceió - Paraíso das Águas</h1>
-        <p>Encontre seu imóvel dos sonhos na orla mais bonita do Brasil</p>
+        <div class="header-content">
+            <div class="logo-container">
+                <div class="logo">WL</div>
+                <div class="logo-text">
+                    <h1>WEBER LESSA</h1>
+                    <p>CORRETORA E INCORPORAÇÕES</p>
+                </div>
+            </div>
+            <div class="contact-info">
+                <div class="phone">
+                    <i class="fas fa-phone"></i> (82) 9.9604-4513
+                </div>
+                <div class="address">
+                    <i class="fas fa-map-marker-alt"></i> Praça São Vicente, 09 - Centro, Maceió-AL
+                </div>
+            </div>
+        </div>
     </header>
 
-    <div class="filters">
-        <h3>🎯 Filtros</h3>
-        <p>Em breve: Filtros por bairro, preço e tipo de imóvel</p>
-    </div>
-    
-    <main class="property-grid" id="properties">
-        <!-- Os imóveis serão carregados aqui via JavaScript -->
-    </main>
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Encontre seu imóvel dos sonhos em Maceió</h1>
+        <p>Na orla mais bonita do Brasil, com a expertise de quem entende do mercado imobiliário alagoano</p>
+        <a href="#properties" class="cta-button">
+            <i class="fas fa-home"></i> Ver Imóveis
+        </a>
+    </section>
+
+    <!-- Serviços Section -->
+    <section class="services">
+        <div class="section-title">
+            <h2>Nossos Serviços Especializados</h2>
+            <p>Oferecemos soluções completas para suas necessidades imobiliárias</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Equipe de Corretagem</h3>
+                <p>Venda de lotes, imóveis residenciais e comerciais com uma equipe qualificada e experiente.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <h3>Incorporacao Imobiliária</h3>
+                <p>Desenvolvemos empreendimentos de alto padrão com qualidade e inovação.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <h3>Financiamento Facilitado</h3>
+                <p>Linhas bancárias com boleto facilitado e condições especiais para sua aquisição.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-gavel"></i>
+                </div>
+                <h3>Regularização de Imóveis</h3>
+                <p>Usucapião, herança, inventário e toda documentação necessária para regularização.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-hand-holding-heart"></i>
+                </div>
+                <h3>Minha Casa Minha Vida</h3>
+                <p>Acesso facilitado ao programa governamental para realização do sonho da casa própria.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>Avaliação de Imóveis</h3>
+                <p>Avaliação profissional para compra, venda, financiamento ou seguro do seu imóvel.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Imóveis Section -->
+    <section class="properties" id="properties">
+        <div class="section-title">
+            <h2>Imóveis em Destaque</h2>
+            <p>Confira nossas melhores oportunidades em Maceió e região</p>
+        </div>
+        
+        <div class="filters">
+            <h3>Filtrar por:</h3>
+            <div class="filter-options">
+                <button class="filter-btn active">Todos</button>
+                <button class="filter-btn">Residencial</button>
+                <button class="filter-btn">Comercial</button>
+                <button class="filter-btn">Terrenos/Lotes</button>
+                <button class="filter-btn">Minha Casa Minha Vida</button>
+            </div>
+        </div>
+        
+        <div class="property-grid" id="properties-container">
+            <!-- Os imóveis serão carregados aqui via JavaScript -->
+        </div>
+    </section>
+
+    <!-- Sobre Section -->
+    <section class="about">
+        <div class="about-content">
+            <div class="about-text">
+                <h2>Sobre a Weber Lessa</h2>
+                <p>Com anos de experiência no mercado imobiliário de Maceió, a Weber Lessa Corretora e Incorporações se consolidou como referência em soluções imobiliárias completas e personalizadas.</p>
+                <p>Nossa equipe especializada atua em todas as fases do processo: desde a assessoria na compra e venda, passando pela regularização documental, até o financiamento e incorporação de empreendimentos.</p>
+                <p>Localizada no coração de Maceió, estamos prontos para ajudar você a realizar o sonho do imóvel próprio com segurança, transparência e expertise.</p>
+            </div>
+            <div class="about-image">
+                <div>
+                    <i class="fas fa-building"></i>
+                    <p>Weber Lessa Corretora</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Weber Lessa</h3>
+                <p>Corretora e Incorporações com tradição e qualidade no mercado imobiliário de Maceió.</p>
+                <div class="social-icons">
+                    <a href="#" class="social-icon"><i class="fab fa-whatsapp"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Contato</h3>
+                <p><i class="fas fa-phone"></i> (82) 9.9604-4513</p>
+                <p><i class="fas fa-map-marker-alt"></i> Praça São Vicente, 09 - Centro</p>
+                <p>Maceió - AL, 57020-420</p>
+                <p><i class="fas fa-clock"></i> Segunda a Sexta: 8h às 18h</p>
+            </div>
+            <div class="footer-section">
+                <h3>Links Rápidos</h3>
+                <a href="#properties">Imóveis</a>
+                <a href="#services">Serviços</a>
+                <a href="#about">Sobre Nós</a>
+                <a href="#contact">Contato</a>
+            </div>
+            <div class="footer-section">
+                <h3>Especialidades</h3>
+                <a href="#">Venda de Imóveis</a>
+                <a href="#">Incorporação</a>
+                <a href="#">Financiamento</a>
+                <a href="#">Regularização</a>
+                <a href="#">Minha Casa Minha Vida</a>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 Weber Lessa Corretora e Incorporações. Todos os direitos reservados.</p>
+        </div>
+    </footer>
 
     <script>
         // Banco de dados dos imóveis
@@ -198,51 +669,93 @@
                 title: "Apartamento Vista Mar - Ponta Verde",
                 price: "R$ 450.000",
                 location: "Ponta Verde, Maceió-AL",
-                description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió.",
-                features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda"],
-                hasVideo: true
+                description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió. Próximo a restaurantes, comércio e orla.",
+                features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda", "84m²"],
+                hasVideo: true,
+                type: "residencial",
+                badge: "Destaque"
             },
             {
                 id: 2,
                 title: "Cobertura Duplex - Jatiúca",
                 price: "R$ 680.000",
                 location: "Jatiúca, Maceió-AL",
-                description: "Cobertura luxuosa com amplo espaço, perfeita para quem busca conforto e sofisticação.",
-                features: ["3 Quartos", "2 Vagas", "Varanda Gourmet", "Sacada", "Vista Mar"],
-                hasVideo: false
+                description: "Cobertura luxuosa com amplo espaço, perfeita para quem busca conforto e sofisticação. Acabamento de alto padrão e área privativa.",
+                features: ["3 Quartos", "2 Vagas", "Varanda Gourmet", "Sacada", "Vista Mar", "120m²"],
+                hasVideo: false,
+                type: "residencial",
+                badge: "Luxo"
             },
             {
                 id: 3,
                 title: "Casa na Pajuçara",
                 price: "R$ 320.000",
                 location: "Pajuçara, Maceió-AL",
-                description: "Casa aconchegante a poucos metros da famosa orla de Pajuçara e suas piscinas naturais.",
-                features: ["2 Quartos", "Quintal", "Área de Serviço", "Garagem", "Próximo à Praia"],
-                hasVideo: true
+                description: "Casa aconchegante a poucos metros da famosa orla de Pajuçara e suas piscinas naturais. Ideal para moradia ou investimento.",
+                features: ["2 Quartos", "Quintal", "Área de Serviço", "Garagem", "Próximo à Praia", "65m²"],
+                hasVideo: true,
+                type: "residencial",
+                badge: "Ótima Localização"
             },
             {
                 id: 4,
                 title: "Kitnet Mobiliado - Cruz das Almas",
                 price: "R$ 185.000",
                 location: "Cruz das Almas, Maceió-AL",
-                description: "Kitnet completamente mobiliado, ideal para investimento ou primeira moradia.",
-                features: ["1 Quarto", "Mobiliado", "Área de Lazer", "Portaria 24h", "Próximo ao Shopping"],
-                hasVideo: false
+                description: "Kitnet completamente mobiliado, ideal para investimento ou primeira moradia. Próximo ao shopping e universidades.",
+                features: ["1 Quarto", "Mobiliado", "Área de Lazer", "Portaria 24h", "Próximo ao Shopping", "38m²"],
+                hasVideo: false,
+                type: "residencial",
+                badge: "MCMV"
+            },
+            {
+                id: 5,
+                title: "Sala Comercial - Centro",
+                price: "R$ 280.000",
+                location: "Centro, Maceió-AL",
+                description: "Sala comercial bem localizada no centro da cidade, com ótima visibilidade e infraestrutura completa para seu negócio.",
+                features: ["60m²", "2 Banheiros", "Ar Condicionado", "Recepção", "Estacionamento", "Pronto para uso"],
+                hasVideo: false,
+                type: "comercial",
+                badge: "Comercial"
+            },
+            {
+                id: 6,
+                title: "Terreno - Mangabeiras",
+                price: "R$ 120.000",
+                location: "Mangabeiras, Maceió-AL",
+                description: "Terreno plano e regularizado em bairro em crescimento. Ótima oportunidade para construção ou investimento.",
+                features: ["250m²", "Plano", "Água e Luz", "Via Pavimentada", "Regularizado", "Zona Residencial"],
+                hasVideo: false,
+                type: "terreno",
+                badge: "Terreno"
             }
         ];
 
         // Função para renderizar os imóveis
-        function renderProperties() {
-            const container = document.getElementById('properties');
+        function renderProperties(filter = 'todos') {
+            const container = document.getElementById('properties-container');
+            container.innerHTML = '';
             
-            properties.forEach(property => {
+            const filteredProperties = filter === 'todos' 
+                ? properties 
+                : properties.filter(property => {
+                    if (filter === 'residencial') return property.type === 'residencial';
+                    if (filter === 'comercial') return property.type === 'comercial';
+                    if (filter === 'terreno') return property.type === 'terreno';
+                    if (filter === 'mcmv') return property.badge === 'MCMV';
+                    return true;
+                });
+            
+            filteredProperties.forEach(property => {
                 const card = `
                     <div class="property-card" onclick="viewProperty(${property.id})">
                         <div class="property-image">
-                            🏠 Imóvel ${property.id}
+                            🏠 ${property.title.split(' - ')[0]}
+                            ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
                             ${property.hasVideo ? `
                                 <div class="video-indicator">
-                                    📹 TEM VÍDEO
+                                    <i class="fas fa-video"></i> TEM VÍDEO
                                 </div>
                             ` : ''}
                         </div>
@@ -250,7 +763,7 @@
                             <div class="property-price">${property.price}</div>
                             <h3 class="property-title">${property.title}</h3>
                             <div class="property-location">
-                                📍 ${property.location}
+                                <i class="fas fa-map-marker-alt"></i> ${property.location}
                             </div>
                             <p>${property.description}</p>
                             <div class="property-features">
@@ -259,7 +772,7 @@
                                 ).join('')}
                             </div>
                             <button class="contact-btn" onclick="event.stopPropagation(); contactAgent(${property.id})">
-                                📞 Entrar em Contato
+                                <i class="fab fa-whatsapp"></i> Entrar em Contato
                             </button>
                         </div>
                     </div>
@@ -270,18 +783,42 @@
 
         // Funções de interação
         function viewProperty(id) {
-            alert(`Visualizando imóvel ID: ${id}\n\nEm breve: Página detalhada com fotos reais e vídeos!`);
+            const property = properties.find(p => p.id === id);
+            alert(`Visualizando: ${property.title}\n\nPreço: ${property.price}\nLocalização: ${property.location}\n\nEm breve: Página detalhada com fotos reais e vídeos!`);
         }
 
         function contactAgent(id) {
             const property = properties.find(p => p.id === id);
             const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${property.price}`;
-            const whatsappURL = `https://wa.me/5582999999999?text=${encodeURIComponent(message)}`;
+            const whatsappURL = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
             window.open(whatsappURL, '_blank');
         }
 
-        // Inicializar o site
-        document.addEventListener('DOMContentLoaded', renderProperties);
+        // Configurar filtros
+        document.addEventListener('DOMContentLoaded', function() {
+            renderProperties();
+            
+            // Adicionar eventos aos botões de filtro
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remover classe active de todos os botões
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    // Adicionar classe active ao botão clicado
+                    this.classList.add('active');
+                    
+                    // Determinar o filtro
+                    let filter = 'todos';
+                    if (this.textContent === 'Residencial') filter = 'residencial';
+                    else if (this.textContent === 'Comercial') filter = 'comercial';
+                    else if (this.textContent === 'Terrenos/Lotes') filter = 'terreno';
+                    else if (this.textContent === 'Minha Casa Minha Vida') filter = 'mcmv';
+                    
+                    // Aplicar filtro
+                    renderProperties(filter);
+                });
+            });
+        });
     </script>
 </body>
 </html>
