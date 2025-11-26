@@ -11,6 +11,7 @@
             --secondary: #2980b9;
             --accent: #3498db;
             --gold: #f39c12;
+            --green: #27ae60;
             --text: #2c3e50;
             --light: #ecf0f1;
             --dark: #2c3e50;
@@ -272,6 +273,10 @@
             overflow: hidden;
         }
         
+        .rural-image {
+            background: linear-gradient(45deg, var(--green), #2ecc71);
+        }
+        
         .property-badge {
             position: absolute;
             top: 15px;
@@ -282,6 +287,10 @@
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: bold;
+        }
+        
+        .rural-badge {
+            background: var(--green);
         }
         
         .property-content {
@@ -323,6 +332,10 @@
             border-radius: 20px;
             font-size: 0.9rem;
             font-weight: 500;
+        }
+        
+        .rural-tag {
+            background: var(--green);
         }
         
         .contact-btn {
@@ -513,7 +526,7 @@
                     <i class="fas fa-phone"></i> (82) 9.9604-4513
                 </div>
                 <div class="address">
-                    <i class="fas fa-map-marker-alt"></i> Praça São Vicente, 09 - Centro, Maceió-AL
+                    <i class="fas fa-map-marker-alt"></i> Empresarial Sizi & Neusa - Praça São Vicente, 09 - Centro, Maceió-AL
                 </div>
             </div>
         </div>
@@ -540,7 +553,7 @@
                     <i class="fas fa-users"></i>
                 </div>
                 <h3>Equipe de Corretagem</h3>
-                <p>Venda de lotes, imóveis residenciais e comerciais com uma equipe qualificada e experiente.</p>
+                <p>Venda de lotes, imóveis residenciais, comerciais, sítios, chácaras e fazendas com equipe qualificada.</p>
             </div>
             <div class="service-card">
                 <div class="service-icon">
@@ -572,10 +585,10 @@
             </div>
             <div class="service-card">
                 <div class="service-icon">
-                    <i class="fas fa-search"></i>
+                    <i class="fas fa-tractor"></i>
                 </div>
-                <h3>Avaliação de Imóveis</h3>
-                <p>Avaliação profissional para compra, venda, financiamento ou seguro do seu imóvel.</p>
+                <h3>Propriedades Rurais</h3>
+                <p>Especialistas em sítios, chácaras e fazendas com documentação completa e regularizada.</p>
             </div>
         </div>
     </section>
@@ -593,7 +606,7 @@
                 <button class="filter-btn active">Todos</button>
                 <button class="filter-btn">Residencial</button>
                 <button class="filter-btn">Comercial</button>
-                <button class="filter-btn">Terrenos/Lotes</button>
+                <button class="filter-btn">Rural</button>
                 <button class="filter-btn">Minha Casa Minha Vida</button>
             </div>
         </div>
@@ -610,12 +623,13 @@
                 <h2>Sobre a Weber Lessa</h2>
                 <p>Com anos de experiência no mercado imobiliário de Maceió, a Weber Lessa Corretora e Incorporações se consolidou como referência em soluções imobiliárias completas e personalizadas.</p>
                 <p>Nossa equipe especializada atua em todas as fases do processo: desde a assessoria na compra e venda, passando pela regularização documental, até o financiamento e incorporação de empreendimentos.</p>
-                <p>Localizada no coração de Maceió, estamos prontos para ajudar você a realizar o sonho do imóvel próprio com segurança, transparência e expertise.</p>
+                <p>Localizada no Empresarial Sizi & Neusa, no coração de Maceió, estamos prontos para ajudar você a realizar o sonho do imóvel próprio com segurança, transparência e expertise.</p>
             </div>
             <div class="about-image">
                 <div>
                     <i class="fas fa-building"></i>
-                    <p>Weber Lessa Corretora</p>
+                    <p>Empresarial Sizi & Neusa</p>
+                    <p>Sede Weber Lessa</p>
                 </div>
             </div>
         </div>
@@ -636,7 +650,8 @@
             <div class="footer-section">
                 <h3>Contato</h3>
                 <p><i class="fas fa-phone"></i> (82) 9.9604-4513</p>
-                <p><i class="fas fa-map-marker-alt"></i> Praça São Vicente, 09 - Centro</p>
+                <p><i class="fas fa-map-marker-alt"></i> Empresarial Sizi & Neusa</p>
+                <p>Praça São Vicente, 09 - Centro</p>
                 <p>Maceió - AL, 57020-420</p>
                 <p><i class="fas fa-clock"></i> Segunda a Sexta: 8h às 18h</p>
             </div>
@@ -650,6 +665,7 @@
             <div class="footer-section">
                 <h3>Especialidades</h3>
                 <a href="#">Venda de Imóveis</a>
+                <a href="#">Propriedades Rurais</a>
                 <a href="#">Incorporação</a>
                 <a href="#">Financiamento</a>
                 <a href="#">Regularização</a>
@@ -721,14 +737,38 @@
             },
             {
                 id: 6,
-                title: "Terreno - Mangabeiras",
-                price: "R$ 120.000",
-                location: "Mangabeiras, Maceió-AL",
-                description: "Terreno plano e regularizado em bairro em crescimento. Ótima oportunidade para construção ou investimento.",
-                features: ["250m²", "Plano", "Água e Luz", "Via Pavimentada", "Regularizado", "Zona Residencial"],
+                title: "Fazenda - 300 Tarefas",
+                price: "R$ 1.200.000",
+                location: "Zona Rural - 90km de Maceió-AL",
+                description: "Excelente fazenda de 300 tarefas com casa sede, cercada com piquetes para gado, baia/curral, várias nascentes e limite em pista asfaltada. Documentação completa.",
+                features: ["300 Tarefas", "Casa Sede", "Várias Nascentes", "Baia/Curral", "Piquetes", "Documentação OK"],
+                hasVideo: true,
+                type: "rural",
+                badge: "Fazenda",
+                rural: true
+            },
+            {
+                id: 7,
+                title: "Casa - Portal do Renascer",
+                price: "R$ 280.000",
+                location: "Conj. Portal do Renascer, Qd. A, Nº 14 - Forne, Maceió-AL",
+                description: "Casa residencial com terreno no Portal do Renascer, próximo do CEASA. Excelente localização com fácil acesso às principais vias.",
+                features: ["2 Quartos (1 Suíte)", "2 Salas", "3 Banheiros", "Cozinha", "2 Vagas", "Varanda", "100m do CEASA"],
                 hasVideo: false,
-                type: "terreno",
-                badge: "Terreno"
+                type: "residencial",
+                badge: "Excelente Localização"
+            },
+            {
+                id: 8,
+                title: "Chácara - 50 Tarefas",
+                price: "R$ 350.000",
+                location: "Área Rural - 60km de Maceió-AL",
+                description: "Belíssima chácara com 50 tarefas, casa de campo, pomar diversificado e nascente de água. Ideal para lazer ou produção agrícola.",
+                features: ["50 Tarefas", "Casa de Campo", "Pomar", "Nascente", "Energia", "Poço Artesiano"],
+                hasVideo: true,
+                type: "rural",
+                badge: "Chácara",
+                rural: true
             }
         ];
 
@@ -742,7 +782,7 @@
                 : properties.filter(property => {
                     if (filter === 'residencial') return property.type === 'residencial';
                     if (filter === 'comercial') return property.type === 'comercial';
-                    if (filter === 'terreno') return property.type === 'terreno';
+                    if (filter === 'rural') return property.type === 'rural';
                     if (filter === 'mcmv') return property.badge === 'MCMV';
                     return true;
                 });
@@ -750,9 +790,9 @@
             filteredProperties.forEach(property => {
                 const card = `
                     <div class="property-card" onclick="viewProperty(${property.id})">
-                        <div class="property-image">
-                            🏠 ${property.title.split(' - ')[0]}
-                            ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
+                        <div class="property-image ${property.rural ? 'rural-image' : ''}">
+                            ${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}
+                            ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                             ${property.hasVideo ? `
                                 <div class="video-indicator">
                                     <i class="fas fa-video"></i> TEM VÍDEO
@@ -768,7 +808,7 @@
                             <p>${property.description}</p>
                             <div class="property-features">
                                 ${property.features.map(feature => 
-                                    `<span class="feature-tag">${feature}</span>`
+                                    `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${feature}</span>`
                                 ).join('')}
                             </div>
                             <button class="contact-btn" onclick="event.stopPropagation(); contactAgent(${property.id})">
@@ -811,7 +851,7 @@
                     let filter = 'todos';
                     if (this.textContent === 'Residencial') filter = 'residencial';
                     else if (this.textContent === 'Comercial') filter = 'comercial';
-                    else if (this.textContent === 'Terrenos/Lotes') filter = 'terreno';
+                    else if (this.textContent === 'Rural') filter = 'rural';
                     else if (this.textContent === 'Minha Casa Minha Vida') filter = 'mcmv';
                     
                     // Aplicar filtro
