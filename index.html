@@ -1427,6 +1427,18 @@ function createFormHTML() {
                         <label><strong>Título do Imóvel *</strong></label>
                         <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required 
                                style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                
+                <!-- NOVA SEÇÃO: FOTOS E VÍDEOS -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label><strong>Fotos e Vídeos do Imóvel</strong></label>
+                    <div class="upload-area" id="uploadArea" style="border: 2px dashed #ddd; border-radius: 10px; padding: 2rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #ccc; margin-bottom: 1rem;"></i>
+                        <p>Clique ou arraste fotos e vídeos aqui</p>
+                        <small>Formatos: JPG, PNG, MP4, AVI (máx. 5MB cada)</small>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
+                    <div class="upload-preview" id="uploadPreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 1rem 0;"></div>
+                </div>
                     </div>
                     <div>
                         <label><strong>Preço *</strong></label>
