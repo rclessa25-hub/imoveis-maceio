@@ -1030,12 +1030,343 @@ function deleteProperty(id) {
     }
 }
 
+// ========== SISTEMA COMPLETO DE EDIÇÃO ==========
+let editingPropertyId = null;
+let selectedFiles = [];
+
+// Configurar sistema de upload
+function setupUploadSystem() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPreview = document.getElementById('uploadPreview');
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            showPreview();
+        });
+    }
+}
+
+function showPreview() {
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    selectedFiles.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.title = file.name;
+                img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border-radius: 5px; margin: 5px;';
+                preview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// Função de edição COMPLETA
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
-    if (property) {
-        // Preencher formulário (simulação)
-        alert(`Editar: ${property.title}\n\nEm desenvolvimento...`);
+    if (!property) return;
+
+    editingPropertyId = id;
+    
+    // Preencher formulário com dados do imóvel
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    
+    const features = Array.isArray(property.features) 
+        ? property.features 
+        : (property.features || '');
+    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+    
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+    document.getElementById('propHasVideo').checked = property.hasVideo || false;
+    
+    // Limpar preview
+    selectedFiles = [];
+    const preview = document.getElementById('uploadPreview');
+    if (preview) preview.innerHTML = '';
+    
+    // Rolar até o formulário
+    document.getElementById('propertyForm').scrollIntoView({ behavior: 'smooth' });
+    
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Salvar Imóvel'.");
+}
+
+// Função de exclusão MELHORADA
+function deleteProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
+        const index = properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            // Remover do array
+            properties.splice(index, 1);
+            
+            // Atualizar display
+            renderProperties();
+            loadPropertyList();
+            
+            alert("✅ Imóvel excluído com sucesso!");
+        }
     }
+}
+
+// ========== FORMULÁRIO COMPLETO ==========
+function setupForm() {
+    const form = document.getElementById('propertyForm');
+    if (!form) {
+        console.log('Formulário não encontrado, criando...');
+        createForm();
+        return;
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const propertyData = {
+            title: document.getElementById('propTitle').value,
+            price: document.getElementById('propPrice').value,
+            location: document.getElementById('propLocation').value,
+            description: document.getElementById('propDescription').value,
+            features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
+            type: document.getElementById('propType').value,
+            hasVideo: document.getElementById('propHasVideo').checked,
+            badge: document.getElementById('propBadge').value,
+            rural: document.getElementById('propType').value === 'rural'
+        };
+
+        // Validar campos
+        if (!propertyData.title || !propertyData.price || !propertyData.location) {
+            alert('❌ Preencha Título, Preço e Localização!');
+            return;
+        }
+
+        try {
+            if (editingPropertyId) {
+                // EDITAR imóvel existente
+                const index = properties.findIndex(p => p.id === editingPropertyId);
+                if (index !== -1) {
+                    propertyData.id = editingPropertyId;
+                    properties[index] = propertyData;
+                    alert("✅ Imóvel atualizado com sucesso!");
+                }
+            } else {
+                // ADICIONAR novo imóvel
+                propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+                properties.push(propertyData);
+                alert("✅ Novo imóvel adicionado com sucesso!");
+            }
+
+            // Atualizar display
+            renderProperties();
+            loadPropertyList();
+            
+            // Limpar formulário
+            this.reset();
+            editingPropertyId = null;
+            selectedFiles = [];
+            const preview = document.getElementById('uploadPreview');
+            if (preview) preview.innerHTML = '';
+
+        } catch (error) {
+            alert("❌ Erro ao salvar imóvel: " + error.message);
+        }
+    });
+}
+
+// Criar formulário se não existir
+function createForm() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (!adminPanel) return;
+
+    const formHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 1rem 0;">
+            <h4 style="color: var(--primary); margin-bottom: 1.5rem;">
+                <i class="fas fa-home"></i> ${editingPropertyId ? 'Editar Imóvel' : 'Adicionar Novo Imóvel'}
+            </h4>
+            
+            <form id="propertyForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label><strong>Título do Imóvel *</strong></label>
+                        <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required 
+                               style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                    <div>
+                        <label><strong>Preço *</strong></label>
+                        <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required 
+                               style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label><strong>Localização *</strong></label>
+                    <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required 
+                           style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label><strong>Descrição</strong></label>
+                    <textarea id="propDescription" placeholder="Descreva o imóvel..." 
+                              style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label><strong>Características</strong></label>
+                    <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" 
+                           style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    <small style="color: #666;">Separe por vírgulas</small>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label><strong>Tipo do Imóvel</strong></label>
+                        <select id="propType" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="residencial">Residencial</option>
+                            <option value="comercial">Comercial</option>
+                            <option value="rural">Rural</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label><strong>Destaque</strong></label>
+                        <select id="propBadge" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="Novo">Novo</option>
+                            <option value="Destaque">Destaque</option>
+                            <option value="Luxo">Luxo</option>
+                            <option value="MCMV">Minha Casa Minha Vida</option>
+                            <option value="Fazenda">Fazenda</option>
+                            <option value="Chácara">Chácara</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="propHasVideo"> 
+                        <span><strong>Este imóvel tem vídeo?</strong></span>
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
+                        <i class="fas fa-save"></i> ${editingPropertyId ? 'Atualizar Imóvel' : 'Salvar Imóvel'}
+                    </button>
+                    ${editingPropertyId ? `
+                    <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    ` : ''}
+                </div>
+            </form>
+        </div>
+    `;
+
+    // Adicionar antes da lista de imóveis
+    const propertyList = document.getElementById('propertyList');
+    if (propertyList) {
+        propertyList.insertAdjacentHTML('beforebegin', formHTML);
+    } else {
+        adminPanel.innerHTML += formHTML;
+    }
+
+    // Configurar eventos
+    setupForm();
+    setupUploadSystem();
+}
+
+function cancelEdit() {
+    editingPropertyId = null;
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+    
+    const preview = document.getElementById('uploadPreview');
+    if (preview) preview.innerHTML = '';
+    selectedFiles = [];
+    
+    alert("Edição cancelada.");
+}
+
+// ========== ATUALIZAR LOAD PROPERTY LIST ==========
+function loadPropertyList() {
+    const container = document.getElementById('propertyList');
+    const countElement = document.getElementById('propertyCount');
+    
+    if (!container) {
+        createAdminPanel();
+        return;
+    }
+    
+    container.innerHTML = '';
+    if (countElement) countElement.textContent = properties.length;
+    
+    if (properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Nenhum imóvel cadastrado.</p>';
+        return;
+    }
+    
+    properties.forEach(property => {
+        const features = Array.isArray(property.features) 
+            ? property.features 
+            : (property.features ? property.features.split(',') : []);
+            
+        const item = document.createElement('div');
+        item.className = 'property-item';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <strong style="color: var(--primary);">${property.title}</strong><br>
+                <small>${property.price} - ${property.location}</small>
+                <div style="margin-top: 0.5rem;">
+                    ${features.map(f => 
+                        `<span style="background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.8rem; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.3rem;">${f.trim()}</span>`
+                    ).join('')}
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="editProperty(${property.id})" style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+// Criar painel admin se não existir
+function createAdminPanel() {
+    const adminHTML = `
+        <section class="admin-panel" id="adminPanel" style="display: none; background: #f8f9fa; padding: 2rem; margin: 2rem auto; max-width: 1000px; border-radius: 10px;">
+            <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
+                <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
+            </h3>
+            
+            <!-- Formulário será inserido aqui -->
+            
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #eee;">
+                <h4>Gerenciar Imóveis Existentes</h4>
+                <p><small>Total de imóveis: <span id="propertyCount">${properties.length}</span></small></p>
+                <div id="propertyList"></div>
+            </div>
+        </section>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', adminHTML);
+    createForm();
 }
 
 // ========== FUNÇÕES DE INTERAÇÃO ==========
@@ -1056,22 +1387,24 @@ function viewProperty(id) {
 }
 
 // ========== INICIALIZAÇÃO ==========
+/ ========== INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Iniciando Weber Lessa Imóveis...');
     
     // Carregar propriedades
     loadProperties();
     
+    // Configurar sistema
+    setupUploadSystem();
+    setupForm();
+    
     // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
-            // Remover active de todos
             filterButtons.forEach(btn => btn.classList.remove('active'));
-            // Adicionar active no clicado
             this.classList.add('active');
             
-            // Determinar filtro
             let filter = 'todos';
             const text = this.textContent.trim();
             if (text === 'Residencial') filter = 'residencial';
@@ -1079,18 +1412,11 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (text === 'Rural') filter = 'rural';
             else if (text === 'Minha Casa Minha Vida') filter = 'mcmv';
             
-            // Aplicar filtro
             renderProperties(filter);
         });
     });
     
-    // Configurar botão admin
-    const adminButton = document.querySelector('.admin-toggle');
-    if (adminButton) {
-        adminButton.addEventListener('click', toggleAdminPanel);
-    }
-    
-    console.log('✅ Sistema carregado!');
+    console.log('✅ Sistema Weber Lessa carregado!');
 });
 // Função para adicionar imóvel (simplificada)
 function addProperty() {
