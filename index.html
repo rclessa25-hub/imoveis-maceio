@@ -801,300 +801,463 @@
     </button>
 
     <script>
-        // Banco de dados dos imóveis
-        let properties = [
-            {
-                id: 1,
-                title: "Apartamento Vista Mar - Ponta Verde",
-                price: "R$ 450.000",
-                location: "Ponta Verde, Maceió-AL",
-                description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió. Próximo a restaurantes, comércio e orla.",
-                features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda", "84m²"],
-                hasVideo: true,
-                type: "residencial",
-                badge: "Destaque"
-            },
-            {
-                id: 2,
-                title: "Cobertura Duplex - Jatiúca",
-                price: "R$ 680.000",
-                location: "Jatiúca, Maceió-AL",
-                description: "Cobertura luxuosa com amplo espaço, perfeita para quem busca conforto e sofisticação. Acabamento de alto padrão e área privativa.",
-                features: ["3 Quartos", "2 Vagas", "Varanda Gourmet", "Sacada", "Vista Mar", "120m²"],
-                hasVideo: false,
-                type: "residencial",
-                badge: "Luxo"
-            },
-            {
-                id: 3,
-                title: "Casa na Pajuçara",
-                price: "R$ 320.000",
-                location: "Pajuçara, Maceió-AL",
-                description: "Casa aconchegante a poucos metros da famosa orla de Pajuçara e suas piscinas naturais. Ideal para moradia ou investimento.",
-                features: ["2 Quartos", "Quintal", "Área de Serviço", "Garagem", "Próximo à Praia", "65m²"],
-                hasVideo: true,
-                type: "residencial",
-                badge: "Ótima Localização"
-            },
-            {
-                id: 4,
-                title: "Kitnet Mobiliado - Cruz das Almas",
-                price: "R$ 185.000",
-                location: "Cruz das Almas, Maceió-AL",
-                description: "Kitnet completamente mobiliado, ideal para investimento ou primeira moradia. Próximo ao shopping e universidades.",
-                features: ["1 Quarto", "Mobiliado", "Área de Lazer", "Portaria 24h", "Próximo ao Shopping", "38m²"],
-                hasVideo: false,
-                type: "residencial",
-                badge: "MCMV"
-            },
-            {
-                id: 5,
-                title: "Sala Comercial - Centro",
-                price: "R$ 280.000",
-                location: "Centro, Maceió-AL",
-                description: "Sala comercial bem localizada no centro da cidade, com ótima visibilidade e infraestrutura completa para seu negócio.",
-                features: ["60m²", "2 Banheiros", "Ar Condicionado", "Recepção", "Estacionamento", "Pronto para uso"],
-                hasVideo: false,
-                type: "comercial",
-                badge: "Comercial"
-            },
-            {
-                id: 6,
-                title: "Fazenda - 300 Tarefas",
-                price: "R$ 1.200.000",
-                location: "Zona Rural - 90km de Maceió-AL",
-                description: "Excelente fazenda de 300 tarefas com casa sede, cercada com piquetes para gado, baia/curral, várias nascentes e limite em pista asfaltada. Documentação completa.",
-                features: ["300 Tarefas", "Casa Sede", "Várias Nascentes", "Baia/Curral", "Piquetes", "Documentação OK"],
-                hasVideo: true,
-                type: "rural",
-                badge: "Fazenda",
-                rural: true
-            },
-            {
-                id: 7,
-                title: "Casa - Portal do Renascer",
-                price: "R$ 280.000",
-                location: "Conj. Portal do Renascer, Qd. A, Nº 14 - Forne, Maceió-AL",
-                description: "Casa residencial com terreno no Portal do Renascer, próximo do CEASA. Excelente localização com fácil acesso às principais vias.",
-                features: ["2 Quartos (1 Suíte)", "2 Salas", "3 Banheiros", "Cozinha", "2 Vagas", "Varanda", "100m do CEASA"],
-                hasVideo: false,
-                type: "residencial",
-                badge: "Excelente Localização"
-            },
-            {
-                id: 8,
-                title: "Chácara - 50 Tarefas",
-                price: "R$ 350.000",
-                location: "Área Rural - 60km de Maceió-AL",
-                description: "Belíssima chácara com 50 tarefas, casa de campo, pomar diversificado e nascente de água. Ideal para lazer ou produção agrícola.",
-                features: ["50 Tarefas", "Casa de Campo", "Pomar", "Nascente", "Energia", "Poço Artesiano"],
-                hasVideo: true,
-                type: "rural",
-                badge: "Chácara",
-                rural: true
+// ========== CONFIGURAÇÃO SUPABASE ==========
+const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+
+// Cliente Supabase simplificado
+const supabaseClient = {
+    async query(table, method = 'GET', data = null) {
+        const url = method === 'POST' 
+            ? `${SUPABASE_URL}/rest/v1/${table}`
+            : `${SUPABASE_URL}/rest/v1/${table}?select=*`;
+            
+        const options = {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Prefer': 'return=representation'
             }
-        ];
-
-        // Função para renderizar os imóveis
-        function renderProperties(filter = 'todos') {
-            const container = document.getElementById('properties-container');
-            container.innerHTML = '';
-            
-            const filteredProperties = filter === 'todos' 
-                ? properties 
-                : properties.filter(property => {
-                    if (filter === 'residencial') return property.type === 'residencial';
-                    if (filter === 'comercial') return property.type === 'comercial';
-                    if (filter === 'rural') return property.type === 'rural';
-                    if (filter === 'mcmv') return property.badge === 'MCMV';
-                    return true;
-                });
-            
-            filteredProperties.forEach(property => {
-                const card = `
-                    <div class="property-card" onclick="viewProperty(${property.id})">
-                        <div class="property-image ${property.rural ? 'rural-image' : ''}">
-                            ${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}
-                            ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                            ${property.hasVideo ? `
-                                <div class="video-indicator">
-                                    <i class="fas fa-video"></i> TEM VÍDEO
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="property-content">
-                            <div class="property-price">${property.price}</div>
-                            <h3 class="property-title">${property.title}</h3>
-                            <div class="property-location">
-                                <i class="fas fa-map-marker-alt"></i> ${property.location}
-                            </div>
-                            <p>${property.description}</p>
-                            <div class="property-features">
-                                ${property.features.map(feature => 
-                                    `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${feature}</span>`
-                                ).join('')}
-                            </div>
-                            <button class="contact-btn" onclick="event.stopPropagation(); contactAgent(${property.id})">
-                                <i class="fab fa-whatsapp"></i> Entrar em Contato
-                            </button>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += card;
+        };
+        
+        if (data && method !== 'GET') {
+            options.body = JSON.stringify(data);
+        }
+        
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`Erro: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('Erro Supabase:', error);
+            // Fallback para localStorage
+            const localData = localStorage.getItem('weberlessa_properties');
+            return localData ? JSON.parse(localData) : [];
+        }
+    },
+    
+    async uploadFile(file) {
+        const fileName = `${Date.now()}_${file.name}`;
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch(`${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: formData
             });
+            
+            if (!response.ok) throw new Error('Upload falhou');
+            return `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+        } catch (error) {
+            console.error('Erro upload:', error);
+            return null;
         }
+    }
+};
 
-        // Funções de interação
-        function viewProperty(id) {
-            const property = properties.find(p => p.id === id);
-            alert(`Visualizando: ${property.title}\n\nPreço: ${property.price}\nLocalização: ${property.location}\n\nEm breve: Página detalhada com fotos reais e vídeos!`);
+// ========== SISTEMA DE IMÓVEIS ==========
+let properties = [];
+let selectedFiles = [];
+
+// Carregar imóveis do Supabase
+async function loadProperties() {
+    try {
+        console.log('📡 Carregando imóveis do Supabase...');
+        const data = await supabaseClient.query('properties');
+        properties = Array.isArray(data) ? data : [];
+        console.log('✅ Imóveis carregados:', properties.length);
+        renderProperties();
+        
+        // Se não tem dados no Supabase, usa os iniciais
+        if (properties.length === 0) {
+            properties = getInitialProperties();
+            renderProperties();
         }
+    } catch (error) {
+        console.error('❌ Erro ao carregar do Supabase:', error);
+        // Fallback para localStorage
+        const localData = localStorage.getItem('weberlessa_properties');
+        properties = localData ? JSON.parse(localData) : getInitialProperties();
+        renderProperties();
+    }
+}
 
-        function contactAgent(id) {
-            const property = properties.find(p => p.id === id);
-            const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${property.price}`;
-            const whatsappURL = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
-            window.open(whatsappURL, '_blank');
+// Dados iniciais caso o Supabase esteja vazio
+function getInitialProperties() {
+    return [
+        {
+            id: 1,
+            title: "Apartamento Vista Mar - Ponta Verde",
+            price: "R$ 450.000",
+            location: "Ponta Verde, Maceió-AL",
+            description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió.",
+            features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda"],
+            type: "residencial",
+            hasVideo: true,
+            badge: "Destaque",
+            rural: false
+        },
+        {
+            id: 2,
+            title: "Fazenda - 300 Tarefas",
+            price: "R$ 1.200.000",
+            location: "Zona Rural - 90km de Maceió-AL",
+            description: "Excelente fazenda de 300 tarefas com casa sede, cercada com piquetes para gado, baia/curral, várias nascentes.",
+            features: ["300 Tarefas", "Casa Sede", "Várias Nascentes", "Baia/Curral", "Piquetes"],
+            type: "rural",
+            hasVideo: true,
+            badge: "Fazenda",
+            rural: true
         }
+    ];
+}
 
-        // ========== SISTEMA DE ADMINISTRAÇÃO ==========
-        const ADMIN_PASSWORD = "weber123"; // Senha para acessar o painel
-
-        function toggleAdminPanel() {
-            const password = prompt("Digite a senha de acesso ao painel:");
-            if (password === ADMIN_PASSWORD) {
-                const panel = document.getElementById('adminPanel');
-                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                if (panel.style.display === 'block') {
-                    loadPropertyList();
+// Salvar imóvel no Supabase
+async function saveProperty(propertyData) {
+    try {
+        console.log('💾 Salvando no Supabase...', propertyData);
+        
+        // Upload das fotos se houver
+        if (selectedFiles.length > 0) {
+            console.log('📸 Fazendo upload de', selectedFiles.length, 'fotos...');
+            const uploadedImages = [];
+            for (const file of selectedFiles) {
+                const imageUrl = await supabaseClient.uploadFile(file);
+                if (imageUrl) {
+                    uploadedImages.push(imageUrl);
+                    console.log('✅ Foto salva:', imageUrl);
                 }
-            } else {
-                alert("Senha incorreta! Contate o administrador.");
             }
+            propertyData.images = uploadedImages;
         }
+        
+        // Salvar no Supabase
+        const result = await supabaseClient.query('properties', 'POST', propertyData);
+        console.log('✅ Salvo com sucesso no Supabase:', result);
+        
+        // Recarregar a lista do Supabase
+        await loadProperties();
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar no Supabase:', error);
+        // Fallback para localStorage
+        propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+        properties.push(propertyData);
+        localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        renderProperties();
+        return false;
+    }
+}
 
-        function loadPropertyList() {
-            const container = document.getElementById('propertyList');
-            const countElement = document.getElementById('propertyCount');
-            
-            container.innerHTML = '';
-            countElement.textContent = properties.length;
-            
-            if (properties.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #666;">Nenhum imóvel cadastrado.</p>';
-                return;
-            }
-            
-            properties.forEach(property => {
-                const item = document.createElement('div');
-                item.className = 'property-item';
-                item.innerHTML = `
-                    <div style="flex: 1;">
-                        <strong>${property.title}</strong><br>
-                        <small>${property.price} - ${property.location}</small>
-                        <div style="margin-top: 0.5rem;">
-                            ${property.features.map(f => `<span style="background: #e0e0e0; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.8rem; margin-right: 0.3rem;">${f}</span>`).join('')}
-                        </div>
-                    </div>
-                    <div>
-                        <button onclick="editProperty(${property.id})" style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; margin-left: 0.5rem; cursor: pointer;">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; margin-left: 0.5rem; cursor: pointer;">
-                            <i class="fas fa-trash"></i> Excluir
-                        </button>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
+// ========== SISTEMA DE UPLOAD ==========
+document.getElementById('uploadArea').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+});
 
-        // Formulário de adição de imóveis
-        document.getElementById('propertyForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const newProperty = {
-                id: properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1,
-                title: document.getElementById('propTitle').value,
-                price: document.getElementById('propPrice').value,
-                location: document.getElementById('propLocation').value,
-                description: document.getElementById('propDescription').value,
-                features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
-                type: document.getElementById('propType').value,
-                hasVideo: document.getElementById('propHasVideo').checked,
-                badge: document.getElementById('propBadge').value,
-                rural: document.getElementById('propType').value === 'rural'
+document.getElementById('fileInput').addEventListener('change', (e) => {
+    selectedFiles = Array.from(e.target.files);
+    showPreview();
+});
+
+function showPreview() {
+    const preview = document.getElementById('uploadPreview');
+    preview.innerHTML = '';
+    
+    selectedFiles.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.title = file.name;
+                img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border-radius: 5px;';
+                preview.appendChild(img);
             };
+            reader.readAsDataURL(file);
+        } else {
+            const doc = document.createElement('div');
+            doc.innerHTML = `
+                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px;">
+                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.8rem; word-break: break-all;">${file.name}</p>
+                </div>
+            `;
+            preview.appendChild(doc);
+        }
+    });
+}
+
+// ========== FORMULÁRIO PRINCIPAL ==========
+document.getElementById('propertyForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const propertyData = {
+        title: document.getElementById('propTitle').value,
+        price: document.getElementById('propPrice').value,
+        location: document.getElementById('propLocation').value,
+        description: document.getElementById('propDescription').value,
+        features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
+        type: document.getElementById('propType').value,
+        has_video: document.getElementById('propHasVideo').checked,
+        badge: document.getElementById('propBadge').value,
+        rural: document.getElementById('propType').value === 'rural',
+        created_at: new Date().toISOString()
+    };
+    
+    // Validar campos obrigatórios
+    if (!propertyData.title || !propertyData.price || !propertyData.location) {
+        alert('❌ Preencha pelo menos Título, Preço e Localização!');
+        return;
+    }
+    
+    // Mostrar progresso
+    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
+    progressBar.style.display = 'block';
+    progressFill.style.width = '30%';
+    
+    try {
+        progressFill.style.width = '60%';
+        
+        // Salvar no Supabase
+        const success = await saveProperty(propertyData);
+        
+        progressFill.style.width = '100%';
+        
+        if (success) {
+            alert("✅ Imóvel salvo com sucesso no banco de dados!");
+        } else {
+            alert("⚠️ Imóvel salvo localmente. Configure a tabela no Supabase.");
+        }
+        
+    } catch (error) {
+        alert("❌ Erro ao salvar imóvel. Verifique o console (F12).");
+    }
+    
+    // Resetar formulário
+    setTimeout(() => {
+        this.reset();
+        selectedFiles = [];
+        document.getElementById('uploadPreview').innerHTML = '';
+        progressBar.style.display = 'none';
+        loadPropertyList();
+    }, 1000);
+});
+
+// ========== FUNÇÕES DE RENDERIZAÇÃO ==========
+function renderProperties(filter = 'todos') {
+    const container = document.getElementById('properties-container');
+    if (!container) {
+        console.error('❌ Container de propriedades não encontrado!');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    const filteredProperties = filter === 'todos' 
+        ? properties 
+        : properties.filter(property => {
+            if (filter === 'residencial') return property.type === 'residencial';
+            if (filter === 'comercial') return property.type === 'comercial';
+            if (filter === 'rural') return property.type === 'rural';
+            if (filter === 'mcmv') return property.badge === 'MCMV';
+            return true;
+        });
+    
+    if (filteredProperties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel encontrado.</p>';
+        return;
+    }
+    
+    filteredProperties.forEach(property => {
+        const features = Array.isArray(property.features) 
+            ? property.features 
+            : (property.features && typeof property.features === 'string' ? property.features.split(',') : []);
             
-            properties.push(newProperty);
+        const card = `
+            <div class="property-card" onclick="viewProperty(${property.id})">
+                <div class="property-image ${property.rural ? 'rural-image' : ''}">
+                    ${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}
+                    ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                    ${property.has_video || property.hasVideo ? `
+                        <div class="video-indicator">
+                            <i class="fas fa-video"></i> TEM VÍDEO
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="property-content">
+                    <div class="property-price">${property.price}</div>
+                    <h3 class="property-title">${property.title}</h3>
+                    <div class="property-location">
+                        <i class="fas fa-map-marker-alt"></i> ${property.location}
+                    </div>
+                    <p>${property.description}</p>
+                    <div class="property-features">
+                        ${features.map(feature => 
+                            `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${feature.trim()}</span>`
+                        ).join('')}
+                    </div>
+                    <button class="contact-btn" onclick="event.stopPropagation(); contactAgent(${property.id})">
+                        <i class="fab fa-whatsapp"></i> Entrar em Contato
+                    </button>
+                </div>
+            </div>
+        `;
+        container.innerHTML += card;
+    });
+}
+
+// ========== FUNÇÕES DO PAINEL ADMIN ==========
+const ADMIN_PASSWORD = "weber123";
+
+function toggleAdminPanel() {
+    const password = prompt("Digite a senha de acesso ao painel:");
+    if (password === ADMIN_PASSWORD) {
+        const panel = document.getElementById('adminPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        if (panel.style.display === 'block') {
+            loadPropertyList();
+        }
+    } else {
+        alert("Senha incorreta! Contate o administrador.");
+    }
+}
+
+function loadPropertyList() {
+    const container = document.getElementById('propertyList');
+    const countElement = document.getElementById('propertyCount');
+    
+    if (!container) return;
+    
+    container.innerHTML = '';
+    countElement.textContent = properties.length;
+    
+    if (properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">Nenhum imóvel cadastrado.</p>';
+        return;
+    }
+    
+    properties.forEach(property => {
+        const features = Array.isArray(property.features) 
+            ? property.features 
+            : (property.features && typeof property.features === 'string' ? property.features.split(',') : []);
+            
+        const item = document.createElement('div');
+        item.className = 'property-item';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <strong>${property.title}</strong><br>
+                <small>${property.price} - ${property.location}</small>
+                <div style="margin-top: 0.5rem;">
+                    ${features.map(f => 
+                        `<span style="background: #e0e0e0; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.8rem; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.3rem;">${f.trim()}</span>`
+                    ).join('')}
+                </div>
+            </div>
+            <div>
+                <button onclick="editProperty(${property.id})" style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; margin-left: 0.5rem; cursor: pointer;">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; margin-left: 0.5rem; cursor: pointer;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function deleteProperty(id) {
+    if (confirm("Tem certeza que deseja excluir este imóvel?\nEsta ação não pode ser desfeita.")) {
+        const index = properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            properties.splice(index, 1);
+            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
             renderProperties();
             loadPropertyList();
-            this.reset();
-            
-            alert("✅ Imóvel adicionado com sucesso! O site foi atualizado.");
-        });
-
-        function deleteProperty(id) {
-            if (confirm("Tem certeza que deseja excluir este imóvel?\nEsta ação não pode ser desfeita.")) {
-                const index = properties.findIndex(p => p.id === id);
-                if (index !== -1) {
-                    properties.splice(index, 1);
-                    renderProperties();
-                    loadPropertyList();
-                    alert("Imóvel excluído com sucesso!");
-                }
-            }
+            alert("Imóvel excluído com sucesso!");
         }
+    }
+}
 
-        function editProperty(id) {
-            const property = properties.find(p => p.id === id);
-            if (property) {
-                // Preencher formulário com dados do imóvel
-                document.getElementById('propTitle').value = property.title;
-                document.getElementById('propPrice').value = property.price;
-                document.getElementById('propLocation').value = property.location;
-                document.getElementById('propDescription').value = property.description;
-                document.getElementById('propFeatures').value = property.features.join(', ');
-                document.getElementById('propType').value = property.type;
-                document.getElementById('propBadge').value = property.badge;
-                document.getElementById('propHasVideo').checked = property.hasVideo;
-                
-                // Remover o imóvel antigo (será readicionado ao enviar o form)
-                const index = properties.findIndex(p => p.id === id);
-                properties.splice(index, 1);
-                
-                renderProperties();
-                loadPropertyList();
-                
-                alert("Imóvel carregado para edição. Faça as alterações e clique em 'Adicionar Imóvel' para salvar.");
-            }
-        }
+function editProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (property) {
+        document.getElementById('propTitle').value = property.title || '';
+        document.getElementById('propPrice').value = property.price || '';
+        document.getElementById('propLocation').value = property.location || '';
+        document.getElementById('propDescription').value = property.description || '';
+        
+        const features = Array.isArray(property.features) 
+            ? property.features 
+            : (property.features || '');
+        document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+        
+        document.getElementById('propType').value = property.type || 'residencial';
+        document.getElementById('propBadge').value = property.badge || 'Novo';
+        document.getElementById('propHasVideo').checked = property.has_video || property.hasVideo || false;
+        
+        // Remove o imóvel antigo
+        const index = properties.findIndex(p => p.id === id);
+        properties.splice(index, 1);
+        
+        localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        renderProperties();
+        loadPropertyList();
+        
+        alert("Imóvel carregado para edição. Faça as alterações e clique em 'Adicionar Imóvel' para salvar.");
+    }
+}
 
-        // Configurar filtros
-        document.addEventListener('DOMContentLoaded', function() {
-            renderProperties();
+// ========== FUNÇÕES DE INTERAÇÃO ==========
+function viewProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (property) {
+        alert(`🏠 ${property.title}\n\n💰 ${property.price}\n📍 ${property.location}\n\n${property.description}`);
+    }
+}
+
+function contactAgent(id) {
+    const property = properties.find(p => p.id === id);
+    if (property) {
+        const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${property.price}`;
+        const whatsappURL = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
+        window.open(whatsappURL, '_blank');
+    }
+}
+
+// ========== INICIALIZAÇÃO ==========
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Iniciando Weber Lessa Imóveis...');
+    loadProperties();
+    
+    // Sistema de filtros
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
             
-            // Adicionar eventos aos botões de filtro
-            const filterButtons = document.querySelectorAll('.filter-btn');
-            filterButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Remover classe active de todos os botões
-                    filterButtons.forEach(btn => btn.classList.remove('active'));
-                    // Adicionar classe active ao botão clicado
-                    this.classList.add('active');
-                    
-                    // Determinar o filtro
-                    let filter = 'todos';
-                    if (this.textContent === 'Residencial') filter = 'residencial';
-                    else if (this.textContent === 'Comercial') filter = 'comercial';
-                    else if (this.textContent === 'Rural') filter = 'rural';
-                    else if (this.textContent === 'Minha Casa Minha Vida') filter = 'mcmv';
-                    
-                    // Aplicar filtro
-                    renderProperties(filter);
-                });
-            });
+            let filter = 'todos';
+            if (this.textContent === 'Residencial') filter = 'residencial';
+            else if (this.textContent === 'Comercial') filter = 'comercial';
+            else if (this.textContent === 'Rural') filter = 'rural';
+            else if (this.textContent === 'Minha Casa Minha Vida') filter = 'mcmv';
+            
+            renderProperties(filter);
         });
+    });
+    
+    console.log('✅ Sistema Weber Lessa carregado!');
+});
     </script>
 </body>
 </html>
