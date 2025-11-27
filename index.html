@@ -898,63 +898,6 @@ async function loadProperties() {
     }
 }
 
-// ========== FORMULÁRIO PRINCIPAL ==========
-document.getElementById('propertyForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const propertyData = {
-        title: document.getElementById('propTitle').value,
-        price: document.getElementById('propPrice').value,
-        location: document.getElementById('propLocation').value,
-        description: document.getElementById('propDescription').value,
-        features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
-        type: document.getElementById('propType').value,
-        has_video: document.getElementById('propHasVideo').checked,
-        badge: document.getElementById('propBadge').value,
-        rural: document.getElementById('propType').value === 'rural',
-        created_at: new Date().toISOString()
-    };
-    
-    // Validar campos obrigatórios
-    if (!propertyData.title || !propertyData.price || !propertyData.location) {
-        alert('❌ Preencha pelo menos Título, Preço e Localização!');
-        return;
-    }
-    
-    // Mostrar progresso
-    const progressBar = document.getElementById('progressBar');
-    const progressFill = document.getElementById('progressFill');
-    progressBar.style.display = 'block';
-    progressFill.style.width = '30%';
-    
-    try {
-        progressFill.style.width = '60%';
-        
-        // Salvar no Supabase
-        const success = await saveProperty(propertyData);
-        
-        progressFill.style.width = '100%';
-        
-        if (success) {
-            alert("✅ Imóvel salvo com sucesso no banco de dados!");
-        } else {
-            alert("⚠️ Imóvel salvo localmente. Configure a tabela no Supabase.");
-        }
-        
-    } catch (error) {
-        alert("❌ Erro ao salvar imóvel. Verifique o console (F12).");
-    }
-    
-    // Resetar formulário
-    setTimeout(() => {
-        this.reset();
-        selectedFiles = [];
-        document.getElementById('uploadPreview').innerHTML = '';
-        progressBar.style.display = 'none';
-        loadPropertyList();
-    }, 1000);
-});
-
 // ========== FUNÇÕES DE RENDERIZAÇÃO ==========
 // Renderizar imóveis
 function renderProperties(filter = 'todos') {
