@@ -809,7 +809,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Cliente Supabase simplificado
 const supabaseClient = {
     async query(table, method = 'GET', data = null) {
-        const url = method === 'POST' 
+        const url = method === 'POST' || method === 'PATCH'
             ? `${SUPABASE_URL}/rest/v1/${table}`
             : `${SUPABASE_URL}/rest/v1/${table}?select=*`;
             
@@ -823,7 +823,7 @@ const supabaseClient = {
             }
         };
         
-        if (data && method !== 'GET') {
+        if (data && (method === 'POST' || method === 'PATCH')) {
             options.body = JSON.stringify(data);
         }
         
@@ -854,7 +854,7 @@ function getInitialProperties() {
             description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió.",
             features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda"],
             type: "residencial",
-            hasVideo: true,
+            has_video: true,
             badge: "Destaque",
             rural: false
         },
@@ -866,7 +866,7 @@ function getInitialProperties() {
             description: "Excelente fazenda de 300 tarefas com casa sede, cercada com piquetes para gado, baia/curral, várias nascentes.",
             features: ["300 Tarefas", "Casa Sede", "Várias Nascentes", "Baia/Curral", "Piquetes"],
             type: "rural",
-            hasVideo: true,
+            has_video: true,
             badge: "Fazenda",
             rural: true
         },
@@ -878,7 +878,7 @@ function getInitialProperties() {
             description: "Casa residencial com terreno no Portal do Renascer, próximo do CEASA. Excelente localização com fácil acesso às principais vias.",
             features: ["2 Quartos (1 Suíte)", "2 Salas", "3 Banheiros", "Cozinha", "2 Vagas", "Varanda", "100m do CEASA"],
             type: "residencial",
-            hasVideo: false,
+            has_video: false,
             badge: "Excelente Localização",
             rural: false
         }
@@ -935,7 +935,7 @@ function renderProperties(filter = 'todos') {
                 <div class="property-image ${property.rural ? 'rural-image' : ''}">
                     ${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}
                     ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                    ${property.hasVideo ? `
+                    ${property.has_video ? `
                         <div class="video-indicator">
                             <i class="fas fa-video"></i> TEM VÍDEO
                         </div>
@@ -1030,21 +1030,6 @@ function loadPropertyList() {
     });
 }
 
-function deleteProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
-        const index = properties.findIndex(p => p.id === id);
-        if (index !== -1) {
-            properties.splice(index, 1);
-            renderProperties();
-            loadPropertyList();
-            alert("✅ Imóvel excluído com sucesso!");
-        }
-    }
-}
-
 // ========== SISTEMA DE EDIÇÃO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
@@ -1065,7 +1050,7 @@ function editProperty(id) {
     
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.hasVideo || false;
+    document.getElementById('propHasVideo').checked = property.has_video || false;
     
     // Limpar preview
     selectedFiles = [];
@@ -1111,45 +1096,7 @@ function cancelEdit() {
     alert("Edição cancelada.");
 }
 
-// ========== SISTEMA DE UPLOAD ==========
-function setupUploadSystem() {
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    const uploadPreview = document.getElementById('uploadPreview');
-
-    if (uploadArea && fileInput) {
-        uploadArea.addEventListener('click', () => fileInput.click());
-        
-        fileInput.addEventListener('change', (e) => {
-            selectedFiles = Array.from(e.target.files);
-            showPreview();
-        });
-    }
-}
-
-function showPreview() {
-    const preview = document.getElementById('uploadPreview');
-    if (!preview) return;
-    
-    preview.innerHTML = '';
-    
-    selectedFiles.forEach((file) => {
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.title = file.name;
-                img.style.cssText = 'width: 100px; height: 100px; object-fit: cover; border-radius: 5px; margin: 5px;';
-                preview.appendChild(img);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-}
-
-// ========== SISTEMA COMPLETO DE SALVAMENTO ==========
-// Salvar imóvel no Supabase
+// ========== SISTEMA DE SALVAMENTO ==========
 async function saveProperty(propertyData) {
     try {
         console.log('💾 Salvando no Supabase...', propertyData);
@@ -1188,12 +1135,12 @@ async function saveProperty(propertyData) {
         return false;
     }
 }
-        
-/ ========== FORMULÁRIO ATUALIZADO ==========
+
+// ========== FORMULÁRIO ==========
 function setupForm() {
     const form = document.getElementById('propertyForm');
     if (!form) {
-        createForm();
+        console.log('Formulário não encontrado');
         return;
     }
 
@@ -1249,31 +1196,7 @@ function setupForm() {
     });
 }
 
-// ========== SISTEMA DE FOTOS E VÍDEOS ==========
-async function uploadFile(file, folder = 'properties') {
-    try {
-        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${folder}/${fileName}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'apikey': SUPABASE_KEY
-            },
-            body: formData
-        });
-        
-        if (!response.ok) throw new Error('Upload falhou');
-        
-        return `${SUPABASE_URL}/storage/v1/object/public/${folder}/${fileName}`;
-    } catch (error) {
-        console.error('❌ Erro no upload:', error);
-        return null;
-    }
-}        
-// Sistema de upload melhorado
+// ========== SISTEMA DE UPLOAD ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
@@ -1362,7 +1285,7 @@ function removeFile(index) {
     document.getElementById('fileInput').files = dataTransfer.files;
 }
 
-// ========== ATUALIZAR A FUNÇÃO DELETE ==========
+// ========== FUNÇÃO DELETE ==========
 async function deleteProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1387,8 +1310,8 @@ async function deleteProperty(id) {
         loadPropertyList();
         alert("✅ Imóvel excluído com sucesso!");
     }
-}        
-        
+}
+
 // ========== CRIAÇÃO DO PAINEL ADMIN ==========
 function createAdminPanel() {
     // Verificar se já existe
@@ -1427,18 +1350,6 @@ function createFormHTML() {
                         <label><strong>Título do Imóvel *</strong></label>
                         <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required 
                                style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                
-                <!-- NOVA SEÇÃO: FOTOS E VÍDEOS -->
-                <div style="margin-bottom: 1.5rem;">
-                    <label><strong>Fotos e Vídeos do Imóvel</strong></label>
-                    <div class="upload-area" id="uploadArea" style="border: 2px dashed #ddd; border-radius: 10px; padding: 2rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease;">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #ccc; margin-bottom: 1rem;"></i>
-                        <p>Clique ou arraste fotos e vídeos aqui</p>
-                        <small>Formatos: JPG, PNG, MP4, AVI (máx. 5MB cada)</small>
-                    </div>
-                    <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
-                    <div class="upload-preview" id="uploadPreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 1rem 0;"></div>
-                </div>
                     </div>
                     <div>
                         <label><strong>Preço *</strong></label>
@@ -1464,6 +1375,18 @@ function createFormHTML() {
                     <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" 
                            style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
                     <small style="color: #666;">Separe por vírgulas</small>
+                </div>
+                
+                <!-- SEÇÃO FOTOS E VÍDEOS -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label><strong>Fotos e Vídeos do Imóvel</strong></label>
+                    <div class="upload-area" id="uploadArea" style="border: 2px dashed #ddd; border-radius: 10px; padding: 2rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #ccc; margin-bottom: 1rem;"></i>
+                        <p>Clique ou arraste fotos e vídeos aqui</p>
+                        <small>Formatos: JPG, PNG, MP4, AVI (máx. 5MB cada)</small>
+                    </div>
+                    <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
+                    <div class="upload-preview" id="uploadPreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 1rem 0;"></div>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
