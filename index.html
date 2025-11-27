@@ -803,7 +803,6 @@
     <script>
 
 // ========== CONFIGURAÇÃO SUPABASE ==========
-// ========== CONFIGURAÇÃO SUPABASE ==========
 const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
 
@@ -1149,7 +1148,48 @@ function showPreview() {
     });
 }
 
-// ========== FORMULÁRIO ==========
+// ========== SISTEMA COMPLETO DE SALVAMENTO ==========
+// Salvar imóvel no Supabase
+async function saveProperty(propertyData) {
+    try {
+        console.log('💾 Salvando no Supabase...', propertyData);
+        
+        if (editingPropertyId) {
+            // ATUALIZAR imóvel existente
+            const result = await supabaseClient.query(`properties?id=eq.${editingPropertyId}`, 'PATCH', propertyData);
+            console.log('✅ Imóvel atualizado no Supabase:', result);
+        } else {
+            // CRIAR novo imóvel
+            const result = await supabaseClient.query('properties', 'POST', propertyData);
+            console.log('✅ Imóvel criado no Supabase:', result);
+        }
+        
+        // Recarregar dados do Supabase
+        await loadProperties();
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar no Supabase:', error);
+        
+        // Fallback: salvar localmente
+        if (editingPropertyId) {
+            const index = properties.findIndex(p => p.id === editingPropertyId);
+            if (index !== -1) {
+                propertyData.id = editingPropertyId;
+                properties[index] = propertyData;
+            }
+        } else {
+            propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+            properties.push(propertyData);
+        }
+        
+        localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        renderProperties();
+        return false;
+    }
+}
+        
+/ ========== FORMULÁRIO ATUALIZADO ==========
 function setupForm() {
     const form = document.getElementById('propertyForm');
     if (!form) {
@@ -1157,7 +1197,7 @@ function setupForm() {
         return;
     }
 
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const propertyData = {
@@ -1167,9 +1207,10 @@ function setupForm() {
             description: document.getElementById('propDescription').value,
             features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
-            hasVideo: document.getElementById('propHasVideo').checked,
+            has_video: document.getElementById('propHasVideo').checked,
             badge: document.getElementById('propBadge').value,
-            rural: document.getElementById('propType').value === 'rural'
+            rural: document.getElementById('propType').value === 'rural',
+            created_at: new Date().toISOString()
         };
 
         // Validar campos
@@ -1178,36 +1219,176 @@ function setupForm() {
             return;
         }
 
+        // Mostrar loading
+        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        submitBtn.disabled = true;
+
         try {
-            if (editingPropertyId) {
-                // EDITAR imóvel existente
-                const index = properties.findIndex(p => p.id === editingPropertyId);
-                if (index !== -1) {
-                    propertyData.id = editingPropertyId;
-                    properties[index] = propertyData;
-                    alert("✅ Imóvel atualizado com sucesso!");
-                }
+            // Salvar no Supabase
+            const success = await saveProperty(propertyData);
+            
+            if (success) {
+                alert("✅ Imóvel salvo com sucesso no banco de dados!");
             } else {
-                // ADICIONAR novo imóvel
-                propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
-                properties.push(propertyData);
-                alert("✅ Novo imóvel adicionado com sucesso!");
+                alert("⚠️ Imóvel salvo localmente. Configure a tabela no Supabase.");
             }
 
-            // Atualizar display
-            renderProperties();
-            loadPropertyList();
-            
             // Limpar formulário
             this.reset();
             cancelEdit();
 
         } catch (error) {
             alert("❌ Erro ao salvar imóvel: " + error.message);
+        } finally {
+            // Restaurar botão
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
         }
     });
 }
 
+// ========== SISTEMA DE FOTOS E VÍDEOS ==========
+async function uploadFile(file, folder = 'properties') {
+    try {
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(`${SUPABASE_URL}/storage/v1/object/${folder}/${fileName}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'apikey': SUPABASE_KEY
+            },
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error('Upload falhou');
+        
+        return `${SUPABASE_URL}/storage/v1/object/public/${folder}/${fileName}`;
+    } catch (error) {
+        console.error('❌ Erro no upload:', error);
+        return null;
+    }
+}        
+// Sistema de upload melhorado
+function setupUploadSystem() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPreview = document.getElementById('uploadPreview');
+
+    if (uploadArea && fileInput) {
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = '#f0f8ff';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                selectedFiles = Array.from(e.dataTransfer.files);
+                showPreview();
+            }
+        });
+        
+        // Click para selecionar
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            showPreview();
+        });
+    }
+}
+
+function showPreview() {
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) return;
+    
+    preview.innerHTML = '';
+    
+    if (selectedFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhuma imagem selecionada</p>';
+        return;
+    }
+    
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+        
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileItem.innerHTML = `
+                    <img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px;">
+                    <button onclick="removeFile(${index})" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                `;
+                preview.appendChild(fileItem);
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/')) {
+            fileItem.innerHTML = `
+                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+                    <button onclick="removeFile(${index})" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                </div>
+            `;
+            preview.appendChild(fileItem);
+        }
+    });
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    showPreview();
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('fileInput').files = dataTransfer.files;
+}
+
+// ========== ATUALIZAR A FUNÇÃO DELETE ==========
+async function deleteProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
+        try {
+            // Tentar excluir do Supabase
+            await supabaseClient.query(`properties?id=eq.${id}`, 'DELETE');
+            console.log('✅ Imóvel excluído do Supabase');
+        } catch (error) {
+            console.error('❌ Erro ao excluir do Supabase:', error);
+        }
+        
+        // Excluir localmente de qualquer forma
+        const index = properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            properties.splice(index, 1);
+            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        }
+        
+        renderProperties();
+        loadPropertyList();
+        alert("✅ Imóvel excluído com sucesso!");
+    }
+}        
+        
 // ========== CRIAÇÃO DO PAINEL ADMIN ==========
 function createAdminPanel() {
     // Verificar se já existe
