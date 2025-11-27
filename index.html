@@ -1030,7 +1030,7 @@ function loadPropertyList() {
     });
 }
 
-// ========== SISTEMA DE EDIÇÃO ==========
+// ========== SISTEMA DE EDIÇÃO CORRIGIDO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1050,7 +1050,9 @@ function editProperty(id) {
     
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.has_video || false;
+    
+    // CORREÇÃO: Usar hasVideo ou has_video
+    document.getElementById('propHasVideo').checked = property.hasVideo || property.has_video || false;
     
     // Limpar preview
     selectedFiles = [];
@@ -1096,18 +1098,34 @@ function cancelEdit() {
     alert("Edição cancelada.");
 }
 
-// ========== SISTEMA DE SALVAMENTO ==========
+// ========== SISTEMA DE SALVAMENTO CORRIGIDO ==========
 async function saveProperty(propertyData) {
     try {
         console.log('💾 Salvando no Supabase...', propertyData);
         
+        // CORREÇÃO: Usar hasVideo (igual ao Supabase) em vez de has_video
+        const dataToSave = {
+            title: propertyData.title,
+            price: propertyData.price,
+            location: propertyData.location,
+            description: propertyData.description,
+            features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
+            type: propertyData.type,
+            hasVideo: propertyData.has_video, // ← CORREÇÃO AQUI
+            badge: propertyData.badge,
+            rural: propertyData.rural,
+            created_at: propertyData.created_at
+        };
+
+        console.log('📤 Dados para salvar:', dataToSave);
+        
         if (editingPropertyId) {
             // ATUALIZAR imóvel existente
-            const result = await supabaseClient.query(`properties?id=eq.${editingPropertyId}`, 'PATCH', propertyData);
+            const result = await supabaseClient.query(`properties?id=eq.${editingPropertyId}`, 'PATCH', dataToSave);
             console.log('✅ Imóvel atualizado no Supabase:', result);
         } else {
             // CRIAR novo imóvel
-            const result = await supabaseClient.query('properties', 'POST', propertyData);
+            const result = await supabaseClient.query('properties', 'POST', dataToSave);
             console.log('✅ Imóvel criado no Supabase:', result);
         }
         
@@ -1117,16 +1135,21 @@ async function saveProperty(propertyData) {
         
     } catch (error) {
         console.error('❌ Erro ao salvar no Supabase:', error);
+        console.log('📋 Detalhes do erro:', error.message);
         
         // Fallback: salvar localmente
         if (editingPropertyId) {
             const index = properties.findIndex(p => p.id === editingPropertyId);
             if (index !== -1) {
                 propertyData.id = editingPropertyId;
+                // Manter compatibilidade com hasVideo
+                propertyData.hasVideo = propertyData.has_video;
                 properties[index] = propertyData;
             }
         } else {
             propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+            // Manter compatibilidade com hasVideo
+            propertyData.hasVideo = propertyData.has_video;
             properties.push(propertyData);
         }
         
@@ -1135,8 +1158,7 @@ async function saveProperty(propertyData) {
         return false;
     }
 }
-
-// ========== FORMULÁRIO ==========
+// ========== FORMULÁRIO CORRIGIDO ==========
 function setupForm() {
     const form = document.getElementById('propertyForm');
     if (!form) {
@@ -1154,7 +1176,7 @@ function setupForm() {
             description: document.getElementById('propDescription').value,
             features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
-            has_video: document.getElementById('propHasVideo').checked,
+            has_video: document.getElementById('propHasVideo').checked, // ← Mantemos assim no formulário
             badge: document.getElementById('propBadge').value,
             rural: document.getElementById('propType').value === 'rural',
             created_at: new Date().toISOString()
@@ -1179,7 +1201,7 @@ function setupForm() {
             if (success) {
                 alert("✅ Imóvel salvo com sucesso no banco de dados!");
             } else {
-                alert("⚠️ Imóvel salvo localmente. Configure a tabela no Supabase.");
+                alert("⚠️ Imóvel salvo localmente. Verifique o console para detalhes.");
             }
 
             // Limpar formulário
