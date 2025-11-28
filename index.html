@@ -939,8 +939,6 @@ function toggleAdminPanel() {
             if (panel.style.display === 'block') {
                 loadPropertyList();
             }
-        } else {
-            createAdminPanel();
         }
     } else {
         alert("Senha incorreta!");
@@ -951,10 +949,7 @@ function loadPropertyList() {
     const container = document.getElementById('propertyList');
     const countElement = document.getElementById('propertyCount');
     
-    if (!container) {
-        createAdminPanel();
-        return;
-    }
+    if (!container) return;
     
     container.innerHTML = '';
     if (countElement) countElement.textContent = properties.length;
@@ -988,6 +983,13 @@ function loadPropertyList() {
                 <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
                     <i class="fas fa-trash"></i> Excluir
                 </button>
+                <div style="display: flex; gap: 1rem;">
+    <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
+        <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
+    </button>
+    <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer;">
+        <i class="fas fa-times"></i> Cancelar Edição
+    </button>
             </div>
         `;
         container.appendChild(item);
@@ -1012,7 +1014,7 @@ function deleteProperty(id) {
     }
 }
 
-// ========== SISTEMA DE EDIÇÃO ==========
+// ========== SISTEMA DE EDIÇÃO SIMPLIFICADO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1034,43 +1036,16 @@ function editProperty(id) {
     document.getElementById('propBadge').value = property.badge || 'Novo';
     document.getElementById('propHasVideo').checked = property.has_video || false;
     
-    // Limpar preview
-    selectedFiles = [];
-    const preview = document.getElementById('uploadPreview');
-    if (preview) preview.innerHTML = '';
+    // Rolar até o formulário
+    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
     
-    // Atualizar UI
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
-    }
-    
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'block';
-    }
-    
-    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel'.");
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Adicionar Imóvel ao Site' para salvar as alterações.");
 }
 
 function cancelEdit() {
     editingPropertyId = null;
     const form = document.getElementById('propertyForm');
     if (form) form.reset();
-    
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Imóvel';
-    }
-    
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'none';
-    }
-    
-    selectedFiles = [];
-    const preview = document.getElementById('uploadPreview');
-    if (preview) preview.innerHTML = '';
 }
 
 // ========== SISTEMA DE UPLOAD ==========
@@ -1325,10 +1300,7 @@ function saveToLocalStorage(propertyData) {
 // ========== FORMULÁRIO ==========
 function setupForm() {
     const form = document.getElementById('propertyForm');
-    if (!form) {
-        createForm();
-        return;
-    }
+    if (!form) return;
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1367,6 +1339,7 @@ function setupForm() {
 
             this.reset();
             cancelEdit();
+            loadPropertyList();
 
         } catch (error) {
             alert("❌ Erro: " + error.message);
@@ -1514,11 +1487,11 @@ function viewProperty(id) {
     }
 }
 
-// ========== INICIALIZAÇÃO ==========
+// ========== INICIALIZAÇÃO CORRIGIDA ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
     loadProperties();
-    setupUploadSystem();
+    setupForm();
     
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
