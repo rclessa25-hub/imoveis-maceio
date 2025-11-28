@@ -932,6 +932,7 @@ async function loadProperties() {
 }
 
 // ========== RENDERIZAR IMÓVEIS CORRIGIDO ==========
+// ========== RENDERIZAR IMÓVEIS COM DEBUG ==========
 function renderProperties(filter = 'todos') {
     const container = document.getElementById('properties-container');
     if (!container) {
@@ -954,13 +955,20 @@ function renderProperties(filter = 'todos') {
         return;
     }
     
+    console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
+    
     filteredProperties.forEach(property => {
         const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
-        // Verificar se há imagens para mostrar - CORREÇÃO AQUI
+        // DEBUG: Verificar imagens
         const hasImages = property.images && property.images.length > 0 && property.images !== '';
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
         const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : '';
+        
+        console.log(`📋 Imóvel: ${property.title}`);
+        console.log(`🖼️ Tem imagens: ${hasImages}`);
+        console.log(`🔗 URLs: ${property.images}`);
+        console.log(`📸 Primeira imagem: ${firstImageUrl}`);
         
         const card = `
             <div class="property-card">
@@ -968,7 +976,8 @@ function renderProperties(filter = 'todos') {
                     ${hasImages ? 
                         `<img src="${firstImageUrl}" 
                               style="width: 100%; height: 100%; object-fit: cover;"
-                              onerror="this.style.display='none'; this.parentNode.innerHTML='${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}';">` :
+                              alt="${property.title}"
+                              onerror="console.error('❌ Erro ao carregar imagem:', this.src); this.style.display='none'; this.parentNode.style.background='linear-gradient(45deg, var(--accent), var(--secondary))'; this.parentNode.innerHTML='${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}';">` :
                         `${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}`
                     }
                     ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
@@ -992,7 +1001,7 @@ function renderProperties(filter = 'todos') {
         container.innerHTML += card;
     });
 }
-
+        
 // ========== DEBUG DO SUPABASE ==========
 async function testSupabaseConnection() {
     console.log('🔍 Testando conexão com Supabase...');
@@ -1358,9 +1367,10 @@ async function uploadFile(file) {
 }
 
 // ========== SALVAR IMÓVEL ==========
+// ========== SALVAR IMÓVEL CORRIGIDO ==========
 async function saveProperty(propertyData) {
     try {
-        console.log('💾 Tentando salvar no Supabase...');
+        console.log('💾 Iniciando processo de salvamento...');
 
         // Upload dos arquivos PRIMEIRO
         let uploadedFiles = [];
@@ -1368,7 +1378,7 @@ async function saveProperty(propertyData) {
             console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
             
             for (const file of selectedFiles) {
-                console.log(`⬆️ Uploading: ${file.name}`);
+                console.log(`⬆️ Enviando: ${file.name}`);
                 const fileUrl = await uploadFile(file);
                 if (fileUrl) {
                     uploadedFiles.push(fileUrl);
@@ -1378,7 +1388,7 @@ async function saveProperty(propertyData) {
                 }
             }
         }
-      
+
         // Preparar dados para Supabase
         const dataToSave = {
             title: propertyData.title,
@@ -1387,19 +1397,28 @@ async function saveProperty(propertyData) {
             description: propertyData.description,
             features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
             type: propertyData.type,
-            hasVideo: propertyData.has_video, // Usar hasVideo (igual à coluna no Supabase)
+            hasVideo: propertyData.has_video,
             badge: propertyData.badge,
             rural: propertyData.rural,
             created_at: propertyData.created_at
         };
 
-        // Adicionar URLs dos arquivos se houver upload
+        // **CORREÇÃO CRÍTICA:** Adicionar URLs das imagens
         if (uploadedFiles.length > 0) {
             dataToSave.images = uploadedFiles.join(', ');
-            console.log('🖼️ URLs das imagens:', dataToSave.images);
+            console.log('🖼️ URLs das imagens para salvar:', dataToSave.images);
+        } else {
+            // Se não há novas imagens, manter as existentes ao editar
+            if (editingPropertyId) {
+                const existingProperty = properties.find(p => p.id === editingPropertyId);
+                if (existingProperty && existingProperty.images) {
+                    dataToSave.images = existingProperty.images;
+                    console.log('🔄 Mantendo imagens existentes:', dataToSave.images);
+                }
+            }
         }
 
-        console.log('📤 Dados para salvar no Supabase:', dataToSave);
+        console.log('📤 Dados completos para salvar:', dataToSave);
 
         // Determinar URL e método
         const url = editingPropertyId
@@ -1423,7 +1442,7 @@ async function saveProperty(propertyData) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ Erro na resposta:', response.status, errorText);
+            console.error('❌ Erro na resposta do Supabase:', response.status, errorText);
             throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
         }
 
@@ -1441,6 +1460,34 @@ async function saveProperty(propertyData) {
     }
 }
 
+// ========== TESTAR ACESSO ÀS IMAGENS ==========
+async function testImageAccess() {
+    console.log('🔍 Testando acesso às imagens...');
+    
+    // URLs das suas imagens no Supabase
+    const testImages = [
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341618532_thumbnail3.jpeg',
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341628860_thumbnail2.jpeg',
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341634876_thumbnail1.jpeg'
+    ];
+    
+    for (const imgUrl of testImages) {
+        try {
+            const response = await fetch(imgUrl);
+            if (response.ok) {
+                console.log(`✅ Imagem acessível: ${imgUrl}`);
+            } else {
+                console.log(`❌ Imagem não acessível: ${imgUrl} - Status: ${response.status}`);
+            }
+        } catch (error) {
+            console.log(`❌ Erro ao acessar imagem: ${imgUrl} - ${error.message}`);
+        }
+    }
+}
+
+// Chamar a função de teste
+testImageAccess();
+        
 // ========== EXCLUIR IMÓVEL ==========
 async function deleteProperty(id) {
     const property = properties.find(p => p.id === id);
