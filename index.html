@@ -875,7 +875,7 @@ async function loadProperties() {
     renderProperties();
 }
 
-// ========== RENDERIZAR IMÓVEIS ==========
+// ========== RENDERIZAR IMÓVEIS CORRIGIDO ==========
 function renderProperties(filter = 'todos') {
     const container = document.getElementById('properties-container');
     if (!container) {
@@ -894,19 +894,26 @@ function renderProperties(filter = 'todos') {
     });
     
     if (filteredProperties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel encontrado.</p>';
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel encontrado para este filtro.</p>';
         return;
     }
     
     filteredProperties.forEach(property => {
         const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
+        // Verificar se há imagens para mostrar
+        const hasImages = property.images && property.images.length > 0;
+        
         const card = `
             <div class="property-card">
-                <div class="property-image ${property.rural ? 'rural-image' : ''}">
-                    ${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}
+                <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative;">
+                    ${hasImages ? 
+                        `<img src="${property.images.split(',')[0]}" style="width: 100%; height: 100%; object-fit: cover;">` :
+                        `${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}`
+                    }
                     ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                     ${property.hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                    ${hasImages ? `<div class="image-count">📸 ${property.images.split(',').length}</div>` : ''}
                 </div>
                 <div class="property-content">
                     <div class="property-price">${property.price}</div>
