@@ -818,28 +818,28 @@ function getInitialProperties() {
     return [
         {
             id: 1,
-            title: "Apartamento Vista Mar - Ponta Verde",
-            price: "R$ 450.000",
-            location: "Ponta Verde, Maceió-AL",
-            description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió.",
-            features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda"],
+            title: "Casa 2Qtos - Forene",
+            price: "R$ 180.000",
+            location: "Residência Conj. Portal do Renascer, Forene",
+            description: "Casa a 100m do CEASA; - Medindo 6,60m frente X 19m lado; - 125,40m² de área total; -Somente um único dono; - 02 Quartos, Sala; - Cozinha; - 02 Banheiros; - Varanda; - 02 Vagas de garagem; - Água de Poço Artesiano;",
+            features: ["02 Quartos", "Sala", "Cozinha", "02 Banheiros", "Varanda", "02 Vagas de carro"],
             type: "residencial",
-            has_video: true,
+            hasVideo: true,
             badge: "Destaque",
             rural: false,
             created_at: new Date().toISOString()
         },
         {
             id: 2,
-            title: "Fazenda - 300 Tarefas",
-            price: "R$ 1.200.000",
-            location: "Zona Rural - 90km de Maceió-AL",
-            description: "Excelente fazenda de 300 tarefas com casa sede, cercada com piquetes para gado, baia/curral, várias nascentes.",
-            features: ["300 Tarefas", "Casa Sede", "Várias Nascentes", "Baia/Curral", "Piquetes"],
-            type: "rural",
-            has_video: true,
-            badge: "Fazenda",
-            rural: true,
+            title: "Apartamento 4Qtos (178m²) - Ponta Verde",
+            price: "R$ 1.500.000",
+            location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
+            description: "Apartamento amplo, super claro e arejado, imóvel diferenciado com 178m² de área privativa, oferecendo conforto, espaço e alto padrão de acabamento. 4 Qtos, sendo 03 suítes, sala ampla com varanda, cozinha, dependência de empregada, área de serviço, 02 vagas de garagem no subsolo. - Guarita/segurança 24 horas; - 178m² de área útil . - Piscina; - Faxada toda em granito; - Salão de festa; - 02 elevadores; - 02 vagas de garagem; - Documentação toda regularizada; - São 02 apartamentos por andar.",
+            features: ["4Qtos s/ 3 suítes", "Sala ampla com varanda", "Cozinha", "Área de serviço", "DCE", "02 vagas de garagem"],
+            type: "residencial",
+            hasVideo: false,
+            badge: "Luxo",
+            rural: false,
             created_at: new Date().toISOString()
         }
     ];
@@ -868,7 +868,6 @@ async function loadProperties() {
         
     } catch (error) {
         console.log('🔄 Carregando dados locais...');
-        // Tentar carregar do localStorage primeiro
         const localData = localStorage.getItem('weberlessa_properties');
         properties = localData ? JSON.parse(localData) : getInitialProperties();
     }
@@ -887,10 +886,10 @@ function renderProperties(filter = 'todos') {
     container.innerHTML = '';
     
     const filteredProperties = filter === 'todos' ? properties : properties.filter(p => {
-        if (filter === 'residencial') return p.type === 'residencial';
-        if (filter === 'comercial') return p.type === 'comercial';
-        if (filter === 'rural') return p.type === 'rural';
-        if (filter === 'mcmv') return p.badge === 'MCMV';
+        if (filter === 'Residencial') return p.type === 'residencial';
+        if (filter === 'Comercial') return p.type === 'comercial';
+        if (filter === 'Rural') return p.type === 'rural';
+        if (filter === 'Minha Casa Minha Vida') return p.badge === 'MCMV';
         return true;
     });
     
@@ -907,7 +906,7 @@ function renderProperties(filter = 'todos') {
                 <div class="property-image ${property.rural ? 'rural-image' : ''}">
                     ${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}
                     ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                    ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                    ${property.hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 </div>
                 <div class="property-content">
                     <div class="property-price">${property.price}</div>
@@ -983,21 +982,13 @@ function loadPropertyList() {
                 <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
                     <i class="fas fa-trash"></i> Excluir
                 </button>
-             <div style="display: flex; gap: 1rem;">
-                <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
-                    <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
-                </button>
-                <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer;">
-                     <i class="fas fa-times"></i> Cancelar Edição
-                </button>
-             </div>
             </div>
         `;
         container.appendChild(item);
     });
 }
 
-// ========== SISTEMA DE EDIÇÃO SIMPLIFICADO ==========
+// ========== SISTEMA DE EDIÇÃO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1017,18 +1008,46 @@ function editProperty(id) {
     
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.has_video || false;
+    document.getElementById('propHasVideo').checked = property.hasVideo || false;
+    
+    // Atualizar texto do botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
+    }
+    
+    // Mostrar botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'block';
+    }
     
     // Rolar até o formulário
     document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
     
-    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Adicionar Imóvel ao Site' para salvar as alterações.");
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
 function cancelEdit() {
     editingPropertyId = null;
     const form = document.getElementById('propertyForm');
     if (form) form.reset();
+    
+    // Resetar botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+    }
+    
+    // Esconder botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
+    
+    selectedFiles = [];
+    const preview = document.getElementById('uploadPreview');
+    if (preview) preview.innerHTML = '';
 }
 
 // ========== SISTEMA DE UPLOAD ==========
@@ -1148,6 +1167,7 @@ function removeFile(index) {
     selectedFiles.splice(index, 1);
     showPreview();
     
+    // Atualizar input file
     const dataTransfer = new DataTransfer();
     selectedFiles.forEach(file => dataTransfer.items.add(file));
     document.getElementById('fileInput').files = dataTransfer.files;
@@ -1207,7 +1227,7 @@ async function saveProperty(propertyData) {
             }
         }
       
-        // Preparar dados
+        // Preparar dados - CORREÇÃO: usar hasVideo (igual ao Supabase)
         const dataToSave = {
             title: propertyData.title,
             price: propertyData.price,
@@ -1215,7 +1235,7 @@ async function saveProperty(propertyData) {
             description: propertyData.description,
             features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
             type: propertyData.type,
-            hasVideo: propertyData.has_video,
+            hasVideo: propertyData.has_video, // ← CORREÇÃO CRÍTICA
             badge: propertyData.badge,
             rural: propertyData.rural,
             created_at: propertyData.created_at
@@ -1225,6 +1245,8 @@ async function saveProperty(propertyData) {
         if (uploadedFiles.length > 0) {
             dataToSave.images = uploadedFiles.join(', ');
         }
+
+        console.log('📤 Dados para salvar:', dataToSave);
 
         // Salvar no Supabase
         const url = editingPropertyId
@@ -1248,7 +1270,9 @@ async function saveProperty(propertyData) {
             throw new Error(`Erro ao salvar: ${response.status}`);
         }
 
-        await response.json();
+        const result = await response.json();
+        console.log('✅ Salvo no Supabase:', result);
+        
         await loadProperties();
         return true;
 
@@ -1264,19 +1288,62 @@ function saveToLocalStorage(propertyData) {
             const index = properties.findIndex(p => p.id === editingPropertyId);
             if (index !== -1) {
                 propertyData.id = editingPropertyId;
+                // Manter compatibilidade
+                propertyData.hasVideo = propertyData.has_video;
                 properties[index] = propertyData;
             }
         } else {
             propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+            // Manter compatibilidade
+            propertyData.hasVideo = propertyData.has_video;
             properties.push(propertyData);
         }
 
         localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
         renderProperties();
+        loadPropertyList();
         return false;
     } catch (error) {
         console.error('❌ Erro ao salvar localmente:', error);
         return false;
+    }
+}
+
+// ========== EXCLUIR IMÓVEL ==========
+async function deleteProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
+        try {
+            // Tentar excluir do Supabase
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+
+            if (response.ok) {
+                console.log('✅ Imóvel excluído do Supabase');
+            } else {
+                console.log('⚠️ Não foi possível excluir do Supabase');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao excluir do Supabase:', error);
+        }
+
+        // Excluir localmente de qualquer forma
+        const index = properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            properties.splice(index, 1);
+            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        }
+
+        renderProperties();
+        loadPropertyList();
+        alert("✅ Imóvel excluído com sucesso!");
     }
 }
 
@@ -1333,127 +1400,6 @@ function setupForm() {
     });
 }
 
-// ========== CRIAR PAINEL ADMIN ==========
-function createAdminPanel() {
-    if (document.getElementById('adminPanel')) return;
-
-    const adminHTML = `
-        <section class="admin-panel" id="adminPanel" style="display: none; background: #f8f9fa; padding: 2rem; margin: 2rem auto; max-width: 1000px; border-radius: 10px;">
-            <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
-                <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
-            </h3>
-            ${createFormHTML()}
-            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #eee;">
-                <h4>Gerenciar Imóveis Existentes</h4>
-                <p><small>Total de imóveis: <span id="propertyCount">${properties.length}</span></small></p>
-                <div id="propertyList"></div>
-            </div>
-        </section>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', adminHTML);
-    setupForm();
-    setupUploadSystem();
-    loadPropertyList();
-}
-
-function createFormHTML() {
-    return `
-        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 1rem 0;">
-            <h4 style="color: var(--primary); margin-bottom: 1.5rem;">
-                <i class="fas fa-home"></i> Adicionar/Editar Imóvel
-            </h4>
-            
-            <form id="propertyForm">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label><strong>Título do Imóvel *</strong></label>
-                        <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    </div>
-                    <div>
-                        <label><strong>Preço *</strong></label>
-                        <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label><strong>Localização *</strong></label>
-                    <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label><strong>Descrição</strong></label>
-                    <textarea id="propDescription" placeholder="Descreva o imóvel..." style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label><strong>Características</strong></label>
-                    <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    <small style="color: #666;">Separe por vírgulas</small>
-                </div>
-                
-              <!-- ========== SEÇÃO UPLOAD DE FOTOS/VIDEOS/PDFs ========== -->
-<div style="margin-bottom: 1.5rem;">
-    <label><strong>Fotos, Vídeos e Documentos do Imóvel</strong></label>
-    
-    <div id="uploadArea" style="border: 2px dashed #ddd; border-radius: 10px; padding: 2rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease; background: #fafafa;">
-        <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #ccc; margin-bottom: 1rem;"></i>
-        <p style="margin: 0.5rem 0; font-size: 1.1rem; color: #555;">Clique ou arraste arquivos aqui</p>
-        <p style="margin: 0; font-size: 0.9rem; color: #888;">
-            <i class="fas fa-image"></i> Fotos (JPG, PNG) • 
-            <i class="fas fa-video"></i> Vídeos (MP4) • 
-            <i class="fas fa-file-pdf"></i> PDFs
-        </p>
-        <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #999;">Máximo: 10 arquivos • 5MB cada</p>
-    </div>
-    
-    <input type="file" id="fileInput" multiple accept="image/*,video/*,.pdf" style="display: none;">
-    
-    <div id="uploadPreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 1rem 0; min-height: 60px;"></div>
-</div>
-
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-    <div>
-                        <label><strong>Tipo do Imóvel</strong></label>
-                        <select id="propType" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                            <option value="residencial">Residencial</option>
-                            <option value="comercial">Comercial</option>
-                            <option value="rural">Rural</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label><strong>Destaque</strong></label>
-                        <select id="propBadge" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                            <option value="Novo">Novo</option>
-                            <option value="Destaque">Destaque</option>
-                            <option value="Luxo">Luxo</option>
-                            <option value="MCMV">Minha Casa Minha Vida</option>
-                            <option value="Fazenda">Fazenda</option>
-                            <option value="Chácara">Chácara</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="propHasVideo">
-                        <span><strong>Este imóvel tem vídeo?</strong></span>
-                    </label>
-                </div>
-                
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
-                        <i class="fas fa-save"></i> Salvar Imóvel
-                    </button>
-                    <button type="button" id="cancelEditBtn" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; display: none;">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                </div>
-            </form>
-        </div>
-    `;
-}
-
 // ========== FUNÇÕES DE INTERAÇÃO ==========
 function contactAgent(id) {
     const property = properties.find(p => p.id === id);
@@ -1471,11 +1417,12 @@ function viewProperty(id) {
     }
 }
 
-// ========== INICIALIZAÇÃO CORRIGIDA ==========
+// ========== INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
     loadProperties();
     setupForm();
+    setupUploadSystem();
     
     // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
@@ -1493,8 +1440,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Configurar sistema de upload
-    setupUploadSystem();
+    console.log('✅ Sistema Weber Lessa carregado!');
 });
   </script>
 </body>
