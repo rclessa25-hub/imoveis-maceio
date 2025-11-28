@@ -1,31 +1,1500 @@
-<script>
-// CÓDIGO DE DIAGNÓSTICO SEGURO
-console.log('=== INICIANDO DIAGNÓSTICO WEBER LESSA ===');
-
-// Verificar se as funções principais estão carregadas
-setTimeout(function() {
-    console.log('1. toggleAdminPanel:', typeof toggleAdminPanel);
-    console.log('2. loadProperties:', typeof loadProperties);
-    console.log('3. properties carregados:', window.properties ? window.properties.length : 0);
-    console.log('4. Painel admin:', document.getElementById('adminPanel') ? 'Encontrado' : 'Não encontrado');
-    
-    // Se toggleAdminPanel não existe, criar uma versão de emergência
-    if (typeof toggleAdminPanel === 'undefined') {
-        console.log('❌ toggleAdminPanel não carregou - criando versão emergencial');
-        window.toggleAdminPanel = function() {
-            const password = prompt("Digite a senha de acesso ao painel:");
-            if (password === "weber123") {
-                const panel = document.getElementById('adminPanel');
-                if (panel) {
-                    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                }
-            } else {
-                alert("Senha incorreta!");
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEBER LESSA CORRETORA E INCORPORAÇÕES - Imóveis Maceió</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a5276;
+            --secondary: #2980b9;
+            --accent: #3498db;
+            --gold: #f39c12;
+            --green: #27ae60;
+            --text: #2c3e50;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #27ae60;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
+            min-height: 100vh;
+        }
+        
+        /* Header e Navegação */
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 1.5rem 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .logo-text h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        .logo-text p {
+            color: var(--secondary);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .contact-info {
+            text-align: right;
+        }
+        
+        .contact-info .phone {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+        }
+        
+        .contact-info .address {
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(26, 82, 118, 0.8), rgba(41, 128, 185, 0.8)), url('https://images.unsplash.com/photo-1544984243-ec57ea16fe25?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: var(--gold);
+            color: white;
+            padding: 0.9rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+        }
+        
+        /* Serviços Section */
+        .services {
+            background: white;
+            padding: 4rem 1rem;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .section-title h2 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .section-title p {
+            color: var(--dark);
+            max-width: 700px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .service-card {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .service-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .service-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .service-card p {
+            color: var(--dark);
+        }
+        
+        /* Imóveis Section */
+        .properties {
+            padding: 4rem 1rem;
+            background: #f8f9fa;
+        }
+        
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            margin: 0 auto 2rem;
+            max-width: 1200px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .filter-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .filter-btn {
+            background: var(--light);
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .property-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .property-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .property-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, var(--accent), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .rural-image {
+            background: linear-gradient(45deg, var(--green), #2ecc71);
+        }
+        
+        .property-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--gold);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .rural-badge {
+            background: var(--green);
+        }
+        
+        .property-content {
+            padding: 1.5rem;
+        }
+        
+        .property-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .property-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+        
+        .property-location {
+            color: #666;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .property-features {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-tag {
+            background: var(--accent);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .rural-tag {
+            background: var(--green);
+        }
+        
+        .contact-btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .contact-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
+        }
+        
+        .video-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Sobre Section */
+        .about {
+            background: white;
+            padding: 4rem 1rem;
+        }
+        
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            align-items: center;
+        }
+        
+        .about-text h2 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .about-text p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+        
+        .about-image {
+            background: linear-gradient(45deg, var(--accent), var(--secondary));
+            height: 400px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 1rem;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .footer-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--gold);
+        }
+        
+        .footer-section p, .footer-section a {
+            color: #bbb;
+            margin-bottom: 0.8rem;
+            display: block;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-section a:hover {
+            color: white;
+        }
+        
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 1rem;
+        }
+        
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .social-icon:hover {
+            background: var(--accent);
+            transform: translateY(-3px);
+        }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #999;
+        }
+        
+        /* ========== ESTILOS DO PAINEL ADMIN ========== */
+        .admin-panel {
+            background: #f8f9fa;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1000px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .admin-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
+        }
+        
+        .property-item {
+            background: #f5f5f5;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--primary);
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
             }
-        };
+            
+            .contact-info {
+                text-align: center;
+            }
+            
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .about-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .property-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .filter-btn {
+                width: 100%;
+                max-width: 250px;
+            }
+            
+            .property-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-container">
+                <div class="logo">WL</div>
+                <div class="logo-text">
+                    <h1>WEBER LESSA</h1>
+                    <p>CORRETORA E INCORPORAÇÕES</p>
+                </div>
+            </div>
+            <div class="contact-info">
+                <div class="phone">
+                    <i class="fas fa-phone"></i> (82) 9.9604-4513
+                </div>
+                <div class="address">
+                    <i class="fas fa-map-marker-alt"></i> Empresarial Sizi & Neusa - Praça São Vicente, 09 - Centro, Maceió-AL
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Encontre seu imóvel dos sonhos em Maceió</h1>
+        <p>Na orla mais bonita do Brasil, com a expertise de quem entende do mercado imobiliário alagoano</p>
+        <a href="#properties" class="cta-button">
+            <i class="fas fa-home"></i> Ver Imóveis
+        </a>
+    </section>
+
+    <!-- Serviços Section -->
+    <section class="services">
+        <div class="section-title">
+            <h2>Nossos Serviços Especializados</h2>
+            <p>Oferecemos soluções completas para suas necessidades imobiliárias</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Equipe de Corretagem</h3>
+                <p>Venda de lotes, imóveis residenciais, comerciais, sítios, chácaras e fazendas com equipe qualificada.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <h3>Incorporacao Imobiliária</h3>
+                <p>Desenvolvemos empreendimentos de alto padrão com qualidade e inovação.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <h3>Financiamento Facilitado</h3>
+                <p>Linhas bancárias com boleto facilitado e condições especiais para sua aquisição.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-gavel"></i>
+                </div>
+                <h3>Regularização de Imóveis</h3>
+                <p>Usucapião, herança, inventário e toda documentação necessária para regularização.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-hand-holding-heart"></i>
+                </div>
+                <h3>Minha Casa Minha Vida</h3>
+                <p>Acesso facilitado ao programa governamental para realização do sonho da casa própria.</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-tractor"></i>
+                </div>
+                <h3>Propriedades Rurais</h3>
+                <p>Especialistas em sítios, chácaras e fazendas com documentação completa e regularizada.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Imóveis Section -->
+    <section class="properties" id="properties">
+        <div class="section-title">
+            <h2>Imóveis em Destaque</h2>
+            <p>Confira nossas melhores oportunidades em Maceió e região</p>
+        </div>
+        
+        <div class="filters">
+            <h3>Filtrar por:</h3>
+            <div class="filter-options">
+                <button class="filter-btn active">Todos</button>
+                <button class="filter-btn">Residencial</button>
+                <button class="filter-btn">Comercial</button>
+                <button class="filter-btn">Rural</button>
+                <button class="filter-btn">Minha Casa Minha Vida</button>
+            </div>
+        </div>
+        
+        <div class="property-grid" id="properties-container">
+            <!-- Os imóveis serão carregados aqui via JavaScript -->
+        </div>
+    </section>
+
+    <!-- Sobre Section -->
+    <section class="about">
+        <div class="about-content">
+            <div class="about-text">
+                <h2>Sobre a Weber Lessa</h2>
+                <p>Com anos de experiência no mercado imobiliário de Maceió, a Weber Lessa Corretora e Incorporações se consolidou como referência em soluções imobiliárias completas e personalizadas.</p>
+                <p>Nossa equipe especializada atua em todas as fases do processo: desde a assessoria na compra e venda, passando pela regularização documental, até o financiamento e incorporação de empreendimentos.</p>
+                <p>Localizada no Empresarial Sizi & Neusa, no coração de Maceió, estamos prontos para ajudar você a realizar o sonho do imóvel próprio com segurança, transparência e expertise.</p>
+            </div>
+            <div class="about-image">
+                <div>
+                    <i class="fas fa-building"></i>
+                    <p>Empresarial Sizi & Neusa</p>
+                    <p>Sede Weber Lessa</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Weber Lessa</h3>
+                <p>Corretora e Incorporações com tradição e qualidade no mercado imobiliário de Maceió.</p>
+                <div class="social-icons">
+                    <a href="#" class="social-icon"><i class="fab fa-whatsapp"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Contato</h3>
+                <p><i class="fas fa-phone"></i> (82) 9.9604-4513</p>
+                <p><i class="fas fa-map-marker-alt"></i> Empresarial Sizi & Neusa</p>
+                <p>Praça São Vicente, 09 - Centro</p>
+                <p>Maceió - AL, 57020-420</p>
+                <p><i class="fas fa-clock"></i> Segunda a Sexta: 8h às 18h</p>
+            </div>
+            <div class="footer-section">
+                <h3>Links Rápidos</h3>
+                <a href="#properties">Imóveis</a>
+                <a href="#services">Serviços</a>
+                <a href="#about">Sobre Nós</a>
+                <a href="#contact">Contato</a>
+            </div>
+            <div class="footer-section">
+                <h3>Especialidades</h3>
+                <a href="#">Venda de Imóveis</a>
+                <a href="#">Propriedades Rurais</a>
+                <a href="#">Incorporação</a>
+                <a href="#">Financiamento</a>
+                <a href="#">Regularização</a>
+                <a href="#">Minha Casa Minha Vida</a>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 Weber Lessa Corretora e Incorporações. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- ========== PAINEL DE ADMINISTRAÇÃO ========== -->
+    <section class="admin-panel" id="adminPanel">
+        <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
+            <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
+        </h3>
+        
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h4>Adicionar Novo Imóvel</h4>
+            <form id="propertyForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label>Título do Imóvel</label>
+                        <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                    <div>
+                        <label>Preço</label>
+                        <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label>Localização</label>
+                    <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label>Descrição</label>
+                    <textarea id="propDescription" placeholder="Descreva o imóvel..." required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label>Características (separadas por vírgula)</label>
+                    <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label>Tipo do Imóvel</label>
+                        <select id="propType" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="residencial">Residencial</option>
+                            <option value="comercial">Comercial</option>
+                            <option value="rural">Rural</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Destaque</label>
+                        <select id="propBadge" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="Novo">Novo</option>
+                            <option value="Destaque">Destaque</option>
+                            <option value="Luxo">Luxo</option>
+                            <option value="MCMV">Minha Casa Minha Vida</option>
+                            <option value="Fazenda">Fazenda</option>
+                            <option value="Chácara">Chácara</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="propHasVideo"> 
+                        <span>Este imóvel tem vídeo?</span>
+                    </label>
+                </div>
+                
+                <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1.1rem;">
+                    <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
+                </button>
+            </form>
+            
+            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #eee;">
+                <h4>Gerenciar Imóveis Existentes</h4>
+                <p><small>Total de imóveis: <span id="propertyCount">0</span></small></p>
+                <div id="propertyList"></div>
+            </div>
+        </div>
+    </section>
+
+    <button class="admin-toggle" onclick="toggleAdminPanel()">
+        <i class="fas fa-user-cog"></i>
+    </button>
+
+    <script>
+
+// ========== CONFIGURAÇÃO SUPABASE ==========
+const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+
+console.log('🚀 Weber Lessa Imóveis - Sistema Iniciado');
+
+// ========== SISTEMA DE IMÓVEIS ==========
+let properties = [];
+let editingPropertyId = null;
+let selectedFiles = [];
+
+// Dados iniciais
+function getInitialProperties() {
+    return [
+        {
+            id: 1,
+            title: "Apartamento Vista Mar - Ponta Verde",
+            price: "R$ 450.000",
+            location: "Ponta Verde, Maceió-AL",
+            description: "Excelente apartamento com vista panorâmica para o mar, localizado no bairro mais valorizado de Maceió.",
+            features: ["2 Quartos", "1 Vaga", "Condomínio Fechado", "Piscina", "Varanda"],
+            type: "residencial",
+            has_video: true,
+            badge: "Destaque",
+            rural: false,
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 2,
+            title: "Fazenda - 300 Tarefas",
+            price: "R$ 1.200.000",
+            location: "Zona Rural - 90km de Maceió-AL",
+            description: "Excelente fazenda de 300 tarefas com casa sede, cercada com piquetes para gado, baia/curral, várias nascentes.",
+            features: ["300 Tarefas", "Casa Sede", "Várias Nascentes", "Baia/Curral", "Piquetes"],
+            type: "rural",
+            has_video: true,
+            badge: "Fazenda",
+            rural: true,
+            created_at: new Date().toISOString()
+        }
+    ];
+}
+
+// ========== CARREGAR IMÓVEIS ==========
+async function loadProperties() {
+    try {
+        console.log('📡 Carregando imóveis do Supabase...');
+        
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            properties = Array.isArray(data) ? data : [];
+            console.log(`✅ ${properties.length} imóveis carregados do Supabase`);
+        } else {
+            console.log('⚠️ Supabase não acessível, usando dados locais');
+            throw new Error('Supabase não disponível');
+        }
+        
+    } catch (error) {
+        console.log('🔄 Carregando dados locais...');
+        // Tentar carregar do localStorage primeiro
+        const localData = localStorage.getItem('weberlessa_properties');
+        properties = localData ? JSON.parse(localData) : getInitialProperties();
     }
-}, 1000);
-</script>
-    </script>
+    
+    renderProperties();
+}
+
+// ========== RENDERIZAR IMÓVEIS ==========
+function renderProperties(filter = 'todos') {
+    const container = document.getElementById('properties-container');
+    if (!container) {
+        console.error('❌ Container de propriedades não encontrado!');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    const filteredProperties = filter === 'todos' ? properties : properties.filter(p => {
+        if (filter === 'residencial') return p.type === 'residencial';
+        if (filter === 'comercial') return p.type === 'comercial';
+        if (filter === 'rural') return p.type === 'rural';
+        if (filter === 'mcmv') return p.badge === 'MCMV';
+        return true;
+    });
+    
+    if (filteredProperties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel encontrado.</p>';
+        return;
+    }
+    
+    filteredProperties.forEach(property => {
+        const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
+        
+        const card = `
+            <div class="property-card">
+                <div class="property-image ${property.rural ? 'rural-image' : ''}">
+                    ${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}
+                    ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                    ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                </div>
+                <div class="property-content">
+                    <div class="property-price">${property.price}</div>
+                    <h3 class="property-title">${property.title}</h3>
+                    <div class="property-location"><i class="fas fa-map-marker-alt"></i> ${property.location}</div>
+                    <p>${property.description}</p>
+                    <div class="property-features">
+                        ${features.map(f => `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
+                    </div>
+                    <button class="contact-btn" onclick="contactAgent(${property.id})">
+                        <i class="fab fa-whatsapp"></i> Entrar em Contato
+                    </button>
+                </div>
+            </div>
+        `;
+        container.innerHTML += card;
+    });
+}
+
+// ========== SISTEMA DO PAINEL ADMIN ==========
+const ADMIN_PASSWORD = "weber123";
+
+function toggleAdminPanel() {
+    const password = prompt("Digite a senha de acesso ao painel:");
+    if (password === ADMIN_PASSWORD) {
+        const panel = document.getElementById('adminPanel');
+        if (panel) {
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            if (panel.style.display === 'block') {
+                loadPropertyList();
+            }
+        }
+    } else {
+        alert("Senha incorreta!");
+    }
+}
+
+function loadPropertyList() {
+    const container = document.getElementById('propertyList');
+    const countElement = document.getElementById('propertyCount');
+    
+    if (!container) return;
+    
+    container.innerHTML = '';
+    if (countElement) countElement.textContent = properties.length;
+    
+    if (properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Nenhum imóvel cadastrado.</p>';
+        return;
+    }
+    
+    properties.forEach(property => {
+        const features = Array.isArray(property.features) 
+            ? property.features 
+            : (property.features ? property.features.split(',') : []);
+            
+        const item = document.createElement('div');
+        item.className = 'property-item';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <strong style="color: var(--primary);">${property.title}</strong><br>
+                <small>${property.price} - ${property.location}</small>
+                <div style="margin-top: 0.5rem;">
+                    ${features.map(f => 
+                        `<span style="background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.8rem; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.3rem;">${f.trim()}</span>`
+                    ).join('')}
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="editProperty(${property.id})" style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+             <div style="display: flex; gap: 1rem;">
+                <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
+                    <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
+                </button>
+                <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer;">
+                     <i class="fas fa-times"></i> Cancelar Edição
+                </button>
+             </div>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+}
+
+// ========== SISTEMA DE EDIÇÃO SIMPLIFICADO ==========
+function editProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    editingPropertyId = id;
+    
+    // Preencher formulário
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    
+    const features = Array.isArray(property.features) 
+        ? property.features 
+        : (property.features || '');
+    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+    
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+    document.getElementById('propHasVideo').checked = property.has_video || false;
+    
+    // Rolar até o formulário
+    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
+    
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Adicionar Imóvel ao Site' para salvar as alterações.");
+}
+
+function cancelEdit() {
+    editingPropertyId = null;
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+}
+
+// ========== SISTEMA DE UPLOAD ==========
+function setupUploadSystem() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPreview = document.getElementById('uploadPreview');
+
+    if (uploadArea && fileInput) {
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = '#f0f8ff';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        // Click para selecionar
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+    }
+}
+
+function handleFiles(files) {
+    const newFiles = Array.from(files);
+    
+    // Limitar a 10 arquivos
+    if (selectedFiles.length + newFiles.length > 10) {
+        alert('⚠️ Máximo de 10 arquivos permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos (5MB max)
+    for (const file of newFiles) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`⚠️ O arquivo "${file.name}" é muito grande! Máximo: 5MB`);
+            return;
+        }
+    }
+    
+    selectedFiles = [...selectedFiles, ...newFiles];
+    showPreview();
+}
+
+function showPreview() {
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (selectedFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+        return;
+    }
+
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileItem.innerHTML = `
+                    <img src="${e.target.result}" 
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; line-height: 1;">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
+                `;
+                preview.appendChild(fileItem);
+            };
+            reader.readAsDataURL(file);
+
+        } else if (file.type.startsWith('video/')) {
+            fileItem.innerHTML = `
+                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                </div>
+            `;
+            preview.appendChild(fileItem);
+
+        } else if (file.type === 'application/pdf') {
+            fileItem.innerHTML = `
+                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                </div>
+            `;
+            preview.appendChild(fileItem);
+        }
+    });
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    showPreview();
+    
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('fileInput').files = dataTransfer.files;
+}
+
+// ========== UPLOAD PARA SUPABASE ==========
+async function uploadFile(file) {
+    try {
+        console.log('📤 Iniciando upload:', file.name);
+        
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`Upload falhou: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+        
+        console.log('✅ Upload concluído:', publicUrl);
+        return publicUrl;
+        
+    } catch (error) {
+        console.error('❌ Erro no upload:', error);
+        return null;
+    }
+}
+
+// ========== SALVAR IMÓVEL ==========
+async function saveProperty(propertyData) {
+    try {
+        console.log('💾 Salvando imóvel no Supabase...');
+
+        // Upload dos arquivos
+        let uploadedFiles = [];
+        if (selectedFiles.length > 0) {
+            console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
+            
+            for (const file of selectedFiles) {
+                const fileUrl = await uploadFile(file);
+                if (fileUrl) {
+                    uploadedFiles.push(fileUrl);
+                }
+            }
+        }
+      
+        // Preparar dados
+        const dataToSave = {
+            title: propertyData.title,
+            price: propertyData.price,
+            location: propertyData.location,
+            description: propertyData.description,
+            features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
+            type: propertyData.type,
+            hasVideo: propertyData.has_video,
+            badge: propertyData.badge,
+            rural: propertyData.rural,
+            created_at: propertyData.created_at
+        };
+
+        // Adicionar URLs dos arquivos
+        if (uploadedFiles.length > 0) {
+            dataToSave.images = uploadedFiles.join(', ');
+        }
+
+        // Salvar no Supabase
+        const url = editingPropertyId
+            ? `${SUPABASE_URL}/rest/v1/properties?id=eq.${editingPropertyId}`
+            : `${SUPABASE_URL}/rest/v1/properties`;
+
+        const method = editingPropertyId ? 'PATCH' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(dataToSave)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro ao salvar: ${response.status}`);
+        }
+
+        await response.json();
+        await loadProperties();
+        return true;
+
+    } catch (error) {
+        console.error('❌ Erro ao salvar no Supabase:', error);
+        return saveToLocalStorage(propertyData);
+    }
+}
+
+function saveToLocalStorage(propertyData) {
+    try {
+        if (editingPropertyId) {
+            const index = properties.findIndex(p => p.id === editingPropertyId);
+            if (index !== -1) {
+                propertyData.id = editingPropertyId;
+                properties[index] = propertyData;
+            }
+        } else {
+            propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+            properties.push(propertyData);
+        }
+
+        localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        renderProperties();
+        return false;
+    } catch (error) {
+        console.error('❌ Erro ao salvar localmente:', error);
+        return false;
+    }
+}
+
+// ========== FORMULÁRIO ==========
+function setupForm() {
+    const form = document.getElementById('propertyForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const propertyData = {
+            title: document.getElementById('propTitle').value,
+            price: document.getElementById('propPrice').value,
+            location: document.getElementById('propLocation').value,
+            description: document.getElementById('propDescription').value,
+            features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
+            type: document.getElementById('propType').value,
+            has_video: document.getElementById('propHasVideo').checked,
+            badge: document.getElementById('propBadge').value,
+            rural: document.getElementById('propType').value === 'rural',
+            created_at: new Date().toISOString()
+        };
+
+        if (!propertyData.title || !propertyData.price || !propertyData.location) {
+            alert('❌ Preencha Título, Preço e Localização!');
+            return;
+        }
+
+        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        submitBtn.disabled = true;
+
+        try {
+            const success = await saveProperty(propertyData);
+            
+            if (success) {
+                alert("✅ Imóvel salvo com sucesso no banco de dados!");
+            } else {
+                alert("✅ Imóvel salvo localmente!");
+            }
+
+            this.reset();
+            cancelEdit();
+            loadPropertyList();
+
+        } catch (error) {
+            alert("❌ Erro: " + error.message);
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// ========== CRIAR PAINEL ADMIN ==========
+function createAdminPanel() {
+    if (document.getElementById('adminPanel')) return;
+
+    const adminHTML = `
+        <section class="admin-panel" id="adminPanel" style="display: none; background: #f8f9fa; padding: 2rem; margin: 2rem auto; max-width: 1000px; border-radius: 10px;">
+            <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
+                <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
+            </h3>
+            ${createFormHTML()}
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #eee;">
+                <h4>Gerenciar Imóveis Existentes</h4>
+                <p><small>Total de imóveis: <span id="propertyCount">${properties.length}</span></small></p>
+                <div id="propertyList"></div>
+            </div>
+        </section>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', adminHTML);
+    setupForm();
+    setupUploadSystem();
+    loadPropertyList();
+}
+
+function createFormHTML() {
+    return `
+        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 1rem 0;">
+            <h4 style="color: var(--primary); margin-bottom: 1.5rem;">
+                <i class="fas fa-home"></i> Adicionar/Editar Imóvel
+            </h4>
+            
+            <form id="propertyForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label><strong>Título do Imóvel *</strong></label>
+                        <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                    <div>
+                        <label><strong>Preço *</strong></label>
+                        <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label><strong>Localização *</strong></label>
+                    <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label><strong>Descrição</strong></label>
+                    <textarea id="propDescription" placeholder="Descreva o imóvel..." style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label><strong>Características</strong></label>
+                    <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                    <small style="color: #666;">Separe por vírgulas</small>
+                </div>
+                
+                <!-- SEÇÃO UPLOAD -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label><strong>Fotos, Vídeos e Documentos</strong></label>
+                    <div id="uploadArea" style="border: 2px dashed #ddd; border-radius: 10px; padding: 2rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease; background: #fafafa;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #ccc; margin-bottom: 1rem;"></i>
+                        <p style="margin: 0.5rem 0; font-size: 1.1rem; color: #555;">Clique ou arraste arquivos aqui</p>
+                        <p style="margin: 0; font-size: 0.9rem; color: #888;">
+                            <i class="fas fa-image"></i> Fotos (JPG, PNG) • 
+                            <i class="fas fa-video"></i> Vídeos (MP4) • 
+                            <i class="fas fa-file-pdf"></i> PDFs
+                        </p>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #999;">Máximo: 10 arquivos • 5MB cada</p>
+                    </div>
+                    
+                    <input type="file" id="fileInput" multiple accept="image/*,video/*,.pdf" style="display: none;">
+                    
+                    <div id="uploadPreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 1rem 0; min-height: 60px;"></div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label><strong>Tipo do Imóvel</strong></label>
+                        <select id="propType" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="residencial">Residencial</option>
+                            <option value="comercial">Comercial</option>
+                            <option value="rural">Rural</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label><strong>Destaque</strong></label>
+                        <select id="propBadge" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                            <option value="Novo">Novo</option>
+                            <option value="Destaque">Destaque</option>
+                            <option value="Luxo">Luxo</option>
+                            <option value="MCMV">Minha Casa Minha Vida</option>
+                            <option value="Fazenda">Fazenda</option>
+                            <option value="Chácara">Chácara</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="propHasVideo">
+                        <span><strong>Este imóvel tem vídeo?</strong></span>
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
+                        <i class="fas fa-save"></i> Salvar Imóvel
+                    </button>
+                    <button type="button" id="cancelEditBtn" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; display: none;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+}
+
+// ========== FUNÇÕES DE INTERAÇÃO ==========
+function contactAgent(id) {
+    const property = properties.find(p => p.id === id);
+    if (property) {
+        const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${property.price}`;
+        const whatsappURL = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
+        window.open(whatsappURL, '_blank');
+    }
+}
+
+function viewProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (property) {
+        alert(`🏠 ${property.title}\n\n💰 ${property.price}\n📍 ${property.location}\n\n${property.description}`);
+    }
+}
+
+// ========== INICIALIZAÇÃO CORRIGIDA ==========
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Sistema Weber Lessa Iniciado');
+    loadProperties();
+    setupForm();
+    
+    // Configurar filtros
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            let filter = 'todos';
+            const text = this.textContent.trim();
+            if (text === 'Residencial') filter = 'residencial';
+            else if (text === 'Comercial') filter = 'comercial';
+            else if (text === 'Rural') filter = 'rural';
+            else if (text === 'Minha Casa Minha Vida') filter = 'mcmv';
+            renderProperties(filter);
+        });
+    });
+    
+    // Configurar sistema de upload
+    setupUploadSystem();
+});
+  </script>
 </body>
 </html>
