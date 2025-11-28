@@ -957,19 +957,23 @@ function renderProperties(filter = 'todos') {
     filteredProperties.forEach(property => {
         const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
-        // Verificar se há imagens para mostrar
-        const hasImages = property.images && property.images.length > 0;
+        // Verificar se há imagens para mostrar - CORREÇÃO AQUI
+        const hasImages = property.images && property.images.length > 0 && property.images !== '';
+        const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
+        const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : '';
         
         const card = `
             <div class="property-card">
-                <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative;">
+                <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px; background: ${hasImages ? 'none' : 'linear-gradient(45deg, var(--accent), var(--secondary))'};">
                     ${hasImages ? 
-                        `<img src="${property.images.split(',')[0]}" style="width: 100%; height: 100%; object-fit: cover;">` :
+                        `<img src="${firstImageUrl}" 
+                              style="width: 100%; height: 100%; object-fit: cover;"
+                              onerror="this.style.display='none'; this.parentNode.innerHTML='${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}';">` :
                         `${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}`
                     }
                     ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                     ${property.hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                    ${hasImages ? `<div class="image-count">📸 ${property.images.split(',').length}</div>` : ''}
+                    ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                 </div>
                 <div class="property-content">
                     <div class="property-price">${property.price}</div>
@@ -987,6 +991,45 @@ function renderProperties(filter = 'todos') {
         `;
         container.innerHTML += card;
     });
+}
+
+// ========== DEBUG DO SUPABASE ==========
+async function testSupabaseConnection() {
+    console.log('🔍 Testando conexão com Supabase...');
+    
+    try {
+        // Testar acesso à tabela
+        const tableResponse = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        console.log('📊 Status da tabela:', tableResponse.status);
+        
+        // Testar acesso ao storage
+        const storageResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket/properties`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        console.log('📦 Status do storage:', storageResponse.status);
+        
+        if (tableResponse.ok && storageResponse.ok) {
+            console.log('✅ Supabase configurado corretamente!');
+            return true;
+        } else {
+            console.log('❌ Problema na configuração do Supabase');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na conexão com Supabase:', error);
+        return false;
+    }
 }
 
 // ========== SISTEMA DO PAINEL ADMIN ==========
@@ -1051,7 +1094,6 @@ function loadPropertyList() {
     });
 }
 
-// ========== SISTEMA DE EDIÇÃO ==========
 // ========== SISTEMA DE EDIÇÃO MELHORADO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
@@ -1296,17 +1338,21 @@ async function uploadFile(file) {
         );
 
         if (!response.ok) {
-            throw new Error(`Upload falhou: ${response.status}`);
+            const errorText = await response.text();
+            console.error('❌ Erro no upload:', errorText);
+            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
+        
+        // URL CORRETA para acesso público
         const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
         
         console.log('✅ Upload concluído:', publicUrl);
         return publicUrl;
         
     } catch (error) {
-        console.error('❌ Erro no upload:', error);
+        console.error('❌ Erro crítico no upload:', error);
         return null;
     }
 }
@@ -1314,22 +1360,26 @@ async function uploadFile(file) {
 // ========== SALVAR IMÓVEL ==========
 async function saveProperty(propertyData) {
     try {
-        console.log('💾 Salvando imóvel no Supabase...');
+        console.log('💾 Tentando salvar no Supabase...');
 
-        // Upload dos arquivos
+        // Upload dos arquivos PRIMEIRO
         let uploadedFiles = [];
         if (selectedFiles.length > 0) {
             console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
             
             for (const file of selectedFiles) {
+                console.log(`⬆️ Uploading: ${file.name}`);
                 const fileUrl = await uploadFile(file);
                 if (fileUrl) {
                     uploadedFiles.push(fileUrl);
+                    console.log(`✅ Upload realizado: ${fileUrl}`);
+                } else {
+                    console.log(`❌ Falha no upload: ${file.name}`);
                 }
             }
         }
       
-        // Preparar dados - CORREÇÃO: usar hasVideo (igual ao Supabase)
+        // Preparar dados para Supabase
         const dataToSave = {
             title: propertyData.title,
             price: propertyData.price,
@@ -1337,25 +1387,28 @@ async function saveProperty(propertyData) {
             description: propertyData.description,
             features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
             type: propertyData.type,
-            hasVideo: propertyData.has_video, // ← CORREÇÃO CRÍTICA
+            hasVideo: propertyData.has_video, // Usar hasVideo (igual à coluna no Supabase)
             badge: propertyData.badge,
             rural: propertyData.rural,
             created_at: propertyData.created_at
         };
 
-        // Adicionar URLs dos arquivos
+        // Adicionar URLs dos arquivos se houver upload
         if (uploadedFiles.length > 0) {
             dataToSave.images = uploadedFiles.join(', ');
+            console.log('🖼️ URLs das imagens:', dataToSave.images);
         }
 
-        console.log('📤 Dados para salvar:', dataToSave);
+        console.log('📤 Dados para salvar no Supabase:', dataToSave);
 
-        // Salvar no Supabase
+        // Determinar URL e método
         const url = editingPropertyId
             ? `${SUPABASE_URL}/rest/v1/properties?id=eq.${editingPropertyId}`
             : `${SUPABASE_URL}/rest/v1/properties`;
 
         const method = editingPropertyId ? 'PATCH' : 'POST';
+
+        console.log(`🌐 Fazendo requisição: ${method} ${url}`);
 
         const response = await fetch(url, {
             method: method,
@@ -1369,45 +1422,22 @@ async function saveProperty(propertyData) {
         });
 
         if (!response.ok) {
-            throw new Error(`Erro ao salvar: ${response.status}`);
+            const errorText = await response.text();
+            console.error('❌ Erro na resposta:', response.status, errorText);
+            throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
-        console.log('✅ Salvo no Supabase:', result);
+        console.log('✅ Salvo com sucesso no Supabase:', result);
         
+        // Recarregar os dados do Supabase
         await loadProperties();
         return true;
 
     } catch (error) {
-        console.error('❌ Erro ao salvar no Supabase:', error);
+        console.error('❌ Erro crítico ao salvar no Supabase:', error);
+        console.log('🔄 Tentando salvar localmente como fallback...');
         return saveToLocalStorage(propertyData);
-    }
-}
-
-function saveToLocalStorage(propertyData) {
-    try {
-        if (editingPropertyId) {
-            const index = properties.findIndex(p => p.id === editingPropertyId);
-            if (index !== -1) {
-                propertyData.id = editingPropertyId;
-                // Manter compatibilidade
-                propertyData.hasVideo = propertyData.has_video;
-                properties[index] = propertyData;
-            }
-        } else {
-            propertyData.id = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
-            // Manter compatibilidade
-            propertyData.hasVideo = propertyData.has_video;
-            properties.push(propertyData);
-        }
-
-        localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
-        renderProperties();
-        loadPropertyList();
-        return false;
-    } catch (error) {
-        console.error('❌ Erro ao salvar localmente:', error);
-        return false;
     }
 }
 
@@ -1519,9 +1549,18 @@ function viewProperty(id) {
     }
 }
 
-// ========== INICIALIZAÇÃO ==========
-document.addEventListener('DOMContentLoaded', function() {
+// ========== ATUALIZAR A INICIALIZAÇÃO ==========
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
+    
+    // Testar conexão com Supabase
+    const supabaseOk = await testSupabaseConnection();
+    
+    if (!supabaseOk) {
+        console.log('⚠️ Usando modo local - Supabase não disponível');
+        alert('⚠️ Sistema funcionando em modo local. Configure o Supabase para armazenamento permanente.');
+    }
+    
     loadProperties();
     setupForm();
     setupUploadSystem();
