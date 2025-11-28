@@ -1122,28 +1122,6 @@ function saveToLocalStorage(propertyData) {
         return false;
     }
 }
-        // Fallback local
-        const fallbackData = {
-            ...propertyData,
-            id: editingPropertyId || (properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1),
-            has_video: propertyData.has_video
-        };
-
-        if (editingPropertyId) {
-            const index = properties.findIndex(p => p.id === editingPropertyId);
-            if (index !== -1) {
-                properties[index] = fallbackData;
-            }
-        } else {
-            properties.push(fallbackData);
-        }
-        
-        localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
-        renderProperties();
-        
-        return false;
-    }
-}
 
 // ========== FORMULÁRIO ==========
 function setupForm() {
