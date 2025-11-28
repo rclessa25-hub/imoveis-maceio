@@ -719,82 +719,138 @@
         </div>
     </footer>
 
-    <!-- ========== PAINEL DE ADMINISTRAÇÃO ========== -->
-    <section class="admin-panel" id="adminPanel">
-        <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
-            <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
-        </h3>
-        
-        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h4>Adicionar Novo Imóvel</h4>
-            <form id="propertyForm">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label>Título do Imóvel</label>
-                        <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    </div>
-                    <div>
-                        <label>Preço</label>
-                        <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    </div>
+    /* ========== ESTILOS PARA IMAGENS DOS IMÓVEIS ========== */
+.property-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.property-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.property-card:hover .property-image img {
+    transform: scale(1.05);
+}
+
+.image-count {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+<!-- ========== PAINEL DE ADMINISTRAÇÃO ATUALIZADO ========== -->
+<section class="admin-panel" id="adminPanel">
+    <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
+        <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
+    </h3>
+    
+    <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h4 id="formTitle">Adicionar Novo Imóvel</h4>
+        <form id="propertyForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label><strong>Título do Imóvel *</strong></label>
+                    <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+                <div>
+                    <label><strong>Preço *</strong></label>
+                    <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label><strong>Localização *</strong></label>
+                <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label><strong>Descrição</strong></label>
+                <textarea id="propDescription" placeholder="Descreva o imóvel..." style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label><strong>Características (separadas por vírgula)</strong></label>
+                <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                <small style="color: #666;">Separe por vírgulas</small>
+            </div>
+            
+            <!-- ========== SEÇÃO UPLOAD DE FOTOS/VIDEOS ========== -->
+            <div style="margin-bottom: 1.5rem;">
+                <label><strong>Fotos e Vídeos do Imóvel</strong></label>
+                
+                <div id="uploadArea" style="border: 2px dashed #ddd; border-radius: 10px; padding: 2rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease; background: #fafafa;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #ccc; margin-bottom: 1rem;"></i>
+                    <p style="margin: 0.5rem 0; font-size: 1.1rem; color: #555;">Clique ou arraste fotos e vídeos aqui</p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #888;">
+                        <i class="fas fa-image"></i> Fotos (JPG, PNG) • 
+                        <i class="fas fa-video"></i> Vídeos (MP4)
+                    </p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #999;">Máximo: 10 arquivos • 5MB cada</p>
                 </div>
                 
-                <div style="margin-bottom: 1rem;">
-                    <label>Localização</label>
-                    <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                </div>
+                <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
                 
-                <div style="margin-bottom: 1rem;">
-                    <label>Descrição</label>
-                    <textarea id="propDescription" placeholder="Descreva o imóvel..." required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+                <div id="uploadPreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 1rem 0; min-height: 60px;"></div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label><strong>Tipo do Imóvel</strong></label>
+                    <select id="propType" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                        <option value="residencial">Residencial</option>
+                        <option value="comercial">Comercial</option>
+                        <option value="rural">Rural</option>
+                    </select>
                 </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label>Características (separadas por vírgula)</label>
-                    <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                <div>
+                    <label><strong>Destaque</strong></label>
+                    <select id="propBadge" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                        <option value="Novo">Novo</option>
+                        <option value="Destaque">Destaque</option>
+                        <option value="Luxo">Luxo</option>
+                        <option value="MCMV">Minha Casa Minha Vida</option>
+                        <option value="Fazenda">Fazenda</option>
+                        <option value="Chácara">Chácara</option>
+                    </select>
                 </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label>Tipo do Imóvel</label>
-                        <select id="propType" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                            <option value="residencial">Residencial</option>
-                            <option value="comercial">Comercial</option>
-                            <option value="rural">Rural</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Destaque</label>
-                        <select id="propBadge" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                            <option value="Novo">Novo</option>
-                            <option value="Destaque">Destaque</option>
-                            <option value="Luxo">Luxo</option>
-                            <option value="MCMV">Minha Casa Minha Vida</option>
-                            <option value="Fazenda">Fazenda</option>
-                            <option value="Chácara">Chácara</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="propHasVideo"> 
-                        <span>Este imóvel tem vídeo?</span>
-                    </label>
-                </div>
-                
-                <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 1.1rem;">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="propHasVideo"> 
+                    <span><strong>Este imóvel tem vídeo?</strong></span>
+                </label>
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
                     <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
                 </button>
-            </form>
-            
-            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #eee;">
-                <h4>Gerenciar Imóveis Existentes</h4>
-                <p><small>Total de imóveis: <span id="propertyCount">0</span></small></p>
-                <div id="propertyList"></div>
+                <button type="button" id="cancelEditBtn" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; display: none;">
+                    <i class="fas fa-times"></i> Cancelar Edição
+                </button>
             </div>
+        </form>
+        
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #eee;">
+            <h4>Gerenciar Imóveis Existentes</h4>
+            <p><small>Total de imóveis: <span id="propertyCount">0</span></small></p>
+            <div id="propertyList"></div>
         </div>
-    </section>
+    </div>
+</section>
 
     <button class="admin-toggle" onclick="toggleAdminPanel()">
         <i class="fas fa-user-cog"></i>
@@ -996,6 +1052,7 @@ function loadPropertyList() {
 }
 
 // ========== SISTEMA DE EDIÇÃO ==========
+// ========== SISTEMA DE EDIÇÃO MELHORADO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1017,6 +1074,12 @@ function editProperty(id) {
     document.getElementById('propBadge').value = property.badge || 'Novo';
     document.getElementById('propHasVideo').checked = property.hasVideo || false;
     
+    // Atualizar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Editar Imóvel';
+    }
+    
     // Atualizar texto do botão
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     if (submitBtn) {
@@ -1029,6 +1092,30 @@ function editProperty(id) {
         cancelBtn.style.display = 'block';
     }
     
+    // Mostrar imagens existentes se houver
+    selectedFiles = [];
+    const preview = document.getElementById('uploadPreview');
+    if (preview) {
+        preview.innerHTML = '';
+        
+        if (property.images && property.images.length > 0) {
+            const existingImages = property.images.split(',').filter(img => img.trim() !== '');
+            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel:</p>';
+            
+            existingImages.forEach((imgUrl, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+                imgContainer.innerHTML = `
+                    <img src="${imgUrl}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);">
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
+                `;
+                preview.appendChild(imgContainer);
+            });
+            
+            preview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novas fotos acima.</p>';
+        }
+    }
+    
     // Rolar até o formulário
     document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
     
@@ -1039,6 +1126,12 @@ function cancelEdit() {
     editingPropertyId = null;
     const form = document.getElementById('propertyForm');
     if (form) form.reset();
+    
+    // Resetar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Adicionar Novo Imóvel';
+    }
     
     // Resetar botão
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
@@ -1055,8 +1148,10 @@ function cancelEdit() {
     selectedFiles = [];
     const preview = document.getElementById('uploadPreview');
     if (preview) preview.innerHTML = '';
+    
+    alert("Edição cancelada. Voltando ao modo de adição.");
 }
-
+        
 // ========== SISTEMA DE UPLOAD ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
