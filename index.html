@@ -983,35 +983,18 @@ function loadPropertyList() {
                 <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
                     <i class="fas fa-trash"></i> Excluir
                 </button>
-                <div style="display: flex; gap: 1rem;">
-    <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
-        <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
-    </button>
-    <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer;">
-        <i class="fas fa-times"></i> Cancelar Edição
-    </button>
+             <div style="display: flex; gap: 1rem;">
+                <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
+                    <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
+                </button>
+                <button type="button" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer;">
+                     <i class="fas fa-times"></i> Cancelar Edição
+                </button>
+             </div>
             </div>
         `;
         container.appendChild(item);
     });
-}
-
-function deleteProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
-        // Excluir localmente
-        const index = properties.findIndex(p => p.id === id);
-        if (index !== -1) {
-            properties.splice(index, 1);
-            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
-        }
-        
-        renderProperties();
-        loadPropertyList();
-        alert("✅ Imóvel excluído com sucesso!");
-    }
 }
 
 // ========== SISTEMA DE EDIÇÃO SIMPLIFICADO ==========
@@ -1493,6 +1476,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProperties();
     setupForm();
     
+    // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -1507,4 +1491,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderProperties(filter);
         });
     });
+    
+    // Configurar sistema de upload
+    setupUploadSystem();
 });
