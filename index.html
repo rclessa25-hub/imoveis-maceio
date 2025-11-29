@@ -549,6 +549,81 @@
                 align-items: flex-start;
                 gap: 1rem;
             }
+            
+            .pdf-access {
+                 position: absolute;
+                 top: 10px;
+                 left: 10px;
+                 background: rgba(255,255,255,0.9);
+                 border: none;
+                 border-radius: 50%;
+                 width: 30px;
+                 height: 30px;
+                 cursor: pointer;
+                 display: flex;
+                 align-items: center;
+                 justify-content: center;
+                 font-size: 0.8rem;
+                 color: var(--primary);
+                 transition: all 0.3s ease;
+                 z-index: 10;
+            }
+
+            .pdf-access:hover {
+                 background: white;
+                 transform: scale(1.1);
+                 box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            }
+
+            .pdf-modal {
+                 display: none;
+                 position: fixed;
+                 top: 0;
+                 left: 0;
+                 width: 100%;
+                 height: 100%;
+                 background: rgba(0,0,0,0.8);
+                 z-index: 1000;
+                 align-items: center;
+                 justify-content: center;
+            }
+
+            .pdf-modal-content {
+                 background: white;
+                 padding: 2rem;
+                 border-radius: 10px;
+                 max-width: 400px;
+                 width: 90%;
+                 text-align: center;
+            }
+
+            .pdf-preview {
+                 margin: 1rem 0;
+                 padding: 1rem;
+                 background: #f8f9fa;
+                 border-radius: 5px;
+            }
+
+            .pdf-file-item {
+                 display: flex;
+                 align-items: center;
+                 gap: 10px;
+                 padding: 0.5rem;
+                 margin: 0.5rem 0;
+                 background: white;
+                 border-radius: 5px;
+                 border: 1px solid #ddd;
+            }
+
+            .pdf-password-input {
+                 width: 100%;
+                 padding: 0.8rem;
+                 margin: 1rem 0;
+                 border: 1px solid #ddd;
+                 border-radius: 5px;
+                 font-size: 1rem;
+            }
+            
         }
     </style>
 </head>
@@ -954,34 +1029,36 @@ function renderProperties(filter = 'todos') {
         const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
         
         const card = `
-            <div class="property-card">
-                <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px; background: ${hasImages ? 'none' : 'linear-gradient(45deg, var(--accent), var(--secondary))'};">
-                    <img src="${firstImageUrl}" 
-                         style="width: 100%; height: 100%; object-fit: cover;"
-                         alt="${property.title}"
-                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                    ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                    ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                    ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
-                </div>
-                <div class="property-content">
-                    <div class="property-price">${property.price}</div>
-                    <h3 class="property-title">${property.title}</h3>
-                    <div class="property-location"><i class="fas fa-map-marker-alt"></i> ${property.location}</div>
-                    <p>${property.description}</p>
-                    <div class="property-features">
-                        ${features.map(f => `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
-                    </div>
-                    <button class="contact-btn" onclick="contactAgent(${property.id})">
-                        <i class="fab fa-whatsapp"></i> Entrar em Contato
-                    </button>
-                </div>
+    <div class="property-card">
+        <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px; background: ${hasImages ? 'none' : 'linear-gradient(45deg, var(--accent), var(--secondary))'};">
+            <img src="${firstImageUrl}" 
+                 style="width: 100%; height: 100%; object-fit: cover;"
+                 alt="${property.title}"
+                 onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+            ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+            ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+            ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
+            
+            <!-- BOTÃO DISCRETO PARA PDF -->
+            ${property.pdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
+                <i class="fas fa-file-pdf"></i>
+            </button>` : ''}
+        </div>
+        <div class="property-content">
+            <div class="property-price">${property.price}</div>
+            <h3 class="property-title">${property.title}</h3>
+            <div class="property-location"><i class="fas fa-map-marker-alt"></i> ${property.location}</div>
+            <p>${property.description}</p>
+            <div class="property-features">
+                ${features.map(f => `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
             </div>
-        `;
-        container.innerHTML += card;
-    });
-}
-
+            <button class="contact-btn" onclick="contactAgent(${property.id})">
+                <i class="fab fa-whatsapp"></i> Entrar em Contato
+            </button>
+        </div>
+    </div>
+`;
+        
 // ========== SALVAR NO LOCALSTORAGE ==========
 function saveToLocalStorage(propertyData) {
     try {
@@ -1123,9 +1200,229 @@ function loadPropertyList() {
         container.appendChild(item);
     });
 }
+        
+// ========== SISTEMA DE DOCUMENTOS PDF ==========
+let currentPdfPropertyId = null;
+const PDF_PASSWORD = "doc123"; // Senha simples para documentos
 
+// Mostrar modal de PDF
+function showPdfModal(propertyId) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+
+    currentPdfPropertyId = propertyId;
+    const modal = document.getElementById('pdfModal');
+    const title = document.getElementById('pdfModalTitle');
+    const preview = document.getElementById('pdfPreview');
+    
+    if (title) {
+        title.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos - ${property.title}`;
+    }
+    
+    if (preview) {
+        if (property.pdfs && property.pdfs.length > 0) {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            preview.innerHTML = `
+                <p><strong>${pdfUrls.length} documento(s) disponível(is):</strong></p>
+                ${pdfUrls.map((url, index) => `
+                    <div class="pdf-file-item">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                        <span>Documento ${index + 1}</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            preview.innerHTML = '<p>Nenhum documento disponível para este imóvel.</p>';
+        }
+    }
+    
+    // Resetar senha
+    const passwordInput = document.getElementById('pdfPassword');
+    if (passwordInput) passwordInput.value = '';
+    
+    modal.style.display = 'flex';
+}
+
+// Fechar modal
+function closePdfModal() {
+    const modal = document.getElementById('pdfModal');
+    modal.style.display = 'none';
+    currentPdfPropertyId = null;
+}
+
+// Acessar documentos com senha
+function accessPdfDocuments() {
+    const passwordInput = document.getElementById('pdfPassword');
+    const password = passwordInput ? passwordInput.value : '';
+    
+    if (password !== PDF_PASSWORD) {
+        alert('❌ Senha incorreta! Solicite a senha ao corretor.');
+        return;
+    }
+    
+    const property = properties.find(p => p.id === currentPdfPropertyId);
+    if (!property || !property.pdfs) {
+        alert('❌ Nenhum documento disponível para este imóvel.');
+        return;
+    }
+    
+    // Abrir todos os PDFs em novas abas
+    const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+    pdfUrls.forEach(url => {
+        window.open(url, '_blank');
+    });
+    
+    closePdfModal();
+    alert('✅ Documentos abertos com sucesso!');
+}
+        
+   // Adicione esta seção no formulário do painel admin (após a seção de fotos/vídeos):
+
+function setupPdfUploadSystem() {
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+
+    if (pdfUploadArea && pdfFileInput) {
+        // Drag and drop para PDFs
+        pdfUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = 'var(--primary)';
+            pdfUploadArea.style.background = '#f0f8ff';
+        });
+
+        pdfUploadArea.addEventListener('dragleave', () => {
+            pdfUploadArea.style.borderColor = '#ddd';
+            pdfUploadArea.style.background = '';
+        });
+
+        pdfUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = '#ddd';
+            pdfUploadArea.style.background = '';
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type === 'application/pdf'
+            );
+            
+            if (files.length > 0) {
+                handlePdfFiles(files);
+            }
+        });
+
+        // Click para selecionar
+        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+
+        pdfFileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files).filter(file => 
+                file.type === 'application/pdf'
+            );
+            handlePdfFiles(files);
+        });
+    }
+}
+
+let selectedPdfFiles = [];
+
+function handlePdfFiles(files) {
+    const newFiles = Array.from(files);
+    
+    // Limitar a 5 arquivos PDF
+    if (selectedPdfFiles.length + newFiles.length > 5) {
+        alert('⚠️ Máximo de 5 arquivos PDF permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos (10MB max para PDFs)
+    for (const file of newFiles) {
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`⚠️ O arquivo PDF "${file.name}" é muito grande! Máximo: 10MB`);
+            return;
+        }
+    }
+    
+    selectedPdfFiles = [...selectedPdfFiles, ...newFiles];
+    showPdfPreview();
+}
+
+function showPdfPreview() {
+    const preview = document.getElementById('pdfUploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (selectedPdfFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+        return;
+    }
+
+    selectedPdfFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'pdf-file-item';
+        fileItem.innerHTML = `
+            <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.2rem;"></i>
+            <div style="flex: 1;">
+                <div style="font-weight: 500;">${file.name}</div>
+                <div style="font-size: 0.8rem; color: #666;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+            </div>
+            <button onclick="removePdfFile(${index})" 
+                    style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.8rem;">
+                <i class="fas fa-times"></i> Remover
+            </button>
+        `;
+        preview.appendChild(fileItem);
+    });
+}
+
+function removePdfFile(index) {
+    selectedPdfFiles.splice(index, 1);
+    showPdfPreview();
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('pdfFileInput').files = dataTransfer.files;
+}
+
+// Upload de PDFs para Supabase
+async function uploadPdfFile(file) {
+    try {
+        console.log('📤 Iniciando upload de PDF:', file.name);
+        
+        const fileName = `pdf_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro no upload do PDF:', errorText);
+            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+        
+        console.log('✅ PDF upload concluído:', publicUrl);
+        return publicUrl;
+        
+    } catch (error) {
+        console.error('❌ Erro crítico no upload do PDF:', error);
+        return null;
+    }
+}     
+        
 // ========== EDITAR IMÓVEL CORRIGIDO ==========
-// ========== EDITAR IMÓVEL ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1380,7 +1677,6 @@ async function uploadFile(file) {
 }
 
 // ========== SALVAR IMÓVEL CORRIGIDO ==========
-// ========== SALVAR IMÓVEL ==========
 async function saveProperty(propertyData) {
     try {
         console.log('💾 Iniciando processo de salvamento...');
@@ -1426,7 +1722,33 @@ async function saveProperty(propertyData) {
         }
 
         console.log('📤 Dados completos para salvar:', dataToSave);
-
+// Upload dos PDFs se houver
+if (selectedPdfFiles.length > 0) {
+    console.log(`📄 Fazendo upload de ${selectedPdfFiles.length} PDFs...`);
+    let uploadedPdfs = [];
+    
+    for (const file of selectedPdfFiles) {
+        console.log(`⬆️ Enviando PDF: ${file.name}`);
+        const fileUrl = await uploadPdfFile(file);
+        if (fileUrl) {
+            uploadedPdfs.push(fileUrl);
+            console.log(`✅ PDF enviado: ${fileUrl}`);
+        }
+    }
+    
+    if (uploadedPdfs.length > 0) {
+        dataToSave.pdfs = uploadedPdfs.join(', ');
+        console.log('📄 URLs dos PDFs para salvar:', dataToSave.pdfs);
+    }
+} else if (editingPropertyId) {
+    // Manter PDFs existentes ao editar
+    const existingProperty = properties.find(p => p.id === editingPropertyId);
+    if (existingProperty && existingProperty.pdfs) {
+        dataToSave.pdfs = existingProperty.pdfs;
+        console.log('🔄 Mantendo PDFs existentes:', dataToSave.pdfs);
+    }
+}
+        
         // Determinar URL e método
         const url = editingPropertyId
             ? `${SUPABASE_URL}/rest/v1/properties?id=eq.${editingPropertyId}`
@@ -1623,7 +1945,7 @@ async function testSupabaseConnection() {
 // ========== INICIALIZAÇÃO CORRIGIDA ==========
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
-    
+   
     // Testar conexão com Supabase de forma mais precisa
     const supabaseOk = await testSupabaseConnection();
     
@@ -1636,7 +1958,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadProperties();
     setupForm();
     setupUploadSystem();
-    
+    // Na função DOMContentLoaded, adicione:
+    setupPdfUploadSystem();
     // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
@@ -1650,6 +1973,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('✅ Sistema Weber Lessa carregado!');
 });
+      
+<!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
+<div id="pdfModal" class="pdf-modal">
+    <div class="pdf-modal-content">
+        <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
+        <div id="pdfPreview" class="pdf-preview">
+            <p>Documentos técnicos e legais disponíveis</p>
+        </div>
+        <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar">
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                <i class="fas fa-lock-open"></i> Acessar
+            </button>
+            <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                <i class="fas fa-times"></i> Fechar
+            </button>
+        </div>
+        <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
+            <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
+        </p>
+    </div>
+</div>
   </script>
 </body>
 </html>
