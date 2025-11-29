@@ -1002,6 +1002,22 @@ async function loadProperties() {
     }
     
     renderProperties();
+// Chame esta função após carregar os imóveis
+// Na função loadProperties, após properties = data, adicione:
+    checkPdfData();
+// Chame esta função após carregar os imóveis
+// Na função loadProperties, após properties = data, adicione:
+    debugPropertyData();
+}
+
+// Adicione esta função para debug
+function checkPdfData() {
+    console.log('🔍 Verificando dados dos PDFs...');
+    properties.forEach((property, index) => {
+        console.log(`Imóvel ${index + 1}: ${property.title}`);
+        console.log(`PDFs:`, property.pdfs);
+        console.log(`Tem PDFs:`, property.pdfs && property.pdfs.length > 0);
+    });
 }
 
 // ========== RENDERIZAR IMÓVEIS CORRIGIDO ==========
@@ -1037,10 +1053,17 @@ function renderProperties(filter = 'todos') {
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
         const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
         
+        // CORREÇÃO CRÍTICA: Verificar PDFs de forma segura
+        const hasPdfs = property.pdfs && 
+                       property.pdfs.length > 0 && 
+                       property.pdfs !== 'EMPTY' && 
+                       property.pdfs !== 'null' && 
+                       property.pdfs !== 'undefined';
+        
         console.log(`📋 Imóvel: ${property.title}`);
         console.log(`🖼️ Tem imagens: ${hasImages}`);
-        console.log(`🔗 URLs: ${property.images}`);
-        console.log(`📸 Primeira imagem: ${firstImageUrl}`);
+        console.log(`📄 Tem PDFs: ${hasPdfs}`);
+        console.log(`🔗 PDFs URLs: ${property.pdfs}`);
         
         // CORREÇÃO: has_video em vez de hasVideo
         const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
@@ -1056,8 +1079,8 @@ function renderProperties(filter = 'todos') {
                     ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                     ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                     
-                    <!-- BOTÃO DISCRETO PARA PDF -->
-                    ${property.pdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
+                    <!-- BOTÃO DISCRETO PARA PDF - CORRIGIDO -->
+                    ${hasPdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
                         <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
                 </div>
@@ -1077,7 +1100,21 @@ function renderProperties(filter = 'todos') {
         `;
         container.innerHTML += card;
     });
-} // ← ESTE FECHA A FUNÇÃO renderProperties QUE ESTAVA FALTANDO
+}        
+
+// ========== DEBUG DOS DADOS ==========
+function debugPropertyData() {
+    console.log('🐛 DEBUG - Dados dos Imóveis:');
+    properties.forEach((property, index) => {
+        console.log(`--- Imóvel ${index + 1} ---`);
+        console.log('Título:', property.title);
+        console.log('ID:', property.id);
+        console.log('PDFs:', property.pdfs);
+        console.log('Tipo de PDFs:', typeof property.pdfs);
+        console.log('Tem PDFs?', property.pdfs && property.pdfs.length > 0);
+        console.log('---------------');
+    });
+}
         
 // ========== SALVAR NO LOCALSTORAGE ==========
 function saveToLocalStorage(propertyData) {
