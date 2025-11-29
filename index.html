@@ -509,6 +509,80 @@
             align-items: center;
             border-left: 4px solid var(--primary);
         }
+
+        .pdf-access {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .pdf-access:hover {
+             background: white;
+             transform: scale(1.1);
+             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .pdf-modal {
+             display: none;
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             background: rgba(0,0,0,0.8);
+             z-index: 1000;
+             align-items: center;
+             justify-content: center;
+        }
+
+        .pdf-modal-content {
+              background: white;
+              padding: 2rem;
+              border-radius: 10px;
+              max-width: 400px;
+              width: 90%;
+              text-align: center;
+        }
+
+        .pdf-preview {
+              margin: 1rem 0;
+              padding: 1rem;
+              background: #f8f9fa;
+              border-radius: 5px;
+        }
+
+        .pdf-file-item {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              padding: 0.5rem;
+              margin: 0.5rem 0;
+              background: white;
+              border-radius: 5px;
+              border: 1px solid #ddd;
+        }
+
+        .pdf-password-input {
+              width: 100%;
+              padding: 0.8rem;
+              margin: 1rem 0;
+              border: 1px solid #ddd;
+              border-radius: 5px;
+              font-size: 1rem;
+        }
         
         /* Responsividade */
         @media (max-width: 768px) {
@@ -549,82 +623,7 @@
                 align-items: flex-start;
                 gap: 1rem;
             }
-            
-            .pdf-access {
-                 position: absolute;
-                 top: 10px;
-                 left: 10px;
-                 background: rgba(255,255,255,0.9);
-                 border: none;
-                 border-radius: 50%;
-                 width: 30px;
-                 height: 30px;
-                 cursor: pointer;
-                 display: flex;
-                 align-items: center;
-                 justify-content: center;
-                 font-size: 0.8rem;
-                 color: var(--primary);
-                 transition: all 0.3s ease;
-                 z-index: 10;
-            }
-
-            .pdf-access:hover {
-                 background: white;
-                 transform: scale(1.1);
-                 box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            }
-
-            .pdf-modal {
-                 display: none;
-                 position: fixed;
-                 top: 0;
-                 left: 0;
-                 width: 100%;
-                 height: 100%;
-                 background: rgba(0,0,0,0.8);
-                 z-index: 1000;
-                 align-items: center;
-                 justify-content: center;
-            }
-
-            .pdf-modal-content {
-                 background: white;
-                 padding: 2rem;
-                 border-radius: 10px;
-                 max-width: 400px;
-                 width: 90%;
-                 text-align: center;
-            }
-
-            .pdf-preview {
-                 margin: 1rem 0;
-                 padding: 1rem;
-                 background: #f8f9fa;
-                 border-radius: 5px;
-            }
-
-            .pdf-file-item {
-                 display: flex;
-                 align-items: center;
-                 gap: 10px;
-                 padding: 0.5rem;
-                 margin: 0.5rem 0;
-                 background: white;
-                 border-radius: 5px;
-                 border: 1px solid #ddd;
-            }
-
-            .pdf-password-input {
-                 width: 100%;
-                 padding: 0.8rem;
-                 margin: 1rem 0;
-                 border: 1px solid #ddd;
-                 border-radius: 5px;
-                 font-size: 1rem;
-            }
-            
-        }
+         }
     </style>
 </head>
 <body>
@@ -829,6 +828,24 @@
                 <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
                 <small style="color: #666;">Separe por vírgulas</small>
             </div>
+
+            <!-- ========== SEÇÃO UPLOAD DE PDFs ========== -->
+            <div style="margin-bottom: 1.5rem;">
+                <label><strong>Documentos PDF do Imóvel</strong></label>
+                
+                <div id="pdfUploadArea" style="border: 2px dashed #95a5a6; border-radius: 10px; padding: 1.5rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease; background: #fafafa;">
+                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #95a5a6; margin-bottom: 1rem;"></i>
+                    <p style="margin: 0.5rem 0; font-size: 1rem; color: #555;">Clique ou arraste documentos PDF aqui</p>
+                    <p style="margin: 0; font-size: 0.8rem; color: #888;">
+                        <i class="fas fa-file-pdf"></i> Documentos técnicos e legais
+                    </p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; color: #999;">Máximo: 5 arquivos • 10MB cada</p>
+                </div>
+                
+                <input type="file" id="pdfFileInput" multiple accept=".pdf,application/pdf" style="display: none;">
+                
+                <div id="pdfUploadPreview" style="margin: 1rem 0; min-height: 60px;"></div>
+            </div>
             
             <!-- ========== SEÇÃO UPLOAD DE FOTOS/VIDEOS ========== -->
             <div style="margin-bottom: 1.5rem;">
@@ -1029,35 +1046,38 @@ function renderProperties(filter = 'todos') {
         const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
         
         const card = `
-    <div class="property-card">
-        <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px; background: ${hasImages ? 'none' : 'linear-gradient(45deg, var(--accent), var(--secondary))'};">
-            <img src="${firstImageUrl}" 
-                 style="width: 100%; height: 100%; object-fit: cover;"
-                 alt="${property.title}"
-                 onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-            ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-            ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-            ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
-            
-            <!-- BOTÃO DISCRETO PARA PDF -->
-            ${property.pdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
-                <i class="fas fa-file-pdf"></i>
-            </button>` : ''}
-        </div>
-        <div class="property-content">
-            <div class="property-price">${property.price}</div>
-            <h3 class="property-title">${property.title}</h3>
-            <div class="property-location"><i class="fas fa-map-marker-alt"></i> ${property.location}</div>
-            <p>${property.description}</p>
-            <div class="property-features">
-                ${features.map(f => `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
+            <div class="property-card">
+                <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px; background: ${hasImages ? 'none' : 'linear-gradient(45deg, var(--accent), var(--secondary))'};">
+                    <img src="${firstImageUrl}" 
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         alt="${property.title}"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                    ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                    ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                    ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
+                    
+                    <!-- BOTÃO DISCRETO PARA PDF -->
+                    ${property.pdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>` : ''}
+                </div>
+                <div class="property-content">
+                    <div class="property-price">${property.price}</div>
+                    <h3 class="property-title">${property.title}</h3>
+                    <div class="property-location"><i class="fas fa-map-marker-alt"></i> ${property.location}</div>
+                    <p>${property.description}</p>
+                    <div class="property-features">
+                        ${features.map(f => `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
+                    </div>
+                    <button class="contact-btn" onclick="contactAgent(${property.id})">
+                        <i class="fab fa-whatsapp"></i> Entrar em Contato
+                    </button>
+                </div>
             </div>
-            <button class="contact-btn" onclick="contactAgent(${property.id})">
-                <i class="fab fa-whatsapp"></i> Entrar em Contato
-            </button>
-        </div>
-    </div>
-`;
+        `;
+        container.innerHTML += card;
+    });
+} // ← ESTE FECHA A FUNÇÃO renderProperties QUE ESTAVA FALTANDO
         
 // ========== SALVAR NO LOCALSTORAGE ==========
 function saveToLocalStorage(propertyData) {
@@ -1973,28 +1993,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('✅ Sistema Weber Lessa carregado!');
 });
-      
-<!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
-<div id="pdfModal" class="pdf-modal">
-    <div class="pdf-modal-content">
-        <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
-        <div id="pdfPreview" class="pdf-preview">
-            <p>Documentos técnicos e legais disponíveis</p>
-        </div>
-        <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar">
-        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-            <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
-                <i class="fas fa-lock-open"></i> Acessar
-            </button>
-            <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
-                <i class="fas fa-times"></i> Fechar
-            </button>
-        </div>
-        <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
-            <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
-        </p>
-    </div>
-</div>
+
   </script>
+  <!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
+    <div id="pdfModal" class="pdf-modal">
+        <div class="pdf-modal-content">
+            <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
+            <div id="pdfPreview" class="pdf-preview">
+                <p>Documentos técnicos e legais disponíveis</p>
+            </div>
+            <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar">
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                    <i class="fas fa-lock-open"></i> Acessar
+                </button>
+                <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
+                <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
+            </p>
+        </div>
+    </div>
+
+    <button class="admin-toggle" onclick="toggleAdminPanel()">
+        <i class="fas fa-user-cog"></i>
+    </button>
+
 </body>
 </html>
