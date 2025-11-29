@@ -869,7 +869,7 @@ let properties = [];
 let editingPropertyId = null;
 let selectedFiles = [];
 
-// Dados iniciais
+// Dados iniciais com IMAGENS de exemplo
 function getInitialProperties() {
     return [
         {
@@ -880,9 +880,10 @@ function getInitialProperties() {
             description: "Casa a 100m do CEASA; - Medindo 6,60m frente X 19m lado; - 125,40m² de área total; -Somente um único dono; - 02 Quartos, Sala; - Cozinha; - 02 Banheiros; - Varanda; - 02 Vagas de garagem; - Água de Poço Artesiano;",
             features: ["02 Quartos", "Sala", "Cozinha", "02 Banheiros", "Varanda", "02 Vagas de carro"],
             type: "residencial",
-            hasVideo: true,
+            has_video: true, // CORRIGIDO: has_video em vez de hasVideo
             badge: "Destaque",
             rural: false,
+            images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
             created_at: new Date().toISOString()
         },
         {
@@ -890,12 +891,13 @@ function getInitialProperties() {
             title: "Apartamento 4Qtos (178m²) - Ponta Verde",
             price: "R$ 1.500.000",
             location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
-            description: "Apartamento amplo, super claro e arejado, imóvel diferenciado com 178m² de área privativa, oferecendo conforto, espaço e alto padrão de acabamento. 4 Qtos, sendo 03 suítes, sala ampla com varanda, cozinha, dependência de empregada, área de serviço, 02 vagas de garagem no subsolo. - Guarita/segurança 24 horas; - 178m² de área útil . - Piscina; - Faxada toda em granito; - Salão de festa; - 02 elevadores; - 02 vagas de garagem; - Documentação toda regularizada; - São 02 apartamentos por andar.",
+            description: "Apartamento amplo, super claro e arejado, imóvel diferenciado com 178m² de área privativa, oferecendo conforto, espaço e alto padrão de acabamento. 4 Qtos, sendo 03 suítes, sala ampla com varanda, cozinha, dependência de empregada, área de serviço, 02 vagas de garagem no subsolo.",
             features: ["4Qtos s/ 3 suítes", "Sala ampla com varanda", "Cozinha", "Área de serviço", "DCE", "02 vagas de garagem"],
             type: "residencial",
-            hasVideo: false,
+            has_video: false, // CORRIGIDO: has_video em vez de hasVideo
             badge: "Luxo",
             rural: false,
+            images: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1484154218962-a197022b5858?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
             created_at: new Date().toISOString()
         }
     ];
@@ -917,13 +919,23 @@ async function loadProperties() {
             const data = await response.json();
             properties = Array.isArray(data) ? data : [];
             console.log(`✅ ${properties.length} imóveis carregados do Supabase`);
+            
+            // CORREÇÃO: Garantir que as imagens sejam tratadas corretamente
+            properties = properties.map(property => {
+                // Se images estiver vazio, usar imagens padrão
+                if (!property.images || property.images === 'EMPTY' || property.images.trim() === '') {
+                    property.images = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+                }
+                return property;
+            });
+            
         } else {
             console.log('⚠️ Supabase não acessível, usando dados locais');
             throw new Error('Supabase não disponível');
         }
         
     } catch (error) {
-        console.log('🔄 Carregando dados locais...');
+        console.log('🔄 Carregando dados locais...', error);
         const localData = localStorage.getItem('weberlessa_properties');
         properties = localData ? JSON.parse(localData) : getInitialProperties();
     }
@@ -932,7 +944,6 @@ async function loadProperties() {
 }
 
 // ========== RENDERIZAR IMÓVEIS CORRIGIDO ==========
-// ========== RENDERIZAR IMÓVEIS COM DEBUG ==========
 function renderProperties(filter = 'todos') {
     const container = document.getElementById('properties-container');
     if (!container) {
@@ -961,27 +972,27 @@ function renderProperties(filter = 'todos') {
         const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
         // DEBUG: Verificar imagens
-        const hasImages = property.images && property.images.length > 0 && property.images !== '';
+        const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
-        const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : '';
+        const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
         
         console.log(`📋 Imóvel: ${property.title}`);
         console.log(`🖼️ Tem imagens: ${hasImages}`);
         console.log(`🔗 URLs: ${property.images}`);
         console.log(`📸 Primeira imagem: ${firstImageUrl}`);
         
+        // CORREÇÃO: has_video em vez de hasVideo
+        const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
+        
         const card = `
             <div class="property-card">
                 <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px; background: ${hasImages ? 'none' : 'linear-gradient(45deg, var(--accent), var(--secondary))'};">
-                    ${hasImages ? 
-                        `<img src="${firstImageUrl}" 
-                              style="width: 100%; height: 100%; object-fit: cover;"
-                              alt="${property.title}"
-                              onerror="console.error('❌ Erro ao carregar imagem:', this.src); this.style.display='none'; this.parentNode.style.background='linear-gradient(45deg, var(--accent), var(--secondary))'; this.parentNode.innerHTML='${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}';">` :
-                        `${property.rural ? '🌳' : '🏠'} ${property.title.split(' - ')[0]}`
-                    }
+                    <img src="${firstImageUrl}" 
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         alt="${property.title}"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                     ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                    ${property.hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                    ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                     ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                 </div>
                 <div class="property-content">
@@ -1000,6 +1011,47 @@ function renderProperties(filter = 'todos') {
         `;
         container.innerHTML += card;
     });
+}
+
+// ========== SALVAR NO LOCALSTORAGE (FUNÇÃO FALTANDO) ==========
+function saveToLocalStorage(propertyData) {
+    try {
+        console.log('💾 Salvando no localStorage...');
+        
+        // Se estiver editando, atualizar o imóvel existente
+        if (editingPropertyId) {
+            const index = properties.findIndex(p => p.id === editingPropertyId);
+            if (index !== -1) {
+                // Manter o ID original e adicionar URLs das imagens
+                propertyData.id = editingPropertyId;
+                if (selectedFiles.length > 0) {
+                    // Em modo local, usar URLs de imagens de exemplo
+                    propertyData.images = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+                }
+                properties[index] = { ...properties[index], ...propertyData };
+            }
+        } else {
+            // Novo imóvel
+            const newId = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
+            const newProperty = {
+                id: newId,
+                ...propertyData,
+                images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+            };
+            properties.push(newProperty);
+        }
+        
+        localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        renderProperties();
+        loadPropertyList();
+        
+        console.log('✅ Salvo no localStorage com sucesso!');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar no localStorage:', error);
+        return false;
+    }
 }
         
 // ========== DEBUG DO SUPABASE ==========
@@ -1103,7 +1155,7 @@ function loadPropertyList() {
     });
 }
 
-// ========== SISTEMA DE EDIÇÃO MELHORADO ==========
+// ========== EDITAR IMÓVEL CORRIGIDO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1123,7 +1175,10 @@ function editProperty(id) {
     
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.hasVideo || false;
+    
+    // CORREÇÃO: Usar has_video em vez de hasVideo
+    const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
+    document.getElementById('propHasVideo').checked = hasVideo || false;
     
     // Atualizar título do formulário
     const formTitle = document.getElementById('formTitle');
@@ -1149,7 +1204,7 @@ function editProperty(id) {
     if (preview) {
         preview.innerHTML = '';
         
-        if (property.images && property.images.length > 0) {
+        if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
             const existingImages = property.images.split(',').filter(img => img.trim() !== '');
             preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel:</p>';
             
@@ -1173,35 +1228,6 @@ function editProperty(id) {
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
-function cancelEdit() {
-    editingPropertyId = null;
-    const form = document.getElementById('propertyForm');
-    if (form) form.reset();
-    
-    // Resetar título do formulário
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-        formTitle.textContent = 'Adicionar Novo Imóvel';
-    }
-    
-    // Resetar botão
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-    }
-    
-    // Esconder botão cancelar
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'none';
-    }
-    
-    selectedFiles = [];
-    const preview = document.getElementById('uploadPreview');
-    if (preview) preview.innerHTML = '';
-    
-    alert("Edição cancelada. Voltando ao modo de adição.");
-}
         
 // ========== SISTEMA DE UPLOAD ==========
 function setupUploadSystem() {
@@ -1366,30 +1392,12 @@ async function uploadFile(file) {
     }
 }
 
-// ========== SALVAR IMÓVEL ==========
 // ========== SALVAR IMÓVEL CORRIGIDO ==========
 async function saveProperty(propertyData) {
     try {
         console.log('💾 Iniciando processo de salvamento...');
 
-        // Upload dos arquivos PRIMEIRO
-        let uploadedFiles = [];
-        if (selectedFiles.length > 0) {
-            console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
-            
-            for (const file of selectedFiles) {
-                console.log(`⬆️ Enviando: ${file.name}`);
-                const fileUrl = await uploadFile(file);
-                if (fileUrl) {
-                    uploadedFiles.push(fileUrl);
-                    console.log(`✅ Upload realizado: ${fileUrl}`);
-                } else {
-                    console.log(`❌ Falha no upload: ${file.name}`);
-                }
-            }
-        }
-
-        // Preparar dados para Supabase
+        // CORREÇÃO: Usar has_video em vez de hasVideo
         const dataToSave = {
             title: propertyData.title,
             price: propertyData.price,
@@ -1397,24 +1405,36 @@ async function saveProperty(propertyData) {
             description: propertyData.description,
             features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
             type: propertyData.type,
-            hasVideo: propertyData.has_video,
+            has_video: propertyData.has_video, // CORRIGIDO: has_video
             badge: propertyData.badge,
             rural: propertyData.rural,
-            created_at: propertyData.created_at
+            created_at: propertyData.created_at || new Date().toISOString()
         };
 
-        // **CORREÇÃO CRÍTICA:** Adicionar URLs das imagens
-        if (uploadedFiles.length > 0) {
-            dataToSave.images = uploadedFiles.join(', ');
-            console.log('🖼️ URLs das imagens para salvar:', dataToSave.images);
-        } else {
-            // Se não há novas imagens, manter as existentes ao editar
-            if (editingPropertyId) {
-                const existingProperty = properties.find(p => p.id === editingPropertyId);
-                if (existingProperty && existingProperty.images) {
-                    dataToSave.images = existingProperty.images;
-                    console.log('🔄 Mantendo imagens existentes:', dataToSave.images);
+        // Upload dos arquivos se houver
+        if (selectedFiles.length > 0) {
+            console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
+            let uploadedFiles = [];
+            
+            for (const file of selectedFiles) {
+                console.log(`⬆️ Enviando: ${file.name}`);
+                const fileUrl = await uploadFile(file);
+                if (fileUrl) {
+                    uploadedFiles.push(fileUrl);
+                    console.log(`✅ Upload realizado: ${fileUrl}`);
                 }
+            }
+            
+            if (uploadedFiles.length > 0) {
+                dataToSave.images = uploadedFiles.join(', ');
+                console.log('🖼️ URLs das imagens para salvar:', dataToSave.images);
+            }
+        } else if (editingPropertyId) {
+            // Manter imagens existentes ao editar
+            const existingProperty = properties.find(p => p.id === editingPropertyId);
+            if (existingProperty && existingProperty.images) {
+                dataToSave.images = existingProperty.images;
+                console.log('🔄 Mantendo imagens existentes:', dataToSave.images);
             }
         }
 
@@ -1526,7 +1546,7 @@ async function deleteProperty(id) {
     }
 }
 
-// ========== FORMULÁRIO ==========
+// ========== FORMULÁRIO CORRIGIDO ==========
 function setupForm() {
     const form = document.getElementById('propertyForm');
     if (!form) return;
@@ -1541,7 +1561,7 @@ function setupForm() {
             description: document.getElementById('propDescription').value,
             features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
-            has_video: document.getElementById('propHasVideo').checked,
+            has_video: document.getElementById('propHasVideo').checked, // CORRIGIDO: has_video
             badge: document.getElementById('propBadge').value,
             rural: document.getElementById('propType').value === 'rural',
             created_at: new Date().toISOString()
@@ -1561,14 +1581,15 @@ function setupForm() {
             const success = await saveProperty(propertyData);
             
             if (success) {
-                alert("✅ Imóvel salvo com sucesso no banco de dados!");
+                alert("✅ Imóvel salvo com sucesso!");
             } else {
-                alert("✅ Imóvel salvo localmente!");
+                alert("❌ Erro ao salvar o imóvel!");
             }
 
             this.reset();
             cancelEdit();
-            loadPropertyList();
+            selectedFiles = [];
+            showPreview();
 
         } catch (error) {
             alert("❌ Erro: " + error.message);
