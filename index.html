@@ -880,7 +880,7 @@ function getInitialProperties() {
             description: "Casa a 100m do CEASA; - Medindo 6,60m frente X 19m lado; - 125,40m² de área total; -Somente um único dono; - 02 Quartos, Sala; - Cozinha; - 02 Banheiros; - Varanda; - 02 Vagas de garagem; - Água de Poço Artesiano;",
             features: ["02 Quartos", "Sala", "Cozinha", "02 Banheiros", "Varanda", "02 Vagas de carro"],
             type: "residencial",
-            has_video: true, // CORRIGIDO: has_video em vez de hasVideo
+            has_video: true,
             badge: "Destaque",
             rural: false,
             images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
@@ -894,7 +894,7 @@ function getInitialProperties() {
             description: "Apartamento amplo, super claro e arejado, imóvel diferenciado com 178m² de área privativa, oferecendo conforto, espaço e alto padrão de acabamento. 4 Qtos, sendo 03 suítes, sala ampla com varanda, cozinha, dependência de empregada, área de serviço, 02 vagas de garagem no subsolo.",
             features: ["4Qtos s/ 3 suítes", "Sala ampla com varanda", "Cozinha", "Área de serviço", "DCE", "02 vagas de garagem"],
             type: "residencial",
-            has_video: false, // CORRIGIDO: has_video em vez de hasVideo
+            has_video: false,
             badge: "Luxo",
             rural: false,
             images: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1484154218962-a197022b5858?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
@@ -1013,7 +1013,7 @@ function renderProperties(filter = 'todos') {
     });
 }
 
-// ========== SALVAR NO LOCALSTORAGE (FUNÇÃO FALTANDO) ==========
+// ========== SALVAR NO LOCALSTORAGE ==========
 function saveToLocalStorage(propertyData) {
     try {
         console.log('💾 Salvando no localStorage...');
@@ -1156,6 +1156,7 @@ function loadPropertyList() {
 }
 
 // ========== EDITAR IMÓVEL CORRIGIDO ==========
+// ========== EDITAR IMÓVEL ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1176,9 +1177,7 @@ function editProperty(id) {
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
     
-    // CORREÇÃO: Usar has_video em vez de hasVideo
-    const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
-    document.getElementById('propHasVideo').checked = hasVideo || false;
+    document.getElementById('propHasVideo').checked = property.has_video || false;
     
     // Atualizar título do formulário
     const formTitle = document.getElementById('formTitle');
@@ -1228,7 +1227,37 @@ function editProperty(id) {
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
-        
+// ========== CANCELAR EDIÇÃO (FUNÇÃO FALTANDO) ==========
+function cancelEdit() {
+    editingPropertyId = null;
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+    
+    // Resetar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Adicionar Novo Imóvel';
+    }
+    
+    // Resetar botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+    }
+    
+    // Esconder botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
+    
+    selectedFiles = [];
+    const preview = document.getElementById('uploadPreview');
+    if (preview) preview.innerHTML = '';
+    
+    console.log('✅ Edição cancelada');
+}
+
 // ========== SISTEMA DE UPLOAD ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
@@ -1327,17 +1356,6 @@ function showPreview() {
                 </div>
             `;
             preview.appendChild(fileItem);
-
-        } else if (file.type === 'application/pdf') {
-            fileItem.innerHTML = `
-                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
-                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
-                    <button onclick="removeFile(${index})" 
-                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
-                </div>
-            `;
-            preview.appendChild(fileItem);
         }
     });
 }
@@ -1393,11 +1411,11 @@ async function uploadFile(file) {
 }
 
 // ========== SALVAR IMÓVEL CORRIGIDO ==========
+// ========== SALVAR IMÓVEL ==========
 async function saveProperty(propertyData) {
     try {
         console.log('💾 Iniciando processo de salvamento...');
 
-        // CORREÇÃO: Usar has_video em vez de hasVideo
         const dataToSave = {
             title: propertyData.title,
             price: propertyData.price,
@@ -1405,7 +1423,7 @@ async function saveProperty(propertyData) {
             description: propertyData.description,
             features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
             type: propertyData.type,
-            has_video: propertyData.has_video, // CORRIGIDO: has_video
+            has_video: propertyData.has_video,
             badge: propertyData.badge,
             rural: propertyData.rural,
             created_at: propertyData.created_at || new Date().toISOString()
@@ -1561,7 +1579,7 @@ function setupForm() {
             description: document.getElementById('propDescription').value,
             features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
-            has_video: document.getElementById('propHasVideo').checked, // CORRIGIDO: has_video
+            has_video: document.getElementById('propHasVideo').checked,
             badge: document.getElementById('propBadge').value,
             rural: document.getElementById('propType').value === 'rural',
             created_at: new Date().toISOString()
@@ -1617,16 +1635,33 @@ function viewProperty(id) {
     }
 }
 
-// ========== ATUALIZAR A INICIALIZAÇÃO ==========
+  // ========== TESTAR CONEXÃO SUPABASE MELHORADA ==========
+async function testSupabaseConnection() {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        return response.ok;
+    } catch (error) {
+        return false;
+    }
+}
+        
+// ========== INICIALIZAÇÃO CORRIGIDA ==========
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
     
-    // Testar conexão com Supabase
+    // Testar conexão com Supabase de forma mais precisa
     const supabaseOk = await testSupabaseConnection();
     
     if (!supabaseOk) {
-        console.log('⚠️ Usando modo local - Supabase não disponível');
-        alert('⚠️ Sistema funcionando em modo local. Configure o Supabase para armazenamento permanente.');
+        console.log('⚠️ Supabase não disponível, usando modo local');
+    } else {
+        console.log('✅ Supabase conectado com sucesso!');
     }
     
     loadProperties();
@@ -1639,13 +1674,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         button.addEventListener('click', function() {
             filterButtons.forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
-            let filter = 'todos';
             const text = this.textContent.trim();
-            if (text === 'Residencial') filter = 'residencial';
-            else if (text === 'Comercial') filter = 'comercial';
-            else if (text === 'Rural') filter = 'rural';
-            else if (text === 'Minha Casa Minha Vida') filter = 'mcmv';
-            renderProperties(filter);
+            renderProperties(text === 'Todos' ? 'todos' : text);
         });
     });
     
