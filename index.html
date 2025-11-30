@@ -1589,7 +1589,7 @@ async function uploadPdfFile(file) {
     }
 }     
         
-// ========== EDITAR IMÓVEL CORRIGIDO ==========
+// ========== EDITAR IMÓVEL CORRIGIDO COM EXCLUSÃO DE FOTOS EXISTENTES ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1630,7 +1630,7 @@ function editProperty(id) {
         cancelBtn.style.display = 'block';
     }
     
-    // Mostrar imagens existentes se houver
+    // Mostrar imagens existentes se houver - COM BOTÕES DE EXCLUSÃO
     selectedFiles = [];
     const preview = document.getElementById('uploadPreview');
     if (preview) {
@@ -1638,13 +1638,17 @@ function editProperty(id) {
         
         if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
             const existingImages = property.images.split(',').filter(img => img.trim() !== '');
-            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel:</p>';
+            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
             
             existingImages.forEach((imgUrl, index) => {
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'image-preview-container';
                 imgContainer.innerHTML = `
-                    <img src="${imgUrl}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);">
+                    <img src="${imgUrl}" 
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                    <button class="delete-image-btn" onclick="deleteExistingImage(${property.id}, ${index})" 
+                            title="Excluir esta foto">×</button>
                     <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
                 `;
                 preview.appendChild(imgContainer);
@@ -1660,6 +1664,113 @@ function editProperty(id) {
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
+// ========== EXCLUIR FOTO EXISTENTE DO IMÓVEL ==========
+async function deleteExistingImage(propertyId, imageIndex) {
+    if (!confirm('Tem certeza que deseja excluir esta foto? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+
+    const property = properties.find(p => p.id === propertyId);
+    if (!property || !property.images) return;
+
+    try {
+        // Separar as URLs das imagens
+        const imageUrls = property.images.split(',').filter(url => url.trim() !== '');
+        
+        // Remover a imagem selecionada
+        if (imageIndex >= 0 && imageIndex < imageUrls.length) {
+            const imageToDelete = imageUrls[imageIndex];
+            
+            // Tentar excluir do Supabase Storage
+            try {
+                // Extrair o nome do arquivo da URL
+                const fileName = imageToDelete.split('/').pop();
+                if (fileName && fileName !== 'EMPTY') {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                'apikey': SUPABASE_KEY
+                            }
+                        }
+                    );
+                    
+                    if (response.ok) {
+                        console.log('✅ Imagem excluída do Supabase Storage:', fileName);
+                    } else {
+                        console.log('⚠️ Não foi possível excluir do Supabase Storage');
+                    }
+                }
+            } catch (storageError) {
+                console.log('⚠️ Erro ao excluir do storage, continuando...', storageError);
+            }
+            
+            // Remover da lista local
+            imageUrls.splice(imageIndex, 1);
+            
+            // Atualizar a propriedade
+            property.images = imageUrls.length > 0 ? imageUrls.join(', ') : 'EMPTY';
+            
+            // Salvar no Supabase
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({ images: property.images })
+            });
+
+            if (response.ok) {
+                console.log('✅ Imagem excluída com sucesso!');
+                
+                // Atualizar localmente
+                const index = properties.findIndex(p => p.id === propertyId);
+                if (index !== -1) {
+                    properties[index] = property;
+                    localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+                }
+                
+                // Recarregar a visualização
+                editProperty(propertyId);
+                alert('✅ Foto excluída com sucesso!');
+            } else {
+                throw new Error('Erro ao atualizar no Supabase');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erro ao excluir imagem:', error);
+        alert('❌ Erro ao excluir a foto. Tente novamente.');
+    }
+}
+
+// ========== FUNÇÃO AUXILIAR PARA EXCLUIR DO STORAGE ==========
+async function deleteFromStorage(imageUrl) {
+    try {
+        // Extrair o nome do arquivo da URL
+        const fileName = imageUrl.split('/').pop();
+        if (!fileName || fileName === 'EMPTY') return false;
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                }
+            }
+        );
+
+        return response.ok;
+    } catch (error) {
+        console.error('❌ Erro ao excluir do storage:', error);
+        return false;
+    }
+}
+        
 // ========== CANCELAR EDIÇÃO ==========
 function cancelEdit() {
     editingPropertyId = null;
