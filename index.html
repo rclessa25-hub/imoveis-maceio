@@ -948,19 +948,24 @@
     </button>
 
     <script>
-
 // ========== CONFIGURAÇÃO SUPABASE ==========
 const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
 
 console.log('🚀 Weber Lessa Imóveis - Sistema Iniciado');
 
-// ========== SISTEMA DE IMÓVEIS ==========
+// ========== VARIÁVEIS GLOBAIS ==========
 let properties = [];
 let editingPropertyId = null;
 let selectedFiles = [];
+let selectedPdfFiles = [];
+let currentPdfPropertyId = null;
 
-// Dados iniciais com IMAGENS de exemplo
+// ========== CONFIGURAÇÕES ==========
+const ADMIN_PASSWORD = "weber123";
+const PDF_PASSWORD = "doc123";
+
+// ========== DADOS INICIAIS ==========
 function getInitialProperties() {
     return [
         {
@@ -976,22 +981,179 @@ function getInitialProperties() {
             rural: false,
             images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
             created_at: new Date().toISOString()
-        },
-        {
-            id: 2,
-            title: "Apartamento 4Qtos (178m²) - Ponta Verde",
-            price: "R$ 1.500.000",
-            location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
-            description: "Apartamento amplo, super claro e arejado, imóvel diferenciado com 178m² de área privativa, oferecendo conforto, espaço e alto padrão de acabamento. 4 Qtos, sendo 03 suítes, sala ampla com varanda, cozinha, dependência de empregada, área de serviço, 02 vagas de garagem no subsolo.",
-            features: ["4Qtos s/ 3 suítes", "Sala ampla com varanda", "Cozinha", "Área de serviço", "DCE", "02 vagas de garagem"],
-            type: "residencial",
-            has_video: false,
-            badge: "Luxo",
-            rural: false,
-            images: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1484154218962-a197022b5858?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-            created_at: new Date().toISOString()
         }
     ];
+}
+
+// ========== SISTEMA DE UPLOAD DE PDFs CORRIGIDO ==========
+function setupPdfUploadSystem() {
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+
+    if (pdfUploadArea && pdfFileInput) {
+        // CORREÇÃO COMPLETA: Sistema de upload simplificado e funcional
+        pdfUploadArea.addEventListener('click', function() {
+            console.log('📄 Clicou na área de PDF - abrindo seletor de arquivos');
+            pdfFileInput.value = ''; // Reset para permitir selecionar o mesmo arquivo
+            pdfFileInput.click();
+        });
+
+        pdfFileInput.addEventListener('change', function(e) {
+            console.log('📄 Arquivos selecionados:', e.target.files);
+            const files = Array.from(e.target.files).filter(file => 
+                file.type === 'application/pdf'
+            );
+            
+            if (files.length > 0) {
+                handlePdfFiles(files);
+            } else {
+                alert('⚠️ Por favor, selecione apenas arquivos PDF!');
+            }
+        });
+
+        // Drag and drop
+        pdfUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = 'var(--primary)';
+            pdfUploadArea.style.background = '#f0f8ff';
+        });
+
+        pdfUploadArea.addEventListener('dragleave', function() {
+            pdfUploadArea.style.borderColor = '#95a5a6';
+            pdfUploadArea.style.background = '#fafafa';
+        });
+
+        pdfUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = '#95a5a6';
+            pdfUploadArea.style.background = '#fafafa';
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type === 'application/pdf'
+            );
+            
+            if (files.length > 0) {
+                handlePdfFiles(files);
+            }
+        });
+    } else {
+        console.error('❌ Elementos de upload de PDF não encontrados');
+    }
+}
+
+function handlePdfFiles(files) {
+    const newFiles = Array.from(files);
+    
+    // Limitar a 5 arquivos PDF
+    if (selectedPdfFiles.length + newFiles.length > 5) {
+        alert('⚠️ Máximo de 5 arquivos PDF permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos
+    for (const file of newFiles) {
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`⚠️ O arquivo PDF "${file.name}" é muito grande! Máximo: 10MB`);
+            return;
+        }
+    }
+    
+    selectedPdfFiles = [...selectedPdfFiles, ...newFiles];
+    showPdfPreview();
+    console.log('📄 PDFs selecionados:', selectedPdfFiles);
+}
+
+function showPdfPreview() {
+    const preview = document.getElementById('pdfUploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (selectedPdfFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+        return;
+    }
+
+    selectedPdfFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'pdf-file-item';
+        fileItem.innerHTML = `
+            <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.2rem;"></i>
+            <div style="flex: 1;">
+                <div style="font-weight: 500;">${file.name}</div>
+                <div style="font-size: 0.8rem; color: #666;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+            </div>
+            <button onclick="removePdfFile(${index})" 
+                    style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.8rem;">
+                <i class="fas fa-times"></i> Remover
+            </button>
+        `;
+        preview.appendChild(fileItem);
+    });
+}
+
+function removePdfFile(index) {
+    selectedPdfFiles.splice(index, 1);
+    showPdfPreview();
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) {
+        pdfFileInput.files = dataTransfer.files;
+    }
+}
+
+function resetPdfUploadSystem() {
+    selectedPdfFiles = [];
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+    }
+    
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) {
+        pdfFileInput.value = '';
+    }
+}
+
+// ========== UPLOAD DE PDFs PARA SUPABASE ==========
+async function uploadPdfFile(file) {
+    try {
+        console.log('📤 Iniciando upload de PDF:', file.name);
+        
+        const fileName = `pdf_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro no upload do PDF:', errorText);
+            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+        
+        console.log('✅ PDF upload concluído:', publicUrl);
+        return publicUrl;
+        
+    } catch (error) {
+        console.error('❌ Erro crítico no upload do PDF:', error);
+        return null;
+    }
 }
 
 // ========== CARREGAR IMÓVEIS ==========
@@ -1011,9 +1173,8 @@ async function loadProperties() {
             properties = Array.isArray(data) ? data : [];
             console.log(`✅ ${properties.length} imóveis carregados do Supabase`);
             
-            // CORREÇÃO: Garantir que as imagens sejam tratadas corretamente
+            // Garantir que as imagens sejam tratadas corretamente
             properties = properties.map(property => {
-                // Se images estiver vazio, usar imagens padrão
                 if (!property.images || property.images === 'EMPTY' || property.images.trim() === '') {
                     property.images = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
                 }
@@ -1032,28 +1193,10 @@ async function loadProperties() {
     }
     
     renderProperties();
-// Chame esta função após carregar os imóveis
-// Na função loadProperties, após properties = data, adicione:
-    checkPdfData();
-// Chame esta função após carregar os imóveis
-// Na função loadProperties, após properties = data, adicione:
-    debugPropertyData();
-// Chame esta função após carregar os imóveis
-// Na função loadProperties, após properties = data, adicione:
     emergencyPdfCheck();
 }
 
-// Adicione esta função para debug
-function checkPdfData() {
-    console.log('🔍 Verificando dados dos PDFs...');
-    properties.forEach((property, index) => {
-        console.log(`Imóvel ${index + 1}: ${property.title}`);
-        console.log(`PDFs:`, property.pdfs);
-        console.log(`Tem PDFs:`, property.pdfs && property.pdfs.length > 0);
-    });
-}
-
- // ========== VERIFICAÇÃO DE EMERGÊNCIA PARA PDFs ==========
+// ========== VERIFICAÇÃO DE EMERGÊNCIA PARA PDFs ==========
 function emergencyPdfCheck() {
     console.log('🚨 VERIFICAÇÃO DE EMERGÊNCIA - DADOS PDFs');
     
@@ -1066,15 +1209,7 @@ function emergencyPdfCheck() {
         console.log('É null?', property.pdfs === null);
         console.log('É undefined?', property.pdfs === undefined);
         console.log('É string vazia?', property.pdfs === '');
-        console.log('Tem PDFs?', 
-            property.pdfs && 
-            property.pdfs !== 'null' && 
-            property.pdfs !== 'undefined' && 
-            property.pdfs !== 'EMPTY' && 
-            property.pdfs.length > 0
-        );
         
-        // Verificação forçada para debug
         const forcedCheck = Boolean(
             property.pdfs && 
             String(property.pdfs).length > 0 && 
@@ -1116,24 +1251,19 @@ function renderProperties(filter = 'todos') {
     filteredProperties.forEach(property => {
         const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
-        // DEBUG: Verificar imagens
         const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
         const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
         
-        // CORREÇÃO CRÍTICA: Verificar PDFs de forma segura
+        // VERIFICAÇÃO CORRETA DE PDFs
         const hasPdfs = property.pdfs && 
                        property.pdfs !== 'null' && 
                        property.pdfs !== 'undefined' && 
                        property.pdfs !== 'EMPTY' && 
                        property.pdfs.length > 0;
         
-        console.log(`📋 Imóvel: ${property.title}`);
-        console.log(`🖼️ Tem imagens: ${hasImages}`);
-        console.log(`📄 Tem PDFs: ${hasPdfs}`);
-        console.log(`🔗 PDFs URLs:`, property.pdfs);
+        console.log(`📋 Imóvel: ${property.title} - PDFs: ${hasPdfs} - Valor: ${property.pdfs}`);
         
-        // CORREÇÃO: has_video em vez de hasVideo
         const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
         
         const card = `
@@ -1147,9 +1277,9 @@ function renderProperties(filter = 'todos') {
                     ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                     ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                     
-                    <!-- BOTÃO PDF MINIMALISTA - POSIÇÃO CORRIGIDA -->
+                    <!-- BOTÃO PDF MINIMALISTA -->
                     ${hasPdfs ? `
-                    <button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel" style="bottom: 10px; left: 10px; top: auto; background: rgba(231, 76, 60, 0.9); color: white;">
+                    <button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
                         <i class="fas fa-file-pdf"></i>
                     </button>
                     ` : ''}
@@ -1172,39 +1302,153 @@ function renderProperties(filter = 'todos') {
     });
 }
 
-// ========== DEBUG DOS DADOS ==========
-function debugPropertyData() {
-    console.log('🐛 DEBUG - Dados dos Imóveis:');
-    properties.forEach((property, index) => {
-        console.log(`--- Imóvel ${index + 1} ---`);
-        console.log('Título:', property.title);
-        console.log('ID:', property.id);
-        console.log('PDFs:', property.pdfs);
-        console.log('Tipo de PDFs:', typeof property.pdfs);
-        console.log('Tem PDFs?', property.pdfs && property.pdfs.length > 0);
-        console.log('---------------');
-    });
-}
+// ========== SALVAR IMÓVEL CORRIGIDO ==========
+async function saveProperty(propertyData) {
+    try {
+        console.log('💾 Iniciando processo de salvamento...');
+        console.log('📄 PDFs selecionados para upload:', selectedPdfFiles.length);
+
+        const dataToSave = {
+            title: propertyData.title,
+            price: propertyData.price,
+            location: propertyData.location,
+            description: propertyData.description,
+            features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
+            type: propertyData.type,
+            has_video: propertyData.has_video,
+            badge: propertyData.badge,
+            rural: propertyData.rural,
+            created_at: propertyData.created_at || new Date().toISOString()
+        };
+
+        // UPLOAD DE PDFs - CORREÇÃO CRÍTICA
+        if (selectedPdfFiles.length > 0) {
+            console.log(`📄 Fazendo upload de ${selectedPdfFiles.length} PDFs...`);
+            let uploadedPdfs = [];
+            
+            for (const file of selectedPdfFiles) {
+                console.log(`⬆️ Enviando PDF: ${file.name}`);
+                const fileUrl = await uploadPdfFile(file);
+                if (fileUrl) {
+                    uploadedPdfs.push(fileUrl);
+                    console.log(`✅ PDF enviado: ${fileUrl}`);
+                }
+            }
+            
+            if (uploadedPdfs.length > 0) {
+                dataToSave.pdfs = uploadedPdfs.join(', ');
+                console.log('📄 URLs dos PDFs para salvar:', dataToSave.pdfs);
+            }
+        } else if (editingPropertyId) {
+            // Manter PDFs existentes ao editar
+            const existingProperty = properties.find(p => p.id === editingPropertyId);
+            if (existingProperty && existingProperty.pdfs) {
+                dataToSave.pdfs = existingProperty.pdfs;
+                console.log('🔄 Mantendo PDFs existentes:', dataToSave.pdfs);
+            }
+        }
+
+        // Upload de imagens (código existente)
+        if (selectedFiles.length > 0) {
+            console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
+            let uploadedFiles = [];
+            
+            for (const file of selectedFiles) {
+                const fileUrl = await uploadFile(file);
+                if (fileUrl) {
+                    uploadedFiles.push(fileUrl);
+                }
+            }
+            
+            if (uploadedFiles.length > 0) {
+                dataToSave.images = uploadedFiles.join(', ');
+            }
+        } else if (editingPropertyId) {
+            const existingProperty = properties.find(p => p.id === editingPropertyId);
+            if (existingProperty && existingProperty.images) {
+                dataToSave.images = existingProperty.images;
+            }
+        }
+
+        console.log('📤 Dados completos para salvar:', dataToSave);
         
-// ========== SALVAR NO LOCALSTORAGE ==========
+        // Determinar URL e método
+        const url = editingPropertyId
+            ? `${SUPABASE_URL}/rest/v1/properties?id=eq.${editingPropertyId}`
+            : `${SUPABASE_URL}/rest/v1/properties`;
+
+        const method = editingPropertyId ? 'PATCH' : 'POST';
+
+        console.log(`🌐 Fazendo requisição: ${method} ${url}`);
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(dataToSave)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro na resposta do Supabase:', response.status, errorText);
+            throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Salvo com sucesso no Supabase:', result);
+        
+        // Recarregar os dados
+        await loadProperties();
+        return true;
+
+    } catch (error) {
+        console.error('❌ Erro crítico ao salvar no Supabase:', error);
+        console.log('🔄 Tentando salvar localmente como fallback...');
+        return saveToLocalStorage(propertyData);
+    }
+}
+
+// ========== FUNÇÕES RESTANTES (mantenha as existentes) ==========
+async function uploadFile(file) {
+    try {
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) throw new Error('Upload falhou');
+        const result = await response.json();
+        return `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+        
+    } catch (error) {
+        console.error('❌ Erro no upload:', error);
+        return null;
+    }
+}
+
 function saveToLocalStorage(propertyData) {
     try {
-        console.log('💾 Salvando no localStorage...');
-        
-        // Se estiver editando, atualizar o imóvel existente
         if (editingPropertyId) {
             const index = properties.findIndex(p => p.id === editingPropertyId);
             if (index !== -1) {
-                // Manter o ID original e adicionar URLs das imagens
                 propertyData.id = editingPropertyId;
-                if (selectedFiles.length > 0) {
-                    // Em modo local, usar URLs de imagens de exemplo
-                    propertyData.images = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
-                }
                 properties[index] = { ...properties[index], ...propertyData };
             }
         } else {
-            // Novo imóvel
             const newId = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
             const newProperty = {
                 id: newId,
@@ -1217,8 +1461,6 @@ function saveToLocalStorage(propertyData) {
         localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
         renderProperties();
         loadPropertyList();
-        
-        console.log('✅ Salvo no localStorage com sucesso!');
         return true;
         
     } catch (error) {
@@ -1226,49 +1468,8 @@ function saveToLocalStorage(propertyData) {
         return false;
     }
 }
-        
-// ========== DEBUG DO SUPABASE ==========
-async function testSupabaseConnection() {
-    console.log('🔍 Testando conexão com Supabase...');
-    
-    try {
-        // Testar acesso à tabela
-        const tableResponse = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
-        
-        console.log('📊 Status da tabela:', tableResponse.status);
-        
-        // Testar acesso ao storage
-        const storageResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket/properties`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
-        
-        console.log('📦 Status do storage:', storageResponse.status);
-        
-        if (tableResponse.ok && storageResponse.ok) {
-            console.log('✅ Supabase configurado corretamente!');
-            return true;
-        } else {
-            console.log('❌ Problema na configuração do Supabase');
-            return false;
-        }
-        
-    } catch (error) {
-        console.error('❌ Erro na conexão com Supabase:', error);
-        return false;
-    }
-}
 
 // ========== SISTEMA DO PAINEL ADMIN ==========
-const ADMIN_PASSWORD = "weber123";
-
 function toggleAdminPanel() {
     const password = prompt("Digite a senha de acesso ao painel:");
     if (password === ADMIN_PASSWORD) {
@@ -1327,266 +1528,7 @@ function loadPropertyList() {
         container.appendChild(item);
     });
 }
-        
-// ========== SISTEMA DE DOCUMENTOS PDF ==========
-let currentPdfPropertyId = null;
-const PDF_PASSWORD = "doc123"; // Senha simples para documentos
 
-// Mostrar modal de PDF
-function showPdfModal(propertyId) {
-    const property = properties.find(p => p.id === propertyId);
-    if (!property) return;
-
-    currentPdfPropertyId = propertyId;
-    const modal = document.getElementById('pdfModal');
-    const title = document.getElementById('pdfModalTitle');
-    const preview = document.getElementById('pdfPreview');
-    
-    if (title) {
-        title.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos - ${property.title}`;
-    }
-    
-    if (preview) {
-        if (property.pdfs && property.pdfs.length > 0) {
-            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-            preview.innerHTML = `
-                <p><strong>${pdfUrls.length} documento(s) disponível(is):</strong></p>
-                ${pdfUrls.map((url, index) => `
-                    <div class="pdf-file-item">
-                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
-                        <span>Documento ${index + 1}</span>
-                    </div>
-                `).join('')}
-            `;
-        } else {
-            preview.innerHTML = '<p>Nenhum documento disponível para este imóvel.</p>';
-        }
-    }
-    
-    // Resetar senha
-    const passwordInput = document.getElementById('pdfPassword');
-    if (passwordInput) passwordInput.value = '';
-    
-    modal.style.display = 'flex';
-}
-
-// Fechar modal
-function closePdfModal() {
-    const modal = document.getElementById('pdfModal');
-    modal.style.display = 'none';
-    currentPdfPropertyId = null;
-}
-
-// Acessar documentos com senha
-function accessPdfDocuments() {
-    const passwordInput = document.getElementById('pdfPassword');
-    const password = passwordInput ? passwordInput.value : '';
-    
-    if (password !== PDF_PASSWORD) {
-        alert('❌ Senha incorreta! Solicite a senha ao corretor.');
-        return;
-    }
-    
-    const property = properties.find(p => p.id === currentPdfPropertyId);
-    if (!property || !property.pdfs) {
-        alert('❌ Nenhum documento disponível para este imóvel.');
-        return;
-    }
-    
-    // Abrir todos os PDFs em novas abas
-    const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-    pdfUrls.forEach(url => {
-        window.open(url, '_blank');
-    });
-    
-    closePdfModal();
-    alert('✅ Documentos abertos com sucesso!');
-}
-        
-   // Adicione esta seção no formulário do painel admin (após a seção de fotos/vídeos):
-// ========== SISTEMA DE UPLOAD DE PDFs CORRIGIDO ==========
-function setupPdfUploadSystem() {
-    const pdfUploadArea = document.getElementById('pdfUploadArea');
-    const pdfFileInput = document.getElementById('pdfFileInput');
-    const pdfPreview = document.getElementById('pdfUploadPreview');
-
-    if (pdfUploadArea && pdfFileInput) {
-        // CORREÇÃO: Remover event listeners antigos primeiro
-        pdfUploadArea.replaceWith(pdfUploadArea.cloneNode(true));
-        pdfFileInput.replaceWith(pdfFileInput.cloneNode(true));
-        
-        // Re-obter os elementos após clonagem
-        const newPdfUploadArea = document.getElementById('pdfUploadArea');
-        const newPdfFileInput = document.getElementById('pdfFileInput');
-        const newPdfPreview = document.getElementById('pdfUploadPreview');
-
-        // Drag and drop para PDFs
-        newPdfUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            newPdfUploadArea.style.borderColor = 'var(--primary)';
-            newPdfUploadArea.style.background = '#f0f8ff';
-        });
-
-        newPdfUploadArea.addEventListener('dragleave', () => {
-            newPdfUploadArea.style.borderColor = '#95a5a6';
-            newPdfUploadArea.style.background = '#fafafa';
-        });
-
-        newPdfUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            newPdfUploadArea.style.borderColor = '#95a5a6';
-            newPdfUploadArea.style.background = '#fafafa';
-            
-            const files = Array.from(e.dataTransfer.files).filter(file => 
-                file.type === 'application/pdf'
-            );
-            
-            if (files.length > 0) {
-                handlePdfFiles(files);
-            } else {
-                alert('⚠️ Por favor, selecione apenas arquivos PDF!');
-            }
-        });
-
-        // Click para selecionar - CORREÇÃO CRÍTICA
-        newPdfUploadArea.addEventListener('click', () => {
-            console.log('📄 Clicou na área de PDF');
-            newPdfFileInput.click();
-        });
-
-        newPdfFileInput.addEventListener('change', (e) => {
-            console.log('📄 Arquivo PDF selecionado:', e.target.files);
-            const files = Array.from(e.target.files).filter(file => 
-                file.type === 'application/pdf'
-            );
-            if (files.length > 0) {
-                handlePdfFiles(files);
-            }
-        });
-
-        // CORREÇÃO: Reset do input file após uso
-        newPdfFileInput.addEventListener('click', function(e) {
-            e.stopPropagation();
-            this.value = ''; // Reset para permitir selecionar o mesmo arquivo novamente
-        });
-    }
-}
-
-// CORREÇÃO: Função para resetar o sistema de upload de PDFs
-function resetPdfUploadSystem() {
-    selectedPdfFiles = [];
-    const pdfPreview = document.getElementById('pdfUploadPreview');
-    if (pdfPreview) {
-        pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
-    }
-    
-    const pdfFileInput = document.getElementById('pdfFileInput');
-    if (pdfFileInput) {
-        pdfFileInput.value = '';
-    }
-}
-
-let selectedPdfFiles = [];
-
-function handlePdfFiles(files) {
-    const newFiles = Array.from(files);
-    
-    // Limitar a 5 arquivos PDF
-    if (selectedPdfFiles.length + newFiles.length > 5) {
-        alert('⚠️ Máximo de 5 arquivos PDF permitidos!');
-        return;
-    }
-    
-    // Verificar tamanho dos arquivos (10MB max para PDFs)
-    for (const file of newFiles) {
-        if (file.size > 10 * 1024 * 1024) {
-            alert(`⚠️ O arquivo PDF "${file.name}" é muito grande! Máximo: 10MB`);
-            return;
-        }
-    }
-    
-    selectedPdfFiles = [...selectedPdfFiles, ...newFiles];
-    showPdfPreview();
-}
-
-function showPdfPreview() {
-    const preview = document.getElementById('pdfUploadPreview');
-    if (!preview) return;
-
-    preview.innerHTML = '';
-
-    if (selectedPdfFiles.length === 0) {
-        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
-        return;
-    }
-
-    selectedPdfFiles.forEach((file, index) => {
-        const fileItem = document.createElement('div');
-        fileItem.className = 'pdf-file-item';
-        fileItem.innerHTML = `
-            <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.2rem;"></i>
-            <div style="flex: 1;">
-                <div style="font-weight: 500;">${file.name}</div>
-                <div style="font-size: 0.8rem; color: #666;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
-            </div>
-            <button onclick="removePdfFile(${index})" 
-                    style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.8rem;">
-                <i class="fas fa-times"></i> Remover
-            </button>
-        `;
-        preview.appendChild(fileItem);
-    });
-}
-
-function removePdfFile(index) {
-    selectedPdfFiles.splice(index, 1);
-    showPdfPreview();
-    
-    // Atualizar input file
-    const dataTransfer = new DataTransfer();
-    selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
-    document.getElementById('pdfFileInput').files = dataTransfer.files;
-}
-
-// Upload de PDFs para Supabase
-async function uploadPdfFile(file) {
-    try {
-        console.log('📤 Iniciando upload de PDF:', file.name);
-        
-        const fileName = `pdf_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(
-            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'apikey': SUPABASE_KEY
-                },
-                body: formData
-            }
-        );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Erro no upload do PDF:', errorText);
-            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
-        
-        console.log('✅ PDF upload concluído:', publicUrl);
-        return publicUrl;
-        
-    } catch (error) {
-        console.error('❌ Erro crítico no upload do PDF:', error);
-        return null;
-    }
-}     
-        
-// ========== EDITAR IMÓVEL CORRIGIDO ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1606,101 +1548,55 @@ function editProperty(id) {
     
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
-    
     document.getElementById('propHasVideo').checked = property.has_video || false;
     
-    // Atualizar título do formulário
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-        formTitle.textContent = 'Editar Imóvel';
-    }
-    
-    // Atualizar texto do botão
+    // Atualizar UI
+    document.getElementById('formTitle').textContent = 'Editar Imóvel';
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
     }
+    document.getElementById('cancelEditBtn').style.display = 'block';
     
-    // Mostrar botão cancelar
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'block';
-    }
-    
-    // Mostrar imagens existentes se houver
+    // Resetar sistemas de upload
     selectedFiles = [];
-    const preview = document.getElementById('uploadPreview');
-    if (preview) {
-        preview.innerHTML = '';
-        
-        if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
-            const existingImages = property.images.split(',').filter(img => img.trim() !== '');
-            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel:</p>';
-            
-            existingImages.forEach((imgUrl, index) => {
-                const imgContainer = document.createElement('div');
-                imgContainer.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
-                imgContainer.innerHTML = `
-                    <img src="${imgUrl}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);">
-                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
-                `;
-                preview.appendChild(imgContainer);
-            });
-            
-            preview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novas fotos acima.</p>';
-        }
-    }
+    selectedPdfFiles = [];
+    showPreview();
+    resetPdfUploadSystem();
     
-    // Rolar até o formulário
     document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
-    
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
-// ========== CANCELAR EDIÇÃO ATUALIZADA ==========
 function cancelEdit() {
     editingPropertyId = null;
     const form = document.getElementById('propertyForm');
     if (form) form.reset();
     
-    // Resetar título do formulário
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-        formTitle.textContent = 'Adicionar Novo Imóvel';
-    }
-    
-    // Resetar botão
+    document.getElementById('formTitle').textContent = 'Adicionar Novo Imóvel';
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
     }
+    document.getElementById('cancelEditBtn').style.display = 'none';
     
-    // Esconder botão cancelar
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'none';
-    }
-    
-    // CORREÇÃO: Resetar ambos os sistemas de upload
     selectedFiles = [];
     selectedPdfFiles = [];
-    
-    const preview = document.getElementById('uploadPreview');
-    if (preview) preview.innerHTML = '';
-    
+    showPreview();
     resetPdfUploadSystem();
     
-    console.log('✅ Edição cancelada - sistemas de upload resetados');
+    console.log('✅ Edição cancelada - sistemas resetados');
 }
 
-// ========== SISTEMA DE UPLOAD ==========
+// ========== SISTEMA DE UPLOAD DE IMAGENS/VIDEOS ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
-    const uploadPreview = document.getElementById('uploadPreview');
 
     if (uploadArea && fileInput) {
-        // Drag and drop
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = 'var(--primary)';
@@ -1716,38 +1612,19 @@ function setupUploadSystem() {
             e.preventDefault();
             uploadArea.style.borderColor = '#ddd';
             uploadArea.style.background = '';
-            
             if (e.dataTransfer.files.length > 0) {
                 handleFiles(e.dataTransfer.files);
             }
-        });
-
-        // Click para selecionar
-        uploadArea.addEventListener('click', () => fileInput.click());
-
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
         });
     }
 }
 
 function handleFiles(files) {
     const newFiles = Array.from(files);
-    
-    // Limitar a 10 arquivos
     if (selectedFiles.length + newFiles.length > 10) {
         alert('⚠️ Máximo de 10 arquivos permitidos!');
         return;
     }
-    
-    // Verificar tamanho dos arquivos (5MB max)
-    for (const file of newFiles) {
-        if (file.size > 5 * 1024 * 1024) {
-            alert(`⚠️ O arquivo "${file.name}" é muito grande! Máximo: 5MB`);
-            return;
-        }
-    }
-    
     selectedFiles = [...selectedFiles, ...newFiles];
     showPreview();
 }
@@ -1755,39 +1632,31 @@ function handleFiles(files) {
 function showPreview() {
     const preview = document.getElementById('uploadPreview');
     if (!preview) return;
-
     preview.innerHTML = '';
-
     if (selectedFiles.length === 0) {
         preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
         return;
     }
-
     selectedFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
-
         if (file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 fileItem.innerHTML = `
-                    <img src="${e.target.result}" 
-                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
-                    <button onclick="removeFile(${index})" 
-                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; line-height: 1;">×</button>
+                    <img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
+                    <button onclick="removeFile(${index})" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; line-height: 1;">×</button>
                     <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
                 `;
                 preview.appendChild(fileItem);
             };
             reader.readAsDataURL(file);
-
         } else if (file.type.startsWith('video/')) {
             fileItem.innerHTML = `
                 <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                     <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
                     <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
-                    <button onclick="removeFile(${index})" 
-                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                    <button onclick="removeFile(${index})" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
                 </div>
             `;
             preview.appendChild(fileItem);
@@ -1798,233 +1667,12 @@ function showPreview() {
 function removeFile(index) {
     selectedFiles.splice(index, 1);
     showPreview();
-    
-    // Atualizar input file
     const dataTransfer = new DataTransfer();
     selectedFiles.forEach(file => dataTransfer.items.add(file));
     document.getElementById('fileInput').files = dataTransfer.files;
 }
 
-// ========== UPLOAD PARA SUPABASE ==========
-async function uploadFile(file) {
-    try {
-        console.log('📤 Iniciando upload:', file.name);
-        
-        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch(
-            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'apikey': SUPABASE_KEY
-                },
-                body: formData
-            }
-        );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Erro no upload:', errorText);
-            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        
-        // URL CORRETA para acesso público
-        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
-        
-        console.log('✅ Upload concluído:', publicUrl);
-        return publicUrl;
-        
-    } catch (error) {
-        console.error('❌ Erro crítico no upload:', error);
-        return null;
-    }
-}
-
-// ========== SALVAR IMÓVEL CORRIGIDO ==========
-async function saveProperty(propertyData) {
-    try {
-        console.log('💾 Iniciando processo de salvamento...');
-
-        const dataToSave = {
-            title: propertyData.title,
-            price: propertyData.price,
-            location: propertyData.location,
-            description: propertyData.description,
-            features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
-            type: propertyData.type,
-            has_video: propertyData.has_video,
-            badge: propertyData.badge,
-            rural: propertyData.rural,
-            created_at: propertyData.created_at || new Date().toISOString()
-        };
-
-        // Upload dos arquivos se houver
-        if (selectedFiles.length > 0) {
-            console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
-            let uploadedFiles = [];
-            
-            for (const file of selectedFiles) {
-                console.log(`⬆️ Enviando: ${file.name}`);
-                const fileUrl = await uploadFile(file);
-                if (fileUrl) {
-                    uploadedFiles.push(fileUrl);
-                    console.log(`✅ Upload realizado: ${fileUrl}`);
-                }
-            }
-            
-            if (uploadedFiles.length > 0) {
-                dataToSave.images = uploadedFiles.join(', ');
-                console.log('🖼️ URLs das imagens para salvar:', dataToSave.images);
-            }
-        } else if (editingPropertyId) {
-            // Manter imagens existentes ao editar
-            const existingProperty = properties.find(p => p.id === editingPropertyId);
-            if (existingProperty && existingProperty.images) {
-                dataToSave.images = existingProperty.images;
-                console.log('🔄 Mantendo imagens existentes:', dataToSave.images);
-            }
-        }
-
-        console.log('📤 Dados completos para salvar:', dataToSave);
-// Upload dos PDFs se houver
-if (selectedPdfFiles.length > 0) {
-    console.log(`📄 Fazendo upload de ${selectedPdfFiles.length} PDFs...`);
-    let uploadedPdfs = [];
-    
-    for (const file of selectedPdfFiles) {
-        console.log(`⬆️ Enviando PDF: ${file.name}`);
-        const fileUrl = await uploadPdfFile(file);
-        if (fileUrl) {
-            uploadedPdfs.push(fileUrl);
-            console.log(`✅ PDF enviado: ${fileUrl}`);
-        }
-    }
-    
-    if (uploadedPdfs.length > 0) {
-        dataToSave.pdfs = uploadedPdfs.join(', ');
-        console.log('📄 URLs dos PDFs para salvar:', dataToSave.pdfs);
-    }
-} else if (editingPropertyId) {
-    // Manter PDFs existentes ao editar
-    const existingProperty = properties.find(p => p.id === editingPropertyId);
-    if (existingProperty && existingProperty.pdfs) {
-        dataToSave.pdfs = existingProperty.pdfs;
-        console.log('🔄 Mantendo PDFs existentes:', dataToSave.pdfs);
-    }
-}
-        
-        // Determinar URL e método
-        const url = editingPropertyId
-            ? `${SUPABASE_URL}/rest/v1/properties?id=eq.${editingPropertyId}`
-            : `${SUPABASE_URL}/rest/v1/properties`;
-
-        const method = editingPropertyId ? 'PATCH' : 'POST';
-
-        console.log(`🌐 Fazendo requisição: ${method} ${url}`);
-
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(dataToSave)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Erro na resposta do Supabase:', response.status, errorText);
-            throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log('✅ Salvo com sucesso no Supabase:', result);
-        
-        // Recarregar os dados do Supabase
-        await loadProperties();
-        return true;
-
-    } catch (error) {
-        console.error('❌ Erro crítico ao salvar no Supabase:', error);
-        console.log('🔄 Tentando salvar localmente como fallback...');
-        return saveToLocalStorage(propertyData);
-    }
-}
-
-// ========== TESTAR ACESSO ÀS IMAGENS ==========
-async function testImageAccess() {
-    console.log('🔍 Testando acesso às imagens...');
-    
-    // URLs das suas imagens no Supabase
-    const testImages = [
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341618532_thumbnail3.jpeg',
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341628860_thumbnail2.jpeg',
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341634876_thumbnail1.jpeg'
-    ];
-    
-    for (const imgUrl of testImages) {
-        try {
-            const response = await fetch(imgUrl);
-            if (response.ok) {
-                console.log(`✅ Imagem acessível: ${imgUrl}`);
-            } else {
-                console.log(`❌ Imagem não acessível: ${imgUrl} - Status: ${response.status}`);
-            }
-        } catch (error) {
-            console.log(`❌ Erro ao acessar imagem: ${imgUrl} - ${error.message}`);
-        }
-    }
-}
-
-// Chamar a função de teste
-testImageAccess();
-        
-// ========== EXCLUIR IMÓVEL ==========
-async function deleteProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
-        try {
-            // Tentar excluir do Supabase
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-
-            if (response.ok) {
-                console.log('✅ Imóvel excluído do Supabase');
-            } else {
-                console.log('⚠️ Não foi possível excluir do Supabase');
-            }
-        } catch (error) {
-            console.error('❌ Erro ao excluir do Supabase:', error);
-        }
-
-        // Excluir localmente de qualquer forma
-        const index = properties.findIndex(p => p.id === id);
-        if (index !== -1) {
-            properties.splice(index, 1);
-            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
-        }
-
-        renderProperties();
-        loadPropertyList();
-        alert("✅ Imóvel excluído com sucesso!");
-    }
-}
-
-// ========== FORMULÁRIO CORRIGIDO ==========
+// ========== FORMULÁRIO ==========
 function setupForm() {
     const form = document.getElementById('propertyForm');
     if (!form) return;
@@ -2057,18 +1705,13 @@ function setupForm() {
 
         try {
             const success = await saveProperty(propertyData);
-            
             if (success) {
                 alert("✅ Imóvel salvo com sucesso!");
+                this.reset();
+                cancelEdit();
             } else {
                 alert("❌ Erro ao salvar o imóvel!");
             }
-
-            this.reset();
-            cancelEdit();
-            selectedFiles = [];
-            showPreview();
-
         } catch (error) {
             alert("❌ Erro: " + error.message);
         } finally {
@@ -2078,7 +1721,7 @@ function setupForm() {
     });
 }
 
-// ========== FUNÇÕES DE INTERAÇÃO ==========
+// ========== FUNÇÕES RESTANTES ==========
 function contactAgent(id) {
     const property = properties.find(p => p.id === id);
     if (property) {
@@ -2088,47 +1731,104 @@ function contactAgent(id) {
     }
 }
 
-function viewProperty(id) {
+async function deleteProperty(id) {
     const property = properties.find(p => p.id === id);
-    if (property) {
-        alert(`🏠 ${property.title}\n\n💰 ${property.price}\n📍 ${property.location}\n\n${property.description}`);
+    if (!property) return;
+
+    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+            if (response.ok) console.log('✅ Imóvel excluído do Supabase');
+        } catch (error) {
+            console.error('❌ Erro ao excluir do Supabase:', error);
+        }
+
+        const index = properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            properties.splice(index, 1);
+            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        }
+
+        renderProperties();
+        loadPropertyList();
+        alert("✅ Imóvel excluído com sucesso!");
     }
 }
 
-  // ========== TESTAR CONEXÃO SUPABASE MELHORADA ==========
-async function testSupabaseConnection() {
-    try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
-        
-        return response.ok;
-    } catch (error) {
-        return false;
+// ========== SISTEMA DE PDFs ==========
+function showPdfModal(propertyId) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+
+    currentPdfPropertyId = propertyId;
+    const modal = document.getElementById('pdfModal');
+    const title = document.getElementById('pdfModalTitle');
+    const preview = document.getElementById('pdfPreview');
+    
+    if (title) title.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos - ${property.title}`;
+    if (preview) {
+        if (property.pdfs && property.pdfs.length > 0) {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            preview.innerHTML = `
+                <p><strong>${pdfUrls.length} documento(s) disponível(is):</strong></p>
+                ${pdfUrls.map((url, index) => `
+                    <div class="pdf-file-item">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                        <span>Documento ${index + 1}</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            preview.innerHTML = '<p>Nenhum documento disponível para este imóvel.</p>';
+        }
     }
+    
+    const passwordInput = document.getElementById('pdfPassword');
+    if (passwordInput) passwordInput.value = '';
+    modal.style.display = 'flex';
 }
-        
-// ========== INICIALIZAÇÃO CORRIGIDA ==========
+
+function closePdfModal() {
+    document.getElementById('pdfModal').style.display = 'none';
+    currentPdfPropertyId = null;
+}
+
+function accessPdfDocuments() {
+    const passwordInput = document.getElementById('pdfPassword');
+    const password = passwordInput ? passwordInput.value : '';
+    
+    if (password !== PDF_PASSWORD) {
+        alert('❌ Senha incorreta! Solicite a senha ao corretor.');
+        return;
+    }
+    
+    const property = properties.find(p => p.id === currentPdfPropertyId);
+    if (!property || !property.pdfs) {
+        alert('❌ Nenhum documento disponível para este imóvel.');
+        return;
+    }
+    
+    const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+    pdfUrls.forEach(url => window.open(url, '_blank'));
+    closePdfModal();
+    alert('✅ Documentos abertos com sucesso!');
+}
+
+// ========== INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
-   
-    // Testar conexão com Supabase de forma mais precisa
-    const supabaseOk = await testSupabaseConnection();
     
-    if (!supabaseOk) {
-        console.log('⚠️ Supabase não disponível, usando modo local');
-    } else {
-        console.log('✅ Supabase conectado com sucesso!');
-    }
-    
-    loadProperties();
+    // Configurar eventos
     setupForm();
     setupUploadSystem();
-    // Na função DOMContentLoaded, adicione:
     setupPdfUploadSystem();
+    
     // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
@@ -2140,6 +1840,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
     
+    // Carregar dados
+    await loadProperties();
     console.log('✅ Sistema Weber Lessa carregado!');
 });
 
