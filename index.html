@@ -510,29 +510,59 @@
             border-left: 4px solid var(--primary);
         }
 
+        /* BOTÃO PDF MINIMALISTA - ESTILO CORRIGIDO */
         .pdf-access {
             position: absolute;
-            top: 10px;
+            bottom: 10px;
             left: 10px;
-            background: rgba(255,255,255,0.9);
+            background: rgba(231, 76, 60, 0.9);
             border: none;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
-            color: var(--primary);
+            font-size: 1rem;
+            color: white;
             transition: all 0.3s ease;
             z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-
+        
         .pdf-access:hover {
-             background: white;
-             transform: scale(1.1);
-             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            background: rgba(231, 76, 60, 1);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        
+        /* ÁREA DE UPLOAD DE PDFs MELHORADA */
+        #pdfUploadArea {
+            border: 2px dashed #95a5a6;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        #pdfUploadArea:hover {
+            border-color: var(--primary);
+            background: #f0f8ff;
+        }
+        
+        #pdfUploadArea i {
+            font-size: 2rem;
+            color: #95a5a6;
+            margin-bottom: 1rem;
+            transition: color 0.3s ease;
+        }
+        
+        #pdfUploadArea:hover i {
+            color: var(--primary);
         }
 
         .pdf-modal {
@@ -1008,6 +1038,9 @@ async function loadProperties() {
 // Chame esta função após carregar os imóveis
 // Na função loadProperties, após properties = data, adicione:
     debugPropertyData();
+// Chame esta função após carregar os imóveis
+// Na função loadProperties, após properties = data, adicione:
+    emergencyPdfCheck();
 }
 
 // Adicione esta função para debug
@@ -1017,6 +1050,41 @@ function checkPdfData() {
         console.log(`Imóvel ${index + 1}: ${property.title}`);
         console.log(`PDFs:`, property.pdfs);
         console.log(`Tem PDFs:`, property.pdfs && property.pdfs.length > 0);
+    });
+}
+
+ // ========== VERIFICAÇÃO DE EMERGÊNCIA PARA PDFs ==========
+function emergencyPdfCheck() {
+    console.log('🚨 VERIFICAÇÃO DE EMERGÊNCIA - DADOS PDFs');
+    
+    properties.forEach((property, index) => {
+        console.log(`--- IMÓVEL ${index + 1} ---`);
+        console.log('ID:', property.id);
+        console.log('Título:', property.title);
+        console.log('PDFs RAW:', property.pdfs);
+        console.log('Tipo:', typeof property.pdfs);
+        console.log('É null?', property.pdfs === null);
+        console.log('É undefined?', property.pdfs === undefined);
+        console.log('É string vazia?', property.pdfs === '');
+        console.log('Tem PDFs?', 
+            property.pdfs && 
+            property.pdfs !== 'null' && 
+            property.pdfs !== 'undefined' && 
+            property.pdfs !== 'EMPTY' && 
+            property.pdfs.length > 0
+        );
+        
+        // Verificação forçada para debug
+        const forcedCheck = Boolean(
+            property.pdfs && 
+            String(property.pdfs).length > 0 && 
+            String(property.pdfs) !== 'null' && 
+            String(property.pdfs) !== 'undefined' && 
+            String(property.pdfs) !== 'EMPTY'
+        );
+        
+        console.log('✅ VERIFICAÇÃO FORÇADA:', forcedCheck);
+        console.log('---------------');
     });
 }
 
@@ -1055,15 +1123,15 @@ function renderProperties(filter = 'todos') {
         
         // CORREÇÃO CRÍTICA: Verificar PDFs de forma segura
         const hasPdfs = property.pdfs && 
-                       property.pdfs.length > 0 && 
-                       property.pdfs !== 'EMPTY' && 
                        property.pdfs !== 'null' && 
-                       property.pdfs !== 'undefined';
+                       property.pdfs !== 'undefined' && 
+                       property.pdfs !== 'EMPTY' && 
+                       property.pdfs.length > 0;
         
         console.log(`📋 Imóvel: ${property.title}`);
         console.log(`🖼️ Tem imagens: ${hasImages}`);
         console.log(`📄 Tem PDFs: ${hasPdfs}`);
-        console.log(`🔗 PDFs URLs: ${property.pdfs}`);
+        console.log(`🔗 PDFs URLs:`, property.pdfs);
         
         // CORREÇÃO: has_video em vez de hasVideo
         const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
@@ -1079,10 +1147,12 @@ function renderProperties(filter = 'todos') {
                     ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                     ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                     
-                    <!-- BOTÃO DISCRETO PARA PDF - CORRIGIDO -->
-                    ${hasPdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
+                    <!-- BOTÃO PDF MINIMALISTA - POSIÇÃO CORRIGIDA -->
+                    ${hasPdfs ? `
+                    <button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel" style="bottom: 10px; left: 10px; top: auto; background: rgba(231, 76, 60, 0.9); color: white;">
                         <i class="fas fa-file-pdf"></i>
-                    </button>` : ''}
+                    </button>
+                    ` : ''}
                 </div>
                 <div class="property-content">
                     <div class="property-price">${property.price}</div>
@@ -1100,7 +1170,7 @@ function renderProperties(filter = 'todos') {
         `;
         container.innerHTML += card;
     });
-}        
+}
 
 // ========== DEBUG DOS DADOS ==========
 function debugPropertyData() {
@@ -1334,29 +1404,38 @@ function accessPdfDocuments() {
 }
         
    // Adicione esta seção no formulário do painel admin (após a seção de fotos/vídeos):
-
+// ========== SISTEMA DE UPLOAD DE PDFs CORRIGIDO ==========
 function setupPdfUploadSystem() {
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     const pdfFileInput = document.getElementById('pdfFileInput');
     const pdfPreview = document.getElementById('pdfUploadPreview');
 
     if (pdfUploadArea && pdfFileInput) {
+        // CORREÇÃO: Remover event listeners antigos primeiro
+        pdfUploadArea.replaceWith(pdfUploadArea.cloneNode(true));
+        pdfFileInput.replaceWith(pdfFileInput.cloneNode(true));
+        
+        // Re-obter os elementos após clonagem
+        const newPdfUploadArea = document.getElementById('pdfUploadArea');
+        const newPdfFileInput = document.getElementById('pdfFileInput');
+        const newPdfPreview = document.getElementById('pdfUploadPreview');
+
         // Drag and drop para PDFs
-        pdfUploadArea.addEventListener('dragover', (e) => {
+        newPdfUploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
-            pdfUploadArea.style.borderColor = 'var(--primary)';
-            pdfUploadArea.style.background = '#f0f8ff';
+            newPdfUploadArea.style.borderColor = 'var(--primary)';
+            newPdfUploadArea.style.background = '#f0f8ff';
         });
 
-        pdfUploadArea.addEventListener('dragleave', () => {
-            pdfUploadArea.style.borderColor = '#ddd';
-            pdfUploadArea.style.background = '';
+        newPdfUploadArea.addEventListener('dragleave', () => {
+            newPdfUploadArea.style.borderColor = '#95a5a6';
+            newPdfUploadArea.style.background = '#fafafa';
         });
 
-        pdfUploadArea.addEventListener('drop', (e) => {
+        newPdfUploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
-            pdfUploadArea.style.borderColor = '#ddd';
-            pdfUploadArea.style.background = '';
+            newPdfUploadArea.style.borderColor = '#95a5a6';
+            newPdfUploadArea.style.background = '#fafafa';
             
             const files = Array.from(e.dataTransfer.files).filter(file => 
                 file.type === 'application/pdf'
@@ -1364,18 +1443,46 @@ function setupPdfUploadSystem() {
             
             if (files.length > 0) {
                 handlePdfFiles(files);
+            } else {
+                alert('⚠️ Por favor, selecione apenas arquivos PDF!');
             }
         });
 
-        // Click para selecionar
-        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+        // Click para selecionar - CORREÇÃO CRÍTICA
+        newPdfUploadArea.addEventListener('click', () => {
+            console.log('📄 Clicou na área de PDF');
+            newPdfFileInput.click();
+        });
 
-        pdfFileInput.addEventListener('change', (e) => {
+        newPdfFileInput.addEventListener('change', (e) => {
+            console.log('📄 Arquivo PDF selecionado:', e.target.files);
             const files = Array.from(e.target.files).filter(file => 
                 file.type === 'application/pdf'
             );
-            handlePdfFiles(files);
+            if (files.length > 0) {
+                handlePdfFiles(files);
+            }
         });
+
+        // CORREÇÃO: Reset do input file após uso
+        newPdfFileInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            this.value = ''; // Reset para permitir selecionar o mesmo arquivo novamente
+        });
+    }
+}
+
+// CORREÇÃO: Função para resetar o sistema de upload de PDFs
+function resetPdfUploadSystem() {
+    selectedPdfFiles = [];
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+    }
+    
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) {
+        pdfFileInput.value = '';
     }
 }
 
@@ -1550,7 +1657,7 @@ function editProperty(id) {
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
-// ========== CANCELAR EDIÇÃO (FUNÇÃO FALTANDO) ==========
+// ========== CANCELAR EDIÇÃO ATUALIZADA ==========
 function cancelEdit() {
     editingPropertyId = null;
     const form = document.getElementById('propertyForm');
@@ -1574,11 +1681,16 @@ function cancelEdit() {
         cancelBtn.style.display = 'none';
     }
     
+    // CORREÇÃO: Resetar ambos os sistemas de upload
     selectedFiles = [];
+    selectedPdfFiles = [];
+    
     const preview = document.getElementById('uploadPreview');
     if (preview) preview.innerHTML = '';
     
-    console.log('✅ Edição cancelada');
+    resetPdfUploadSystem();
+    
+    console.log('✅ Edição cancelada - sistemas de upload resetados');
 }
 
 // ========== SISTEMA DE UPLOAD ==========
