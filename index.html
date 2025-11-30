@@ -1065,7 +1065,7 @@ function getInitialProperties() {
     ];
 }
 
-// ========== CARREGAR IMÓVEIS ==========
+// ========== CORREÇÃO DO CARREGAMENTO DE IMÓVEIS ==========
 async function loadProperties() {
     try {
         console.log('📡 Carregando imóveis do Supabase...');
@@ -1082,12 +1082,18 @@ async function loadProperties() {
             properties = Array.isArray(data) ? data : [];
             console.log(`✅ ${properties.length} imóveis carregados do Supabase`);
             
-            // CORREÇÃO: Garantir que as imagens sejam tratadas corretamente
+            // CORREÇÃO CRÍTICA: Garantir que todos os campos sejam tratados corretamente
             properties = properties.map(property => {
                 // Se images estiver vazio, usar imagens padrão
                 if (!property.images || property.images === 'EMPTY' || property.images.trim() === '') {
                     property.images = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
                 }
+                
+                // CORREÇÃO: Garantir que pdfs seja sempre uma string válida
+                if (!property.pdfs || property.pdfs === 'null' || property.pdfs === 'undefined') {
+                    property.pdfs = '';
+                }
+                
                 return property;
             });
             
@@ -1284,7 +1290,7 @@ function renderProperties(filter = 'todos') {
     });
 }        
 
-// ========== DEBUG DOS DADOS ==========
+// ========== CORREÇÃO DO DEBUG DOS DADOS ==========
 function debugPropertyData() {
     console.log('🐛 DEBUG - Dados dos Imóveis:');
     properties.forEach((property, index) => {
@@ -1293,7 +1299,7 @@ function debugPropertyData() {
         console.log('ID:', property.id);
         console.log('PDFs:', property.pdfs);
         console.log('Tipo de PDFs:', typeof property.pdfs);
-        console.log('Tem PDFs?', property.pdfs && property.pdfs.length > 0);
+        console.log('Tem PDFs?', property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '');
         console.log('---------------');
     });
 }
@@ -1303,7 +1309,7 @@ function checkPdfData() {
     properties.forEach((property, index) => {
         console.log(`Imóvel ${index + 1}: ${property.title}`);
         console.log(`PDFs:`, property.pdfs);
-        console.log(`Tem PDFs:`, property.pdfs && property.pdfs.length > 0);
+        console.log(`Tem PDFs:`, property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '');
     });
 }
         
@@ -1589,113 +1595,6 @@ async function uploadPdfFile(file) {
     }
 }     
 
-// ========== EDITAR IMÓVEL CORRIGIDO COM EXCLUSÃO DE PDFs EXISTENTES ==========
-function editProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    editingPropertyId = id;
-    
-    // Preencher formulário
-    document.getElementById('propTitle').value = property.title || '';
-    document.getElementById('propPrice').value = property.price || '';
-    document.getElementById('propLocation').value = property.location || '';
-    document.getElementById('propDescription').value = property.description || '';
-    
-    const features = Array.isArray(property.features) 
-        ? property.features 
-        : (property.features || '');
-    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
-    
-    document.getElementById('propType').value = property.type || 'residencial';
-    document.getElementById('propBadge').value = property.badge || 'Novo';
-    
-    document.getElementById('propHasVideo').checked = property.has_video || false;
-    
-    // Atualizar título do formulário
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-        formTitle.textContent = 'Editar Imóvel';
-    }
-    
-    // Atualizar texto do botão
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
-    }
-    
-    // Mostrar botão cancelar
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'block';
-    }
-    
-    // Mostrar imagens existentes se houver - COM BOTÕES DE EXCLUSÃO
-    selectedFiles = [];
-    const preview = document.getElementById('uploadPreview');
-    if (preview) {
-        preview.innerHTML = '';
-        
-        if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
-            const existingImages = property.images.split(',').filter(img => url.trim() !== '');
-            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
-            
-            existingImages.forEach((imgUrl, index) => {
-                const imgContainer = document.createElement('div');
-                imgContainer.className = 'image-preview-container';
-                imgContainer.innerHTML = `
-                    <img src="${imgUrl}" 
-                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);"
-                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                    <button class="delete-image-btn" onclick="deleteExistingImage(${property.id}, ${index})" 
-                            title="Excluir esta foto">×</button>
-                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
-                `;
-                preview.appendChild(imgContainer);
-            });
-            
-            preview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novas fotos acima.</p>';
-        }
-    }
-    
-    // Mostrar PDFs existentes se houver - COM BOTÕES DE EXCLUSÃO
-    selectedPdfFiles = [];
-    const pdfPreview = document.getElementById('pdfUploadPreview');
-    if (pdfPreview) {
-        pdfPreview.innerHTML = '';
-        
-        if (property.pdfs && property.pdfs.length > 0 && property.pdfs !== 'EMPTY') {
-            const existingPdfs = property.pdfs.split(',').filter(url => url.trim() !== '');
-            pdfPreview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
-            
-            existingPdfs.forEach((pdfUrl, index) => {
-                // Extrair nome do arquivo da URL
-                const fileName = pdfUrl.split('/').pop() || `Documento ${index + 1}`;
-                
-                const pdfContainer = document.createElement('div');
-                pdfContainer.className = 'image-preview-container';
-                pdfContainer.innerHTML = `
-                    <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
-                        <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
-                        <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${fileName}</p>
-                    </div>
-                    <button class="delete-image-btn" onclick="deleteExistingPdf(${property.id}, ${index})" 
-                            title="Excluir este documento">×</button>
-                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Doc ${index + 1}</div>
-                `;
-                pdfPreview.appendChild(pdfContainer);
-            });
-            
-            pdfPreview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novos documentos acima.</p>';
-        }
-    }
-    
-    // Rolar até o formulário
-    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
-    
-    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
-}
-
 // ========== EXCLUIR PDF EXISTENTE DO IMÓVEL ==========
 async function deleteExistingPdf(propertyId, pdfIndex) {
     if (!confirm('Tem certeza que deseja excluir este documento PDF? Esta ação não pode ser desfeita.')) {
@@ -1820,6 +1719,7 @@ function removePdfFile(index) {
 }
         
 // ========== EDITAR IMÓVEL CORRIGIDO COM EXCLUSÃO DE FOTOS EXISTENTES ==========
+// ========== CORREÇÃO DA FUNÇÃO EDITAR PROPRIEDADE ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1860,8 +1760,11 @@ function editProperty(id) {
         cancelBtn.style.display = 'block';
     }
     
-    // Mostrar imagens existentes se houver - COM BOTÕES DE EXCLUSÃO
+    // CORREÇÃO: Limpar arquivos selecionados ao editar
     selectedFiles = [];
+    selectedPdfFiles = [];
+    
+    // Mostrar imagens existentes se houver - COM BOTÕES DE EXCLUSÃO
     const preview = document.getElementById('uploadPreview');
     if (preview) {
         preview.innerHTML = '';
@@ -1888,12 +1791,97 @@ function editProperty(id) {
         }
     }
     
+    // CORREÇÃO: Mostrar PDFs existentes se houver - COM BOTÕES DE EXCLUSÃO
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '';
+        
+        // CORREÇÃO: Verificar se há PDFs de forma segura
+        const hasPdfs = property.pdfs && 
+                       property.pdfs !== 'EMPTY' && 
+                       property.pdfs !== 'null' && 
+                       property.pdfs !== 'undefined' &&
+                       property.pdfs.trim() !== '';
+        
+        if (hasPdfs) {
+            const existingPdfs = property.pdfs.split(',').filter(url => url.trim() !== '');
+            pdfPreview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
+            
+            existingPdfs.forEach((pdfUrl, index) => {
+                // Extrair nome do arquivo da URL
+                const fileName = pdfUrl.split('/').pop() || `Documento ${index + 1}`;
+                
+                const pdfContainer = document.createElement('div');
+                pdfContainer.className = 'image-preview-container';
+                pdfContainer.innerHTML = `
+                    <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                        <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${fileName}</p>
+                    </div>
+                    <button class="delete-image-btn" onclick="deleteExistingPdf(${property.id}, ${index})" 
+                            title="Excluir este documento">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Doc ${index + 1}</div>
+                `;
+                pdfPreview.appendChild(pdfContainer);
+            });
+            
+            pdfPreview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novos documentos acima.</p>';
+        } else {
+            pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum documento PDF cadastrado</p>';
+        }
+    }
+    
     // Rolar até o formulário
     document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
     
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
+// ========== CORREÇÃO DA FUNÇÃO CANCELAR EDIÇÃO ==========
+function cancelEdit() {
+    editingPropertyId = null;
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+    
+    // Resetar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Adicionar Novo Imóvel';
+    }
+    
+    // Resetar botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+    }
+    
+    // Esconder botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
+    
+    // CORREÇÃO: Limpar completamente os arquivos selecionados
+    selectedFiles = [];
+    selectedPdfFiles = [];
+    
+    // CORREÇÃO: Limpar os previews
+    const preview = document.getElementById('uploadPreview');
+    if (preview) preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+    
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+    
+    // CORREÇÃO: Limpar inputs de arquivo
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+    
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) pdfFileInput.value = '';
+    
+    console.log('✅ Edição cancelada');
+}
+        
 // ========== EXCLUIR FOTO EXISTENTE DO IMÓVEL ==========
 async function deleteExistingImage(propertyId, imageIndex) {
     if (!confirm('Tem certeza que deseja excluir esta foto? Esta ação não pode ser desfeita.')) {
@@ -2000,41 +1988,6 @@ async function deleteFromStorage(imageUrl) {
         return false;
     }
 }
-        
-// ========== CANCELAR EDIÇÃO ==========
-function cancelEdit() {
-    editingPropertyId = null;
-    const form = document.getElementById('propertyForm');
-    if (form) form.reset();
-    
-    // Resetar título do formulário
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-        formTitle.textContent = 'Adicionar Novo Imóvel';
-    }
-    
-    // Resetar botão
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-    }
-    
-    // Esconder botão cancelar
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'none';
-    }
-    
-    selectedFiles = [];
-    selectedPdfFiles = [];
-    const preview = document.getElementById('uploadPreview');
-    if (preview) preview.innerHTML = '';
-    
-    const pdfPreview = document.getElementById('pdfUploadPreview');
-    if (pdfPreview) pdfPreview.innerHTML = '';
-    
-    console.log('✅ Edição cancelada');
-}
 
 // ========== SISTEMA DE UPLOAD ==========
 function setupUploadSystem() {
@@ -2135,7 +2088,7 @@ async function uploadFile(file) {
     }
 }
 
-// ========== SALVAR IMÓVEL CORRIGIDO ==========
+// ========== CORREÇÃO DA FUNÇÃO SALVAR PROPRIEDADE ==========
 async function saveProperty(propertyData) {
     try {
         console.log('💾 Iniciando processo de salvamento...');
@@ -2180,7 +2133,7 @@ async function saveProperty(propertyData) {
             }
         }
 
-        // Upload dos PDFs se houver
+        // CORREÇÃO CRÍTICA: Upload dos PDFs se houver
         if (selectedPdfFiles.length > 0) {
             console.log(`📄 Fazendo upload de ${selectedPdfFiles.length} PDFs...`);
             let uploadedPdfs = [];
@@ -2205,6 +2158,9 @@ async function saveProperty(propertyData) {
                 dataToSave.pdfs = existingProperty.pdfs;
                 console.log('🔄 Mantendo PDFs existentes:', dataToSave.pdfs);
             }
+        } else {
+            // CORREÇÃO: Garantir que pdfs seja uma string vazia se não houver PDFs
+            dataToSave.pdfs = '';
         }
         
         console.log('📤 Dados completos para salvar:', dataToSave);
@@ -2238,8 +2194,16 @@ async function saveProperty(propertyData) {
         const result = await response.json();
         console.log('✅ Salvo com sucesso no Supabase:', result);
         
+        // CORREÇÃO: Limpar arquivos selecionados após salvar
+        selectedFiles = [];
+        selectedPdfFiles = [];
+        
         // Recarregar os dados do Supabase
         await loadProperties();
+        
+        // CORREÇÃO: Fechar o painel de edição após salvar
+        cancelEdit();
+        
         return true;
 
     } catch (error) {
@@ -2248,7 +2212,7 @@ async function saveProperty(propertyData) {
         return saveToLocalStorage(propertyData);
     }
 }
-
+        
 // ========== EXCLUIR IMÓVEL ==========
 async function deleteProperty(id) {
     const property = properties.find(p => p.id === id);
