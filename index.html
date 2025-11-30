@@ -6,7 +6,6 @@
     <title>WEBER LESSA CORRETORA E INCORPORAÇÕES - Imóveis Maceió</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* SEUS ESTILOS ATUAIS PERMANECEM EXATAMENTE IGUAIS */
         :root {
             --primary: #1a5276;
             --secondary: #2980b9;
@@ -33,13 +32,601 @@
             min-height: 100vh;
         }
         
-        /* [MANTENHA TODOS OS SEUS ESTILOS CSS ATUAIS] */
-        /* ... todos os seus estilos anteriores ... */
+        /* Header e Navegação */
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 1.5rem 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
         
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .logo-text h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 0.2rem;
+        }
+        
+        .logo-text p {
+            color: var(--secondary);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .contact-info {
+            text-align: right;
+        }
+        
+        .contact-info .phone {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+        }
+        
+        .contact-info .address {
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+        
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(rgba(26, 82, 118, 0.8), rgba(41, 128, 185, 0.8)), url('https://images.unsplash.com/photo-1544984243-ec57ea16fe25?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: var(--gold);
+            color: white;
+            padding: 0.9rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+        }
+        
+        /* Serviços Section */
+        .services {
+            background: white;
+            padding: 4rem 1rem;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .section-title h2 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .section-title p {
+            color: var(--dark);
+            max-width: 700px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .service-card {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        .service-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .service-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .service-card p {
+            color: var(--dark);
+        }
+        
+        /* Imóveis Section */
+        .properties {
+            padding: 4rem 1rem;
+            background: #f8f9fa;
+        }
+        
+        .filters {
+            background: white;
+            padding: 1.5rem;
+            margin: 0 auto 2rem;
+            max-width: 1200px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .filter-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .filter-btn {
+            background: var(--light);
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .property-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .property-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .property-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, var(--accent), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .rural-image {
+            background: linear-gradient(45deg, var(--green), #2ecc71);
+        }
+        
+        .property-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: var(--gold);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .rural-badge {
+            background: var(--green);
+        }
+        
+        .property-content {
+            padding: 1.5rem;
+        }
+        
+        .property-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .property-title {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+        
+        .property-location {
+            color: #666;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .property-features {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-tag {
+            background: var(--accent);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .rural-tag {
+            background: var(--green);
+        }
+        
+        .contact-btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .contact-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
+        }
+        
+        .video-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Sobre Section */
+        .about {
+            background: white;
+            padding: 4rem 1rem;
+        }
+        
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            align-items: center;
+        }
+        
+        .about-text h2 {
+            font-size: 2.2rem;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        
+        .about-text p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+        
+        .about-image {
+            background: linear-gradient(45deg, var(--accent), var(--secondary));
+            height: 400px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--dark);
+            color: white;
+            padding: 3rem 1rem;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .footer-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--gold);
+        }
+        
+        .footer-section p, .footer-section a {
+            color: #bbb;
+            margin-bottom: 0.8rem;
+            display: block;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-section a:hover {
+            color: white;
+        }
+        
+        .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 1rem;
+        }
+        
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .social-icon:hover {
+            background: var(--accent);
+            transform: translateY(-3px);
+        }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #999;
+        }
+        
+        /* ========== ESTILOS DO PAINEL ADMIN ========== */
+        .admin-panel {
+            background: #f8f9fa;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1000px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .admin-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            font-size: 1.2rem;
+        }
+        
+        .property-item {
+            background: #f5f5f5;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--primary);
+        }
+
+        .pdf-access {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .pdf-access:hover {
+             background: white;
+             transform: scale(1.1);
+             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .pdf-modal {
+             display: none;
+             position: fixed;
+             top: 0;
+             left: 0;
+             width: 100%;
+             height: 100%;
+             background: rgba(0,0,0,0.8);
+             z-index: 1000;
+             align-items: center;
+             justify-content: center;
+        }
+
+        .pdf-modal-content {
+              background: white;
+              padding: 2rem;
+              border-radius: 10px;
+              max-width: 400px;
+              width: 90%;
+              text-align: center;
+        }
+
+        .pdf-preview {
+              margin: 1rem 0;
+              padding: 1rem;
+              background: #f8f9fa;
+              border-radius: 5px;
+        }
+
+        .pdf-file-item {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              padding: 0.5rem;
+              margin: 0.5rem 0;
+              background: white;
+              border-radius: 5px;
+              border: 1px solid #ddd;
+        }
+
+        .pdf-password-input {
+              width: 100%;
+              padding: 0.8rem;
+              margin: 1rem 0;
+              border: 1px solid #ddd;
+              border-radius: 5px;
+              font-size: 1rem;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .contact-info {
+                text-align: center;
+            }
+            
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+            
+            .about-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .property-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .filter-btn {
+                width: 100%;
+                max-width: 250px;
+            }
+            
+            .property-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+         }
     </style>
 </head>
 <body>
-    <!-- SEU HTML ATUAL PERMANECE EXATAMENTE IGUAL -->
     <!-- Header -->
     <header class="header">
         <div class="header-content">
@@ -206,43 +793,81 @@
         </div>
     </footer>
 
-    <!-- ========== PAINEL DE ADMINISTRAÇÃO ========== -->
-    <section class="admin-panel" id="adminPanel" style="display: none;">
-        <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
-            <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
-        </h3>
-        
-        <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h4 id="formTitle">Adicionar Novo Imóvel</h4>
-            <form id="propertyForm">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label><strong>Título do Imóvel *</strong></label>
-                        <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    </div>
-                    <div>
-                        <label><strong>Preço *</strong></label>
-                        <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    </div>
+<!-- ========== PAINEL DE ADMINISTRAÇÃO ATUALIZADO ========== -->
+<section class="admin-panel" id="adminPanel">
+    <h3 style="text-align: center; color: var(--primary); margin-bottom: 1.5rem;">
+        <i class="fas fa-cog"></i> Painel do Corretor - Weber Lessa
+    </h3>
+    
+    <div style="background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h4 id="formTitle">Adicionar Novo Imóvel</h4>
+        <form id="propertyForm">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label><strong>Título do Imóvel *</strong></label>
+                    <input type="text" id="propTitle" placeholder="Ex: Apartamento Vista Mar" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
                 </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label><strong>Localização *</strong></label>
-                    <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                <div>
+                    <label><strong>Preço *</strong></label>
+                    <input type="text" id="propPrice" placeholder="Ex: R$ 450.000" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
                 </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label><strong>Descrição</strong></label>
-                    <textarea id="propDescription" placeholder="Descreva o imóvel..." style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
-                </div>
-                
-                <div style="margin-bottom: 1rem;">
-                    <label><strong>Características (separadas por vírgula)</strong></label>
-                    <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
-                    <small style="color: #666;">Separe por vírgulas</small>
-                </div>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label><strong>Localização *</strong></label>
+                <input type="text" id="propLocation" placeholder="Ex: Ponta Verde, Maceió-AL" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label><strong>Descrição</strong></label>
+                <textarea id="propDescription" placeholder="Descreva o imóvel..." style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; height: 100px;"></textarea>
+            </div>
+            
+            <div style="margin-bottom: 1rem;">
+                <label><strong>Características (separadas por vírgula)</strong></label>
+                <input type="text" id="propFeatures" placeholder="Ex: 2 Quartos, 1 Vaga, Piscina, Varanda" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
+                <small style="color: #666;">Separe por vírgulas</small>
+            </div>
 
-                <div style="margin-bottom: 1rem;">
+            <!-- ========== SEÇÃO UPLOAD DE PDFs ========== -->
+            <div style="margin-bottom: 1.5rem;">
+                <label><strong>Documentos PDF do Imóvel</strong></label>
+                
+                <div id="pdfUploadArea" style="border: 2px dashed #95a5a6; border-radius: 10px; padding: 1.5rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease; background: #fafafa;">
+                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #95a5a6; margin-bottom: 1rem;"></i>
+                    <p style="margin: 0.5rem 0; font-size: 1rem; color: #555;">Clique ou arraste documentos PDF aqui</p>
+                    <p style="margin: 0; font-size: 0.8rem; color: #888;">
+                        <i class="fas fa-file-pdf"></i> Documentos técnicos e legais
+                    </p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; color: #999;">Máximo: 5 arquivos • 10MB cada</p>
+                </div>
+                
+                <input type="file" id="pdfFileInput" multiple accept=".pdf,application/pdf" style="display: none;">
+                
+                <div id="pdfUploadPreview" style="margin: 1rem 0; min-height: 60px;"></div>
+            </div>
+            
+            <!-- ========== SEÇÃO UPLOAD DE FOTOS/VIDEOS ========== -->
+            <div style="margin-bottom: 1.5rem;">
+                <label><strong>Fotos e Vídeos do Imóvel</strong></label>
+                
+                <div id="uploadArea" style="border: 2px dashed #ddd; border-radius: 10px; padding: 2rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease; background: #fafafa;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #ccc; margin-bottom: 1rem;"></i>
+                    <p style="margin: 0.5rem 0; font-size: 1.1rem; color: #555;">Clique ou arraste fotos e vídeos aqui</p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #888;">
+                        <i class="fas fa-image"></i> Fotos (JPG, PNG) • 
+                        <i class="fas fa-video"></i> Vídeos (MP4)
+                    </p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.8rem; color: #999;">Máximo: 10 arquivos • 5MB cada</p>
+                </div>
+                
+                <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
+                
+                <div id="uploadPreview" style="display: flex; gap: 10px; flex-wrap: wrap; margin: 1rem 0; min-height: 60px;"></div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
                     <label><strong>Tipo do Imóvel</strong></label>
                     <select id="propType" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
                         <option value="residencial">Residencial</option>
@@ -250,8 +875,7 @@
                         <option value="rural">Rural</option>
                     </select>
                 </div>
-                
-                <div style="margin-bottom: 1rem;">
+                <div>
                     <label><strong>Destaque</strong></label>
                     <select id="propBadge" style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%;">
                         <option value="Novo">Novo</option>
@@ -262,75 +886,51 @@
                         <option value="Chácara">Chácara</option>
                     </select>
                 </div>
-                
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="propHasVideo"> 
-                        <span><strong>Este imóvel tem vídeo?</strong></span>
-                    </label>
-                </div>
-                
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
-                        <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
-                    </button>
-                    <button type="button" id="cancelEditBtn" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; display: none;">
-                        <i class="fas fa-times"></i> Cancelar Edição
-                    </button>
-                </div>
-            </form>
+            </div>
             
-            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #eee;">
-                <h4>Gerenciar Imóveis Existentes</h4>
-                <p><small>Total de imóveis: <span id="propertyCount">0</span></small></p>
-                <div id="propertyList"></div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" id="propHasVideo"> 
+                    <span><strong>Este imóvel tem vídeo?</strong></span>
+                </label>
             </div>
-        </div>
-    </section>
-
-    <!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
-    <div id="pdfModal" class="pdf-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
-        <div class="pdf-modal-content" style="background: white; padding: 2rem; border-radius: 10px; max-width: 400px; width: 90%; text-align: center;">
-            <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
-            <div id="pdfPreview" class="pdf-preview" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 5px;">
-                <p>Documentos técnicos e legais disponíveis</p>
-            </div>
-            <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar" style="width: 100%; padding: 0.8rem; margin: 1rem 0; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem;">
-            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
-                    <i class="fas fa-lock-open"></i> Acessar
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" style="background: var(--success); color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; flex: 1; font-size: 1.1rem;">
+                    <i class="fas fa-plus"></i> Adicionar Imóvel ao Site
                 </button>
-                <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
-                    <i class="fas fa-times"></i> Fechar
+                <button type="button" id="cancelEditBtn" onclick="cancelEdit()" style="background: #95a5a6; color: white; padding: 1rem 2rem; border: none; border-radius: 5px; cursor: pointer; display: none;">
+                    <i class="fas fa-times"></i> Cancelar Edição
                 </button>
             </div>
-            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
-                <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
-            </p>
+        </form>
+        
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #eee;">
+            <h4>Gerenciar Imóveis Existentes</h4>
+            <p><small>Total de imóveis: <span id="propertyCount">0</span></small></p>
+            <div id="propertyList"></div>
         </div>
     </div>
+</section>
 
-    <button class="admin-toggle" onclick="toggleAdminPanel()" style="position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 50%; cursor: pointer; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.2); font-size: 1.2rem;">
+    <button class="admin-toggle" onclick="toggleAdminPanel()">
         <i class="fas fa-user-cog"></i>
     </button>
 
     <script>
+
 // ========== CONFIGURAÇÃO SUPABASE ==========
 const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
 
 console.log('🚀 Weber Lessa Imóveis - Sistema Iniciado');
 
-// ========== VARIÁVEIS GLOBAIS ==========
+// ========== SISTEMA DE IMÓVEIS ==========
 let properties = [];
 let editingPropertyId = null;
-let currentPdfPropertyId = null;
+let selectedFiles = [];
 
-// ========== CONFIGURAÇÕES ==========
-const ADMIN_PASSWORD = "weber123";
-const PDF_PASSWORD = "doc123";
-
-// ========== DADOS INICIAIS ==========
+// Dados iniciais com IMAGENS de exemplo
 function getInitialProperties() {
     return [
         {
@@ -345,7 +945,20 @@ function getInitialProperties() {
             badge: "Destaque",
             rural: false,
             images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-            pdfs: "",
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 2,
+            title: "Apartamento 4Qtos (178m²) - Ponta Verde",
+            price: "R$ 1.500.000",
+            location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
+            description: "Apartamento amplo, super claro e arejado, imóvel diferenciado com 178m² de área privativa, oferecendo conforto, espaço e alto padrão de acabamento. 4 Qtos, sendo 03 suítes, sala ampla com varanda, cozinha, dependência de empregada, área de serviço, 02 vagas de garagem no subsolo.",
+            features: ["4Qtos s/ 3 suítes", "Sala ampla com varanda", "Cozinha", "Área de serviço", "DCE", "02 vagas de garagem"],
+            type: "residencial",
+            has_video: false,
+            badge: "Luxo",
+            rural: false,
+            images: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1484154218962-a197022b5858?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
             created_at: new Date().toISOString()
         }
     ];
@@ -368,8 +981,9 @@ async function loadProperties() {
             properties = Array.isArray(data) ? data : [];
             console.log(`✅ ${properties.length} imóveis carregados do Supabase`);
             
-            // Garantir que as imagens sejam tratadas corretamente
+            // CORREÇÃO: Garantir que as imagens sejam tratadas corretamente
             properties = properties.map(property => {
+                // Se images estiver vazio, usar imagens padrão
                 if (!property.images || property.images === 'EMPTY' || property.images.trim() === '') {
                     property.images = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
                 }
@@ -388,9 +1002,25 @@ async function loadProperties() {
     }
     
     renderProperties();
+// Chame esta função após carregar os imóveis
+// Na função loadProperties, após properties = data, adicione:
+    checkPdfData();
+// Chame esta função após carregar os imóveis
+// Na função loadProperties, após properties = data, adicione:
+    debugPropertyData();
 }
 
-// ========== RENDERIZAR IMÓVEIS ==========
+// Adicione esta função para debug
+function checkPdfData() {
+    console.log('🔍 Verificando dados dos PDFs...');
+    properties.forEach((property, index) => {
+        console.log(`Imóvel ${index + 1}: ${property.title}`);
+        console.log(`PDFs:`, property.pdfs);
+        console.log(`Tem PDFs:`, property.pdfs && property.pdfs.length > 0);
+    });
+}
+
+// ========== RENDERIZAR IMÓVEIS CORRIGIDO ==========
 function renderProperties(filter = 'todos') {
     const container = document.getElementById('properties-container');
     if (!container) {
@@ -418,19 +1048,24 @@ function renderProperties(filter = 'todos') {
     filteredProperties.forEach(property => {
         const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
+        // DEBUG: Verificar imagens
         const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
         const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
         
-        // VERIFICAÇÃO CORRETA DE PDFs
+        // CORREÇÃO CRÍTICA: Verificar PDFs de forma segura
         const hasPdfs = property.pdfs && 
-                       property.pdfs !== 'null' && 
-                       property.pdfs !== 'undefined' && 
+                       property.pdfs.length > 0 && 
                        property.pdfs !== 'EMPTY' && 
-                       property.pdfs.length > 0;
+                       property.pdfs !== 'null' && 
+                       property.pdfs !== 'undefined';
         
-        console.log(`📋 Imóvel: ${property.title} - PDFs: ${hasPdfs} - Valor: ${property.pdfs}`);
+        console.log(`📋 Imóvel: ${property.title}`);
+        console.log(`🖼️ Tem imagens: ${hasImages}`);
+        console.log(`📄 Tem PDFs: ${hasPdfs}`);
+        console.log(`🔗 PDFs URLs: ${property.pdfs}`);
         
+        // CORREÇÃO: has_video em vez de hasVideo
         const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
         
         const card = `
@@ -444,12 +1079,10 @@ function renderProperties(filter = 'todos') {
                     ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                     ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                     
-                    <!-- BOTÃO PDF MINIMALISTA -->
-                    ${hasPdfs ? `
-                    <button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel" style="position: absolute; bottom: 10px; left: 10px; background: rgba(231, 76, 60, 0.9); border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: white; transition: all 0.3s ease; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                    <!-- BOTÃO DISCRETO PARA PDF - CORRIGIDO -->
+                    ${hasPdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
                         <i class="fas fa-file-pdf"></i>
-                    </button>
-                    ` : ''}
+                    </button>` : ''}
                 </div>
                 <div class="property-content">
                     <div class="property-price">${property.price}</div>
@@ -467,85 +1100,46 @@ function renderProperties(filter = 'todos') {
         `;
         container.innerHTML += card;
     });
+}        
+
+// ========== DEBUG DOS DADOS ==========
+function debugPropertyData() {
+    console.log('🐛 DEBUG - Dados dos Imóveis:');
+    properties.forEach((property, index) => {
+        console.log(`--- Imóvel ${index + 1} ---`);
+        console.log('Título:', property.title);
+        console.log('ID:', property.id);
+        console.log('PDFs:', property.pdfs);
+        console.log('Tipo de PDFs:', typeof property.pdfs);
+        console.log('Tem PDFs?', property.pdfs && property.pdfs.length > 0);
+        console.log('---------------');
+    });
 }
-
-// ========== SALVAR IMÓVEL ==========
-async function saveProperty(propertyData) {
-    try {
-        console.log('💾 Iniciando processo de salvamento...');
-
-        const dataToSave = {
-            title: propertyData.title,
-            price: propertyData.price,
-            location: propertyData.location,
-            description: propertyData.description,
-            features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
-            type: propertyData.type,
-            has_video: propertyData.has_video,
-            badge: propertyData.badge,
-            rural: propertyData.rural,
-            images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-            pdfs: "",
-            created_at: propertyData.created_at || new Date().toISOString()
-        };
-
-        console.log('📤 Dados para salvar:', dataToSave);
         
-        // Determinar URL e método
-        const url = editingPropertyId
-            ? `${SUPABASE_URL}/rest/v1/properties?id=eq.${editingPropertyId}`
-            : `${SUPABASE_URL}/rest/v1/properties`;
-
-        const method = editingPropertyId ? 'PATCH' : 'POST';
-
-        console.log(`🌐 Fazendo requisição: ${method} ${url}`);
-
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(dataToSave)
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Erro na resposta do Supabase:', response.status, errorText);
-            throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log('✅ Salvo com sucesso no Supabase:', result);
-        
-        // Recarregar os dados
-        await loadProperties();
-        return true;
-
-    } catch (error) {
-        console.error('❌ Erro crítico ao salvar no Supabase:', error);
-        console.log('🔄 Tentando salvar localmente como fallback...');
-        return saveToLocalStorage(propertyData);
-    }
-}
-
+// ========== SALVAR NO LOCALSTORAGE ==========
 function saveToLocalStorage(propertyData) {
     try {
+        console.log('💾 Salvando no localStorage...');
+        
+        // Se estiver editando, atualizar o imóvel existente
         if (editingPropertyId) {
             const index = properties.findIndex(p => p.id === editingPropertyId);
             if (index !== -1) {
+                // Manter o ID original e adicionar URLs das imagens
                 propertyData.id = editingPropertyId;
+                if (selectedFiles.length > 0) {
+                    // Em modo local, usar URLs de imagens de exemplo
+                    propertyData.images = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+                }
                 properties[index] = { ...properties[index], ...propertyData };
             }
         } else {
+            // Novo imóvel
             const newId = properties.length > 0 ? Math.max(...properties.map(p => p.id)) + 1 : 1;
             const newProperty = {
                 id: newId,
                 ...propertyData,
-                images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-                pdfs: ""
+                images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
             };
             properties.push(newProperty);
         }
@@ -553,6 +1147,8 @@ function saveToLocalStorage(propertyData) {
         localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
         renderProperties();
         loadPropertyList();
+        
+        console.log('✅ Salvo no localStorage com sucesso!');
         return true;
         
     } catch (error) {
@@ -560,57 +1156,49 @@ function saveToLocalStorage(propertyData) {
         return false;
     }
 }
-
-// ========== EDITAR IMÓVEL ==========
-function editProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    editingPropertyId = id;
+        
+// ========== DEBUG DO SUPABASE ==========
+async function testSupabaseConnection() {
+    console.log('🔍 Testando conexão com Supabase...');
     
-    // Preencher formulário
-    document.getElementById('propTitle').value = property.title || '';
-    document.getElementById('propPrice').value = property.price || '';
-    document.getElementById('propLocation').value = property.location || '';
-    document.getElementById('propDescription').value = property.description || '';
-    
-    const features = Array.isArray(property.features) 
-        ? property.features 
-        : (property.features || '');
-    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
-    
-    document.getElementById('propType').value = property.type || 'residencial';
-    document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.has_video || false;
-    
-    // Atualizar UI
-    document.getElementById('formTitle').textContent = 'Editar Imóvel';
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
+    try {
+        // Testar acesso à tabela
+        const tableResponse = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        console.log('📊 Status da tabela:', tableResponse.status);
+        
+        // Testar acesso ao storage
+        const storageResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket/properties`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        console.log('📦 Status do storage:', storageResponse.status);
+        
+        if (tableResponse.ok && storageResponse.ok) {
+            console.log('✅ Supabase configurado corretamente!');
+            return true;
+        } else {
+            console.log('❌ Problema na configuração do Supabase');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na conexão com Supabase:', error);
+        return false;
     }
-    document.getElementById('cancelEditBtn').style.display = 'block';
-    
-    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
-    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
-}
-
-function cancelEdit() {
-    editingPropertyId = null;
-    const form = document.getElementById('propertyForm');
-    if (form) form.reset();
-    
-    document.getElementById('formTitle').textContent = 'Adicionar Novo Imóvel';
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-    }
-    document.getElementById('cancelEditBtn').style.display = 'none';
-    
-    console.log('✅ Edição cancelada');
 }
 
 // ========== SISTEMA DO PAINEL ADMIN ==========
+const ADMIN_PASSWORD = "weber123";
+
 function toggleAdminPanel() {
     const password = prompt("Digite a senha de acesso ao painel:");
     if (password === ADMIN_PASSWORD) {
@@ -647,7 +1235,6 @@ function loadPropertyList() {
             
         const item = document.createElement('div');
         item.className = 'property-item';
-        item.style.cssText = 'background: #f5f5f5; padding: 1rem; margin: 0.5rem 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary);';
         item.innerHTML = `
             <div style="flex: 1;">
                 <strong style="color: var(--primary);">${property.title}</strong><br>
@@ -670,8 +1257,662 @@ function loadPropertyList() {
         container.appendChild(item);
     });
 }
+        
+// ========== SISTEMA DE DOCUMENTOS PDF ==========
+let currentPdfPropertyId = null;
+const PDF_PASSWORD = "doc123"; // Senha simples para documentos
 
-// ========== FORMULÁRIO ==========
+// Mostrar modal de PDF
+function showPdfModal(propertyId) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+
+    currentPdfPropertyId = propertyId;
+    const modal = document.getElementById('pdfModal');
+    const title = document.getElementById('pdfModalTitle');
+    const preview = document.getElementById('pdfPreview');
+    
+    if (title) {
+        title.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos - ${property.title}`;
+    }
+    
+    if (preview) {
+        if (property.pdfs && property.pdfs.length > 0) {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            preview.innerHTML = `
+                <p><strong>${pdfUrls.length} documento(s) disponível(is):</strong></p>
+                ${pdfUrls.map((url, index) => `
+                    <div class="pdf-file-item">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                        <span>Documento ${index + 1}</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            preview.innerHTML = '<p>Nenhum documento disponível para este imóvel.</p>';
+        }
+    }
+    
+    // Resetar senha
+    const passwordInput = document.getElementById('pdfPassword');
+    if (passwordInput) passwordInput.value = '';
+    
+    modal.style.display = 'flex';
+}
+
+// Fechar modal
+function closePdfModal() {
+    const modal = document.getElementById('pdfModal');
+    modal.style.display = 'none';
+    currentPdfPropertyId = null;
+}
+
+// Acessar documentos com senha
+function accessPdfDocuments() {
+    const passwordInput = document.getElementById('pdfPassword');
+    const password = passwordInput ? passwordInput.value : '';
+    
+    if (password !== PDF_PASSWORD) {
+        alert('❌ Senha incorreta! Solicite a senha ao corretor.');
+        return;
+    }
+    
+    const property = properties.find(p => p.id === currentPdfPropertyId);
+    if (!property || !property.pdfs) {
+        alert('❌ Nenhum documento disponível para este imóvel.');
+        return;
+    }
+    
+    // Abrir todos os PDFs em novas abas
+    const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+    pdfUrls.forEach(url => {
+        window.open(url, '_blank');
+    });
+    
+    closePdfModal();
+    alert('✅ Documentos abertos com sucesso!');
+}
+        
+   // Adicione esta seção no formulário do painel admin (após a seção de fotos/vídeos):
+
+function setupPdfUploadSystem() {
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+
+    if (pdfUploadArea && pdfFileInput) {
+        // Drag and drop para PDFs
+        pdfUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = 'var(--primary)';
+            pdfUploadArea.style.background = '#f0f8ff';
+        });
+
+        pdfUploadArea.addEventListener('dragleave', () => {
+            pdfUploadArea.style.borderColor = '#ddd';
+            pdfUploadArea.style.background = '';
+        });
+
+        pdfUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            pdfUploadArea.style.borderColor = '#ddd';
+            pdfUploadArea.style.background = '';
+            
+            const files = Array.from(e.dataTransfer.files).filter(file => 
+                file.type === 'application/pdf'
+            );
+            
+            if (files.length > 0) {
+                handlePdfFiles(files);
+            }
+        });
+
+        // Click para selecionar
+        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+
+        pdfFileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files).filter(file => 
+                file.type === 'application/pdf'
+            );
+            handlePdfFiles(files);
+        });
+    }
+}
+
+let selectedPdfFiles = [];
+
+function handlePdfFiles(files) {
+    const newFiles = Array.from(files);
+    
+    // Limitar a 5 arquivos PDF
+    if (selectedPdfFiles.length + newFiles.length > 5) {
+        alert('⚠️ Máximo de 5 arquivos PDF permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos (10MB max para PDFs)
+    for (const file of newFiles) {
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`⚠️ O arquivo PDF "${file.name}" é muito grande! Máximo: 10MB`);
+            return;
+        }
+    }
+    
+    selectedPdfFiles = [...selectedPdfFiles, ...newFiles];
+    showPdfPreview();
+}
+
+function showPdfPreview() {
+    const preview = document.getElementById('pdfUploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (selectedPdfFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+        return;
+    }
+
+    selectedPdfFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'pdf-file-item';
+        fileItem.innerHTML = `
+            <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.2rem;"></i>
+            <div style="flex: 1;">
+                <div style="font-weight: 500;">${file.name}</div>
+                <div style="font-size: 0.8rem; color: #666;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+            </div>
+            <button onclick="removePdfFile(${index})" 
+                    style="background: #e74c3c; color: white; border: none; border-radius: 3px; padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.8rem;">
+                <i class="fas fa-times"></i> Remover
+            </button>
+        `;
+        preview.appendChild(fileItem);
+    });
+}
+
+function removePdfFile(index) {
+    selectedPdfFiles.splice(index, 1);
+    showPdfPreview();
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('pdfFileInput').files = dataTransfer.files;
+}
+
+// Upload de PDFs para Supabase
+async function uploadPdfFile(file) {
+    try {
+        console.log('📤 Iniciando upload de PDF:', file.name);
+        
+        const fileName = `pdf_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro no upload do PDF:', errorText);
+            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+        
+        console.log('✅ PDF upload concluído:', publicUrl);
+        return publicUrl;
+        
+    } catch (error) {
+        console.error('❌ Erro crítico no upload do PDF:', error);
+        return null;
+    }
+}     
+        
+// ========== EDITAR IMÓVEL CORRIGIDO ==========
+function editProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    editingPropertyId = id;
+    
+    // Preencher formulário
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    
+    const features = Array.isArray(property.features) 
+        ? property.features 
+        : (property.features || '');
+    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+    
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+    
+    document.getElementById('propHasVideo').checked = property.has_video || false;
+    
+    // Atualizar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Editar Imóvel';
+    }
+    
+    // Atualizar texto do botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
+    }
+    
+    // Mostrar botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'block';
+    }
+    
+    // Mostrar imagens existentes se houver
+    selectedFiles = [];
+    const preview = document.getElementById('uploadPreview');
+    if (preview) {
+        preview.innerHTML = '';
+        
+        if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
+            const existingImages = property.images.split(',').filter(img => img.trim() !== '');
+            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel:</p>';
+            
+            existingImages.forEach((imgUrl, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+                imgContainer.innerHTML = `
+                    <img src="${imgUrl}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);">
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
+                `;
+                preview.appendChild(imgContainer);
+            });
+            
+            preview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novas fotos acima.</p>';
+        }
+    }
+    
+    // Rolar até o formulário
+    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
+    
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
+}
+
+// ========== CANCELAR EDIÇÃO (FUNÇÃO FALTANDO) ==========
+function cancelEdit() {
+    editingPropertyId = null;
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+    
+    // Resetar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Adicionar Novo Imóvel';
+    }
+    
+    // Resetar botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+    }
+    
+    // Esconder botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
+    
+    selectedFiles = [];
+    const preview = document.getElementById('uploadPreview');
+    if (preview) preview.innerHTML = '';
+    
+    console.log('✅ Edição cancelada');
+}
+
+// ========== SISTEMA DE UPLOAD ==========
+function setupUploadSystem() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadPreview = document.getElementById('uploadPreview');
+
+    if (uploadArea && fileInput) {
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = '#f0f8ff';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+
+        // Click para selecionar
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+    }
+}
+
+function handleFiles(files) {
+    const newFiles = Array.from(files);
+    
+    // Limitar a 10 arquivos
+    if (selectedFiles.length + newFiles.length > 10) {
+        alert('⚠️ Máximo de 10 arquivos permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos (5MB max)
+    for (const file of newFiles) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`⚠️ O arquivo "${file.name}" é muito grande! Máximo: 5MB`);
+            return;
+        }
+    }
+    
+    selectedFiles = [...selectedFiles, ...newFiles];
+    showPreview();
+}
+
+function showPreview() {
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (selectedFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+        return;
+    }
+
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileItem.innerHTML = `
+                    <img src="${e.target.result}" 
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; line-height: 1;">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
+                `;
+                preview.appendChild(fileItem);
+            };
+            reader.readAsDataURL(file);
+
+        } else if (file.type.startsWith('video/')) {
+            fileItem.innerHTML = `
+                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
+                </div>
+            `;
+            preview.appendChild(fileItem);
+        }
+    });
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    showPreview();
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('fileInput').files = dataTransfer.files;
+}
+
+// ========== UPLOAD PARA SUPABASE ==========
+async function uploadFile(file) {
+    try {
+        console.log('📤 Iniciando upload:', file.name);
+        
+        const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro no upload:', errorText);
+            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        
+        // URL CORRETA para acesso público
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+        
+        console.log('✅ Upload concluído:', publicUrl);
+        return publicUrl;
+        
+    } catch (error) {
+        console.error('❌ Erro crítico no upload:', error);
+        return null;
+    }
+}
+
+// ========== SALVAR IMÓVEL CORRIGIDO ==========
+async function saveProperty(propertyData) {
+    try {
+        console.log('💾 Iniciando processo de salvamento...');
+
+        const dataToSave = {
+            title: propertyData.title,
+            price: propertyData.price,
+            location: propertyData.location,
+            description: propertyData.description,
+            features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
+            type: propertyData.type,
+            has_video: propertyData.has_video,
+            badge: propertyData.badge,
+            rural: propertyData.rural,
+            created_at: propertyData.created_at || new Date().toISOString()
+        };
+
+        // Upload dos arquivos se houver
+        if (selectedFiles.length > 0) {
+            console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
+            let uploadedFiles = [];
+            
+            for (const file of selectedFiles) {
+                console.log(`⬆️ Enviando: ${file.name}`);
+                const fileUrl = await uploadFile(file);
+                if (fileUrl) {
+                    uploadedFiles.push(fileUrl);
+                    console.log(`✅ Upload realizado: ${fileUrl}`);
+                }
+            }
+            
+            if (uploadedFiles.length > 0) {
+                dataToSave.images = uploadedFiles.join(', ');
+                console.log('🖼️ URLs das imagens para salvar:', dataToSave.images);
+            }
+        } else if (editingPropertyId) {
+            // Manter imagens existentes ao editar
+            const existingProperty = properties.find(p => p.id === editingPropertyId);
+            if (existingProperty && existingProperty.images) {
+                dataToSave.images = existingProperty.images;
+                console.log('🔄 Mantendo imagens existentes:', dataToSave.images);
+            }
+        }
+
+        console.log('📤 Dados completos para salvar:', dataToSave);
+// Upload dos PDFs se houver
+if (selectedPdfFiles.length > 0) {
+    console.log(`📄 Fazendo upload de ${selectedPdfFiles.length} PDFs...`);
+    let uploadedPdfs = [];
+    
+    for (const file of selectedPdfFiles) {
+        console.log(`⬆️ Enviando PDF: ${file.name}`);
+        const fileUrl = await uploadPdfFile(file);
+        if (fileUrl) {
+            uploadedPdfs.push(fileUrl);
+            console.log(`✅ PDF enviado: ${fileUrl}`);
+        }
+    }
+    
+    if (uploadedPdfs.length > 0) {
+        dataToSave.pdfs = uploadedPdfs.join(', ');
+        console.log('📄 URLs dos PDFs para salvar:', dataToSave.pdfs);
+    }
+} else if (editingPropertyId) {
+    // Manter PDFs existentes ao editar
+    const existingProperty = properties.find(p => p.id === editingPropertyId);
+    if (existingProperty && existingProperty.pdfs) {
+        dataToSave.pdfs = existingProperty.pdfs;
+        console.log('🔄 Mantendo PDFs existentes:', dataToSave.pdfs);
+    }
+}
+        
+        // Determinar URL e método
+        const url = editingPropertyId
+            ? `${SUPABASE_URL}/rest/v1/properties?id=eq.${editingPropertyId}`
+            : `${SUPABASE_URL}/rest/v1/properties`;
+
+        const method = editingPropertyId ? 'PATCH' : 'POST';
+
+        console.log(`🌐 Fazendo requisição: ${method} ${url}`);
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(dataToSave)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro na resposta do Supabase:', response.status, errorText);
+            throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Salvo com sucesso no Supabase:', result);
+        
+        // Recarregar os dados do Supabase
+        await loadProperties();
+        return true;
+
+    } catch (error) {
+        console.error('❌ Erro crítico ao salvar no Supabase:', error);
+        console.log('🔄 Tentando salvar localmente como fallback...');
+        return saveToLocalStorage(propertyData);
+    }
+}
+
+// ========== TESTAR ACESSO ÀS IMAGENS ==========
+async function testImageAccess() {
+    console.log('🔍 Testando acesso às imagens...');
+    
+    // URLs das suas imagens no Supabase
+    const testImages = [
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341618532_thumbnail3.jpeg',
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341628860_thumbnail2.jpeg',
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341634876_thumbnail1.jpeg'
+    ];
+    
+    for (const imgUrl of testImages) {
+        try {
+            const response = await fetch(imgUrl);
+            if (response.ok) {
+                console.log(`✅ Imagem acessível: ${imgUrl}`);
+            } else {
+                console.log(`❌ Imagem não acessível: ${imgUrl} - Status: ${response.status}`);
+            }
+        } catch (error) {
+            console.log(`❌ Erro ao acessar imagem: ${imgUrl} - ${error.message}`);
+        }
+    }
+}
+
+// Chamar a função de teste
+testImageAccess();
+        
+// ========== EXCLUIR IMÓVEL ==========
+async function deleteProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
+        try {
+            // Tentar excluir do Supabase
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+
+            if (response.ok) {
+                console.log('✅ Imóvel excluído do Supabase');
+            } else {
+                console.log('⚠️ Não foi possível excluir do Supabase');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao excluir do Supabase:', error);
+        }
+
+        // Excluir localmente de qualquer forma
+        const index = properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            properties.splice(index, 1);
+            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        }
+
+        renderProperties();
+        loadPropertyList();
+        alert("✅ Imóvel excluído com sucesso!");
+    }
+}
+
+// ========== FORMULÁRIO CORRIGIDO ==========
 function setupForm() {
     const form = document.getElementById('propertyForm');
     if (!form) return;
@@ -704,13 +1945,18 @@ function setupForm() {
 
         try {
             const success = await saveProperty(propertyData);
+            
             if (success) {
                 alert("✅ Imóvel salvo com sucesso!");
-                this.reset();
-                cancelEdit();
             } else {
                 alert("❌ Erro ao salvar o imóvel!");
             }
+
+            this.reset();
+            cancelEdit();
+            selectedFiles = [];
+            showPreview();
+
         } catch (error) {
             alert("❌ Erro: " + error.message);
         } finally {
@@ -720,7 +1966,7 @@ function setupForm() {
     });
 }
 
-// ========== FUNÇÕES DE CONTATO E EXCLUSÃO ==========
+// ========== FUNÇÕES DE INTERAÇÃO ==========
 function contactAgent(id) {
     const property = properties.find(p => p.id === id);
     if (property) {
@@ -730,102 +1976,47 @@ function contactAgent(id) {
     }
 }
 
-async function deleteProperty(id) {
+function viewProperty(id) {
     const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
-        try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-            if (response.ok) console.log('✅ Imóvel excluído do Supabase');
-        } catch (error) {
-            console.error('❌ Erro ao excluir do Supabase:', error);
-        }
-
-        const index = properties.findIndex(p => p.id === id);
-        if (index !== -1) {
-            properties.splice(index, 1);
-            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
-        }
-
-        renderProperties();
-        loadPropertyList();
-        alert("✅ Imóvel excluído com sucesso!");
+    if (property) {
+        alert(`🏠 ${property.title}\n\n💰 ${property.price}\n📍 ${property.location}\n\n${property.description}`);
     }
 }
 
-// ========== SISTEMA DE PDFs ==========
-function showPdfModal(propertyId) {
-    const property = properties.find(p => p.id === propertyId);
-    if (!property) return;
-
-    currentPdfPropertyId = propertyId;
-    const modal = document.getElementById('pdfModal');
-    const title = document.getElementById('pdfModalTitle');
-    const preview = document.getElementById('pdfPreview');
-    
-    if (title) title.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos - ${property.title}`;
-    if (preview) {
-        if (property.pdfs && property.pdfs.length > 0) {
-            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-            preview.innerHTML = `
-                <p><strong>${pdfUrls.length} documento(s) disponível(is):</strong></p>
-                ${pdfUrls.map((url, index) => `
-                    <div class="pdf-file-item" style="display: flex; align-items: center; gap: 10px; padding: 0.5rem; margin: 0.5rem 0; background: white; border-radius: 5px; border: 1px solid #ddd;">
-                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
-                        <span>Documento ${index + 1}</span>
-                    </div>
-                `).join('')}
-            `;
-        } else {
-            preview.innerHTML = '<p>Nenhum documento disponível para este imóvel.</p>';
-        }
+  // ========== TESTAR CONEXÃO SUPABASE MELHORADA ==========
+async function testSupabaseConnection() {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        return response.ok;
+    } catch (error) {
+        return false;
     }
-    
-    const passwordInput = document.getElementById('pdfPassword');
-    if (passwordInput) passwordInput.value = '';
-    modal.style.display = 'flex';
 }
-
-function closePdfModal() {
-    document.getElementById('pdfModal').style.display = 'none';
-    currentPdfPropertyId = null;
-}
-
-function accessPdfDocuments() {
-    const passwordInput = document.getElementById('pdfPassword');
-    const password = passwordInput ? passwordInput.value : '';
-    
-    if (password !== PDF_PASSWORD) {
-        alert('❌ Senha incorreta! Solicite a senha ao corretor.');
-        return;
-    }
-    
-    const property = properties.find(p => p.id === currentPdfPropertyId);
-    if (!property || !property.pdfs) {
-        alert('❌ Nenhum documento disponível para este imóvel.');
-        return;
-    }
-    
-    const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-    pdfUrls.forEach(url => window.open(url, '_blank'));
-    closePdfModal();
-    alert('✅ Documentos abertos com sucesso!');
-}
-
-// ========== INICIALIZAÇÃO ==========
+        
+// ========== INICIALIZAÇÃO CORRIGIDA ==========
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
+   
+    // Testar conexão com Supabase de forma mais precisa
+    const supabaseOk = await testSupabaseConnection();
     
-    // Configurar eventos
+    if (!supabaseOk) {
+        console.log('⚠️ Supabase não disponível, usando modo local');
+    } else {
+        console.log('✅ Supabase conectado com sucesso!');
+    }
+    
+    loadProperties();
     setupForm();
-    
+    setupUploadSystem();
+    // Na função DOMContentLoaded, adicione:
+    setupPdfUploadSystem();
     // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
@@ -837,10 +2028,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     });
     
-    // Carregar dados
-    await loadProperties();
     console.log('✅ Sistema Weber Lessa carregado!');
 });
-    </script>
+
+  </script>
+  <!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
+    <div id="pdfModal" class="pdf-modal">
+        <div class="pdf-modal-content">
+            <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
+            <div id="pdfPreview" class="pdf-preview">
+                <p>Documentos técnicos e legais disponíveis</p>
+            </div>
+            <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar">
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                    <i class="fas fa-lock-open"></i> Acessar
+                </button>
+                <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
+                <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
+            </p>
+        </div>
+    </div>
+
+    <button class="admin-toggle" onclick="toggleAdminPanel()">
+        <i class="fas fa-user-cog"></i>
+    </button>
+
 </body>
 </html>
