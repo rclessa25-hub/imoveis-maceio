@@ -1588,6 +1588,236 @@ async function uploadPdfFile(file) {
         return null;
     }
 }     
+
+// ========== EDITAR IMÓVEL CORRIGIDO COM EXCLUSÃO DE PDFs EXISTENTES ==========
+function editProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    editingPropertyId = id;
+    
+    // Preencher formulário
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    
+    const features = Array.isArray(property.features) 
+        ? property.features 
+        : (property.features || '');
+    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+    
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+    
+    document.getElementById('propHasVideo').checked = property.has_video || false;
+    
+    // Atualizar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Editar Imóvel';
+    }
+    
+    // Atualizar texto do botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
+    }
+    
+    // Mostrar botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'block';
+    }
+    
+    // Mostrar imagens existentes se houver - COM BOTÕES DE EXCLUSÃO
+    selectedFiles = [];
+    const preview = document.getElementById('uploadPreview');
+    if (preview) {
+        preview.innerHTML = '';
+        
+        if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
+            const existingImages = property.images.split(',').filter(img => url.trim() !== '');
+            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
+            
+            existingImages.forEach((imgUrl, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'image-preview-container';
+                imgContainer.innerHTML = `
+                    <img src="${imgUrl}" 
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                    <button class="delete-image-btn" onclick="deleteExistingImage(${property.id}, ${index})" 
+                            title="Excluir esta foto">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
+                `;
+                preview.appendChild(imgContainer);
+            });
+            
+            preview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novas fotos acima.</p>';
+        }
+    }
+    
+    // Mostrar PDFs existentes se houver - COM BOTÕES DE EXCLUSÃO
+    selectedPdfFiles = [];
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '';
+        
+        if (property.pdfs && property.pdfs.length > 0 && property.pdfs !== 'EMPTY') {
+            const existingPdfs = property.pdfs.split(',').filter(url => url.trim() !== '');
+            pdfPreview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
+            
+            existingPdfs.forEach((pdfUrl, index) => {
+                // Extrair nome do arquivo da URL
+                const fileName = pdfUrl.split('/').pop() || `Documento ${index + 1}`;
+                
+                const pdfContainer = document.createElement('div');
+                pdfContainer.className = 'image-preview-container';
+                pdfContainer.innerHTML = `
+                    <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                        <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${fileName}</p>
+                    </div>
+                    <button class="delete-image-btn" onclick="deleteExistingPdf(${property.id}, ${index})" 
+                            title="Excluir este documento">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Doc ${index + 1}</div>
+                `;
+                pdfPreview.appendChild(pdfContainer);
+            });
+            
+            pdfPreview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novos documentos acima.</p>';
+        }
+    }
+    
+    // Rolar até o formulário
+    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
+    
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
+}
+
+// ========== EXCLUIR PDF EXISTENTE DO IMÓVEL ==========
+async function deleteExistingPdf(propertyId, pdfIndex) {
+    if (!confirm('Tem certeza que deseja excluir este documento PDF? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+
+    const property = properties.find(p => p.id === propertyId);
+    if (!property || !property.pdfs) return;
+
+    try {
+        // Separar as URLs dos PDFs
+        const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+        
+        // Remover o PDF selecionado
+        if (pdfIndex >= 0 && pdfIndex < pdfUrls.length) {
+            const pdfToDelete = pdfUrls[pdfIndex];
+            
+            // Tentar excluir do Supabase Storage
+            try {
+                // Extrair o nome do arquivo da URL
+                const fileName = pdfToDelete.split('/').pop();
+                if (fileName && fileName !== 'EMPTY') {
+                    const response = await fetch(
+                        `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                'apikey': SUPABASE_KEY
+                            }
+                        }
+                    );
+                    
+                    if (response.ok) {
+                        console.log('✅ PDF excluído do Supabase Storage:', fileName);
+                    } else {
+                        console.log('⚠️ Não foi possível excluir do Supabase Storage');
+                    }
+                }
+            } catch (storageError) {
+                console.log('⚠️ Erro ao excluir do storage, continuando...', storageError);
+            }
+            
+            // Remover da lista local
+            pdfUrls.splice(pdfIndex, 1);
+            
+            // Atualizar a propriedade
+            property.pdfs = pdfUrls.length > 0 ? pdfUrls.join(', ') : 'EMPTY';
+            
+            // Salvar no Supabase
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({ pdfs: property.pdfs })
+            });
+
+            if (response.ok) {
+                console.log('✅ PDF excluído com sucesso!');
+                
+                // Atualizar localmente
+                const index = properties.findIndex(p => p.id === propertyId);
+                if (index !== -1) {
+                    properties[index] = property;
+                    localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+                }
+                
+                // Recarregar a visualização
+                editProperty(propertyId);
+                alert('✅ Documento PDF excluído com sucesso!');
+            } else {
+                throw new Error('Erro ao atualizar no Supabase');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erro ao excluir PDF:', error);
+        alert('❌ Erro ao excluir o documento PDF. Tente novamente.');
+    }
+}
+
+// ========== MOSTRAR PREVIEW DE PDFs COM BOTÕES "X" ==========
+function showPdfPreview() {
+    const preview = document.getElementById('pdfUploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (selectedPdfFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+        return;
+    }
+
+    selectedPdfFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'image-preview-container';
+        fileItem.innerHTML = `
+            <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
+                <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+            </div>
+            <button class="delete-image-btn" onclick="removePdfFile(${index})" title="Excluir este PDF">×</button>
+            <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+        `;
+        preview.appendChild(fileItem);
+    });
+}
+
+// ========== REMOVER PDF DA LISTA DE UPLOAD ==========
+function removePdfFile(index) {
+    if (confirm('Tem certeza que deseja excluir este PDF da lista de upload?')) {
+        selectedPdfFiles.splice(index, 1);
+        showPdfPreview();
+        
+        // Atualizar input file
+        const dataTransfer = new DataTransfer();
+        selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
+        document.getElementById('pdfFileInput').files = dataTransfer.files;
+    }
+}
         
 // ========== EDITAR IMÓVEL CORRIGIDO COM EXCLUSÃO DE FOTOS EXISTENTES ==========
 function editProperty(id) {
