@@ -985,48 +985,68 @@ function getInitialProperties() {
     ];
 }
 
-// ========== SISTEMA DE UPLOAD DE PDFs CORRIGIDO ==========
+// ========== SISTEMA DE UPLOAD DE PDFs TOTALMENTE CORRIGIDO ==========
 function setupPdfUploadSystem() {
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     const pdfFileInput = document.getElementById('pdfFileInput');
 
-    if (pdfUploadArea && pdfFileInput) {
-        // CORREÇÃO COMPLETA: Sistema de upload simplificado e funcional
-        pdfUploadArea.addEventListener('click', function() {
-            console.log('📄 Clicou na área de PDF - abrindo seletor de arquivos');
-            pdfFileInput.value = ''; // Reset para permitir selecionar o mesmo arquivo
-            pdfFileInput.click();
+    if (!pdfUploadArea || !pdfFileInput) {
+        console.error('❌ Elementos de upload de PDF não encontrados');
+        return;
+    }
+
+    // CORREÇÃO DEFINITIVA: Sistema de upload completamente novo
+    const initializePdfUpload = () => {
+        // Limpar event listeners antigos
+        const newPdfUploadArea = pdfUploadArea.cloneNode(true);
+        const newPdfFileInput = pdfFileInput.cloneNode(true);
+        
+        pdfUploadArea.parentNode.replaceChild(newPdfUploadArea, pdfUploadArea);
+        pdfFileInput.parentNode.replaceChild(newPdfFileInput, pdfFileInput);
+
+        // Re-obter referências
+        const currentPdfUploadArea = document.getElementById('pdfUploadArea');
+        const currentPdfFileInput = document.getElementById('pdfFileInput');
+
+        // Evento de clique SIMPLES e FUNCIONAL
+        currentPdfUploadArea.addEventListener('click', function(e) {
+            console.log('📄 Área de PDF clicada - abrindo seletor de arquivos');
+            currentPdfFileInput.value = '';
+            currentPdfFileInput.click();
         });
 
-        pdfFileInput.addEventListener('change', function(e) {
-            console.log('📄 Arquivos selecionados:', e.target.files);
-            const files = Array.from(e.target.files).filter(file => 
-                file.type === 'application/pdf'
-            );
-            
-            if (files.length > 0) {
-                handlePdfFiles(files);
-            } else {
-                alert('⚠️ Por favor, selecione apenas arquivos PDF!');
+        // Evento de change no input file
+        currentPdfFileInput.addEventListener('change', function(e) {
+            console.log('📄 Input file change detectado:', e.target.files);
+            if (e.target.files && e.target.files.length > 0) {
+                const files = Array.from(e.target.files).filter(file => 
+                    file.type === 'application/pdf'
+                );
+                
+                if (files.length > 0) {
+                    handlePdfFiles(files);
+                } else {
+                    alert('⚠️ Por favor, selecione apenas arquivos PDF!');
+                }
             }
         });
 
-        // Drag and drop
-        pdfUploadArea.addEventListener('dragover', function(e) {
+        // Drag and drop (opcional)
+        currentPdfUploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
-            pdfUploadArea.style.borderColor = 'var(--primary)';
-            pdfUploadArea.style.background = '#f0f8ff';
+            currentPdfUploadArea.style.borderColor = 'var(--primary)';
+            currentPdfUploadArea.style.background = '#f0f8ff';
         });
 
-        pdfUploadArea.addEventListener('dragleave', function() {
-            pdfUploadArea.style.borderColor = '#95a5a6';
-            pdfUploadArea.style.background = '#fafafa';
+        currentPdfUploadArea.addEventListener('dragleave', function() {
+            currentPdfUploadArea.style.borderColor = '#95a5a6';
+            currentPdfUploadArea.style.background = '#fafafa';
         });
 
-        pdfUploadArea.addEventListener('drop', function(e) {
+        currentPdfUploadArea.addEventListener('drop', function(e) {
             e.preventDefault();
-            pdfUploadArea.style.borderColor = '#95a5a6';
-            pdfUploadArea.style.background = '#fafafa';
+            currentPdfUploadArea.style.borderColor = '#95a5a6';
+            currentPdfUploadArea.style.background = '#fafafa';
             
             const files = Array.from(e.dataTransfer.files).filter(file => 
                 file.type === 'application/pdf'
@@ -1036,8 +1056,15 @@ function setupPdfUploadSystem() {
                 handlePdfFiles(files);
             }
         });
+
+        console.log('✅ Sistema de upload de PDFs inicializado com sucesso');
+    };
+
+    // Inicializar quando o DOM estiver pronto
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializePdfUpload);
     } else {
-        console.error('❌ Elementos de upload de PDF não encontrados');
+        initializePdfUpload();
     }
 }
 
@@ -1060,7 +1087,7 @@ function handlePdfFiles(files) {
     
     selectedPdfFiles = [...selectedPdfFiles, ...newFiles];
     showPdfPreview();
-    console.log('📄 PDFs selecionados:', selectedPdfFiles);
+    console.log('📄 PDFs selecionados:', selectedPdfFiles.map(f => f.name));
 }
 
 function showPdfPreview() {
@@ -1077,6 +1104,7 @@ function showPdfPreview() {
     selectedPdfFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'pdf-file-item';
+        fileItem.style.cssText = 'display: flex; align-items: center; gap: 10px; padding: 0.5rem; margin: 0.5rem 0; background: white; border-radius: 5px; border: 1px solid #ddd;';
         fileItem.innerHTML = `
             <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.2rem;"></i>
             <div style="flex: 1;">
@@ -1412,6 +1440,175 @@ async function saveProperty(propertyData) {
     }
 }
 
+// ========== SISTEMA DE UPLOAD DE IMAGENS/VIDEOS MELHORADO ==========
+function setupUploadSystem() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--primary)';
+            uploadArea.style.background = '#f0f8ff';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = '';
+            if (e.dataTransfer.files.length > 0) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+    }
+}
+
+function handleFiles(files) {
+    const newFiles = Array.from(files);
+    if (selectedFiles.length + newFiles.length > 10) {
+        alert('⚠️ Máximo de 10 arquivos permitidos!');
+        return;
+    }
+    selectedFiles = [...selectedFiles, ...newFiles];
+    showPreview();
+}
+
+function showPreview() {
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) return;
+    preview.innerHTML = '';
+    
+    if (selectedFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+        return;
+    }
+
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+        
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileItem.innerHTML = `
+                    <img src="${e.target.result}" 
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -8px; right: -8px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
+                `;
+                preview.appendChild(fileItem);
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/')) {
+            fileItem.innerHTML = `
+                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                    <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -8px; right: -8px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">×</button>
+                </div>
+            `;
+            preview.appendChild(fileItem);
+        }
+    });
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    showPreview();
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('fileInput').files = dataTransfer.files;
+}
+
+// ========== EDITAR IMÓVEL - COM VISUALIZAÇÃO DE FOTOS EXISTENTES ==========
+function editProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
+
+    editingPropertyId = id;
+    
+    // Preencher formulário
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    
+    const features = Array.isArray(property.features) 
+        ? property.features 
+        : (property.features || '');
+    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+    
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+    document.getElementById('propHasVideo').checked = property.has_video || false;
+    
+    // Atualizar UI
+    document.getElementById('formTitle').textContent = 'Editar Imóvel';
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
+    }
+    document.getElementById('cancelEditBtn').style.display = 'block';
+    
+    // MOSTRAR FOTOS EXISTENTES - MELHORIA RESTAURADA
+    showExistingImages(property);
+    
+    // Resetar sistemas de upload
+    selectedFiles = [];
+    selectedPdfFiles = [];
+    showPreview();
+    resetPdfUploadSystem();
+    
+    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
+}
+
+// ========== MOSTRAR FOTOS EXISTENTES - FUNÇÃO RESTAURADA ==========
+function showExistingImages(property) {
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+    
+    if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
+        const existingImages = property.images.split(',').filter(img => img.trim() !== '');
+        
+        // Adicionar título para fotos existentes
+        const existingTitle = document.createElement('p');
+        existingTitle.style.cssText = 'color: #666; margin-bottom: 1rem; font-weight: bold;';
+        existingTitle.textContent = '📸 Fotos atuais do imóvel:';
+        preview.appendChild(existingTitle);
+        
+        // Mostrar cada foto existente
+        existingImages.forEach((imgUrl, index) => {
+            const imgContainer = document.createElement('div');
+            imgContainer.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+            imgContainer.innerHTML = `
+                <img src="${imgUrl}" 
+                     style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);">
+                <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
+            `;
+            preview.appendChild(imgContainer);
+        });
+        
+        // Adicionar mensagem informativa
+        const infoMessage = document.createElement('p');
+        infoMessage.style.cssText = 'color: #666; margin: 1rem 0; font-size: 0.9rem;';
+        infoMessage.textContent = '💡 Você pode adicionar novas fotos acima. As fotos existentes serão mantidas.';
+        preview.appendChild(infoMessage);
+    }
+}
+
 // ========== FUNÇÕES RESTANTES (mantenha as existentes) ==========
 async function uploadFile(file) {
     try {
@@ -1467,6 +1664,26 @@ function saveToLocalStorage(propertyData) {
         console.error('❌ Erro ao salvar no localStorage:', error);
         return false;
     }
+}
+
+function cancelEdit() {
+    editingPropertyId = null;
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+    
+    document.getElementById('formTitle').textContent = 'Adicionar Novo Imóvel';
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+    }
+    document.getElementById('cancelEditBtn').style.display = 'none';
+    
+    selectedFiles = [];
+    selectedPdfFiles = [];
+    showPreview();
+    resetPdfUploadSystem();
+    
+    console.log('✅ Edição cancelada - sistemas resetados');
 }
 
 // ========== SISTEMA DO PAINEL ADMIN ==========
@@ -1527,149 +1744,6 @@ function loadPropertyList() {
         `;
         container.appendChild(item);
     });
-}
-
-function editProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    editingPropertyId = id;
-    
-    // Preencher formulário
-    document.getElementById('propTitle').value = property.title || '';
-    document.getElementById('propPrice').value = property.price || '';
-    document.getElementById('propLocation').value = property.location || '';
-    document.getElementById('propDescription').value = property.description || '';
-    
-    const features = Array.isArray(property.features) 
-        ? property.features 
-        : (property.features || '');
-    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
-    
-    document.getElementById('propType').value = property.type || 'residencial';
-    document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.has_video || false;
-    
-    // Atualizar UI
-    document.getElementById('formTitle').textContent = 'Editar Imóvel';
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
-    }
-    document.getElementById('cancelEditBtn').style.display = 'block';
-    
-    // Resetar sistemas de upload
-    selectedFiles = [];
-    selectedPdfFiles = [];
-    showPreview();
-    resetPdfUploadSystem();
-    
-    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
-    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
-}
-
-function cancelEdit() {
-    editingPropertyId = null;
-    const form = document.getElementById('propertyForm');
-    if (form) form.reset();
-    
-    document.getElementById('formTitle').textContent = 'Adicionar Novo Imóvel';
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-    }
-    document.getElementById('cancelEditBtn').style.display = 'none';
-    
-    selectedFiles = [];
-    selectedPdfFiles = [];
-    showPreview();
-    resetPdfUploadSystem();
-    
-    console.log('✅ Edição cancelada - sistemas resetados');
-}
-
-// ========== SISTEMA DE UPLOAD DE IMAGENS/VIDEOS ==========
-function setupUploadSystem() {
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-
-    if (uploadArea && fileInput) {
-        uploadArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--primary)';
-            uploadArea.style.background = '#f0f8ff';
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.style.borderColor = '#ddd';
-            uploadArea.style.background = '';
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#ddd';
-            uploadArea.style.background = '';
-            if (e.dataTransfer.files.length > 0) {
-                handleFiles(e.dataTransfer.files);
-            }
-        });
-    }
-}
-
-function handleFiles(files) {
-    const newFiles = Array.from(files);
-    if (selectedFiles.length + newFiles.length > 10) {
-        alert('⚠️ Máximo de 10 arquivos permitidos!');
-        return;
-    }
-    selectedFiles = [...selectedFiles, ...newFiles];
-    showPreview();
-}
-
-function showPreview() {
-    const preview = document.getElementById('uploadPreview');
-    if (!preview) return;
-    preview.innerHTML = '';
-    if (selectedFiles.length === 0) {
-        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
-        return;
-    }
-    selectedFiles.forEach((file, index) => {
-        const fileItem = document.createElement('div');
-        fileItem.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                fileItem.innerHTML = `
-                    <img src="${e.target.result}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
-                    <button onclick="removeFile(${index})" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; line-height: 1;">×</button>
-                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
-                `;
-                preview.appendChild(fileItem);
-            };
-            reader.readAsDataURL(file);
-        } else if (file.type.startsWith('video/')) {
-            fileItem.innerHTML = `
-                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                    <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
-                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
-                    <button onclick="removeFile(${index})" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer;">×</button>
-                </div>
-            `;
-            preview.appendChild(fileItem);
-        }
-    });
-}
-
-function removeFile(index) {
-    selectedFiles.splice(index, 1);
-    showPreview();
-    const dataTransfer = new DataTransfer();
-    selectedFiles.forEach(file => dataTransfer.items.add(file));
-    document.getElementById('fileInput').files = dataTransfer.files;
 }
 
 // ========== FORMULÁRIO ==========
