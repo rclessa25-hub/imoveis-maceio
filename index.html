@@ -2088,7 +2088,7 @@ function editProperty(id) {
         
         if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
             const existingImages = property.images.split(',').filter(img => img.trim() !== '');
-            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
+            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos do imóvel (clique no X para excluir):</p>';
             
             existingImages.forEach((imgUrl, index) => {
                 const imgContainer = document.createElement('div');
@@ -2127,7 +2127,7 @@ function editProperty(id) {
             
             // CORREÇÃO: Criar uma área separada para PDFs existentes
             pdfPreview.innerHTML = '<div id="existingPdfsSection">';
-            pdfPreview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
+            pdfPreview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📄 pdf do imóvel (clique no X para excluir):</p>';
             
             existingPdfs.forEach((pdfUrl, index) => {
                 // Extrair nome do arquivo da URL
