@@ -31,7 +31,314 @@
             background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
             min-height: 100vh;
         }
-        
+
+/* ========== HEADER PREMIUM ========== */
+.header {
+    background: linear-gradient(135deg, #0c2d48 0%, #1a5276 100%);
+    padding: 1rem 0;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #d4af37 0%, #ffd700 50%, #d4af37 100%);
+}
+
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Logo Container */
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+/* Logo WL */
+.logo {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(145deg, #1a5276, #0c2d48);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3),
+                inset 0 2px 0 rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.logo-wl {
+    font-family: 'Georgia', serif;
+    font-size: 2.5rem;
+    font-weight: bold;
+    background: linear-gradient(135deg, #ffffff, #d4af37);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.logo-badge {
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #d4af37, #b8941f);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0c2d48;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    border: 2px solid #ffffff;
+}
+
+/* Logo Text */
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.name-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.brand-name {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    margin: 0;
+}
+
+.first-name {
+    font-family: 'Georgia', serif;
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.last-name {
+    font-family: 'Georgia', serif;
+    font-size: 1.8rem;
+    font-weight: normal;
+    color: #d4af37;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: -5px;
+}
+
+.professional-badge {
+    background: rgba(212, 175, 55, 0.1);
+    padding: 6px 15px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.professional-badge i {
+    color: #d4af37;
+    font-size: 0.9rem;
+}
+
+.professional-badge span {
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* Credentials Container */
+.credentials-container {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px 25px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.creci-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.creci-badge i {
+    font-size: 1.5rem;
+    color: #d4af37;
+    background: rgba(212, 175, 55, 0.1);
+    padding: 10px;
+    border-radius: 50%;
+}
+
+.creci-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.creci-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.creci-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.divider {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(180deg, 
+        transparent 0%, 
+        rgba(212, 175, 55, 0.5) 50%, 
+        transparent 100%);
+}
+
+.specialty-container {
+    flex: 1;
+}
+
+.specialty-badge {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.specialty-badge i {
+    font-size: 1.8rem;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.specialty-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.specialty-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.specialty-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+    .header-content {
+        padding: 0 1.5rem;
+    }
+    
+    .first-name {
+        font-size: 1.8rem;
+    }
+    
+    .last-name {
+        font-size: 1.5rem;
+    }
+    
+    .credentials-container {
+        padding: 12px 20px;
+        gap: 20px;
+    }
+    
+    .creci-number {
+        font-size: 1.3rem;
+    }
+    
+    .specialty-title {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .logo-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+    
+    .name-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .credentials-container {
+        flex-direction: column;
+        gap: 15px;
+        padding: 20px;
+    }
+    
+    .divider {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(212, 175, 55, 0.5) 50%, 
+            transparent 100%);
+    }
+    
+    .specialty-badge {
+        justify-content: center;
+    }
+}
+            
         /* Header e Navegação */
         .header {
             background: rgba(255, 255, 255, 0.98);
