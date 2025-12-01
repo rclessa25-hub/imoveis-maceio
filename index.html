@@ -584,7 +584,7 @@
               font-size: 1rem;
         }
 
-                // ========== ADICIONAR CSS PARA OS ELEMENTOS DE UPLOAD ==========
+       // ========== ADICIONAR CSS PARA OS ELEMENTOS DE UPLOAD ==========
         // Adicione este CSS no estilo existente
         // ========== ADICIONAR ESTILOS CSS ==========
         const additionalCSS = `
@@ -660,6 +660,91 @@
         .pdf-file-item:hover {
             border-color: var(--accent);
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        `;
+        
+        // Adicionar o CSS ao documento
+        const style = document.createElement('style');
+        style.textContent = additionalCSS;
+        document.head.appendChild(style);
+
+        // ========== ADICIONAR ESTILOS CSS ==========
+        const additionalCSS = `
+        /* ========== DIFERENCIAÇÃO ENTRE FOTOS EXISTENTES E NOVAS ========== */
+        #existingImagesSection .image-preview-container {
+            border: 2px solid var(--success);
+        }
+        
+        #existingImagesSection .delete-image-btn {
+            background: #e74c3c;
+        }
+        
+        #newImagesSection .image-preview-container {
+            border: 2px dashed #3498db;
+        }
+        
+        #newImagesSection .delete-image-btn {
+            background: #3498db;
+        }
+        
+        #newImagesSection .delete-image-btn:hover {
+            background: #2980b9;
+        }
+        
+        /* ========== DIFERENCIAÇÃO ENTRE PDFs EXISTENTES E NOVOS ========== */
+        #existingPdfsSection .image-preview-container {
+            border: 2px solid var(--success);
+        }
+        
+        #existingPdfsSection .delete-image-btn {
+            background: #e74c3c;
+        }
+        
+        #newPdfsSection .pdf-file-item {
+            border: 2px dashed #3498db;
+            background: #f8faff;
+        }
+        
+        #newPdfsSection .delete-image-btn {
+            background: #3498db;
+        }
+        
+        #newPdfsSection .delete-image-btn:hover {
+            background: #2980b9;
+        }
+        
+        /* ========== SEPARAÇÃO VISUAL ========== */
+        #existingImagesSection {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #eee;
+        }
+        
+        #newImagesSection {
+            margin-top: 1rem;
+            padding-top: 1.5rem;
+        }
+        
+        #existingPdfsSection {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #eee;
+        }
+        
+        #newPdfsSection {
+            margin-top: 1rem;
+            padding-top: 1.5rem;
+        }
+        
+        /* ========== MELHOR VISUALIZAÇÃO DOS CONTAINERS ========== */
+        #existingImagesSection > div,
+        #newImagesSection > div,
+        #existingPdfsSection > div,
+        #newPdfsSection > div {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
         }
         `;
         
@@ -1206,18 +1291,45 @@ async function loadProperties() {
 }
 
 // ========== SISTEMA DE EXCLUSÃO DE FOTOS INDIVIDUAIS ==========
-// Função para mostrar preview com botão de exclusão individual
-function showPreview() {
-    const preview = document.getElementById('uploadPreview');
-    if (!preview) return;
-
-    preview.innerHTML = '';
+// ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVAS IMAGENS ==========
+function showNewImagePreview() {
+    const newImagesSection = document.getElementById('newImagesSection');
+    if (!newImagesSection) {
+        console.log('⚠️ Seção de novas imagens não encontrada, criando...');
+        const preview = document.getElementById('uploadPreview');
+        if (preview) {
+            // Verificar se já existe seção de novas imagens
+            let existingNewSection = document.getElementById('newImagesSection');
+            if (!existingNewSection) {
+                existingNewSection = document.createElement('div');
+                existingNewSection.id = 'newImagesSection';
+                existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+                preview.appendChild(existingNewSection);
+            }
+            existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            newImagesSection = existingNewSection;
+        } else {
+            return;
+        }
+    }
+    
+    // Limpar apenas a seção de novas imagens
+    const existingContent = newImagesSection.innerHTML.split('<p')[0];
+    newImagesSection.innerHTML = existingContent + '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
 
     if (selectedFiles.length === 0) {
-        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+        newImagesSection.innerHTML += '<p style="color: #666; text-align: center;">Nenhuma nova foto selecionada</p>';
         return;
     }
 
+    console.log('🎨 Renderizando preview de', selectedFiles.length, 'novas imagens');
+    
+    // Container para novas imagens
+    const newContainer = document.createElement('div');
+    newContainer.style.display = 'flex';
+    newContainer.style.gap = '10px';
+    newContainer.style.flexWrap = 'wrap';
+    
     selectedFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'image-preview-container';
@@ -1227,39 +1339,53 @@ function showPreview() {
             reader.onload = (e) => {
                 fileItem.innerHTML = `
                     <img src="${e.target.result}" 
-                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
-                    <button class="delete-image-btn" onclick="removeFile(${index})" title="Excluir esta imagem">×</button>
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px dashed #3498db;">
+                    <button class="delete-image-btn" onclick="removeNewFile(${index})" 
+                            style="background: #3498db;" 
+                            title="Remover esta foto da lista de novas">×</button>
                     <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
                 `;
-                preview.appendChild(fileItem);
+                newContainer.appendChild(fileItem);
+                newImagesSection.appendChild(newContainer);
             };
             reader.readAsDataURL(file);
 
         } else if (file.type.startsWith('video/')) {
             fileItem.innerHTML = `
-                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
-                    <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
+                <div style="background: #f0f8ff; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; border: 2px dashed #3498db;">
+                    <i class="fas fa-video" style="font-size: 2rem; color: #3498db;"></i>
                     <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
-                    <button class="delete-image-btn" onclick="removeFile(${index})" title="Excluir este vídeo">×</button>
+                    <button class="delete-image-btn" onclick="removeNewFile(${index})" 
+                            style="background: #3498db;" 
+                            title="Remover este vídeo da lista de novos">×</button>
                 </div>
             `;
-            preview.appendChild(fileItem);
+            newContainer.appendChild(fileItem);
+            newImagesSection.appendChild(newContainer);
         }
     });
 }
 
-// Função para remover arquivo individual
-function removeFile(index) {
-    if (confirm('Tem certeza que deseja excluir este arquivo?')) {
+// ========== NOVA FUNÇÃO: REMOVER NOVA IMAGEM/VIDEO ==========
+function removeNewFile(index) {
+    console.log('🗑️ Tentando remover novo arquivo no índice:', index);
+    
+    if (confirm('Tem certeza que deseja remover este arquivo da lista de novos?')) {
         selectedFiles.splice(index, 1);
-        showPreview();
+        console.log('🗑️ Arquivo removido. Arquivos novos restantes:', selectedFiles.length);
+        showNewImagePreview();
         
         // Atualizar input file
         const dataTransfer = new DataTransfer();
         selectedFiles.forEach(file => dataTransfer.items.add(file));
-        document.getElementById('fileInput').files = dataTransfer.files;
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            fileInput.files = dataTransfer.files;
+            console.log('📸 Input file atualizado após remoção');
+        }
     }
 }
+
 
 // ========== SISTEMA DE EXCLUSÃO DE PDFs INDIVIDUAIS ==========
 function showPdfPreview() {
@@ -2063,6 +2189,7 @@ function removeNewPdfFile(index) {
 // ========== EDITAR IMÓVEL CORRIGIDO COM EXCLUSÃO DE FOTOS EXISTENTES ==========
 // ========== CORREÇÃO DA FUNÇÃO EDITAR PROPRIEDADE ==========
 // ========== CORREÇÃO DA FUNÇÃO EDIT PROPERTY ==========
+// ========== CORREÇÃO DA FUNÇÃO EDIT PROPERTY PARA FOTOS ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -2105,16 +2232,25 @@ function editProperty(id) {
     
     // CORREÇÃO: Inicializar arrays vazios mas manter referência para adições futuras
     selectedFiles = [];
-    selectedPdfFiles = [];
     
-    // Mostrar imagens existentes se houver - COM BOTÕES DE EXCLUSÃO
+    // CORREÇÃO: Mostrar imagens existentes se houver - COM SEPARAÇÃO ENTRE EXISTENTES E NOVAS
     const preview = document.getElementById('uploadPreview');
     if (preview) {
         preview.innerHTML = '';
         
         if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
             const existingImages = property.images.split(',').filter(img => img.trim() !== '');
-            preview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos do imóvel (clique no X para excluir):</p>';
+            
+            // CORREÇÃO: Criar uma área separada para imagens existentes
+            preview.innerHTML = '<div id="existingImagesSection">';
+            preview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
+            
+            // Container para imagens existentes
+            const existingContainer = document.createElement('div');
+            existingContainer.style.display = 'flex';
+            existingContainer.style.gap = '10px';
+            existingContainer.style.flexWrap = 'wrap';
+            existingContainer.style.marginBottom = '1.5rem';
             
             existingImages.forEach((imgUrl, index) => {
                 const imgContainer = document.createElement('div');
@@ -2127,14 +2263,33 @@ function editProperty(id) {
                             title="Excluir esta foto">×</button>
                     <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
                 `;
-                preview.appendChild(imgContainer);
+                existingContainer.appendChild(imgContainer);
             });
             
-            preview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novas fotos acima.</p>';
+            preview.appendChild(existingContainer);
+            preview.innerHTML += '</div>';
+            
+            // CORREÇÃO: Adicionar seção para novas imagens
+            const newImagesSection = document.createElement('div');
+            newImagesSection.id = 'newImagesSection';
+            newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            preview.appendChild(newImagesSection);
+            
+            // Armazenar URLs das imagens existentes para referência futura
+            property.existingImageUrls = existingImages;
+            
+        } else {
+            preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhuma foto cadastrada</p>';
+            
+            // CORREÇÃO: Adicionar seção para novas imagens mesmo quando não há existentes
+            const newImagesSection = document.createElement('div');
+            newImagesSection.id = 'newImagesSection';
+            newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            preview.appendChild(newImagesSection);
         }
     }
     
-    // CORREÇÃO: Mostrar PDFs existentes se houver - E ADICIONAR À LISTA selectedPdfFiles
+    // CORREÇÃO: Mostrar PDFs existentes se houver - COM SEPARAÇÃO ENTRE EXISTENTES E NOVOS
     const pdfPreview = document.getElementById('pdfUploadPreview');
     if (pdfPreview) {
         pdfPreview.innerHTML = '';
@@ -2153,7 +2308,13 @@ function editProperty(id) {
             
             // CORREÇÃO: Criar uma área separada para PDFs existentes
             pdfPreview.innerHTML = '<div id="existingPdfsSection">';
-            pdfPreview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📄 pdf do imóvel (clique no X para excluir):</p>';
+            pdfPreview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
+            
+            const existingPdfContainer = document.createElement('div');
+            existingPdfContainer.style.display = 'flex';
+            existingPdfContainer.style.gap = '10px';
+            existingPdfContainer.style.flexWrap = 'wrap';
+            existingPdfContainer.style.marginBottom = '1.5rem';
             
             existingPdfs.forEach((pdfUrl, index) => {
                 // Extrair nome do arquivo da URL
@@ -2170,9 +2331,10 @@ function editProperty(id) {
                             title="Excluir este documento">×</button>
                     <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Doc ${index + 1}</div>
                 `;
-                pdfPreview.appendChild(pdfContainer);
+                existingPdfContainer.appendChild(pdfContainer);
             });
             
+            pdfPreview.appendChild(existingPdfContainer);
             pdfPreview.innerHTML += '</div>';
             
             // CORREÇÃO: Adicionar seção para novos PDFs
@@ -2181,13 +2343,17 @@ function editProperty(id) {
             newPdfsSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
             pdfPreview.appendChild(newPdfsSection);
             
-            pdfPreview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar mais documentos acima.</p>';
-            
-            // CORREÇÃO: Armazenar URLs dos PDFs existentes para referência futura
+            // Armazenar URLs dos PDFs existentes para referência futura
             property.existingPdfUrls = existingPdfs;
             
         } else {
             pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum documento PDF cadastrado</p>';
+            
+            // CORREÇÃO: Adicionar seção para novos PDFs mesmo quando não há existentes
+            const newPdfsSection = document.createElement('div');
+            newPdfsSection.id = 'newPdfsSection';
+            newPdfsSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+            pdfPreview.appendChild(newPdfsSection);
         }
     }
     
@@ -2196,6 +2362,45 @@ function editProperty(id) {
     
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
+
+// ========== CORREÇÃO DA FUNÇÃO HANDLE FILES ==========
+function handleFiles(files) {
+    console.log('📸 Processando NOVAS imagens:', files);
+    
+    const newFiles = Array.from(files);
+    
+    // CORREÇÃO: Contar apenas novas imagens, não as existentes
+    const currentNewFileCount = selectedFiles.length;
+    const totalAfterAdd = currentNewFileCount + newFiles.length;
+    
+    // Limitar a 10 arquivos no total (novos)
+    if (totalAfterAdd > 10) {
+        alert('⚠️ Máximo de 10 novos arquivos permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos (5MB max)
+    for (const file of newFiles) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`⚠️ O arquivo "${file.name}" é muito grande! Máximo: 5MB`);
+            return;
+        }
+    }
+    
+    // CORREÇÃO: Adicionar novas imagens à lista existente
+    selectedFiles = [...selectedFiles, ...newFiles];
+    console.log('📸 Imagens selecionadas após adição:', selectedFiles.length);
+    
+    // CORREÇÃO: Mostrar apenas novas imagens na seção apropriada
+    showNewImagePreview();
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('fileInput').files = dataTransfer.files;
+    console.log('📸 Input file de imagens atualizado');
+}
+        
 // ========== CORREÇÃO DA FUNÇÃO CANCELAR EDIÇÃO ==========
 function cancelEdit() {
     editingPropertyId = null;
@@ -2447,13 +2652,13 @@ async function uploadFile(file) {
     }
 }
 
-// ========== CORREÇÃO DA FUNÇÃO SALVAR PROPRIEDADE ==========
+// ========== CORREÇÃO DA FUNÇÃO SALVAR PROPRIEDADE PARA IMAGENS ==========
 async function saveProperty(propertyData) {
     try {
         console.log('💾 Iniciando processo de salvamento...');
         console.log('📋 Dados do imóvel:', propertyData);
+        console.log('📸 NOVAS Imagens selecionadas:', selectedFiles.length);
         console.log('📄 NOVOS PDFs selecionados:', selectedPdfFiles.length);
-        console.log('🖼️ NOVAS Imagens selecionadas:', selectedFiles.length);
 
         const dataToSave = {
             title: propertyData.title,
@@ -2471,19 +2676,19 @@ async function saveProperty(propertyData) {
         // Garantir que o campo pdfs existe antes de continuar
         await ensurePdfFieldExists();
 
-        // Upload dos NOVOS arquivos se houver
+        // CORREÇÃO: Upload das NOVAS imagens se houver
         if (selectedFiles.length > 0) {
             console.log(`📸 Fazendo upload de ${selectedFiles.length} NOVAS imagens...`);
             let uploadedFiles = [];
             
             for (const file of selectedFiles) {
-                console.log(`⬆️ Enviando NOVA imagem: ${file.name}`);
+                console.log(`⬆️ Enviando NOVA imagem/vídeo: ${file.name}`);
                 const fileUrl = await uploadFile(file);
                 if (fileUrl) {
                     uploadedFiles.push(fileUrl);
-                    console.log(`✅ NOVA imagem enviada: ${fileUrl}`);
+                    console.log(`✅ NOVA imagem/vídeo enviada: ${fileUrl}`);
                 } else {
-                    console.log(`❌ Falha no upload da NOVA imagem: ${file.name}`);
+                    console.log(`❌ Falha no upload do NOVO arquivo: ${file.name}`);
                 }
             }
             
@@ -2494,9 +2699,11 @@ async function saveProperty(propertyData) {
                     const existingImages = existingProperty.images.split(',').filter(img => img.trim() !== '');
                     dataToSave.images = [...existingImages, ...uploadedFiles].join(', ');
                     console.log('🖼️ Imagens combinadas (existentes + novas):', dataToSave.images);
+                    console.log('🔢 Total de imagens:', existingImages.length + uploadedFiles.length);
                 } else {
                     dataToSave.images = uploadedFiles.join(', ');
                     console.log('🖼️ Apenas NOVAS imagens:', dataToSave.images);
+                    console.log('🔢 Número de NOVAS imagens:', uploadedFiles.length);
                 }
             }
         } else if (editingPropertyId) {
@@ -2505,6 +2712,9 @@ async function saveProperty(propertyData) {
             if (existingProperty && existingProperty.images) {
                 dataToSave.images = existingProperty.images;
                 console.log('🔄 Mantendo imagens existentes:', dataToSave.images);
+            } else {
+                dataToSave.images = '';
+                console.log('🔄 Campo images será vazio');
             }
         }
 
@@ -2599,51 +2809,13 @@ async function saveProperty(propertyData) {
         // CORREÇÃO: Fechar o painel de edição após salvar
         cancelEdit();
         
-        alert("✅ Imóvel atualizado com sucesso! PDFs existentes foram mantidos e novos PDFs foram adicionados.");
+        alert("✅ Imóvel atualizado com sucesso!\n\n📸 Fotos existentes foram mantidas e novas fotos foram adicionadas.\n📄 PDFs existentes foram mantidos e novos PDFs foram adicionados.");
         return true;
 
     } catch (error) {
         console.error('❌ Erro crítico ao salvar no Supabase:', error);
         console.log('🔄 Tentando salvar localmente como fallback...');
         return saveToLocalStorage(propertyData);
-    }
-}
-        
-// ========== EXCLUIR IMÓVEL ==========
-async function deleteProperty(id) {
-    const property = properties.find(p => p.id === id);
-    if (!property) return;
-
-    if (confirm(`Tem certeza que deseja EXCLUIR permanentemente o imóvel:\n\n"${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
-        try {
-            // Tentar excluir do Supabase
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
-                }
-            });
-
-            if (response.ok) {
-                console.log('✅ Imóvel excluído do Supabase');
-            } else {
-                console.log('⚠️ Não foi possível excluir do Supabase');
-            }
-        } catch (error) {
-            console.error('❌ Erro ao excluir do Supabase:', error);
-        }
-
-        // Excluir localmente de qualquer forma
-        const index = properties.findIndex(p => p.id === id);
-        if (index !== -1) {
-            properties.splice(index, 1);
-            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
-        }
-
-        renderProperties();
-        loadPropertyList();
-        alert("✅ Imóvel excluído com sucesso!");
     }
 }
 
