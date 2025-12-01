@@ -1943,6 +1943,32 @@ async function deleteExistingPdf(propertyId, pdfIndex) {
 }
 
 // ========== MOSTRAR PREVIEW DE PDFs COM BOTÕES "X" ==========
+function showPdfPreview() {
+    const preview = document.getElementById('pdfUploadPreview');
+    if (!preview) return;
+
+    preview.innerHTML = '';
+
+    if (selectedPdfFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+        return;
+    }
+
+    selectedPdfFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'image-preview-container';
+        fileItem.innerHTML = `
+            <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
+                <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+            </div>
+            <button class="delete-image-btn" onclick="removePdfFile(${index})" title="Excluir este PDF">×</button>
+            <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+        `;
+        preview.appendChild(fileItem);
+    });
+}
+        
 // ========== CORREÇÃO DA FUNÇÃO SHOW PDF PREVIEW ==========
 // ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVOS PDFs ==========
 function showNewPdfPreview() {
