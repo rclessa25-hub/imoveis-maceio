@@ -1543,7 +1543,7 @@ function accessPdfDocuments() {
     alert('✅ Documentos abertos com sucesso!');
 }
         
-// ========== SISTEMA DE UPLOAD DE PDFs ==========
+// ========== CORREÇÃO DO SISTEMA DE UPLOAD DE PDFs ==========
 function setupPdfUploadSystem() {
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     const pdfFileInput = document.getElementById('pdfFileInput');
@@ -1553,17 +1553,21 @@ function setupPdfUploadSystem() {
         // Drag and drop para PDFs
         pdfUploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             pdfUploadArea.style.borderColor = 'var(--primary)';
             pdfUploadArea.style.background = '#f0f8ff';
         });
 
-        pdfUploadArea.addEventListener('dragleave', () => {
+        pdfUploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             pdfUploadArea.style.borderColor = '#ddd';
             pdfUploadArea.style.background = '';
         });
 
         pdfUploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             pdfUploadArea.style.borderColor = '#ddd';
             pdfUploadArea.style.background = '';
             
@@ -1576,19 +1580,43 @@ function setupPdfUploadSystem() {
             }
         });
 
-        // Click para selecionar
-        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+        // CORREÇÃO: Click para selecionar - evitar propagação de eventos
+        pdfUploadArea.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('📁 Click no upload area de PDFs');
+            pdfFileInput.click();
+        });
 
+        // CORREÇÃO: Lidar com mudança no input de arquivo
         pdfFileInput.addEventListener('change', (e) => {
+            console.log('📄 Input de arquivo PDF alterado:', e.target.files.length, 'arquivos');
             const files = Array.from(e.target.files).filter(file => 
                 file.type === 'application/pdf'
             );
-            handlePdfFiles(files);
+            console.log('📄 PDFs filtrados:', files.length);
+            if (files.length > 0) {
+                handlePdfFiles(files);
+            }
+        });
+        
+        // CORREÇÃO: Prevenir comportamento padrão do input
+        pdfFileInput.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    } else {
+        console.error('❌ Elementos do upload de PDFs não encontrados:', {
+            pdfUploadArea: !!pdfUploadArea,
+            pdfFileInput: !!pdfFileInput,
+            pdfPreview: !!pdfPreview
         });
     }
 }
 
+// ========== CORREÇÃO DA FUNÇÃO HANDLE PDF FILES ==========
 function handlePdfFiles(files) {
+    console.log('📄 Processando PDFs:', files);
+    
     const newFiles = Array.from(files);
     
     // Limitar a 5 arquivos PDF
@@ -1606,7 +1634,14 @@ function handlePdfFiles(files) {
     }
     
     selectedPdfFiles = [...selectedPdfFiles, ...newFiles];
+    console.log('📄 PDFs selecionados após adição:', selectedPdfFiles.length);
     showPdfPreview();
+    
+    // CORREÇÃO: Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('pdfFileInput').files = dataTransfer.files;
+    console.log('📄 Input file atualizado');
 }
 
 // ========== FUNÇÃO CRÍTICA: VERIFICAR E CRIAR CAMPO PDFs NO SUPABASE ==========
@@ -1861,9 +1896,13 @@ async function deleteExistingPdf(propertyId, pdfIndex) {
 }
 
 // ========== MOSTRAR PREVIEW DE PDFs COM BOTÕES "X" ==========
+// ========== CORREÇÃO DA FUNÇÃO SHOW PDF PREVIEW ==========
 function showPdfPreview() {
     const preview = document.getElementById('pdfUploadPreview');
-    if (!preview) return;
+    if (!preview) {
+        console.error('❌ Elemento pdfUploadPreview não encontrado!');
+        return;
+    }
 
     preview.innerHTML = '';
 
@@ -1872,16 +1911,18 @@ function showPdfPreview() {
         return;
     }
 
+    console.log('🎨 Renderizando preview de', selectedPdfFiles.length, 'PDFs');
+    
     selectedPdfFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
-        fileItem.className = 'image-preview-container';
+        fileItem.className = 'pdf-file-item';
         fileItem.innerHTML = `
-            <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
-                <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
-                <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+            <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.2rem;"></i>
+            <div style="flex: 1;">
+                <div style="font-weight: 500;">${file.name}</div>
+                <div style="font-size: 0.8rem; color: #666;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
             </div>
             <button class="delete-image-btn" onclick="removePdfFile(${index})" title="Excluir este PDF">×</button>
-            <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
         `;
         preview.appendChild(fileItem);
     });
