@@ -586,7 +586,47 @@
 
                 // ========== ADICIONAR CSS PARA OS ELEMENTOS DE UPLOAD ==========
         // Adicione este CSS no estilo existente
+        // ========== ADICIONAR ESTILOS CSS ==========
         const additionalCSS = `
+        /* ========== DIFERENCIAÇÃO ENTRE PDFs EXISTENTES E NOVOS ========== */
+        #existingPdfsSection .image-preview-container {
+            border: 2px solid var(--success);
+        }
+        
+        #existingPdfsSection .delete-image-btn {
+            background: #e74c3c;
+        }
+        
+        #newPdfsSection .pdf-file-item {
+            border: 2px dashed #3498db;
+            background: #f8faff;
+        }
+        
+        #newPdfsSection .delete-image-btn {
+            background: #3498db;
+        }
+        
+        #newPdfsSection .delete-image-btn:hover {
+            background: #2980b9;
+        }
+        
+        /* ========== SEPARAÇÃO VISUAL ========== */
+        #existingPdfsSection {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #eee;
+        }
+        
+        #newPdfsSection {
+            margin-top: 1rem;
+            padding-top: 1.5rem;
+        }
+        `;
+        
+        // Adicionar o CSS ao documento
+        const style = document.createElement('style');
+        style.textContent = additionalCSS;
+        document.head.appendChild(style);`
         /* ========== CORREÇÃO PARA ELEMENTOS DE UPLOAD ========== */
         #pdfUploadArea * {
             pointer-events: none;
@@ -1615,13 +1655,17 @@ function setupPdfUploadSystem() {
 
 // ========== CORREÇÃO DA FUNÇÃO HANDLE PDF FILES ==========
 function handlePdfFiles(files) {
-    console.log('📄 Processando PDFs:', files);
+    console.log('📄 Processando novos PDFs:', files);
     
     const newFiles = Array.from(files);
     
-    // Limitar a 5 arquivos PDF
-    if (selectedPdfFiles.length + newFiles.length > 5) {
-        alert('⚠️ Máximo de 5 arquivos PDF permitidos!');
+    // CORREÇÃO: Contar apenas novos PDFs, não os existentes
+    const currentNewPdfCount = selectedPdfFiles.length;
+    const totalAfterAdd = currentNewPdfCount + newFiles.length;
+    
+    // Limitar a 5 arquivos PDF no total (novos)
+    if (totalAfterAdd > 5) {
+        alert('⚠️ Máximo de 5 novos arquivos PDF permitidos!');
         return;
     }
     
@@ -1633,11 +1677,14 @@ function handlePdfFiles(files) {
         }
     }
     
+    // CORREÇÃO: Adicionar novos PDFs à lista existente
     selectedPdfFiles = [...selectedPdfFiles, ...newFiles];
     console.log('📄 PDFs selecionados após adição:', selectedPdfFiles.length);
-    showPdfPreview();
     
-    // CORREÇÃO: Atualizar input file
+    // CORREÇÃO: Mostrar apenas novos PDFs na seção apropriada
+    showNewPdfPreview();
+    
+    // Atualizar input file
     const dataTransfer = new DataTransfer();
     selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
     document.getElementById('pdfFileInput').files = dataTransfer.files;
@@ -1897,37 +1944,55 @@ async function deleteExistingPdf(propertyId, pdfIndex) {
 
 // ========== MOSTRAR PREVIEW DE PDFs COM BOTÕES "X" ==========
 // ========== CORREÇÃO DA FUNÇÃO SHOW PDF PREVIEW ==========
-function showPdfPreview() {
-    const preview = document.getElementById('pdfUploadPreview');
-    if (!preview) {
-        console.error('❌ Elemento pdfUploadPreview não encontrado!');
-        return;
+// ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVOS PDFs ==========
+function showNewPdfPreview() {
+    const newPdfsSection = document.getElementById('newPdfsSection');
+    if (!newPdfsSection) {
+        console.log('⚠️ Seção de novos PDFs não encontrada, criando...');
+        const pdfPreview = document.getElementById('pdfUploadPreview');
+        if (pdfPreview) {
+            // Verificar se já existe seção de novos PDFs
+            let existingNewSection = document.getElementById('newPdfsSection');
+            if (!existingNewSection) {
+                existingNewSection = document.createElement('div');
+                existingNewSection.id = 'newPdfsSection';
+                existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+                pdfPreview.appendChild(existingNewSection);
+            }
+            existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+            newPdfsSection = existingNewSection;
+        } else {
+            return;
+        }
     }
-
-    preview.innerHTML = '';
+    
+    // Limpar apenas a seção de novos PDFs
+    const existingContent = newPdfsSection.innerHTML.split('<p')[0];
+    newPdfsSection.innerHTML = existingContent + '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
 
     if (selectedPdfFiles.length === 0) {
-        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+        newPdfsSection.innerHTML += '<p style="color: #666; text-align: center;">Nenhum novo PDF selecionado</p>';
         return;
     }
 
-    console.log('🎨 Renderizando preview de', selectedPdfFiles.length, 'PDFs');
+    console.log('🎨 Renderizando preview de', selectedPdfFiles.length, 'novos PDFs');
     
     selectedPdfFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'pdf-file-item';
         fileItem.innerHTML = `
-            <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.2rem;"></i>
+            <i class="fas fa-file-pdf" style="color: #3498db; font-size: 1.2rem;"></i>
             <div style="flex: 1;">
                 <div style="font-weight: 500;">${file.name}</div>
                 <div style="font-size: 0.8rem; color: #666;">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
             </div>
-            <button class="delete-image-btn" onclick="removePdfFile(${index})" title="Excluir este PDF">×</button>
+            <button class="delete-image-btn" onclick="removeNewPdfFile(${index})" 
+                    style="background: #3498db;" 
+                    title="Remover este PDF da lista de novos">×</button>
         `;
-        preview.appendChild(fileItem);
+        newPdfsSection.appendChild(fileItem);
     });
 }
-
 // ========== REMOVER PDF DA LISTA DE UPLOAD ==========
 // ========== CORREÇÃO DA FUNÇÃO REMOVER PDF ==========
 function removePdfFile(index) {
@@ -1948,9 +2013,30 @@ function removePdfFile(index) {
         }
     }
 }
+
+// ========== NOVA FUNÇÃO: REMOVER PDF NOVO ==========
+function removeNewPdfFile(index) {
+    console.log('🗑️ Tentando remover novo PDF no índice:', index);
+    
+    if (confirm('Tem certeza que deseja remover este PDF da lista de novos documentos?')) {
+        selectedPdfFiles.splice(index, 1);
+        console.log('🗑️ PDF removido. PDFs novos restantes:', selectedPdfFiles.length);
+        showNewPdfPreview();
+        
+        // Atualizar input file
+        const dataTransfer = new DataTransfer();
+        selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
+        const pdfFileInput = document.getElementById('pdfFileInput');
+        if (pdfFileInput) {
+            pdfFileInput.files = dataTransfer.files;
+            console.log('📄 Input file atualizado após remoção');
+        }
+    }
+}
         
 // ========== EDITAR IMÓVEL CORRIGIDO COM EXCLUSÃO DE FOTOS EXISTENTES ==========
 // ========== CORREÇÃO DA FUNÇÃO EDITAR PROPRIEDADE ==========
+// ========== CORREÇÃO DA FUNÇÃO EDIT PROPERTY ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -1991,7 +2077,7 @@ function editProperty(id) {
         cancelBtn.style.display = 'block';
     }
     
-    // CORREÇÃO: Limpar arquivos selecionados ao editar
+    // CORREÇÃO: Inicializar arrays vazios mas manter referência para adições futuras
     selectedFiles = [];
     selectedPdfFiles = [];
     
@@ -2022,8 +2108,7 @@ function editProperty(id) {
         }
     }
     
-     // CORREÇÃO: Mostrar PDFs existentes se houver - COM BOTÕES DE EXCLUSÃO
-    selectedPdfFiles = [];
+    // CORREÇÃO: Mostrar PDFs existentes se houver - E ADICIONAR À LISTA selectedPdfFiles
     const pdfPreview = document.getElementById('pdfUploadPreview');
     if (pdfPreview) {
         pdfPreview.innerHTML = '';
@@ -2039,7 +2124,10 @@ function editProperty(id) {
         
         if (hasPdfs) {
             const existingPdfs = property.pdfs.split(',').filter(url => url.trim() !== '');
-            pdfPreview.innerHTML = '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
+            
+            // CORREÇÃO: Criar uma área separada para PDFs existentes
+            pdfPreview.innerHTML = '<div id="existingPdfsSection">';
+            pdfPreview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
             
             existingPdfs.forEach((pdfUrl, index) => {
                 // Extrair nome do arquivo da URL
@@ -2059,7 +2147,19 @@ function editProperty(id) {
                 pdfPreview.appendChild(pdfContainer);
             });
             
-            pdfPreview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar novos documentos acima.</p>';
+            pdfPreview.innerHTML += '</div>';
+            
+            // CORREÇÃO: Adicionar seção para novos PDFs
+            const newPdfsSection = document.createElement('div');
+            newPdfsSection.id = 'newPdfsSection';
+            newPdfsSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+            pdfPreview.appendChild(newPdfsSection);
+            
+            pdfPreview.innerHTML += '<p style="color: #666; margin: 1rem 0;">💡 Você pode adicionar mais documentos acima.</p>';
+            
+            // CORREÇÃO: Armazenar URLs dos PDFs existentes para referência futura
+            property.existingPdfUrls = existingPdfs;
+            
         } else {
             pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum documento PDF cadastrado</p>';
         }
@@ -2070,7 +2170,6 @@ function editProperty(id) {
     
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
-
 // ========== CORREÇÃO DA FUNÇÃO CANCELAR EDIÇÃO ==========
 function cancelEdit() {
     editingPropertyId = null;
@@ -2327,8 +2426,8 @@ async function saveProperty(propertyData) {
     try {
         console.log('💾 Iniciando processo de salvamento...');
         console.log('📋 Dados do imóvel:', propertyData);
-        console.log('📄 PDFs selecionados:', selectedPdfFiles.length);
-        console.log('🖼️ Imagens selecionadas:', selectedFiles.length);
+        console.log('📄 NOVOS PDFs selecionados:', selectedPdfFiles.length);
+        console.log('🖼️ NOVAS Imagens selecionadas:', selectedFiles.length);
 
         const dataToSave = {
             title: propertyData.title,
@@ -2346,25 +2445,33 @@ async function saveProperty(propertyData) {
         // Garantir que o campo pdfs existe antes de continuar
         await ensurePdfFieldExists();
 
-        // Upload dos arquivos se houver
+        // Upload dos NOVOS arquivos se houver
         if (selectedFiles.length > 0) {
-            console.log(`📸 Fazendo upload de ${selectedFiles.length} arquivos...`);
+            console.log(`📸 Fazendo upload de ${selectedFiles.length} NOVAS imagens...`);
             let uploadedFiles = [];
             
             for (const file of selectedFiles) {
-                console.log(`⬆️ Enviando imagem: ${file.name}`);
+                console.log(`⬆️ Enviando NOVA imagem: ${file.name}`);
                 const fileUrl = await uploadFile(file);
                 if (fileUrl) {
                     uploadedFiles.push(fileUrl);
-                    console.log(`✅ Imagem enviada: ${fileUrl}`);
+                    console.log(`✅ NOVA imagem enviada: ${fileUrl}`);
                 } else {
-                    console.log(`❌ Falha no upload da imagem: ${file.name}`);
+                    console.log(`❌ Falha no upload da NOVA imagem: ${file.name}`);
                 }
             }
             
             if (uploadedFiles.length > 0) {
-                dataToSave.images = uploadedFiles.join(', ');
-                console.log('🖼️ URLs das imagens para salvar:', dataToSave.images);
+                // CORREÇÃO: Combinar imagens existentes com novas
+                const existingProperty = properties.find(p => p.id === editingPropertyId);
+                if (existingProperty && existingProperty.images && existingProperty.images !== 'EMPTY') {
+                    const existingImages = existingProperty.images.split(',').filter(img => img.trim() !== '');
+                    dataToSave.images = [...existingImages, ...uploadedFiles].join(', ');
+                    console.log('🖼️ Imagens combinadas (existentes + novas):', dataToSave.images);
+                } else {
+                    dataToSave.images = uploadedFiles.join(', ');
+                    console.log('🖼️ Apenas NOVAS imagens:', dataToSave.images);
+                }
             }
         } else if (editingPropertyId) {
             // Manter imagens existentes ao editar
@@ -2375,39 +2482,37 @@ async function saveProperty(propertyData) {
             }
         }
 
-        // CORREÇÃO CRÍTICA: Upload dos PDFs se houver
+        // CORREÇÃO: Upload dos NOVOS PDFs se houver
         if (selectedPdfFiles.length > 0) {
-            console.log(`📄 Fazendo upload de ${selectedPdfFiles.length} PDFs...`);
+            console.log(`📄 Fazendo upload de ${selectedPdfFiles.length} NOVOS PDFs...`);
             let uploadedPdfs = [];
             
             for (const file of selectedPdfFiles) {
-                console.log(`⬆️ Enviando PDF: ${file.name}`);
-                console.log(`📊 Tamanho do PDF: ${(file.size / 1024).toFixed(2)} KB`);
+                console.log(`⬆️ Enviando NOVO PDF: ${file.name}`);
+                console.log(`📊 Tamanho do NOVO PDF: ${(file.size / 1024).toFixed(2)} KB`);
                 
                 const fileUrl = await uploadPdfFile(file);
                 if (fileUrl) {
                     uploadedPdfs.push(fileUrl);
-                    console.log(`✅ PDF enviado com sucesso: ${fileUrl}`);
-                    
-                    // Verificar imediatamente se o PDF está acessível
-                    try {
-                        const testResponse = await fetch(fileUrl, { method: 'HEAD' });
-                        console.log(`🔍 PDF acessível? ${testResponse.ok}`);
-                    } catch (testError) {
-                        console.log(`⚠️ Aviso: PDF pode não estar acessível publicamente`);
-                    }
+                    console.log(`✅ NOVO PDF enviado com sucesso: ${fileUrl}`);
                 } else {
-                    console.log(`❌ Falha crítica no upload do PDF: ${file.name}`);
+                    console.log(`❌ Falha crítica no upload do NOVO PDF: ${file.name}`);
                 }
             }
             
             if (uploadedPdfs.length > 0) {
-                dataToSave.pdfs = uploadedPdfs.join(', ');
-                console.log('📄 URLs dos PDFs para salvar:', dataToSave.pdfs);
-                console.log('🔢 Número de PDFs salvos:', uploadedPdfs.length);
-            } else {
-                console.log('⚠️ Nenhum PDF foi enviado com sucesso');
-                dataToSave.pdfs = '';
+                // CORREÇÃO: Combinar PDFs existentes com novos
+                const existingProperty = properties.find(p => p.id === editingPropertyId);
+                if (existingProperty && existingProperty.pdfs && existingProperty.pdfs !== 'EMPTY') {
+                    const existingPdfs = existingProperty.pdfs.split(',').filter(url => url.trim() !== '');
+                    dataToSave.pdfs = [...existingPdfs, ...uploadedPdfs].join(', ');
+                    console.log('📄 PDFs combinados (existentes + novos):', dataToSave.pdfs);
+                    console.log('🔢 Total de PDFs:', existingPdfs.length + uploadedPdfs.length);
+                } else {
+                    dataToSave.pdfs = uploadedPdfs.join(', ');
+                    console.log('📄 Apenas NOVOS PDFs:', dataToSave.pdfs);
+                    console.log('🔢 Número de NOVOS PDFs:', uploadedPdfs.length);
+                }
             }
         } else if (editingPropertyId) {
             // Manter PDFs existentes ao editar
@@ -2451,45 +2556,14 @@ async function saveProperty(propertyData) {
         
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ Erro na resposta do Supabase:', {
-                status: response.status,
-                statusText: response.statusText,
-                error: errorText
-            });
-            
-            // Tentar alternativa sem o campo pdfs se houver erro
-            if (errorText.includes('pdfs') || errorText.includes('column')) {
-                console.log('🔄 Tentando sem o campo pdfs...');
-                delete dataToSave.pdfs;
-                
-                const retryResponse = await fetch(url, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Prefer': 'return=representation'
-                    },
-                    body: JSON.stringify(dataToSave)
-                });
-                
-                if (retryResponse.ok) {
-                    console.log('✅ Salvo sem o campo pdfs (campo não existe na tabela)');
-                    alert('⚠️ Imóvel salvo, mas o campo PDFs não existe na tabela. Contate o desenvolvedor.');
-                } else {
-                    const retryError = await retryResponse.text();
-                    console.error('❌ Erro na tentativa alternativa:', retryError);
-                    throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
-                }
-            } else {
-                throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
-            }
+            console.error('❌ Erro na resposta do Supabase:', errorText);
+            throw new Error(`Erro ao salvar: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
         console.log('✅ Salvo com sucesso no Supabase:', result);
         
-        // CORREÇÃO: Limpar arquivos selecionados após salvar
+        // CORREÇÃO: Limpar apenas os NOVOS arquivos selecionados após salvar
         selectedFiles = [];
         selectedPdfFiles = [];
         
@@ -2499,6 +2573,7 @@ async function saveProperty(propertyData) {
         // CORREÇÃO: Fechar o painel de edição após salvar
         cancelEdit();
         
+        alert("✅ Imóvel atualizado com sucesso! PDFs existentes foram mantidos e novos PDFs foram adicionados.");
         return true;
 
     } catch (error) {
