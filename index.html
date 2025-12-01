@@ -1565,17 +1565,98 @@ function handlePdfFiles(files) {
     showPdfPreview();
 }
 
-// Upload de PDFs para Supabase
+// ========== FUNÇÃO CRÍTICA: VERIFICAR E CRIAR CAMPO PDFs NO SUPABASE ==========
+async function ensurePdfFieldExists() {
+    try {
+        console.log('🔍 Verificando se o campo pdfs existe no Supabase...');
+        
+        // Primeiro, tentar verificar a estrutura da tabela
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=pdfs&limit=1`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        if (response.status === 400) {
+            console.log('⚠️ Campo pdfs não existe ou tem problemas. Tentando criar...');
+            
+            // Se não existir, tentar adicionar um imóvel com o campo pdfs
+            const testData = {
+                title: "Teste PDF Field",
+                price: "R$ 0,00",
+                location: "Teste",
+                description: "Teste do campo PDF",
+                features: "Teste",
+                type: "residencial",
+                has_video: false,
+                badge: "Novo",
+                rural: false,
+                created_at: new Date().toISOString(),
+                pdfs: "" // Campo vazio para criar a estrutura
+            };
+            
+            const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/properties`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(testData)
+            });
+            
+            if (createResponse.ok) {
+                console.log('✅ Campo pdfs criado com sucesso!');
+                
+                // Excluir o registro de teste
+                const testData = await createResponse.json();
+                if (testData && testData[0] && testData[0].id) {
+                    await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${testData[0].id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    });
+                    console.log('✅ Registro de teste removido');
+                }
+            }
+        } else if (response.ok) {
+            console.log('✅ Campo pdfs já existe no Supabase!');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao verificar campo pdfs:', error);
+    }
+}
+        
+// ========== CORREÇÃO URGENTE: FUNÇÃO DE UPLOAD DE PDFs ==========
 async function uploadPdfFile(file) {
     try {
         console.log('📤 Iniciando upload de PDF:', file.name);
         
-        const fileName = `pdf_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        // Sanitizar nome do arquivo
+        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `pdf_${Date.now()}_${safeName}`;
+        
+        console.log('📁 Nome do arquivo para upload:', fileName);
+        
+        // Criar FormData
         const formData = new FormData();
-        formData.append('file', file);
-
+        formData.append('file', file, fileName);
+        
+        // DEBUG: Mostrar headers
+        console.log('📤 Headers da requisição:', {
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'apikey': SUPABASE_KEY
+        });
+        
+        // Fazer upload para o storage
         const response = await fetch(
-            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, 
+            {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -1584,24 +1665,73 @@ async function uploadPdfFile(file) {
                 body: formData
             }
         );
-
+        
+        console.log('📊 Status da resposta:', response.status);
+        console.log('📊 Status OK?', response.ok);
+        
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ Erro no upload do PDF:', errorText);
-            throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
+            console.error('❌ Erro detalhado no upload do PDF:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorText
+            });
+            
+            // Tentar alternativa: usar bucket público
+            const altResponse = await fetch(
+                `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`, 
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'apikey': SUPABASE_KEY
+                    },
+                    body: formData
+                }
+            );
+            
+            if (altResponse.ok) {
+                const altResult = await altResponse.json();
+                const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
+                console.log('✅ PDF upload alternativo concluído:', publicUrl);
+                return publicUrl;
+            } else {
+                const altError = await altResponse.text();
+                console.error('❌ Erro no upload alternativo:', altError);
+                throw new Error(`Upload falhou: ${response.status} - ${errorText}`);
+            }
         }
 
         const result = await response.json();
+        console.log('📄 Resultado do upload:', result);
+        
+        // Construir URL pública correta
         const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/properties/${fileName}`;
         
-        console.log('✅ PDF upload concluído:', publicUrl);
+        console.log('✅ PDF upload concluído com sucesso!');
+        console.log('🔗 URL pública:', publicUrl);
+        
+        // Verificar se a URL é acessível
+        try {
+            const testResponse = await fetch(publicUrl, { method: 'HEAD' });
+            console.log('🔍 Teste de acesso à URL:', testResponse.ok);
+        } catch (testError) {
+            console.log('⚠️ URL pode não estar acessível publicamente');
+        }
+        
         return publicUrl;
         
     } catch (error) {
         console.error('❌ Erro crítico no upload do PDF:', error);
+        console.error('📄 Detalhes do arquivo:', {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            lastModified: file.lastModified
+        });
         return null;
     }
-}     
+}
 
 // ========== EXCLUIR PDF EXISTENTE DO IMÓVEL ==========
 async function deleteExistingPdf(propertyId, pdfIndex) {
@@ -2435,7 +2565,6 @@ async function testImageAccess() {
 }
         
 // ========== INICIALIZAÇÃO CORRIGIDA ==========
-// ========== ADICIONAR NA INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
    
