@@ -2612,6 +2612,47 @@ function handleFiles(files) {
     showPreview();
 }
 
+function showPreview() {
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) return;
+    preview.innerHTML = '';
+    
+    if (selectedFiles.length === 0) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+        return;
+    }
+
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.style.cssText = 'position: relative; display: inline-block; margin: 5px;';
+        
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                fileItem.innerHTML = `
+                    <img src="${e.target.result}" 
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid #ddd;">
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -8px; right: -8px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; line-height: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
+                `;
+                preview.appendChild(fileItem);
+            };
+            reader.readAsDataURL(file);
+        } else if (file.type.startsWith('video/')) {
+            fileItem.innerHTML = `
+                <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                    <i class="fas fa-video" style="font-size: 2rem; color: var(--primary);"></i>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+                    <button onclick="removeFile(${index})" 
+                            style="position: absolute; top: -8px; right: -8px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">×</button>
+                </div>
+            `;
+            preview.appendChild(fileItem);
+        }
+    });
+}        
+        
 // ========== UPLOAD PARA SUPABASE ==========
 async function uploadFile(file) {
     try {
