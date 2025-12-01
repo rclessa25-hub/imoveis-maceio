@@ -583,6 +583,50 @@
               border-radius: 5px;
               font-size: 1rem;
         }
+
+                // ========== ADICIONAR CSS PARA OS ELEMENTOS DE UPLOAD ==========
+        // Adicione este CSS no estilo existente
+        const additionalCSS = `
+        /* ========== CORREÇÃO PARA ELEMENTOS DE UPLOAD ========== */
+        #pdfUploadArea * {
+            pointer-events: none;
+        }
+        
+        #pdfUploadArea {
+            pointer-events: auto;
+        }
+        
+        .delete-image-btn {
+            pointer-events: auto;
+        }
+        
+        .image-preview-container {
+            pointer-events: auto;
+        }
+        
+        /* ========== ESTILO PARA PDF PREVIEW ========== */
+        .pdf-file-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .pdf-file-item:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        `;
+        
+        // Adicionar o CSS ao documento
+        const style = document.createElement('style');
+        style.textContent = additionalCSS;
+        document.head.appendChild(style);
         
         /* ========== NOVOS ESTILOS PARA EXCLUSÃO DE FOTOS ========== */
         .image-preview-container {
@@ -1844,15 +1888,23 @@ function showPdfPreview() {
 }
 
 // ========== REMOVER PDF DA LISTA DE UPLOAD ==========
+// ========== CORREÇÃO DA FUNÇÃO REMOVER PDF ==========
 function removePdfFile(index) {
-    if (confirm('Tem certeza que deseja excluir este PDF da lista de upload?')) {
+    console.log('🗑️ Tentando remover PDF no índice:', index);
+    
+    if (confirm('Tem certeza que deseja excluir este PDF?')) {
         selectedPdfFiles.splice(index, 1);
+        console.log('🗑️ PDF removido. PDFs restantes:', selectedPdfFiles.length);
         showPdfPreview();
         
-        // Atualizar input file
+        // CORREÇÃO: Atualizar input file
         const dataTransfer = new DataTransfer();
         selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
-        document.getElementById('pdfFileInput').files = dataTransfer.files;
+        const pdfFileInput = document.getElementById('pdfFileInput');
+        if (pdfFileInput) {
+            pdfFileInput.files = dataTransfer.files;
+            console.log('📄 Input file atualizado após remoção');
+        }
     }
 }
         
@@ -1929,7 +1981,8 @@ function editProperty(id) {
         }
     }
     
-    // CORREÇÃO: Mostrar PDFs existentes se houver - COM BOTÕES DE EXCLUSÃO
+     // CORREÇÃO: Mostrar PDFs existentes se houver - COM BOTÕES DE EXCLUSÃO
+    selectedPdfFiles = [];
     const pdfPreview = document.getElementById('pdfUploadPreview');
     if (pdfPreview) {
         pdfPreview.innerHTML = '';
@@ -1940,6 +1993,8 @@ function editProperty(id) {
                        property.pdfs !== 'null' && 
                        property.pdfs !== 'undefined' &&
                        property.pdfs.trim() !== '';
+        
+        console.log('📄 Editando imóvel - Tem PDFs?', hasPdfs, 'PDFs:', property.pdfs);
         
         if (hasPdfs) {
             const existingPdfs = property.pdfs.split(',').filter(url => url.trim() !== '');
@@ -2565,6 +2620,7 @@ async function testImageAccess() {
 }
         
 // ========== INICIALIZAÇÃO CORRIGIDA ==========
+// ========== ADICIONAR DEBUG NA INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
    
@@ -2591,6 +2647,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupUploadSystem();
     setupPdfUploadSystem();
     
+    // DEBUG: Verificar se os elementos de upload foram configurados
+    console.log('🔍 Verificando configuração do upload de PDFs:', {
+        uploadArea: document.getElementById('uploadArea'),
+        pdfUploadArea: document.getElementById('pdfUploadArea'),
+        fileInput: document.getElementById('fileInput'),
+        pdfFileInput: document.getElementById('pdfFileInput')
+    });
+    
     // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(button => {
@@ -2607,6 +2671,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('✅ Sistema Weber Lessa carregado!');
 });
+
   </script>
 </body>
 </html>
