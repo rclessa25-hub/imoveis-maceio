@@ -301,6 +301,176 @@
             font-weight: 600;
             letter-spacing: 0.8px;
         }
+
+        /* ========== CONTACT INFO REFORMULADO ========== */
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-end;
+            margin-left: auto;
+            padding-left: 30px;
+            border-left: 1px solid #e9ecef;
+            min-width: 280px;
+        }
+        
+        /* Telefone com ícones */
+        .phone-contact {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            width: 100%;
+        }
+        
+        .phone-icons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+        
+        .phone-icon {
+            color: #1a5276;
+            font-size: 1.2rem;
+            background: rgba(26, 82, 118, 0.1);
+            padding: 6px;
+            border-radius: 50%;
+        }
+        
+        .whatsapp-icon {
+            color: #25D366;
+            font-size: 1.2rem;
+            background: rgba(37, 211, 102, 0.1);
+            padding: 6px;
+            border-radius: 50%;
+        }
+        
+        .phone-number {
+            display: flex;
+            align-items: baseline;
+            gap: 3px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .phone-prefix {
+            font-size: 1rem;
+            color: #6c757d;
+            font-weight: 600;
+        }
+        
+        .phone-main {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a5276;
+            letter-spacing: 0.5px;
+        }
+        
+        .contact-label {
+            display: flex;
+            gap: 5px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 2px;
+        }
+        
+        .call-label {
+            color: #1a5276;
+            font-weight: 700;
+        }
+        
+        .whatsapp-label {
+            color: #25D366;
+            font-weight: 700;
+        }
+        
+        /* Endereço Compacto */
+        .address-info {
+            display: flex;
+            gap: 12px;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            padding: 12px 15px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            width: 100%;
+        }
+        
+        .address-icon {
+            color: #d4af37;
+            font-size: 1.2rem;
+            background: rgba(212, 175, 55, 0.1);
+            padding: 6px;
+            border-radius: 50%;
+            height: fit-content;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .address-details {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1;
+        }
+        
+        .address-line-main {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1a5276;
+        }
+        
+        .address-line-main strong {
+            font-weight: 800;
+        }
+        
+        .address-line {
+            font-size: 0.85rem;
+            color: #495057;
+            line-height: 1.2;
+        }
+        
+        .address-line-last {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        
+        /* Efeito hover para contato */
+        .phone-contact:hover, .address-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border-color: #d4af37;
+        }
+        
+        /* Responsividade para desktop médio */
+        @media (max-width: 1024px) {
+            .contact-info {
+                min-width: 250px;
+                padding-left: 20px;
+            }
+            
+            .phone-main {
+                font-size: 1.2rem;
+            }
+            
+            .address-line-main {
+                font-size: 0.85rem;
+            }
+            
+            .address-line,
+            .address-line-last {
+                font-size: 0.8rem;
+            }
+        }
         
         /* ========== MOBILE LAYOUT SUPER COMPACTO ========== */
         .mobile-header-compact {
@@ -1509,20 +1679,40 @@
             </div>
         </div>
             <div class="contact-info">
-                <div class="phone">
-                   <i class="fas fa-phone"></i> (82) 9.9604-4513<!-- class="social-icons"><a href="#" class="social-icon"><i class="fab fa-whatsapp"></i></p> -->
+                <!-- Telefone com ícones de celular e WhatsApp -->
+                <div class="phone-contact">
+                    <div class="phone-icons">
+                        <i class="fas fa-mobile-alt phone-icon"></i>
+                        <i class="fab fa-whatsapp whatsapp-icon"></i>
+                    </div>
+                    <div class="phone-number">
+                        <span class="phone-prefix">(82)</span>
+                        <span class="phone-main">9.9604-4513</span>
+                    </div>
+                    <div class="contact-label">
+                        <span class="call-label">LIGUE AGORA</span>
+                        <span class="whatsapp-label">OU WHATSAPP</span>
+                    </div>
                 </div>
-                <div class="address">
-                    <i class="fas fa-map-marker-alt"></i> Empresarial Sizi & Neusa
-                    <div 
-                    </i> Praça São Vicente, 09
-                    </div>    
-                    <div 
-                    </i> Centro, Maceió-AL
-                    </div>    
+                
+                <!-- Endereço Compacto -->
+                <div class="address-info">
+                    <div class="address-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="address-details">
+                        <div class="address-line-main">
+                            <strong>Empresarial Sizi & Neusa</strong>
+                        </div>
+                        <div class="address-line">
+                            Praça São Vicente, 09
+                        </div>
+                        <div class="address-line-last">
+                            Centro, Maceió-AL
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
     </header>
 
     <!-- Hero Section -->
