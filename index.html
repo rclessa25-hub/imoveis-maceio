@@ -32,461 +32,562 @@
             min-height: 100vh;
         }
         
-        /* ========== HEADER COM FUNDO CLARO ========== */
-        .header {
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            padding: 1.5rem 0;
-            box-shadow: 0 6px 40px rgba(0, 0, 0, 0.08);
-            position: relative;
-            overflow: hidden;
-            border-bottom: 3px solid #d4af37;
-        }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #1a5276 0%, #2980b9 50%, #1a5276 100%);
-        }
-        
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        /* Logo Container */
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 40px;
-        }
-        
-        /* Logo WL - 3 VEZES MAIOR */
-        .logo {
-            position: relative;
-            width: 180px; /* 3x maior (era 60px) */
-            height: 180px; /* 3x maior (era 60px) */
-            background: linear-gradient(145deg, #1a5276, #0c2d48);
-            border-radius: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 
-                0 15px 40px rgba(26, 82, 118, 0.3),
-                0 8px 20px rgba(0, 0, 0, 0.15),
-                inset 0 4px 8px rgba(255, 255, 255, 0.2);
-            border: 4px solid rgba(212, 175, 55, 0.4);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .logo:hover {
-            transform: scale(1.05) rotate(2deg);
-        }
-        
-        .logo-wl {
-            font-family: 'Georgia', 'Times New Roman', serif;
-            font-size: 5.5rem; /* 3x maior (era 1.8rem) */
-            font-weight: 900;
-            background: linear-gradient(135deg, #ffffff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 4px;
-            text-shadow: 
-                3px 3px 6px rgba(0, 0, 0, 0.4),
-                -1px -1px 2px rgba(255, 255, 255, 0.3);
-            text-transform: uppercase;
-        }
-        
-        .logo-badge {
-            position: absolute;
-            bottom: -12px;
-            right: -12px;
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #d4af37, #b8941f);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 1.4rem;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
-            border: 3px solid #ffffff;
-            z-index: 2;
-        }
-        
-        /* Logo Text - NOME 2X MAIOR */
-        .logo-text {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            flex: 1;
-        }
-        
-        .name-container {
-            display: flex;
-            align-items: flex-end;
-            gap: 30px;
-            margin-bottom: 5px;
-        }
-        
-        /* EFEITO ALTO-RELEVO PARA O NOME */
-        .brand-name {
-            display: flex;
-            flex-direction: column;
-            line-height: 1;
-            margin: 0;
-            position: relative;
-        }
-        
-        .first-name {
-            font-family: 'Georgia', 'Times New Roman', serif;
-            font-size: 3.6rem; /* 2x maior (era 1.8rem) */
-            font-weight: 900;
-            color: #0c2d48; /* Cor mais escura para fundo claro */
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            text-shadow: 
-                2px 2px 0 #ffffff,
-                4px 4px 0 rgba(0, 0, 0, 0.1),
-                6px 6px 8px rgba(0, 0, 0, 0.1); /* Efeito alto-relevo */
-            position: relative;
-        }
-        
-        .first-name::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, 
-                transparent 0%, 
-                #d4af37 20%, 
-                #d4af37 80%, 
-                transparent 100%);
-            border-radius: 2px;
-        }
-        
-        .last-name {
-            font-family: 'Georgia', 'Times New Roman', serif;
-            font-size: 3rem; /* 2x maior proporcional */
-            font-weight: 700;
-            color: #1a5276; /* Cor mais escura para fundo claro */
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            margin-top: -5px;
-            text-shadow: 
-                2px 2px 0 #ffffff,
-                4px 4px 0 rgba(0, 0, 0, 0.08),
-                6px 6px 6px rgba(0, 0, 0, 0.08); /* Efeito alto-relevo */
-        }
-        
-        .professional-badge {
-            background: linear-gradient(135deg, #1a5276, #2980b9);
-            padding: 8px 20px;
-            border-radius: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 2px solid #d4af37;
-            box-shadow: 0 4px 15px rgba(26, 82, 118, 0.2);
-            margin-bottom: 5px;
-        }
-        
-        .professional-badge i {
-            color: #d4af37;
-            font-size: 1.1rem;
-        }
-        
-        .professional-badge span {
-            color: #ffffff;
-            font-size: 0.9rem;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Credentials Container - CRECI com cor escura */
-        .credentials-container {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-            background: linear-gradient(135deg, #f8f9fa, #ffffff);
-            padding: 20px 30px;
-            border-radius: 20px;
-            border: 2px solid #e9ecef;
-            box-shadow: 
-                0 8px 25px rgba(0, 0, 0, 0.05),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .credentials-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #d4af37, #ffd700, #d4af37);
-        }
-        
-        .creci-badge {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .creci-badge i {
-            font-size: 1.8rem;
-            color: #ffffff;
-            background: linear-gradient(135deg, #1a5276, #2980b9);
-            padding: 12px;
-            border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(26, 82, 118, 0.3);
-        }
-        
-        .creci-info {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .creci-label {
-            font-size: 0.85rem;
-            color: #6c757d; /* Cor mais suave */
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-        
-        .creci-number {
-            font-size: 1.6rem; /* Mantido mesmo tamanho como solicitado */
-            font-weight: 900;
-            color: #0c2d48; /* COR ESCURA para fundo claro */
-            font-family: 'Courier New', 'Roboto Mono', monospace;
-            letter-spacing: 2px;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        
-        .divider {
-            width: 1px;
-            height: 50px;
-            background: linear-gradient(180deg, 
-                transparent 0%, 
-                #d4af37 20%, 
-                #d4af37 80%, 
-                transparent 100%);
-            opacity: 0.6;
-        }
-        
-        .specialty-container {
-            flex: 1;
-        }
-        
-        .specialty-badge {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .specialty-badge i {
-            font-size: 2rem;
-            color: #ffffff;
-            background: linear-gradient(135deg, #1a5276, #2980b9);
-            padding: 15px;
-            border-radius: 15px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-        
-        .specialty-text {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .specialty-title {
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: #1a5276; /* Cor escura para contraste */
-            margin: 0 0 4px 0;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        
-        .specialty-subtitle {
-            font-size: 1rem;
-            color: #495057; /* Cor escura para contraste */
-            margin: 0;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 1200px) {
-            .logo {
-                width: 160px;
-                height: 160px;
-            }
-            
-            .logo-wl {
-                font-size: 4.8rem;
-            }
-            
-            .first-name {
-                font-size: 3.2rem;
-            }
-            
-            .last-name {
-                font-size: 2.6rem;
-            }
-        }
-        
-        @media (max-width: 992px) {
-            .header-content {
-                padding: 0 2rem;
-            }
-            
-            .logo-container {
-                gap: 30px;
-            }
-            
-            .logo {
-                width: 140px;
-                height: 140px;
-            }
-            
-            .logo-wl {
-                font-size: 4rem;
-            }
-            
-            .first-name {
-                font-size: 2.8rem;
-            }
-            
-            .last-name {
-                font-size: 2.2rem;
-            }
-            
-            .credentials-container {
-                padding: 18px 25px;
-                gap: 25px;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .header {
-                padding: 1rem 0;
-            }
-            
-            .header-content {
-                flex-direction: column;
-                gap: 25px;
-                padding: 0 1.5rem;
-            }
-            
-            .logo-container {
-                flex-direction: column;
-                text-align: center;
-                gap: 25px;
-                width: 100%;
-            }
-            
-            .logo {
-                width: 150px;
-                height: 150px;
-                margin: 0 auto;
-            }
-            
-            .logo-wl {
-                font-size: 4.2rem;
-            }
-            
-            .name-container {
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-                text-align: center;
-            }
-            
-            .first-name {
-                font-size: 2.8rem;
-                text-align: center;
-            }
-            
-            .last-name {
-                font-size: 2.4rem;
-                text-align: center;
-            }
-            
-            .credentials-container {
-                flex-direction: column;
-                gap: 20px;
-                padding: 25px;
-                width: 100%;
-            }
-            
-            .divider {
-                width: 100%;
-                height: 1px;
-                background: linear-gradient(90deg, 
-                    transparent 0%, 
-                    #d4af37 30%, 
-                    #d4af37 70%, 
-                    transparent 100%);
-            }
-            
-            .specialty-badge {
-                justify-content: center;
-                text-align: center;
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .creci-badge {
-                justify-content: center;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .logo {
-                width: 130px;
-                height: 130px;
-            }
-            
-            .logo-wl {
-                font-size: 3.5rem;
-            }
-            
-            .first-name {
-                font-size: 2.2rem;
-            }
-            
-            .last-name {
-                font-size: 1.8rem;
-            }
-            
-            .creci-number {
-                font-size: 1.4rem;
-            }
-            
-            .specialty-title {
-                font-size: 1.2rem;
-            }
-            
-            .specialty-subtitle {
-                font-size: 0.9rem;
-            }
-        }
+       /* ========== HEADER COM FUNDO CLARO ========== */
+.header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 1.5rem 0;
+    box-shadow: 0 6px 40px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+    border-bottom: 3px solid #d4af37;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1a5276 0%, #2980b9 50%, #1a5276 100%);
+}
+
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ========== DESKTOP LAYOUT ========== */
+.desktop-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    width: 100%;
+}
+
+/* Logo WL - 3 VEZES MAIOR (Desktop) */
+.logo {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    background: linear-gradient(145deg, #1a5276, #0c2d48);
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+        0 15px 40px rgba(26, 82, 118, 0.3),
+        0 8px 20px rgba(0, 0, 0, 0.15),
+        inset 0 4px 8px rgba(255, 255, 255, 0.2);
+    border: 4px solid rgba(212, 175, 55, 0.4);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    flex-shrink: 0;
+}
+
+.logo:hover {
+    transform: scale(1.05) rotate(2deg);
+}
+
+.logo-wl {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 5.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffffff, #f0f0f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 4px;
+    text-shadow: 
+        3px 3px 6px rgba(0, 0, 0, 0.4),
+        -1px -1px 2px rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+}
+
+.logo-badge {
+    position: absolute;
+    bottom: -12px;
+    right: -12px;
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #d4af37, #b8941f);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.4rem;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+    border: 3px solid #ffffff;
+    z-index: 2;
+}
+
+/* Logo Text - NOME 2X MAIOR (Desktop) */
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    flex: 1;
+}
+
+.name-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 30px;
+    margin-bottom: 5px;
+}
+
+/* EFEITO ALTO-RELEVO PARA O NOME (Desktop) */
+.brand-name {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    margin: 0;
+    position: relative;
+}
+
+.first-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 3.6rem;
+    font-weight: 900;
+    color: #0c2d48;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 
+        2px 2px 0 #ffffff,
+        4px 4px 0 rgba(0, 0, 0, 0.1),
+        6px 6px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.first-name::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        #d4af37 20%, 
+        #d4af37 80%, 
+        transparent 100%);
+    border-radius: 2px;
+}
+
+.last-name {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 3rem;
+    font-weight: 700;
+    color: #1a5276;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: -5px;
+    text-shadow: 
+        2px 2px 0 #ffffff,
+        4px 4px 0 rgba(0, 0, 0, 0.08),
+        6px 6px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Desktop - Elementos normais */
+.professional-badge {
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    padding: 8px 20px;
+    border-radius: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid #d4af37;
+    box-shadow: 0 4px 15px rgba(26, 82, 118, 0.2);
+    margin-bottom: 5px;
+}
+
+.professional-badge i {
+    color: #d4af37;
+    font-size: 1.1rem;
+}
+
+.professional-badge span {
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Desktop - Credentials Container */
+.credentials-container {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    padding: 20px 30px;
+    border-radius: 20px;
+    border: 2px solid #e9ecef;
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    position: relative;
+    overflow: hidden;
+}
+
+.credentials-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #d4af37, #ffd700, #d4af37);
+}
+
+.creci-badge {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.creci-badge i {
+    font-size: 1.8rem;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    padding: 12px;
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(26, 82, 118, 0.3);
+}
+
+.creci-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.creci-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.creci-number {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #0c2d48;
+    font-family: 'Courier New', 'Roboto Mono', monospace;
+    letter-spacing: 2px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.divider {
+    width: 1px;
+    height: 50px;
+    background: linear-gradient(180deg, 
+        transparent 0%, 
+        #d4af37 20%, 
+        #d4af37 80%, 
+        transparent 100%);
+    opacity: 0.6;
+}
+
+.specialty-container {
+    flex: 1;
+}
+
+.specialty-badge {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.specialty-badge i {
+    font-size: 2rem;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.specialty-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.specialty-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #1a5276;
+    margin: 0 0 4px 0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.specialty-subtitle {
+    font-size: 1rem;
+    color: #495057;
+    margin: 0;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+/* ========== MOBILE LAYOUT ========== */
+/* Container superior para mobile */
+.mobile-top-container {
+    display: none;
+}
+
+.mobile-logo-name {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 0;
+}
+
+.mobile-brand-name {
+    text-align: right;
+}
+
+/* Mobile - Logo ajustada para topo */
+@media (max-width: 768px) {
+    .header {
+        padding: 0.5rem 0;
+    }
+    
+    .header-content {
+        padding: 0 1rem;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    /* Esconder desktop layout no mobile */
+    .desktop-logo-container {
+        display: none;
+    }
+    
+    /* Mostrar mobile layout */
+    .mobile-top-container {
+        display: block;
+        width: 100%;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 10px;
+    }
+    
+    /* Logo reduzida para topo */
+    .mobile-top-container .logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        border: 2px solid rgba(212, 175, 55, 0.4);
+    }
+    
+    .mobile-top-container .logo-wl {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+    
+    .mobile-top-container .logo-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+        bottom: -5px;
+        right: -5px;
+        border: 2px solid #ffffff;
+    }
+    
+    /* Nome no topo direito */
+    .mobile-brand-name .brand-name {
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    
+    .mobile-brand-name .first-name {
+        font-size: 1.6rem;
+        text-shadow: 
+            1px 1px 0 #ffffff,
+            2px 2px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-brand-name .last-name {
+        font-size: 1.3rem;
+        margin-top: -3px;
+        text-shadow: 
+            1px 1px 0 #ffffff,
+            2px 2px 0 rgba(0, 0, 0, 0.08);
+    }
+    
+    /* Container principal mobile - elementos reduzidos 5x */
+    .mobile-credentials-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+        background: linear-gradient(135deg, #f8f9fa, #ffffff);
+        padding: 15px;
+        border-radius: 15px;
+        border: 1px solid #e9ecef;
+        margin-top: 10px;
+    }
+    
+    /* Badge CRECI CERTIFICADO - REDUZIDO 5x */
+    .mobile-professional-badge {
+        background: linear-gradient(135deg, #1a5276, #2980b9);
+        padding: 5px 12px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid #d4af37;
+        width: fit-content;
+        margin: 0 auto 10px;
+    }
+    
+    .mobile-professional-badge i {
+        color: #d4af37;
+        font-size: 0.7rem; /* REDUZIDO 5x */
+    }
+    
+    .mobile-professional-badge span {
+        color: #ffffff;
+        font-size: 0.55rem; /* REDUZIDO 5x */
+        font-weight: 600;
+        letter-spacing: 0.8px;
+    }
+    
+    /* Linha com CRECI e Especialização */
+    .mobile-credentials-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+    }
+    
+    /* CRECI 654/AL - REDUZIDO 5x */
+    .mobile-creci-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .mobile-creci-badge i {
+        font-size: 0.9rem; /* REDUZIDO 5x */
+        color: #ffffff;
+        background: linear-gradient(135deg, #1a5276, #2980b9);
+        padding: 6px;
+        border-radius: 50%;
+    }
+    
+    .mobile-creci-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mobile-creci-label {
+        font-size: 0.5rem; /* REDUZIDO 5x */
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+    
+    .mobile-creci-number {
+        font-size: 0.85rem; /* REDUZIDO 5x */
+        font-weight: 900;
+        color: #0c2d48;
+        font-family: 'Courier New', 'Roboto Mono', monospace;
+        letter-spacing: 1px;
+    }
+    
+    /* Divider mobile */
+    .mobile-divider {
+        width: 1px;
+        height: 40px;
+        background: linear-gradient(180deg, 
+            transparent 0%, 
+            #d4af37 20%, 
+            #d4af37 80%, 
+            transparent 100%);
+        opacity: 0.6;
+    }
+    
+    /* Especialização - REDUZIDO 5x */
+    .mobile-specialty-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .mobile-specialty-badge i {
+        font-size: 1rem; /* REDUZIDO 5x */
+        color: #ffffff;
+        background: linear-gradient(135deg, #1a5276, #2980b9);
+        padding: 8px;
+        border-radius: 10px;
+    }
+    
+    .mobile-specialty-text {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mobile-specialty-title {
+        font-size: 0.75rem; /* REDUZIDO 5x */
+        font-weight: 800;
+        color: #1a5276;
+        margin: 0 0 2px 0;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+    
+    .mobile-specialty-subtitle {
+        font-size: 0.6rem; /* REDUZIDO 5x */
+        color: #495057;
+        margin: 0;
+        font-weight: 600;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+    }
+}
+
+/* Versão mobile compacta para telas muito pequenas */
+@media (max-width: 480px) {
+    .mobile-top-container .logo {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .mobile-top-container .logo-wl {
+        font-size: 1.6rem;
+    }
+    
+    .mobile-brand-name .first-name {
+        font-size: 1.3rem;
+    }
+    
+    .mobile-brand-name .last-name {
+        font-size: 1.1rem;
+    }
+    
+    .mobile-credentials-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .mobile-divider {
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            #d4af37 30%, 
+            #d4af37 70%, 
+            transparent 100%);
+    }
+}
             
         /* Header e Navegação */
         .header {
@@ -1298,8 +1399,54 @@
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <div class="logo-container">
-                <!-- Logo WL 3x maior -->
+            <!-- Container superior para logo e nome (mobile) -->
+            <div class="mobile-top-container">
+                 <!-- Container mobile para credenciais -->
+            <div class="mobile-credentials-container">
+                <div class="mobile-professional-badge">
+                    <i class="fas fa-award"></i>
+                    <span>CRECI CERTIFICADO</span>
+                </div>
+                
+                <div class="mobile-credentials-row">
+                    <div class="mobile-creci-badge">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="mobile-creci-info">
+                            <span class="mobile-creci-label">CRECI</span>
+                            <span class="mobile-creci-number">654/AL</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mobile-divider"></div>
+                    
+                    <div class="mobile-specialty-badge">
+                        <i class="fas fa-home"></i>
+                        <div class="mobile-specialty-text">
+                            <p class="mobile-specialty-title">CORRETOR & CONSULTOR</p>
+                            <p class="mobile-specialty-subtitle">IMOBILIÁRIO | JURÍDICO</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                <div class="mobile-logo-name">
+                    <div class="logo">
+                        <span class="logo-wl">WL</span>
+                        <div class="logo-badge">
+                            <i class="fas fa-key"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mobile-brand-name">
+                        <h1 class="brand-name">
+                            <span class="first-name">WEBER</span>
+                            <span class="last-name">LESSA</span>
+                        </h1>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Container principal (desktop mantém layout original) -->
+            <div class="desktop-logo-container">
                 <div class="logo">
                     <span class="logo-wl">WL</span>
                     <div class="logo-badge">
@@ -1307,7 +1454,6 @@
                     </div>
                 </div>
                 
-                <!-- Texto da marca com efeito alto-relevo e tamanho 2x maior -->
                 <div class="logo-text">
                     <div class="name-container">
                         <h1 class="brand-name">
