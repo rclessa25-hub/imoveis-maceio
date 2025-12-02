@@ -2103,7 +2103,7 @@ function loadPropertyList() {
     }
     
     properties.forEach(property => {
-        const features = normalizeFeatures(property.features) 
+        const features = Array.isArray(property.features)   
             ? property.features 
             : (property.features ? property.features.split(',') : []);
             
