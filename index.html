@@ -3357,7 +3357,7 @@ function setupForm() {
             price: document.getElementById('propPrice').value,
             location: document.getElementById('propLocation').value,
             description: document.getElementById('propDescription').value,
-            features: normalizeFeatures(document.getElementById('propFeatures').value),
+            features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
             has_video: document.getElementById('propHasVideo').checked,
             badge: document.getElementById('propBadge').value,
@@ -3388,8 +3388,8 @@ function setupForm() {
             cancelEdit();
             selectedFiles = [];
             selectedPdfFiles = [];
-            showNewImagePreview();
-            showPdfPreviewWithDelete();
+            showPreview();
+            showPdfPreview();
 
         } catch (error) {
             alert("❌ Erro: " + error.message);
