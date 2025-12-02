@@ -1789,7 +1789,8 @@ async function loadProperties() {
 
 // ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVAS IMAGENS ==========
 function showNewImagePreview() {
-    const newImagesSection = document.getElementById('newImagesSection');
+    let newImagesSection = document.getElementById('newImagesSection');
+    
     if (!newImagesSection) {
         console.log('⚠️ Seção de novas imagens não encontrada, criando...');
         const preview = document.getElementById('uploadPreview');
@@ -1802,7 +1803,6 @@ function showNewImagePreview() {
                 existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
                 preview.appendChild(existingNewSection);
             }
-            existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
             newImagesSection = existingNewSection;
         } else {
             return;
@@ -1811,7 +1811,7 @@ function showNewImagePreview() {
     
     // Limpar apenas a seção de novas imagens
     const existingContent = newImagesSection.innerHTML.split('<p')[0];
-    newImagesSection.innerHTML = existingContent + '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+    newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
 
     if (selectedFiles.length === 0) {
         newImagesSection.innerHTML += '<p style="color: #666; text-align: center;">Nenhuma nova foto selecionada</p>';
@@ -1842,7 +1842,9 @@ function showNewImagePreview() {
                     <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
                 `;
                 newContainer.appendChild(fileItem);
-                newImagesSection.appendChild(newContainer);
+                if (newImagesSection) {
+                    newImagesSection.appendChild(newContainer);
+                }
             };
             reader.readAsDataURL(file);
 
@@ -1857,7 +1859,9 @@ function showNewImagePreview() {
                 </div>
             `;
             newContainer.appendChild(fileItem);
-            newImagesSection.appendChild(newContainer);
+            if (newImagesSection) {
+                newImagesSection.appendChild(newContainer);
+            }
         }
     });
 }
@@ -2592,7 +2596,8 @@ function showPdfPreview() {
         
 // ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVOS PDFs ==========
 function showNewPdfPreview() {
-    const newPdfsSection = document.getElementById('newPdfsSection');
+    let newPdfsSection = document.getElementById('newPdfsSection');
+    
     if (!newPdfsSection) {
         console.log('⚠️ Seção de novos PDFs não encontrada, criando...');
         const pdfPreview = document.getElementById('pdfUploadPreview');
@@ -2605,7 +2610,6 @@ function showNewPdfPreview() {
                 existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
                 pdfPreview.appendChild(existingNewSection);
             }
-            existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
             newPdfsSection = existingNewSection;
         } else {
             return;
@@ -2614,7 +2618,7 @@ function showNewPdfPreview() {
     
     // Limpar apenas a seção de novos PDFs
     const existingContent = newPdfsSection.innerHTML.split('<p')[0];
-    newPdfsSection.innerHTML = existingContent + '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+    newPdfsSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
 
     if (selectedPdfFiles.length === 0) {
         newPdfsSection.innerHTML += '<p style="color: #666; text-align: center;">Nenhum novo PDF selecionado</p>';
@@ -2636,28 +2640,10 @@ function showNewPdfPreview() {
                     style="background: #3498db;" 
                     title="Remover este PDF da lista de novos">×</button>
         `;
-        newPdfsSection.appendChild(fileItem);
-    });
-}
-
-// ========== CORREÇÃO DA FUNÇÃO REMOVER PDF ==========
-function removePdfFile(index) {
-    console.log('🗑️ Tentando remover PDF no índice:', index);
-    
-    if (confirm('Tem certeza que deseja excluir este PDF?')) {
-        selectedPdfFiles.splice(index, 1);
-        console.log('🗑️ PDF removido. PDFs restantes:', selectedPdfFiles.length);
-        showPdfPreview();
-        
-        // CORREÇÃO: Atualizar input file
-        const dataTransfer = new DataTransfer();
-        selectedPdfFiles.forEach(file => dataTransfer.items.add(file));
-        const pdfFileInput = document.getElementById('pdfFileInput');
-        if (pdfFileInput) {
-            pdfFileInput.files = dataTransfer.files;
-            console.log('📄 Input file atualizado após remoção');
+        if (newPdfsSection) {
+            newPdfsSection.appendChild(fileItem);
         }
-    }
+    });
 }
         
 // ========== NOVA FUNÇÃO: REMOVER PDF NOVO ==========
