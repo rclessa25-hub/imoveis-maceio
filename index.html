@@ -2862,6 +2862,30 @@ function editProperty(id) {
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
 
+// No final da função editProperty()
+setTimeout(() => {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    if (uploadArea && fileInput) {
+        // Reconectar o click
+        uploadArea.addEventListener('click', () => {
+            console.log('📸 Click na área de upload (edição)');
+            fileInput.click();
+        });
+        
+        // Reconectar o change
+        fileInput.addEventListener('change', (e) => {
+            console.log('📸 Arquivos selecionados (edição):', e.target.files.length);
+            if (e.target.files.length > 0) {
+                handleFiles(e.target.files);
+            }
+        });
+        
+        console.log('✅ Upload reativado para edição');
+    }
+}, 300);
+        
 // ========== CORREÇÃO DA FUNÇÃO HANDLE FILES ==========
 // ========== CORREÇÃO DA FUNÇÃO handleFiles() ==========
 // Esta função deve estar ligada ao evento de upload
