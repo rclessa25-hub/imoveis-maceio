@@ -1916,7 +1916,7 @@ function showPdfPreview() {
 function removePdfFile(index) {
     if (confirm('Tem certeza que deseja excluir este PDF?')) {
         selectedPdfFiles.splice(index, 1);
-        showPdfPreview();
+        showPdfPreviewWithDelete();
         
         // Atualizar input file
         const dataTransfer = new DataTransfer();
@@ -2568,7 +2568,8 @@ async function deleteExistingPdf(propertyId, pdfIndex) {
 }
 
 // ========== MOSTRAR PREVIEW DE PDFs COM BOTÕES "X" ==========
-function showPdfPreview() {
+// ========== MOSTRAR PREVIEW DE PDFs COM BOTÕES "X" ==========
+function showPdfPreviewWithDelete() {
     const preview = document.getElementById('pdfUploadPreview');
     if (!preview) return;
 
@@ -3363,7 +3364,7 @@ function setupForm() {
             selectedFiles = [];
             selectedPdfFiles = [];
             showNewImagePreview();
-            showPdfPreview();
+            showPdfPreviewWithDelete();
 
         } catch (error) {
             alert("❌ Erro: " + error.message);
