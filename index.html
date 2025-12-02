@@ -2839,6 +2839,53 @@ function editProperty(id) {
     
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
 }
+
+// ========== CORREÇÃO DA FUNÇÃO HANDLE FILES ==========
+function handleFiles(files) {
+    console.log('📸 Arquivos recebidos:', files.length);
+    
+    const newFiles = Array.from(files);
+    
+    // Verificar se há arquivos válidos
+    const validFiles = newFiles.filter(file => 
+        file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+    
+    if (validFiles.length === 0) {
+        alert('⚠️ Por favor, selecione apenas imagens ou vídeos!');
+        return;
+    }
+    
+    // Contar arquivos atuais
+    const currentCount = selectedFiles.length;
+    const totalAfterAdd = currentCount + validFiles.length;
+    
+    // Limitar a 10 arquivos no total
+    if (totalAfterAdd > 10) {
+        alert('⚠️ Máximo de 10 arquivos permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos (5MB max)
+    for (const file of validFiles) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`⚠️ O arquivo "${file.name}" é muito grande! Máximo: 5MB`);
+            return;
+        }
+    }
+    
+    // Adicionar novos arquivos à lista
+    selectedFiles = [...selectedFiles, ...validFiles];
+    console.log('📸 Total de arquivos selecionados:', selectedFiles.length);
+    
+    // Mostrar preview CORRETAMENTE
+    renderImagePreviews();
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('fileInput').files = dataTransfer.files;
+}
         
 // ========== CORREÇÃO DA FUNÇÃO CANCELAR EDIÇÃO ==========
 function cancelEdit() {
@@ -3035,11 +3082,10 @@ async function deleteFromStorage(imageUrl) {
     }
 }
 
-// ========== SISTEMA DE UPLOAD ==========
+// ========== SISTEMA DE UPLOAD DE IMAGENS CORRIGIDO ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
-    const uploadPreview = document.getElementById('uploadPreview');
 
     if (uploadArea && fileInput) {
         // Drag and drop
