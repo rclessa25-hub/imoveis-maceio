@@ -1788,82 +1788,104 @@ async function loadProperties() {
 }
 
 // ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVAS IMAGENS ==========
+// ========== CORREÇÃO DA FUNÇÃO showNewImagePreview() ==========
 function showNewImagePreview() {
+    console.log('🔍 showNewImagePreview() chamada com', selectedFiles.length, 'arquivos');
+    
+    const preview = document.getElementById('uploadPreview');
+    if (!preview) {
+        console.error('❌ Elemento uploadPreview não encontrado!');
+        return;
+    }
+    
+    // VERIFICAÇÃO CRÍTICA: Não manipular DOM se não houver arquivos
+    if (selectedFiles.length === 0) {
+        // Mantenha o conteúdo existente se houver
+        if (!preview.innerHTML.includes('Nenhuma nova foto selecionada')) {
+            preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+        }
+        return;
+    }
+    
+    console.log('🎨 Renderizando preview de novas imagens...');
+    
+    // EVITAR CONFLITO: Usar um container temporário
+    const tempContainer = document.createElement('div');
+    tempContainer.style.display = 'flex';
+    tempContainer.style.gap = '10px';
+    tempContainer.style.flexWrap = 'wrap';
+    tempContainer.style.marginBottom = '1rem';
+    
+    // Verificar se já existe seção de novas imagens
     let newImagesSection = document.getElementById('newImagesSection');
     
     if (!newImagesSection) {
-        console.log('⚠️ Seção de novas imagens não encontrada, criando...');
-        const preview = document.getElementById('uploadPreview');
-        if (preview) {
-            // Verificar se já existe seção de novas imagens
-            let existingNewSection = document.getElementById('newImagesSection');
-            if (!existingNewSection) {
-                existingNewSection = document.createElement('div');
-                existingNewSection.id = 'newImagesSection';
-                existingNewSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
-                preview.appendChild(existingNewSection);
-            }
-            newImagesSection = existingNewSection;
-        } else {
-            return;
-        }
+        // Criar a seção apenas uma vez
+        newImagesSection = document.createElement('div');
+        newImagesSection.id = 'newImagesSection';
+        newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+        preview.appendChild(newImagesSection);
+    } else {
+        // Limpar apenas o conteúdo interno, não o elemento
+        const existingContent = newImagesSection.innerHTML.split('<p')[0];
+        newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
     }
     
-    // Limpar apenas a seção de novas imagens
-    const existingContent = newImagesSection.innerHTML.split('<p')[0];
-    newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
-
-    if (selectedFiles.length === 0) {
-        newImagesSection.innerHTML += '<p style="color: #666; text-align: center;">Nenhuma nova foto selecionada</p>';
-        return;
-    }
-
-    console.log('🎨 Renderizando preview de', selectedFiles.length, 'novas imagens');
+    // Processar cada arquivo - USAR APENAS FileReader se necessário
+    let processedCount = 0;
+    const maxFilesToProcess = 10; // Limitar para evitar sobrecarga
     
-    // Container para novas imagens
-    const newContainer = document.createElement('div');
-    newContainer.style.display = 'flex';
-    newContainer.style.gap = '10px';
-    newContainer.style.flexWrap = 'wrap';
-    
-    selectedFiles.forEach((file, index) => {
+    selectedFiles.slice(0, maxFilesToProcess).forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'image-preview-container';
+        fileItem.style.position = 'relative';
+        fileItem.style.display = 'inline-block';
+        fileItem.style.margin = '5px';
 
         if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                fileItem.innerHTML = `
-                    <img src="${e.target.result}" 
-                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px dashed #3498db;">
-                    <button class="delete-image-btn" onclick="removeNewFile(${index})" 
-                            style="background: #3498db;" 
-                            title="Remover esta foto da lista de novas">×</button>
-                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">${file.name}</div>
-                `;
-                newContainer.appendChild(fileItem);
-                if (newImagesSection) {
-                    newImagesSection.appendChild(newContainer);
-                }
-            };
-            reader.readAsDataURL(file);
-
+            // Usar URL.createObjectURL em vez de FileReader para melhor performance
+            const imageUrl = URL.createObjectURL(file);
+            
+            fileItem.innerHTML = `
+                <img src="${imageUrl}" 
+                     style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px dashed #3498db;"
+                     onload="URL.revokeObjectURL(this.src)" 
+                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                <button class="delete-image-btn" onclick="removeNewFile(${index})" 
+                        style="background: #3498db;" 
+                        title="Remover esta foto da lista de novas">×</button>
+                <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">
+                    ${file.name.substring(0, 12)}${file.name.length > 12 ? '...' : ''}
+                </div>
+            `;
+            
         } else if (file.type.startsWith('video/')) {
             fileItem.innerHTML = `
-                <div style="background: #f0f8ff; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; border: 2px dashed #3498db;">
+                <div style="background: #f0f8ff; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; 
+                     display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; 
+                     border: 2px dashed #3498db;">
                     <i class="fas fa-video" style="font-size: 2rem; color: #3498db;"></i>
-                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${file.name}</p>
+                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">
+                        ${file.name.substring(0, 12)}${file.name.length > 12 ? '...' : ''}
+                    </p>
                     <button class="delete-image-btn" onclick="removeNewFile(${index})" 
                             style="background: #3498db;" 
                             title="Remover este vídeo da lista de novos">×</button>
                 </div>
+                <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; color: #666;">
+                    ${(file.size / 1024 / 1024).toFixed(1)} MB
+                </div>
             `;
-            newContainer.appendChild(fileItem);
-            if (newImagesSection) {
-                newImagesSection.appendChild(newContainer);
-            }
         }
+        
+        tempContainer.appendChild(fileItem);
+        processedCount++;
     });
+    
+    // Adicionar ao DOM de uma só vez (evita múltiplas manipulações)
+    newImagesSection.appendChild(tempContainer);
+    
+    console.log('✅ Preview renderizado para', processedCount, 'arquivos');
 }
 
 // ========== NOVA FUNÇÃO: REMOVER NOVA IMAGEM/VIDEO ==========
@@ -2841,8 +2863,10 @@ function editProperty(id) {
 }
 
 // ========== CORREÇÃO DA FUNÇÃO HANDLE FILES ==========
+// ========== CORREÇÃO DA FUNÇÃO handleFiles() ==========
+// Esta função deve estar ligada ao evento de upload
 function handleFiles(files) {
-    console.log('📸 Arquivos recebidos:', files.length);
+    console.log('📸 Arquivos recebidos no handleFiles:', files.length);
     
     const newFiles = Array.from(files);
     
@@ -2874,62 +2898,26 @@ function handleFiles(files) {
         }
     }
     
-    // Adicionar novos arquivos à lista
-    selectedFiles = [...selectedFiles, ...validFiles];
+    // **CORREÇÃO CRÍTICA**: Adicionar arquivos SEM recriar o array inteiro
+    validFiles.forEach(file => {
+        selectedFiles.push(file);
+    });
+    
     console.log('📸 Total de arquivos selecionados:', selectedFiles.length);
     
-    // Mostrar preview CORRETAMENTE
-    renderImagePreviews();
+    // **CORREÇÃO**: Usar setTimeout para evitar conflito de renderização
+    setTimeout(() => {
+        showNewImagePreview();
+    }, 100);
     
     // Atualizar input file
     const dataTransfer = new DataTransfer();
     selectedFiles.forEach(file => dataTransfer.items.add(file));
-    document.getElementById('fileInput').files = dataTransfer.files;
-}
-        
-// ========== CORREÇÃO DA FUNÇÃO CANCELAR EDIÇÃO ==========
-function cancelEdit() {
-    editingPropertyId = null;
-    const form = document.getElementById('propertyForm');
-    if (form) form.reset();
-    
-    // Resetar título do formulário
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) {
-        formTitle.textContent = 'Adicionar Novo Imóvel';
-    }
-    
-    // Resetar botão
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-    }
-    
-    // Esconder botão cancelar
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'none';
-    }
-    
-    // CORREÇÃO: Limpar completamente os arquivos selecionados
-    selectedFiles = [];
-    selectedPdfFiles = [];
-    
-    // CORREÇÃO: Limpar os previews
-    const preview = document.getElementById('uploadPreview');
-    if (preview) preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
-    
-    const pdfPreview = document.getElementById('pdfUploadPreview');
-    if (pdfPreview) pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
-    
-    // CORREÇÃO: Limpar inputs de arquivo
     const fileInput = document.getElementById('fileInput');
-    if (fileInput) fileInput.value = '';
-    
-    const pdfFileInput = document.getElementById('pdfFileInput');
-    if (pdfFileInput) pdfFileInput.value = '';
-    
-    console.log('✅ Edição cancelada');
+    if (fileInput) {
+        fileInput.files = dataTransfer.files;
+        console.log('📸 Input file atualizado');
+    }
 }
         
 // ========== EXCLUIR FOTO EXISTENTE DO IMÓVEL ==========
@@ -3082,40 +3070,56 @@ async function deleteFromStorage(imageUrl) {
     }
 }
 
-// ========== SISTEMA DE UPLOAD DE IMAGENS CORRIGIDO ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
 
     if (uploadArea && fileInput) {
-        // Drag and drop
-        uploadArea.addEventListener('dragover', (e) => {
+        // CORREÇÃO: Evitar múltiplos event listeners
+        uploadArea.removeEventListener('dragover', handleDragOver);
+        uploadArea.removeEventListener('dragleave', handleDragLeave);
+        uploadArea.removeEventListener('drop', handleDrop);
+        uploadArea.removeEventListener('click', handleClick);
+        fileInput.removeEventListener('change', handleFileChange);
+
+        // Definir handlers
+        const handleDragOver = (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = 'var(--primary)';
             uploadArea.style.background = '#f0f8ff';
-        });
+        };
 
-        uploadArea.addEventListener('dragleave', () => {
+        const handleDragLeave = () => {
             uploadArea.style.borderColor = '#ddd';
             uploadArea.style.background = '';
-        });
+        };
 
-        uploadArea.addEventListener('drop', (e) => {
+        const handleDrop = (e) => {
             e.preventDefault();
             uploadArea.style.borderColor = '#ddd';
             uploadArea.style.background = '';
             
             if (e.dataTransfer.files.length > 0) {
+                // Usar a função existente
                 handleFiles(e.dataTransfer.files);
             }
-        });
+        };
 
-        // Click para selecionar
-        uploadArea.addEventListener('click', () => fileInput.click());
+        const handleClick = () => fileInput.click();
 
-        fileInput.addEventListener('change', (e) => {
+        const handleFileChange = (e) => {
+            // Usar a função existente
             handleFiles(e.target.files);
-        });
+        };
+
+        // Adicionar listeners
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('click', handleClick);
+        fileInput.addEventListener('change', handleFileChange);
+        
+        console.log('✅ Sistema de upload configurado com função handleFiles');
     }
 }
 
