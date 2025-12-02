@@ -3190,7 +3190,7 @@ async function saveProperty(propertyData) {
             price: propertyData.price,
             location: propertyData.location,
             description: propertyData.description,
-            features: serializeFeatures(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
+            features: serializeFeatures(propertyData.features),
             type: propertyData.type,
             has_video: propertyData.has_video,
             badge: propertyData.badge,
