@@ -1786,6 +1786,7 @@ async function loadProperties() {
     checkPdfData();
     debugPropertyData();
 }
+
 // ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVAS IMAGENS ==========
 function showNewImagePreview() {
     let newImagesSection = document.getElementById('newImagesSection');
@@ -3323,7 +3324,7 @@ function setupForm() {
             cancelEdit();
             selectedFiles = [];
             selectedPdfFiles = [];
-            showPreview();
+            showNewImagePreview();
             showPdfPreview();
 
         } catch (error) {
