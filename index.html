@@ -1693,6 +1693,33 @@ function enforceConstitutionalGuideline() {
     console.log('✅ Diretriz Constitucional verificada e aplicada');
 }
 
+// ========== FUNÇÃO PARA NORMALIZAR FEATURES ==========
+function normalizeFeatures(features) {
+    if (!features) return [];
+    
+    if (Array.isArray(features)) {
+        // Remover espaços em branco e filtrar vazios
+        return features
+            .map(f => f.toString().trim())
+            .filter(f => f.length > 0);
+    }
+    
+    if (typeof features === 'string') {
+        return features
+            .split(',')
+            .map(f => f.trim())
+            .filter(f => f.length > 0);
+    }
+    
+    return [];
+}
+
+// ========== FUNÇÃO PARA SALVAR FEATURES ==========
+function serializeFeatures(features) {
+    const normalized = normalizeFeatures(features);
+    return normalized.join(', ');
+}        
+        
 // ========== CONFIGURAÇÃO SUPABASE ==========
 const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
@@ -1951,7 +1978,7 @@ function renderProperties(filter = 'todos') {
     console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
     
     filteredProperties.forEach(property => {
-        const features = normalizeFeatures(property.features) ? property.features : (property.features ? property.features.split(',') : []);
+        const features = normalizeFeatures(property.features);
         
         // DEBUG: Verificar imagens
         const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
@@ -2680,10 +2707,8 @@ function editProperty(id) {
     document.getElementById('propLocation').value = property.location || '';
     document.getElementById('propDescription').value = property.description || '';
     
-    const features = normalizeFeatures(property.features) 
-        ? property.features 
-        : (property.features || '');
-    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+    const features = normalizeFeatures(property.features);
+    document.getElementById('propFeatures').value = features.join(', ');
     
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
@@ -3332,7 +3357,7 @@ function setupForm() {
             price: document.getElementById('propPrice').value,
             location: document.getElementById('propLocation').value,
             description: document.getElementById('propDescription').value,
-            features: normalizeFeatures(document.getElementById('propFeatures').value.split(',')).map(f => f.trim()).filter(f => f !== ''),
+            features: normalizeFeatures(document.getElementById('propFeatures').value),.map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
             has_video: document.getElementById('propHasVideo').checked,
             badge: document.getElementById('propBadge').value,
@@ -3373,33 +3398,6 @@ function setupForm() {
             submitBtn.disabled = false;
         }
     });
-}
-
-// ========== FUNÇÃO PARA NORMALIZAR FEATURES ==========
-function normalizeFeatures(features) {
-    if (!features) return [];
-    
-    if (Array.isArray(features)) {
-        // Remover espaços em branco e filtrar vazios
-        return features
-            .map(f => f.toString().trim())
-            .filter(f => f.length > 0);
-    }
-    
-    if (typeof features === 'string') {
-        return features
-            .split(',')
-            .map(f => f.trim())
-            .filter(f => f.length > 0);
-    }
-    
-    return [];
-}
-
-// ========== FUNÇÃO PARA SALVAR FEATURES ==========
-function serializeFeatures(features) {
-    const normalized = normalizeFeatures(features);
-    return normalized.join(', ');
 }
         
 // ========== FUNÇÕES DE INTERAÇÃO ==========
