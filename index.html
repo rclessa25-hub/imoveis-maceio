@@ -2889,6 +2889,7 @@ setTimeout(() => {
 // ========== CORREÇÃO DA FUNÇÃO HANDLE FILES ==========
 // ========== CORREÇÃO DA FUNÇÃO handleFiles() ==========
 // Esta função deve estar ligada ao evento de upload
+// ========== FUNÇÃO handleFiles() REVISADA (JÁ EXISTE) ==========
 function handleFiles(files) {
     console.log('📸 Arquivos recebidos no handleFiles:', files.length);
     
@@ -2922,14 +2923,14 @@ function handleFiles(files) {
         }
     }
     
-    // **CORREÇÃO CRÍTICA**: Adicionar arquivos SEM recriar o array inteiro
+    // Adicionar arquivos à lista
     validFiles.forEach(file => {
         selectedFiles.push(file);
     });
     
     console.log('📸 Total de arquivos selecionados:', selectedFiles.length);
     
-    // **CORREÇÃO**: Usar setTimeout para evitar conflito de renderização
+    // Mostrar preview
     setTimeout(() => {
         showNewImagePreview();
     }, 100);
@@ -3027,7 +3028,6 @@ async function deleteExistingImage(propertyId, imageIndex) {
     }
 }
 
-
 // ========== FUNÇÃO PARA DELETAR IMÓVEL ==========
 function deleteProperty(id) {
     if (!confirm('Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita.')) {
@@ -3094,57 +3094,73 @@ async function deleteFromStorage(imageUrl) {
     }
 }
 
+// ========== CORREÇÃO DA FUNÇÃO setupUploadSystem() ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
 
-    if (uploadArea && fileInput) {
-        // CORREÇÃO: Evitar múltiplos event listeners
-        uploadArea.removeEventListener('dragover', handleDragOver);
-        uploadArea.removeEventListener('dragleave', handleDragLeave);
-        uploadArea.removeEventListener('drop', handleDrop);
-        uploadArea.removeEventListener('click', handleClick);
-        fileInput.removeEventListener('change', handleFileChange);
-
-        // Definir handlers
-        const handleDragOver = (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = 'var(--primary)';
-            uploadArea.style.background = '#f0f8ff';
-        };
-
-        const handleDragLeave = () => {
-            uploadArea.style.borderColor = '#ddd';
-            uploadArea.style.background = '';
-        };
-
-        const handleDrop = (e) => {
-            e.preventDefault();
-            uploadArea.style.borderColor = '#ddd';
-            uploadArea.style.background = '';
-            
-            if (e.dataTransfer.files.length > 0) {
-                // Usar a função existente
-                handleFiles(e.dataTransfer.files);
-            }
-        };
-
-        const handleClick = () => fileInput.click();
-
-        const handleFileChange = (e) => {
-            // Usar a função existente
-            handleFiles(e.target.files);
-        };
-
-        // Adicionar listeners
-        uploadArea.addEventListener('dragover', handleDragOver);
-        uploadArea.addEventListener('dragleave', handleDragLeave);
-        uploadArea.addEventListener('drop', handleDrop);
-        uploadArea.addEventListener('click', handleClick);
-        fileInput.addEventListener('change', handleFileChange);
-        
-        console.log('✅ Sistema de upload configurado com função handleFiles');
+    if (!uploadArea || !fileInput) {
+        console.error('❌ Elementos de upload não encontrados!');
+        return;
     }
+
+    console.log('🔧 Configurando sistema de upload de imagens/vídeos...');
+
+    // ESTILOS INICIAIS
+    uploadArea.style.cursor = 'pointer';
+    uploadArea.style.transition = 'all 0.3s ease';
+
+    // DRAG AND DROP
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadArea.style.borderColor = 'var(--primary)';
+        uploadArea.style.background = '#f0f8ff';
+        console.log('📸 Drag over ativo');
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadArea.style.borderColor = '#ddd';
+        uploadArea.style.background = '';
+        console.log('📸 Drag leave');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadArea.style.borderColor = '#ddd';
+        uploadArea.style.background = '';
+        
+        if (e.dataTransfer.files.length > 0) {
+            console.log('📸 Arquivos arrastados:', e.dataTransfer.files.length);
+            handleFiles(e.dataTransfer.files);
+        }
+    });
+
+    // CLICK PARA SELECIONAR
+    uploadArea.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('📸 Click na área de upload');
+        fileInput.click();
+    });
+
+    // MUDANÇA NO INPUT DE ARQUIVO
+    fileInput.addEventListener('change', (e) => {
+        console.log('📸 Input file alterado:', e.target.files.length, 'arquivos');
+        if (e.target.files.length > 0) {
+            handleFiles(e.target.files);
+        }
+    });
+
+    // PREVENIR COMPORTAMENTO PADRÃO DO INPUT
+    fileInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    console.log('✅ Sistema de upload de imagens/vídeos configurado!');
 }
 
 // ========== UPLOAD PARA SUPABASE ==========
