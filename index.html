@@ -2689,6 +2689,7 @@ function removeNewPdfFile(index) {
 }
         
 // ========== CORREÇÃO DA FUNÇÃO EDIT PROPERTY PARA FOTOS ==========
+// ========== FUNÇÃO editProperty() COMPLETA E CORRIGIDA ==========
 function editProperty(id) {
     const property = properties.find(p => p.id === id);
     if (!property) return;
@@ -2742,7 +2743,7 @@ function editProperty(id) {
             
             // CORREÇÃO: Criar uma área separada para imagens existentes
             preview.innerHTML = '<div id="existingImagesSection">';
-            preview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
+            preview.innerHTML += '<p style="color: var(--success); margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
             
             // Container para imagens existentes
             const existingContainer = document.createElement('div');
@@ -2771,7 +2772,7 @@ function editProperty(id) {
             // CORREÇÃO: Adicionar seção para novas imagens
             const newImagesSection = document.createElement('div');
             newImagesSection.id = 'newImagesSection';
-            newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            newImagesSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
             preview.appendChild(newImagesSection);
             
             // Armazenar URLs das imagens existentes para referência futura
@@ -2783,7 +2784,7 @@ function editProperty(id) {
             // CORREÇÃO: Adicionar seção para novas imagens mesmo quando não há existentes
             const newImagesSection = document.createElement('div');
             newImagesSection.id = 'newImagesSection';
-            newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            newImagesSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
             preview.appendChild(newImagesSection);
         }
     }
@@ -2807,7 +2808,7 @@ function editProperty(id) {
             
             // CORREÇÃO: Criar uma área separada para PDFs existentes
             pdfPreview.innerHTML = '<div id="existingPdfsSection">';
-            pdfPreview.innerHTML += '<p style="color: #666; margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
+            pdfPreview.innerHTML += '<p style="color: var(--success); margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
             
             const existingPdfContainer = document.createElement('div');
             existingPdfContainer.style.display = 'flex';
@@ -2839,7 +2840,7 @@ function editProperty(id) {
             // CORREÇÃO: Adicionar seção para novos PDFs
             const newPdfsSection = document.createElement('div');
             newPdfsSection.id = 'newPdfsSection';
-            newPdfsSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+            newPdfsSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
             pdfPreview.appendChild(newPdfsSection);
             
             // Armazenar URLs dos PDFs existentes para referência futura
@@ -2851,98 +2852,128 @@ function editProperty(id) {
             // CORREÇÃO: Adicionar seção para novos PDFs mesmo quando não há existentes
             const newPdfsSection = document.createElement('div');
             newPdfsSection.id = 'newPdfsSection';
-            newPdfsSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+            newPdfsSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
             pdfPreview.appendChild(newPdfsSection);
         }
     }
+    
+    // ========== CORREÇÃO CRÍTICA: REATIVAR UPLOAD DE FOTOS ==========
+    setTimeout(() => {
+        console.log('🔄 REATIVANDO UPLOAD DE FOTOS para edição...');
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        if (uploadArea && fileInput) {
+            console.log('✅ Elementos de upload encontrados');
+            
+            // 1. CLONAR E SUBSTITUIR OS ELEMENTOS (remove listeners antigos)
+            const newUploadArea = uploadArea.cloneNode(true);
+            const newFileInput = fileInput.cloneNode(true);
+            
+            // Substituir no DOM
+            uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
+            fileInput.parentNode.replaceChild(newFileInput, fileInput);
+            
+            // 2. OBTER NOVAS REFERÊNCIAS
+            const updatedUploadArea = document.getElementById('uploadArea');
+            const updatedFileInput = document.getElementById('fileInput');
+            
+            if (updatedUploadArea && updatedFileInput) {
+                console.log('✅ Elementos clonados com sucesso');
+                
+                // 3. REAPLICAR OS EVENT LISTENERS
+                
+                // Drag over
+                updatedUploadArea.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.borderColor = 'var(--primary)';
+                    this.style.background = '#f0f8ff';
+                    console.log('📸 Drag over ativo (edição)');
+                });
+
+                // Drag leave
+                updatedUploadArea.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.borderColor = '#ddd';
+                    this.style.background = '';
+                });
+
+                // Drop
+                updatedUploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.style.borderColor = '#ddd';
+                    this.style.background = '';
+                    
+                    if (e.dataTransfer.files.length > 0) {
+                        console.log('📸 Arquivos arrastados na edição:', e.dataTransfer.files.length);
+                        handleFiles(e.dataTransfer.files);
+                    }
+                });
+
+                // Click para selecionar
+                updatedUploadArea.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('📸 Click na área de upload (edição)');
+                    updatedFileInput.click();
+                });
+
+                // Mudança no input
+                updatedFileInput.addEventListener('change', function(e) {
+                    console.log('📸 Input file alterado (edição):', e.target.files.length);
+                    if (e.target.files.length > 0) {
+                        handleFiles(e.target.files);
+                    }
+                });
+
+                // Prevenir comportamento padrão
+                updatedFileInput.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // 4. GARANTIR QUE ESTÁ CLICÁVEL E VISÍVEL
+                updatedUploadArea.style.cursor = 'pointer';
+                updatedUploadArea.style.pointerEvents = 'auto';
+                updatedUploadArea.style.opacity = '1';
+                
+                // 5. ADICIONAR FEEDBACK VISUAL
+                updatedUploadArea.addEventListener('mouseenter', function() {
+                    this.style.borderColor = 'var(--primary)';
+                    this.style.boxShadow = '0 0 10px rgba(52, 152, 219, 0.3)';
+                });
+                
+                updatedUploadArea.addEventListener('mouseleave', function() {
+                    this.style.borderColor = '#ddd';
+                    this.style.boxShadow = 'none';
+                });
+                
+                console.log('✅ Upload de fotos REATIVADO para edição - PRONTO PARA USO!');
+            }
+        } else {
+            console.error('❌ Elementos de upload não encontrados após edição');
+        }
+        
+        // TAMBÉM REATIVAR UPLOAD DE PDFs
+        console.log('🔄 Reativando upload de PDFs...');
+        const pdfUploadArea = document.getElementById('pdfUploadArea');
+        const pdfFileInput = document.getElementById('pdfFileInput');
+        
+        if (pdfUploadArea && pdfFileInput) {
+            pdfUploadArea.style.cursor = 'pointer';
+            pdfUploadArea.style.pointerEvents = 'auto';
+            console.log('✅ Upload de PDFs reativado');
+        }
+        
+    }, 500); // Esperar 500ms para o DOM atualizar completamente
     
     // Rolar até o formulário
     document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
     
     alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
-}
-
-// No final da função editProperty()
-setTimeout(() => {
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    
-    if (uploadArea && fileInput) {
-        // Reconectar o click
-        uploadArea.addEventListener('click', () => {
-            console.log('📸 Click na área de upload (edição)');
-            fileInput.click();
-        });
-        
-        // Reconectar o change
-        fileInput.addEventListener('change', (e) => {
-            console.log('📸 Arquivos selecionados (edição):', e.target.files.length);
-            if (e.target.files.length > 0) {
-                handleFiles(e.target.files);
-            }
-        });
-        
-        console.log('✅ Upload reativado para edição');
-    }
-}, 300);
-        
-// ========== CORREÇÃO DA FUNÇÃO HANDLE FILES ==========
-// ========== CORREÇÃO DA FUNÇÃO handleFiles() ==========
-// Esta função deve estar ligada ao evento de upload
-// ========== FUNÇÃO handleFiles() REVISADA (JÁ EXISTE) ==========
-function handleFiles(files) {
-    console.log('📸 Arquivos recebidos no handleFiles:', files.length);
-    
-    const newFiles = Array.from(files);
-    
-    // Verificar se há arquivos válidos
-    const validFiles = newFiles.filter(file => 
-        file.type.startsWith('image/') || file.type.startsWith('video/')
-    );
-    
-    if (validFiles.length === 0) {
-        alert('⚠️ Por favor, selecione apenas imagens ou vídeos!');
-        return;
-    }
-    
-    // Contar arquivos atuais
-    const currentCount = selectedFiles.length;
-    const totalAfterAdd = currentCount + validFiles.length;
-    
-    // Limitar a 10 arquivos no total
-    if (totalAfterAdd > 10) {
-        alert('⚠️ Máximo de 10 arquivos permitidos!');
-        return;
-    }
-    
-    // Verificar tamanho dos arquivos (5MB max)
-    for (const file of validFiles) {
-        if (file.size > 5 * 1024 * 1024) {
-            alert(`⚠️ O arquivo "${file.name}" é muito grande! Máximo: 5MB`);
-            return;
-        }
-    }
-    
-    // Adicionar arquivos à lista
-    validFiles.forEach(file => {
-        selectedFiles.push(file);
-    });
-    
-    console.log('📸 Total de arquivos selecionados:', selectedFiles.length);
-    
-    // Mostrar preview
-    setTimeout(() => {
-        showNewImagePreview();
-    }, 100);
-    
-    // Atualizar input file
-    const dataTransfer = new DataTransfer();
-    selectedFiles.forEach(file => dataTransfer.items.add(file));
-    const fileInput = document.getElementById('fileInput');
-    if (fileInput) {
-        fileInput.files = dataTransfer.files;
-        console.log('📸 Input file atualizado');
-    }
 }
         
 // ========== EXCLUIR FOTO EXISTENTE DO IMÓVEL ==========
