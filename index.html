@@ -1692,33 +1692,6 @@ function enforceConstitutionalGuideline() {
     
     console.log('✅ Diretriz Constitucional verificada e aplicada');
 }
-
-// ========== FUNÇÃO PARA NORMALIZAR FEATURES ==========
-function normalizeFeatures(features) {
-    if (!features) return [];
-    
-    if (Array.isArray(features)) {
-        // Remover espaços em branco e filtrar vazios
-        return features
-            .map(f => f.toString().trim())
-            .filter(f => f.length > 0);
-    }
-    
-    if (typeof features === 'string') {
-        return features
-            .split(',')
-            .map(f => f.trim())
-            .filter(f => f.length > 0);
-    }
-    
-    return [];
-}
-
-// ========== FUNÇÃO PARA SALVAR FEATURES ==========
-function serializeFeatures(features) {
-    const normalized = normalizeFeatures(features);
-    return normalized.join(', ');
-}        
         
 // ========== CONFIGURAÇÃO SUPABASE ==========
 const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
