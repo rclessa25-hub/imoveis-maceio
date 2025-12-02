@@ -1978,7 +1978,7 @@ function renderProperties(filter = 'todos') {
     console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
     
     filteredProperties.forEach(property => {
-        const features = normalizeFeatures(property.features);
+        const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
         // DEBUG: Verificar imagens
         const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
