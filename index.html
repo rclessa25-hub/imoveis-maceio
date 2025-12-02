@@ -1951,7 +1951,7 @@ function renderProperties(filter = 'todos') {
     console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
     
     filteredProperties.forEach(property => {
-        const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
+        const features = normalizeFeatures(property.features) ? property.features : (property.features ? property.features.split(',') : []);
         
         // DEBUG: Verificar imagens
         const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
@@ -2104,7 +2104,7 @@ function loadPropertyList() {
     }
     
     properties.forEach(property => {
-        const features = Array.isArray(property.features) 
+        const features = normalizeFeatures(property.features) 
             ? property.features 
             : (property.features ? property.features.split(',') : []);
             
@@ -2680,7 +2680,7 @@ function editProperty(id) {
     document.getElementById('propLocation').value = property.location || '';
     document.getElementById('propDescription').value = property.description || '';
     
-    const features = Array.isArray(property.features) 
+    const features = normalizeFeatures(property.features) 
         ? property.features 
         : (property.features || '');
     document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
@@ -3165,7 +3165,7 @@ async function saveProperty(propertyData) {
             price: propertyData.price,
             location: propertyData.location,
             description: propertyData.description,
-            features: Array.isArray(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
+            features: serializeFeatures(propertyData.features) ? propertyData.features.join(', ') : propertyData.features,
             type: propertyData.type,
             has_video: propertyData.has_video,
             badge: propertyData.badge,
@@ -3332,7 +3332,7 @@ function setupForm() {
             price: document.getElementById('propPrice').value,
             location: document.getElementById('propLocation').value,
             description: document.getElementById('propDescription').value,
-            features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
+            features: normalizeFeatures(document.getElementById('propFeatures').value.split(',')).map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
             has_video: document.getElementById('propHasVideo').checked,
             badge: document.getElementById('propBadge').value,
@@ -3375,6 +3375,33 @@ function setupForm() {
     });
 }
 
+// ========== FUNÇÃO PARA NORMALIZAR FEATURES ==========
+function normalizeFeatures(features) {
+    if (!features) return [];
+    
+    if (Array.isArray(features)) {
+        // Remover espaços em branco e filtrar vazios
+        return features
+            .map(f => f.toString().trim())
+            .filter(f => f.length > 0);
+    }
+    
+    if (typeof features === 'string') {
+        return features
+            .split(',')
+            .map(f => f.trim())
+            .filter(f => f.length > 0);
+    }
+    
+    return [];
+}
+
+// ========== FUNÇÃO PARA SALVAR FEATURES ==========
+function serializeFeatures(features) {
+    const normalized = normalizeFeatures(features);
+    return normalized.join(', ');
+}
+        
 // ========== FUNÇÕES DE INTERAÇÃO ==========
 function contactAgent(id) {
     const property = properties.find(p => p.id === id);
