@@ -1000,31 +1000,33 @@
             border-left: 4px solid var(--primary);
         }
 
-        /* NOVA POSIÇÃO: Canto inferior direito, sobrepondo o contador de fotos */
+        /* ÍCONE DO PDF - COLADO AO CONTADOR E BORDA MÍNIMA */
         .pdf-access {
             position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
+            bottom: 2px; /* Quase tocando a borda inferior */
+            right: 10px; /* Posição original */
+            background: rgba(255, 255, 255, 0.95); /* Mais opaco */
             border: none;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 28px; /* Ligeiramente menor */
+            height: 28px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--primary);
             transition: all 0.3s ease;
-            z-index: 15; /* Aumentei o z-index para ficar sobre o contador */
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 15; /* Sobre o contador */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* Sombra mais forte */
+            border: 1px solid rgba(0,0,0,0.1); /* Borda sutil para definição */
         }
-        
+
         .pdf-access:hover {
             background: white;
             transform: scale(1.1);
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+            color: #1a5276; /* Cor primária mais forte no hover */
         }
 
         .pdf-modal {
@@ -1108,19 +1110,19 @@
             transform: scale(1.1);
         }
         
-        /* CONTADOR DE FOTOS - COLADO NO ÍCONE (SEM ESPAÇO) */
+        /* CONTADOR DE FOTOS - COLADO AO ÍCONE E BORDA MÍNIMA */
         .image-count {
             position: absolute;
-            bottom: 10px;
-            right: 40px; /* 30px (largura do ícone) + 10px (posição do ícone) = 40px */
-            background: rgba(0,0,0,0.7);
+            bottom: 2px; /* Quase tocando a borda inferior */
+            right: 40px; /* Colado ao ícone do PDF (30px do ícone + 10px posição) */
+            background: rgba(0,0,0,0.8); /* Mais escuro para contraste */
             color: white;
-            padding: 0.3rem 0.6rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem; /* Padding reduzido */
+            border-radius: 12px; /* Border-radius menor */
+            font-size: 0.75rem; /* Fonte um pouco menor */
             z-index: 10;
             white-space: nowrap;
-            margin-right: 0; /* Remove qualquer margem */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Sombra sutil */
         }
         
         /* ========== ESTILOS PARA UPLOAD E PREVIEW ========== */
