@@ -2607,10 +2607,8 @@ function renderProperties(filter = 'todos') {
                     ${hasVideo ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                     ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                     
-                    <!-- BOTÃO DISCRETO PARA PDF - CORRIGIDO -->
-                    // NA FUNÇÃO renderProperties(), dentro do card de cada imóvel:
-                    // Alteração da posição do botão PDF:
-                    ${hasPdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
+                    <!-- BOTÃO PARA PDF - AGORA NO CANTO INFERIOR DIREITO -->
+                    ${hasPdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
                         <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
                 </div>
@@ -2630,7 +2628,7 @@ function renderProperties(filter = 'todos') {
         `;
         container.innerHTML += card;
     });
-}        
+}
 
 // ========== CORREÇÃO DO DEBUG DOS DADOS ==========
 function debugPropertyData() {
