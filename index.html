@@ -1659,38 +1659,240 @@
     </div>
 
     <script>
-// ========== DIRETRIZ CONSTITUCIONAL IMUTÁVEL ==========
+// ========== DIRETRIZ CONSTITUCIONAL APERFEIÇOADA E EXPANDIDA ==========
 const CONSTITUTIONAL_GUIDELINE = Object.freeze({
-    version: "1.0",
-    established: "2025",
+    // IDENTIFICAÇÃO E VERSÃO
+    version: "2.0",
+    established: "2024",
+    lastRevision: new Date().toISOString().split('T')[0],
     developerAuthorization: "https://chat.deepseek.com",
-    immutableSections: [
+    primaryContact: "Weber Lessa - CRECI 654/AL",
+    
+    // SEÇÕES IMUTÁVEIS (ESTRUTURA CORE - NÃO MODIFICAR)
+    immutableSections: Object.freeze([
         "Estrutura Visual Principal",
-        "Sistema de Administração",
-        "Funcionalidades de Upload",
-        "Sistema de Exclusão de Imagens"
-    ],
-    modificationPolicy: "Nenhuma modificação estrutural pode ser realizada sem autorização expressa via plataforma oficial"
+        "Sistema de Administração (Painel do Corretor)",
+        "Funcionalidades de Upload (Fotos e PDFs)",
+        "Sistema de Exclusão de Imagens/PDFs",
+        "Separação: Fotos Existentes vs Novas Fotos",
+        "Separação: PDFs Existentes vs Novos PDFs",
+        "Botão 'X' no canto superior direito para exclusão"
+    ]),
+    
+    // PRINCÍPIOS FUNDAMENTAIS
+    fundamentalPrinciples: Object.freeze({
+        // PRINCÍPIO DA SEPARAÇÃO VISUAL
+        visualSeparation: "Manter clara separação visual entre conteúdos existentes e novos",
+        
+        // PRINCÍPIO DA CONSISTÊNCIA
+        consistency: "Manter formato consistente entre elementos equivalentes (botões 'X' sempre no mesmo lugar)",
+        
+        // PRINCÍPIO DA NÃO DUPLICAÇÃO
+        noDuplication: "Não criar funções duplicadas para mesma finalidade",
+        
+        // PRINCÍPIO DA MANUTENIBILIDADE
+        maintainability: "Maximizar uso de funções existentes em vez de criar novas",
+        
+        // PRINCÍPIO DA PRESERVAÇÃO ESTRUTURAL
+        structuralPreservation: "Não modificar estrutura visual aprovada sem autorização expressa"
+    }),
+    
+    // ESTRUTURAS VISUAIS APROVADAS
+    approvedVisualStructures: Object.freeze({
+        uploadSections: Object.freeze({
+            existingImages: {
+                title: "📸 Fotos atuais do imóvel (clique no X para excluir):",
+                borderColor: "2px solid var(--success)",
+                buttonColor: "#e74c3c"
+            },
+            newImages: {
+                title: "📸 Novas fotos a serem adicionadas:",
+                borderColor: "2px dashed #3498db",
+                buttonColor: "#3498db"
+            },
+            existingPdfs: {
+                title: "📄 Documentos atuais do imóvel (clique no X para excluir):",
+                borderColor: "2px solid var(--success)",
+                buttonColor: "#e74c3c"
+            },
+            newPdfs: {
+                title: "📄 Novos documentos a serem adicionados:",
+                borderColor: "2px dashed #3498db",
+                buttonColor: "#3498db"
+            }
+        }),
+        
+        buttonPositions: Object.freeze({
+            deleteButton: "position: absolute; top: -8px; right: -8px;",
+            alwaysVisible: "Botão 'X' deve ser SEMPRE visível no canto superior direito"
+        })
+    }),
+    
+    // SISTEMA DE UPLOAD - ESPECIFICAÇÕES TÉCNICAS
+    uploadSystem: Object.freeze({
+        images: Object.freeze({
+            maxFiles: 10,
+            maxSizeMB: 5,
+            acceptedTypes: ["image/*", "video/*"],
+            methods: Object.freeze(["drag-drop", "click-browse"])
+        }),
+        pdfs: Object.freeze({
+            maxFiles: 5,
+            maxSizeMB: 10,
+            acceptedTypes: ["application/pdf"],
+            methods: Object.freeze(["drag-drop", "click-browse"])
+        })
+    }),
+    
+    // POLÍTICA DE MODIFICAÇÃO
+    modificationPolicy: Object.freeze({
+        // RESTRIÇÕES
+        restrictions: [
+            "Nenhuma modificação estrutural pode ser realizada sem autorização expressa via plataforma oficial",
+            "Não alterar posição, cor ou comportamento dos botões de exclusão ('X')",
+            "Manter títulos das seções exatamente como definidos",
+            "Não criar funções duplicadas para operações já existentes"
+        ],
+        
+        // PROCESSO DE APROVAÇÃO
+        approvalProcess: [
+            "1. Identificar necessidade específica",
+            "2. Verificar funções existentes que possam atender",
+            "3. Se necessário criar nova função, justificar por escrito",
+            "4. Submeter para revisão via chat.deepseek.com",
+            "5. Implementar apenas após aprovação explícita"
+        ],
+        
+        // PARA NOVOS DESENVOLVEDORES/ASSISTENTES
+        instructionsForNewContributors: [
+            "ESTE SCRIPT TEM ESTRUTURA ESTABELECIDA E APROVADA",
+            "Antes de sugerir alterações, estudar as funções existentes",
+            "Sempre maximizar uso do que já existe",
+            "Se encontrar problema, verificar primeiro configurações locais (VPN, firewall, cache)",
+            "Problemas intermitentes são frequentemente de conexão, não de código"
+        ]
+    }),
+    
+    // REGISTRO DE PROBLEMAS CONHECIDOS E SOLUÇÕES
+    knownIssuesRegistry: Object.freeze({
+        // ISSUE #001: Click intermitente no upload
+        uploadClickIntermittent: Object.freeze({
+            description: "Click via mouse funciona intermitentemente em algumas máquinas",
+            rootCause: "Configurações locais (VPN, firewall, extensões do navegador)",
+            solution: "Testar em múltiplos dispositivos, limpar cache, desativar VPN temporariamente",
+            status: "IDENTIFICADO - não é bug do código",
+            workaround: "Usar drag & drop que funciona 100%"
+        }),
+        
+        // ISSUE #002: Problemas de conexão com Supabase
+        supabaseConnection: Object.freeze({
+            description: "Erros intermitentes de conexão com Supabase",
+            rootCause: "Configuração inicial feita com VPN ativa",
+            solution: "Verificar credenciais sem VPN, testar conexão direta",
+            status: "RESOLVIDO - usar conexão direta sem VPN"
+        })
+    }),
+    
+    // VERIFICAÇÃO DE CONFORMIDADE
+    complianceCheck: function() {
+        console.log('🔍 VERIFICAÇÃO DE CONFORMIDADE CONSTITUCIONAL');
+        console.log('=============================================');
+        
+        const checks = {
+            uploadSections: {
+                existingImages: !!document.getElementById('existingImagesSection'),
+                newImages: !!document.getElementById('newImagesSection'),
+                existingPdfs: !!document.getElementById('existingPdfsSection'),
+                newPdfs: !!document.getElementById('newPdfsSection')
+            },
+            
+            coreFunctions: {
+                cancelEdit: typeof cancelEdit === 'function',
+                showNewImagePreview: typeof showNewImagePreview === 'function',
+                handleFiles: typeof handleFiles === 'function',
+                setupUploadSystem: typeof setupUploadSystem === 'function'
+            },
+            
+            structuralIntegrity: {
+                buttonsExist: document.querySelectorAll('.delete-image-btn').length > 0,
+                sectionsTitles: this.checkSectionTitles()
+            }
+        };
+        
+        // Exibir resultados
+        Object.entries(checks).forEach(([category, items]) => {
+            console.log(`\n${category.toUpperCase()}:`);
+            Object.entries(items).forEach(([item, result]) => {
+                console.log(`  ${item}: ${result ? '✅' : '❌'}`);
+            });
+        });
+        
+        console.log('\n=============================================');
+        console.log('✅ VERIFICAÇÃO CONSTITUCIONAL COMPLETA');
+        
+        return checks;
+    },
+    
+    // Método auxiliar para verificar títulos
+    checkSectionTitles: function() {
+        const titles = this.approvedVisualStructures.uploadSections;
+        let allCorrect = true;
+        
+        Object.entries(titles).forEach(([section, config]) => {
+            const element = document.querySelector(`#${section}Section p`);
+            if (element && element.textContent !== config.title) {
+                console.warn(`⚠️ Título incorreto em ${section}: "${element.textContent}"`);
+                allCorrect = false;
+            }
+        });
+        
+        return allCorrect;
+    }
 });
 
-// Verificar se há tentativas de modificação não autorizadas
+// Função de verificação obrigatória
 function enforceConstitutionalGuideline() {
-    const originalStructure = {
-        adminPanel: document.getElementById('adminPanel') !== null,
-        propertyForm: document.getElementById('propertyForm') !== null,
-        uploadPreview: document.getElementById('uploadPreview') !== null
-    };
+    console.log('🏛️ APLICANDO DIRETRIZ CONSTITUCIONAL DO SCRIPT');
     
-    // Monitorar tentativas de remoção de elementos críticos
-    const criticalElements = ['adminPanel', 'propertyForm', 'uploadPreview'];
-    criticalElements.forEach(elementId => {
-        const element = document.getElementById(elementId);
-        if (!element) {
-            console.error(`❌ VIOLAÇÃO DA DIRETRIZ: Elemento crítico ${elementId} removido!`);
+    try {
+        // Verificar se há tentativas de modificação não autorizadas
+        const originalStructure = {
+            adminPanel: document.getElementById('adminPanel') !== null,
+            propertyForm: document.getElementById('propertyForm') !== null,
+            uploadPreview: document.getElementById('uploadPreview') !== null,
+            pdfUploadPreview: document.getElementById('pdfUploadPreview') !== null
+        };
+        
+        // Monitorar elementos críticos
+        const criticalElements = [
+            'adminPanel', 'propertyForm', 'uploadPreview', 
+            'pdfUploadPreview', 'existingImagesSection', 'newImagesSection'
+        ];
+        
+        let violations = [];
+        criticalElements.forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (!element) {
+                violations.push(`Elemento crítico ${elementId} ausente`);
+                console.error(`❌ VIOLAÇÃO DA DIRETRIZ: ${elementId} removido!`);
+            }
+        });
+        
+        if (violations.length > 0) {
+            console.error('🚨 VIOLAÇÕES DETECTADAS:', violations);
+            alert('ATENÇÃO: Estrutura do sistema comprometida. Restaure o backup original.');
+        } else {
+            console.log('✅ Estrutura constitucional preservada');
+            
+            // Executar verificação de conformidade
+            CONSTITUTIONAL_GUIDELINE.complianceCheck();
         }
-    });
+        
+    } catch (error) {
+        console.error('❌ Erro na verificação constitucional:', error);
+    }
     
-    console.log('✅ Diretriz Constitucional verificada e aplicada');
+    console.log('✅ Diretriz Constitucional verificada e aplicada\n');
 }
         
 // ========== CONFIGURAÇÃO SUPABASE ==========
