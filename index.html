@@ -1894,6 +1894,470 @@ function enforceConstitutionalGuideline() {
     
     console.log('✅ Diretriz Constitucional verificada e aplicada\n');
 }
+
+// ========== SISTEMA DE MONITORAMENTO CONSTITUCIONAL DISCRETO ==========
+// (Só aparece quando admin está logado)
+
+const CONSTITUTIONAL_MONITOR = {
+    version: "2.0-monitor",
+    logs: [],
+    isActive: false,
+    monitorPanel: null,
+    
+    // Inicializar monitor
+    init: function() {
+        console.log('🔧 Inicializando monitor constitucional...');
+        
+        // Criar painel de monitoramento (inicialmente oculto)
+        this.createMonitorPanel();
+        
+        // Verificar se admin está logado (painel visível)
+        this.checkAdminStatus();
+        
+        // Monitorar periodicamente
+        setInterval(() => this.periodicCheck(), 30000); // A cada 30 segundos
+    },
+    
+    // Criar painel discreto
+    createMonitorPanel: function() {
+        // Verificar se já existe
+        if (document.getElementById('constitutionalMonitor')) return;
+        
+        // Criar container minimalista
+        this.monitorPanel = document.createElement('div');
+        this.monitorPanel.id = 'constitutionalMonitor';
+        this.monitorPanel.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 12px;
+            z-index: 9998;
+            display: none;
+            overflow: hidden;
+        `;
+        
+        // Cabeçalho minimalista
+        const header = document.createElement('div');
+        header.style.cssText = `
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        `;
+        
+        const title = document.createElement('span');
+        title.textContent = '🔍 Monitor do Sistema';
+        title.style.fontWeight = '600';
+        title.style.color = '#2c3e50';
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            line-height: 1;
+        `;
+        closeBtn.onclick = () => this.hide();
+        
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+        
+        // Área de logs
+        const logsArea = document.createElement('div');
+        logsArea.id = 'monitorLogs';
+        logsArea.style.cssText = `
+            padding: 10px;
+            max-height: 350px;
+            overflow-y: auto;
+            background: white;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+        `;
+        
+        // Status bar
+        const statusBar = document.createElement('div');
+        statusBar.id = 'monitorStatus';
+        statusBar.style.cssText = `
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            font-size: 11px;
+            color: #6c757d;
+            text-align: center;
+        `;
+        statusBar.textContent = 'Pronto';
+        
+        // Montar painel
+        this.monitorPanel.appendChild(header);
+        this.monitorPanel.appendChild(logsArea);
+        this.monitorPanel.appendChild(statusBar);
+        document.body.appendChild(this.monitorPanel);
+        
+        // Arrastar painel
+        this.makeDraggable(header, this.monitorPanel);
+        
+        console.log('✅ Painel de monitoramento criado');
+    },
+    
+    // Verificar se admin está logado
+    checkAdminStatus: function() {
+        const adminPanel = document.getElementById('adminPanel');
+        const isAdminVisible = adminPanel && adminPanel.style.display === 'block';
+        
+        if (isAdminVisible && !this.isActive) {
+            this.show();
+            this.isActive = true;
+            this.log('🟢 Painel administrativo detectado - Monitor ativado');
+        } else if (!isAdminVisible && this.isActive) {
+            this.hide();
+            this.isActive = false;
+        }
+    },
+    
+    // Mostrar painel
+    show: function() {
+        if (this.monitorPanel) {
+            this.monitorPanel.style.display = 'block';
+            this.log('📋 Monitor visível para administrador');
+        }
+    },
+    
+    // Ocultar painel
+    hide: function() {
+        if (this.monitorPanel) {
+            this.monitorPanel.style.display = 'none';
+            this.clearLogs();
+        }
+    },
+    
+    // Adicionar log
+    log: function(message, type = 'info') {
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = {
+            time: timestamp,
+            message: message,
+            type: type
+        };
+        
+        // Adicionar à memória (máximo 50 logs)
+        this.logs.push(logEntry);
+        if (this.logs.length > 50) {
+            this.logs.shift(); // Remover o mais antigo
+        }
+        
+        // Atualizar display se visível
+        if (this.isActive && this.monitorPanel) {
+            this.updateLogsDisplay();
+        }
+        
+        // Também logar no console
+        const consoleMsg = `[${timestamp}] ${message}`;
+        if (type === 'error') console.error(consoleMsg);
+        else if (type === 'warn') console.warn(consoleMsg);
+        else console.log(consoleMsg);
+    },
+    
+    // Atualizar display de logs
+    updateLogsDisplay: function() {
+        const logsArea = document.getElementById('monitorLogs');
+        if (!logsArea) return;
+        
+        logsArea.innerHTML = '';
+        
+        this.logs.forEach(log => {
+            const logLine = document.createElement('div');
+            logLine.style.cssText = `
+                margin-bottom: 4px;
+                padding: 4px;
+                border-radius: 3px;
+                font-family: 'Monaco', 'Consolas', monospace;
+                font-size: 11px;
+                line-height: 1.3;
+                ${log.type === 'error' ? 'background: #fee; color: #c7254e;' : ''}
+                ${log.type === 'warn' ? 'background: #fff3cd; color: #856404;' : ''}
+                ${log.type === 'success' ? 'background: #d4edda; color: #155724;' : ''}
+            `;
+            
+            logLine.innerHTML = `
+                <span style="color: #6c757d; font-weight: 600;">[${log.time}]</span>
+                <span style="margin-left: 8px;">${log.message}</span>
+            `;
+            
+            logsArea.appendChild(logLine);
+        });
+        
+        // Auto-scroll para baixo
+        logsArea.scrollTop = logsArea.scrollHeight;
+        
+        // Atualizar status
+        const statusBar = document.getElementById('monitorStatus');
+        if (statusBar) {
+            const lastLog = this.logs[this.logs.length - 1];
+            statusBar.textContent = `Última verificação: ${lastLog.time} | Logs: ${this.logs.length}`;
+        }
+    },
+    
+    // Limpar logs
+    clearLogs: function() {
+        this.logs = [];
+        const logsArea = document.getElementById('monitorLogs');
+        if (logsArea) logsArea.innerHTML = '';
+    },
+    
+    // Verificação periódica do sistema
+    periodicCheck: function() {
+        if (!this.isActive) return;
+        
+        this.log('🔄 Verificação periódica do sistema...');
+        
+        // Verificar elementos críticos
+        const criticalElements = ['adminPanel', 'propertyForm', 'uploadPreview', 'pdfUploadPreview'];
+        let allOk = true;
+        
+        criticalElements.forEach(id => {
+            const element = document.getElementById(id);
+            if (!element) {
+                this.log(`❌ Elemento crítico ausente: ${id}`, 'error');
+                allOk = false;
+            }
+        });
+        
+        // Verificar botões de exclusão
+        const deleteButtons = document.querySelectorAll('.delete-image-btn');
+        if (deleteButtons.length === 0) {
+            this.log('⚠️ Nenhum botão de exclusão encontrado', 'warn');
+        } else {
+            this.log(`✅ ${deleteButtons.length} botões de exclusão funcionais`, 'success');
+        }
+        
+        if (allOk) {
+            this.log('✅ Sistema constitucional estável', 'success');
+        }
+    },
+    
+    // Verificação constitucional rápida
+    quickCheck: function() {
+        this.log('🔍 Verificação constitucional rápida...');
+        
+        // 1. Verificar separação visual
+        const existingImages = document.getElementById('existingImagesSection');
+        const newImages = document.getElementById('newImagesSection');
+        const existingPdfs = document.getElementById('existingPdfsSection');
+        const newPdfs = document.getElementById('newPdfsSection');
+        
+        if (existingImages && newImages) {
+            this.log('✅ Separação imagens: EXISTENTES vs NOVAS', 'success');
+        }
+        
+        if (existingPdfs && newPdfs) {
+            this.log('✅ Separação PDFs: EXISTENTES vs NOVOS', 'success');
+        }
+        
+        // 2. Verificar botões "X"
+        const deleteButtons = document.querySelectorAll('.delete-image-btn');
+        let correctPosition = 0;
+        
+        deleteButtons.forEach(btn => {
+            const style = window.getComputedStyle(btn);
+            if (style.position === 'absolute' && style.top.includes('-') && style.right.includes('-')) {
+                correctPosition++;
+            }
+        });
+        
+        if (correctPosition === deleteButtons.length) {
+            this.log(`✅ ${deleteButtons.length} botões "X" na posição correta`, 'success');
+        } else {
+            this.log(`⚠️ ${deleteButtons.length - correctPosition} botões fora da posição`, 'warn');
+        }
+        
+        // 3. Verificar funções essenciais
+        const essentialFunctions = ['cancelEdit', 'showNewImagePreview', 'handleFiles', 'setupUploadSystem'];
+        essentialFunctions.forEach(funcName => {
+            if (typeof window[funcName] === 'function') {
+                this.log(`✅ Função ${funcName}() disponível`, 'success');
+            } else {
+                this.log(`❌ Função ${funcName}() AUSENTE`, 'error');
+            }
+        });
+        
+        this.log('✅ Verificação constitucional completa');
+    },
+    
+    // Tornar painel arrastável
+    makeDraggable: function(header, panel) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        
+        header.onmousedown = dragMouseDown;
+        
+        function dragMouseDown(e) {
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
+        
+        function elementDrag(e) {
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            
+            panel.style.top = (panel.offsetTop - pos2) + "px";
+            panel.style.left = (panel.offsetLeft - pos1) + "px";
+        }
+        
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+        }
+    }
+};
+
+// ========== FUNÇÃO DE MONITORAMENTO SIMPLIFICADA ==========
+function monitorConstitutionalHealth() {
+    // Inicializar monitor (só uma vez)
+    if (!window.constitutionalMonitorInitialized) {
+        CONSTITUTIONAL_MONITOR.init();
+        window.constitutionalMonitorInitialized = true;
+        
+        // Adicionar botão de verificação rápida no painel admin
+        setTimeout(() => {
+            addMonitorButtonToAdminPanel();
+        }, 1000);
+    }
+    
+    // Verificar status do admin
+    CONSTITUTIONAL_MONITOR.checkAdminStatus();
+}
+
+// Adicionar botão discreto no painel admin
+function addMonitorButtonToAdminPanel() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (!adminPanel) return;
+    
+    // Verificar se botão já existe
+    if (document.getElementById('quickMonitorBtn')) return;
+    
+    // Criar botão minimalista
+    const monitorBtn = document.createElement('button');
+    monitorBtn.id = 'quickMonitorBtn';
+    monitorBtn.innerHTML = '🔍 Verificar Sistema';
+    monitorBtn.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        z-index: 10;
+        opacity: 0.8;
+        transition: opacity 0.3s;
+    `;
+    
+    monitorBtn.onmouseenter = () => monitorBtn.style.opacity = '1';
+    monitorBtn.onmouseleave = () => monitorBtn.style.opacity = '0.8';
+    
+    monitorBtn.onclick = () => {
+        CONSTITUTIONAL_MONITOR.quickCheck();
+        CONSTITUTIONAL_MONITOR.log('🔧 Verificação manual solicitada pelo administrador');
+    };
+    
+    adminPanel.appendChild(monitorBtn);
+    CONSTITUTIONAL_MONITOR.log('✅ Botão de verificação adicionado ao painel');
+}
+
+// ========== ATUALIZAR A FUNÇÃO DE VERIFICAÇÃO ==========
+function enforceConstitutionalGuideline() {
+    // Substituir pela nova função de monitoramento
+    monitorConstitutionalHealth();
+}
+
+// ========== INTEGRAÇÃO COM O SISTEMA EXISTENTE ==========
+// 1. Adicione no DOMContentLoaded (substitua a chamada antiga):
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Sistema Weber Lessa Iniciado');
+    
+    // Monitoramento constitucional discreto (substitui enforceConstitutionalGuideline)
+    monitorConstitutionalHealth();
+    
+    // ... resto do seu código ...
+});
+
+// 2. Adicione monitoramento ao abrir painel admin
+const originalToggleAdminPanel = toggleAdminPanel;
+toggleAdminPanel = function() {
+    const password = prompt("Digite a senha de acesso ao painel:");
+    if (password === ADMIN_PASSWORD) {
+        originalToggleAdminPanel();
+        
+        // Mostrar monitor após abrir painel
+        setTimeout(() => {
+            CONSTITUTIONAL_MONITOR.show();
+            CONSTITUTIONAL_MONITOR.log('🔓 Administrador autenticado - Monitor ativo');
+            CONSTITUTIONAL_MONITOR.quickCheck();
+        }, 500);
+    } else {
+        alert("Senha incorreta!");
+    }
+};
+
+// 3. Monitorar eventos importantes do sistema
+function setupSystemMonitoring() {
+    // Monitorar uploads de arquivos
+    const originalHandleFiles = handleFiles;
+    if (originalHandleFiles) {
+        handleFiles = function(files) {
+            CONSTITUTIONAL_MONITOR.log(`📸 ${files.length} arquivo(s) selecionado(s) para upload`);
+            return originalHandleFiles.apply(this, arguments);
+        };
+    }
+    
+    // Monitorar edição de propriedades
+    const originalEditProperty = editProperty;
+    if (originalEditProperty) {
+        editProperty = function(id) {
+            CONSTITUTIONAL_MONITOR.log(`🏠 Editando imóvel ID: ${id}`);
+            return originalEditProperty.apply(this, arguments);
+        };
+    }
+    
+    // Monitorar salvamento
+    const originalSaveProperty = saveProperty;
+    if (originalSaveProperty) {
+        saveProperty = function(propertyData) {
+            CONSTITUTIONAL_MONITOR.log(`💾 Salvando imóvel: "${propertyData.title}"`);
+            return originalSaveProperty.apply(this, arguments);
+        };
+    }
+    
+    CONSTITUTIONAL_MONITOR.log('✅ Monitoramento do sistema configurado');
+}
+
+// Executar após carregamento
+setTimeout(setupSystemMonitoring, 2000);
         
 // ========== CONFIGURAÇÃO SUPABASE ==========
 const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
