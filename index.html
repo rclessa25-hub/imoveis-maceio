@@ -1108,16 +1108,19 @@
             transform: scale(1.1);
         }
         
+        /* CONTADOR DE FOTOS - COLADO NO ÍCONE (SEM ESPAÇO) */
         .image-count {
             position: absolute;
-            bottom: 15px; /* Ajustado para dar espaço ao ícone */
-            right: 45px; /* Movido mais para a esquerda para o ícone do PDF */
+            bottom: 10px;
+            right: 40px; /* 30px (largura do ícone) + 10px (posição do ícone) = 40px */
             background: rgba(0,0,0,0.7);
             color: white;
             padding: 0.3rem 0.6rem;
             border-radius: 15px;
             font-size: 0.8rem;
-            z-index: 10; /* Menor que o ícone do PDF */
+            z-index: 10;
+            white-space: nowrap;
+            margin-right: 0; /* Remove qualquer margem */
         }
         
         /* ========== ESTILOS PARA UPLOAD E PREVIEW ========== */
