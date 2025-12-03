@@ -2042,38 +2042,44 @@ const SystemMonitor = {
     },
     
     // Atualizar display
-    updateDisplay: function() {
-        const logsArea = document.getElementById('monitorLogsArea');
-        const statusBar = document.getElementById('monitorStatusBar');
+    // NO SystemMonitor, substitua a função updateDisplay:
+updateDisplay: function() {
+    const logsArea = document.getElementById('monitorLogsArea');
+    const statusBar = document.getElementById('monitorStatusBar');
+    
+    if (!logsArea || !statusBar) return;
+    
+    // Limpar e recriar logs
+    logsArea.innerHTML = '';
+    
+    this.logs.forEach(log => {
+        const logLine = document.createElement('div');
+        logLine.style.cssText = `
+            margin-bottom: 2px;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 11px;
+            ${log.type === 'error' ? 'background: #fee; color: #c7254e;' : ''}
+            ${log.type === 'warn' ? 'background: #fff3cd; color: #856404;' : ''}
+            ${log.type === 'success' ? 'background: #d4edda; color: #155724;' : ''}
+        `;
         
-        if (!logsArea || !statusBar) return;
-        
-        // Limpar e recriar logs
-        logsArea.innerHTML = '';
-        
-        this.logs.forEach(log => {
-            const logLine = document.createElement('div');
-            logLine.style.cssText = `
-                margin-bottom: 2px;
-                padding: 2px 4px;
-                border-radius: 2px;
-                font-family: 'Monaco', 'Consolas', monospace;
-                font-size: 11px;
-                ${log.type === 'error' ? 'background: #fee; color: #c7254e;' : ''}
-                ${log.type === 'warn' ? 'background: #fff3cd; color: #856404;' : ''}
-                ${log.type === 'success' ? 'background: #d4edda; color: #155724;' : ''}
-            `;
-            
-            logLine.innerHTML = `<span style="color: #6c757d;">[${log.time}]</span> ${log.message}`;
-            logsArea.appendChild(logLine);
-        });
-        
-        // Auto-scroll
-        logsArea.scrollTop = logsArea.scrollHeight;
-        
-        // Atualizar status
-        statusBar.textContent = `Última: ${timestamp} | Total: ${this.logs.length} logs`;
-    },
+        logLine.innerHTML = `<span style="color: #6c757d;">[${log.time}]</span> ${log.message}`;
+        logsArea.appendChild(logLine);
+    });
+    
+    // Auto-scroll
+    logsArea.scrollTop = logsArea.scrollHeight;
+    
+    // CORREÇÃO: Usar this.logs para pegar timestamp
+    const lastLog = this.logs[this.logs.length - 1];
+    if (lastLog) {
+        statusBar.textContent = `Última: ${lastLog.time} | Total: ${this.logs.length} logs`;
+    } else {
+        statusBar.textContent = 'Pronto | Total: 0 logs';
+    }
+},
     
     // Verificação rápida do sistema
     quickCheck: function() {
@@ -4019,62 +4025,10 @@ window.addEventListener('load', function() {
 });
 
 // 2. BOTÃO DE FORÇA BRUTA (emergência)
-function forceUploadFix() {
-    console.log('🔧 APLICANDO FORÇA BRUTA NO SISTEMA DE UPLOAD...');
-    
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    
-    if (!uploadArea || !fileInput) {
-        console.error('Elementos não encontrados');
-        return;
-    }
-    
-    // Método nuclear: substituir completamente
-    const nuclearFix = `
-        <div onclick="document.getElementById('fileInput').click()" 
-             style="cursor: pointer; padding: 20px; border: 3px dashed #3498db; border-radius: 10px; text-align: center;">
-            <i class="fas fa-upload" style="font-size: 2rem; color: #3498db;"></i>
-            <h4 style="color: #3498db; margin: 10px 0;">UPLOAD GARANTIDO</h4>
-            <p style="color: #666;">Clique AQUI - Funciona 100%</p>
-        </div>
-    `;
-    
-    uploadArea.innerHTML = nuclearFix;
-    uploadArea.style.position = 'relative';
-    uploadArea.style.zIndex = '9999';
-    
-    console.log('✅ Força bruta aplicada. Click DEVE funcionar agora.');
-}
 
 // Adicionar botão de emergência no painel admin
-function addEmergencyButton() {
-    const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel) {
-        const emergencyBtn = document.createElement('button');
-        emergencyBtn.innerHTML = '<i class="fas fa-wrench"></i> CORRIGIR UPLOAD';
-        emergencyBtn.style = `
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 10000;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        `;
-        emergencyBtn.onclick = forceUploadFix;
-        document.body.appendChild(emergencyBtn);
-        
-        console.log('✅ Botão de emergência adicionado');
-    }
-}
 
 // Executar após carregar
-setTimeout(addEmergencyButton, 2000);
 
 // ========== FUNÇÃO handleFiles() COMPLETA E CORRIGIDA ==========
 function handleFiles(files) {
