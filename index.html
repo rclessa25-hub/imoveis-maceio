@@ -1000,11 +1000,11 @@
             border-left: 4px solid var(--primary);
         }
 
-        /* NOVA POSIÇÃO: Canto inferior esquerdo */
+        /* NOVA POSIÇÃO: Canto inferior direito, sobrepondo o contador de fotos */
         .pdf-access {
             position: absolute;
             bottom: 10px;
-            left: 10px;
+            right: 10px;
             background: rgba(255, 255, 255, 0.9);
             border: none;
             border-radius: 50%;
@@ -1017,13 +1017,14 @@
             font-size: 0.8rem;
             color: var(--primary);
             transition: all 0.3s ease;
-            z-index: 10;
+            z-index: 15; /* Aumentei o z-index para ficar sobre o contador */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
         .pdf-access:hover {
-             background: white;
-             transform: scale(1.1);
-             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            background: white;
+            transform: scale(1.1);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
         }
 
         .pdf-modal {
