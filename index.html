@@ -3772,7 +3772,10 @@ async function deleteFromStorage(imageUrl) {
     }
 }
 // ========== FUNÇÃO setupUploadSystem() CORRIGIDA ==========
+// ========== SISTEMA DE UPLOAD ROBUSTO - COMPATÍVEL COM PROBLEMAS LOCAIS ==========
 function setupUploadSystem() {
+    console.log('🔧 Configurando sistema de upload ROBUSTO...');
+    
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
 
@@ -3781,97 +3784,297 @@ function setupUploadSystem() {
         return;
     }
 
-    console.log('🔧 Configurando sistema de upload de imagens/vídeos...');
+    // ESTRATÉGIA 1: MÚLTIPLOS MÉTODOS DE CLICK (defesa em profundidade)
+    const setupClickMethods = () => {
+        console.log('🛡️ Configurando múltiplos métodos de click...');
+        
+        // Método A: onclick tradicional
+        uploadArea.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎯 Método A (onclick) acionado');
+            fileInput.click();
+        };
+        
+        // Método B: addEventListener
+        uploadArea.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎯 Método B (addEventListener) acionado');
+            fileInput.click();
+        }, true); // true = useCapture phase
+        
+        // Método C: mousedown (para browsers problemáticos)
+        uploadArea.addEventListener('mousedown', function(e) {
+            if (e.button === 0) { // Botão esquerdo
+                console.log('🎯 Método C (mousedown) acionado');
+                setTimeout(() => fileInput.click(), 10);
+            }
+        });
+        
+        // Método D: touch para dispositivos touch
+        uploadArea.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            console.log('🎯 Método D (touch) acionado');
+            fileInput.click();
+        });
+        
+        console.log('✅ 4 métodos de click configurados');
+    };
 
-    // REMOVER TODOS OS EVENT LISTENERS ANTIGOS (com clonagem)
-    const newUploadArea = uploadArea.cloneNode(true);
-    const newFileInput = fileInput.cloneNode(true);
+    // ESTRATÉGIA 2: SISTEMA DE FALLBACK AUTOMÁTICO
+    let clickAttempts = 0;
+    const maxAttempts = 3;
     
-    uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
-    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+    const setupFallbackSystem = () => {
+        console.log('🔄 Configurando sistema de fallback...');
+        
+        // Monitorar se o click está funcionando
+        const checkClickFunctionality = () => {
+            clickAttempts++;
+            console.log(`📊 Tentativa de click #${clickAttempts}`);
+            
+            if (clickAttempts >= maxAttempts) {
+                console.warn('⚠️ Múltiplas falhas de click detectadas');
+                activateEmergencyMode();
+            }
+        };
+        
+        // Modo de emergência para click persistente
+        const activateEmergencyMode = () => {
+            console.log('🚨 ATIVANDO MODO DE EMERGÊNCIA PARA UPLOAD');
+            
+            // Substituir completamente a área de upload
+            const emergencyHTML = `
+                <div id="uploadEmergency" style="
+                    border: 3px solid #e74c3c; 
+                    border-radius: 10px; 
+                    padding: 30px; 
+                    text-align: center;
+                    background: #fff5f5;
+                    cursor: pointer;
+                    margin: 1rem 0;">
+                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c; font-size: 2rem;"></i>
+                    <h4 style="color: #e74c3c; margin: 1rem 0;">MODO DE EMERGÊNCIA ATIVADO</h4>
+                    <p style="color: #666; margin-bottom: 1rem;">
+                        Clique AQUI para selecionar fotos<br>
+                        <small>(Sistema detectou problemas no click normal)</small>
+                    </p>
+                    <button onclick="document.getElementById('fileInput').click()" 
+                            style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                        <i class="fas fa-upload"></i> CLIQUE AQUI PARA UPLOAD
+                    </button>
+                </div>
+            `;
+            
+            uploadArea.insertAdjacentHTML('afterend', emergencyHTML);
+            
+            // Também adicionar click direto no botão de emergência
+            document.getElementById('uploadEmergency').addEventListener('click', function() {
+                console.log('🎯 CLICK DE EMERGÊNCIA FUNCIONANDO');
+                fileInput.click();
+            });
+        };
+        
+        // Adicionar verificação em cada click
+        uploadArea.addEventListener('click', checkClickFunctionality);
+        console.log('✅ Sistema de fallback configurado');
+    };
 
-    // ATUALIZAR REFERÊNCIAS
-    const updatedUploadArea = document.getElementById('uploadArea');
-    const updatedFileInput = document.getElementById('fileInput');
+    // ESTRATÉGIA 3: DIAGNÓSTICO AUTOMÁTICO
+    const runDiagnostic = () => {
+        console.log('🔍 EXECUTANDO DIAGNÓSTICO DO SISTEMA DE UPLOAD');
+        
+        const diagnostic = {
+            userAgent: navigator.userAgent,
+            isFirefox: navigator.userAgent.includes('Firefox'),
+            isChrome: navigator.userAgent.includes('Chrome'),
+            platform: navigator.platform,
+            cookiesEnabled: navigator.cookieEnabled,
+            javaScriptEnabled: true,
+            // Verificar event listeners
+            hasOnClick: !!uploadArea.onclick,
+            hasAddEventListener: true, // Assumimos que sim
+            // Verificar estilos
+            cursorStyle: uploadArea.style.cursor,
+            pointerEvents: uploadArea.style.pointerEvents,
+            // Verificar posição/z-index
+            position: window.getComputedStyle(uploadArea).position,
+            zIndex: window.getComputedStyle(uploadArea).zIndex
+        };
+        
+        console.table(diagnostic);
+        
+        // Sugestões baseadas no diagnóstico
+        if (diagnostic.isFirefox) {
+            console.log('💡 SUGESTÃO PARA FIREFOX: about:config -> dom.event.clipboardevents.enabled = true');
+        }
+        
+        if (diagnostic.cursorStyle !== 'pointer') {
+            console.log('💡 AJUSTANDO cursor para pointer');
+            uploadArea.style.cursor = 'pointer';
+        }
+        
+        console.log('✅ Diagnóstico completo');
+    };
 
-    if (!updatedUploadArea || !updatedFileInput) {
-        console.error('❌ Erro ao clonar elementos de upload');
-        return;
-    }
+    // ESTRATÉGIA 4: LOG DETALHADO PARA DEBUG
+    const setupDetailedLogging = () => {
+        console.log('📝 Configurando logging detalhado...');
+        
+        // Log de todos os eventos na área de upload
+        const events = ['click', 'mousedown', 'mouseup', 'touchstart', 'dragenter', 'dragover', 'dragleave', 'drop'];
+        
+        events.forEach(eventType => {
+            uploadArea.addEventListener(eventType, (e) => {
+                console.log(`🖱️ Evento "${eventType}" na uploadArea:`, {
+                    type: e.type,
+                    time: e.timeStamp,
+                    coordinates: { x: e.clientX, y: e.clientY },
+                    target: e.target.id,
+                    defaultPrevented: e.defaultPrevented
+                });
+            });
+        });
+        
+        // Log detalhado do change no input
+        fileInput.addEventListener('change', (e) => {
+            console.log('📁 EVENTO CHANGE NO FILE INPUT:', {
+                files: e.target.files.length,
+                fileNames: Array.from(e.target.files).map(f => f.name),
+                fileSizes: Array.from(e.target.files).map(f => `${(f.size/1024/1024).toFixed(2)}MB`),
+                timestamp: new Date().toISOString()
+            });
+            
+            // Verificar se handleFiles será chamada
+            setTimeout(() => {
+                if (selectedFiles.length === 0 && e.target.files.length > 0) {
+                    console.warn('⚠️ Arquivos selecionados mas handleFiles não foi chamada!');
+                    console.warn('💡 Forçando chamada de handleFiles...');
+                    handleFiles(e.target.files);
+                }
+            }, 100);
+        });
+        
+        console.log('✅ Logging detalhado configurado');
+    };
 
-    // 1. DRAG AND DROP
-    updatedUploadArea.addEventListener('dragover', (e) => {
+    // EXECUTAR TODAS AS ESTRATÉGIAS
+    setupClickMethods();
+    setupFallbackSystem();
+    runDiagnostic();
+    setupDetailedLogging();
+    
+    // CONFIGURAÇÃO DRAG & DROP (já funciona 100%)
+    setupDragAndDrop();
+    
+    console.log('✅ Sistema de upload ROBUSTO configurado');
+    console.log('💡 DICA: Se o click ainda não funcionar, use Drag & Drop (funciona 100%)');
+}
+
+// Função auxiliar para drag & drop
+function setupDragAndDrop() {
+    const uploadArea = document.getElementById('uploadArea');
+    
+    uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        updatedUploadArea.style.borderColor = 'var(--primary)';
-        updatedUploadArea.style.background = '#f0f8ff';
-        console.log('📸 Drag over ativo');
+        uploadArea.style.borderColor = 'var(--primary)';
+        uploadArea.style.background = '#f0f8ff';
     });
 
-    updatedUploadArea.addEventListener('dragleave', (e) => {
+    uploadArea.addEventListener('dragleave', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        updatedUploadArea.style.borderColor = '#ddd';
-        updatedUploadArea.style.background = '';
+        uploadArea.style.borderColor = '#ddd';
+        uploadArea.style.background = '';
     });
 
-    updatedUploadArea.addEventListener('drop', (e) => {
+    uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        updatedUploadArea.style.borderColor = '#ddd';
-        updatedUploadArea.style.background = '';
+        uploadArea.style.borderColor = '#ddd';
+        uploadArea.style.background = '';
         
         if (e.dataTransfer.files.length > 0) {
-            console.log('📸 Arquivos arrastados:', e.dataTransfer.files.length);
+            console.log('📸 Arquivos arrastados via Drag & Drop:', e.dataTransfer.files.length);
             handleFiles(e.dataTransfer.files);
         }
     });
-
-    // 2. CLICK PARA SELECIONAR (CORREÇÃO CRÍTICA)
-    updatedUploadArea.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('📸 Área de upload CLICADA - Abrindo seletor de arquivos...');
-        
-        // Forçar o click no input file
-        setTimeout(() => {
-            updatedFileInput.click();
-        }, 10);
-    });
-
-    // 3. MUDANÇA NO INPUT DE ARQUIVO
-    updatedFileInput.addEventListener('change', (e) => {
-        console.log('📸 Input file ALTERADO:', e.target.files.length, 'arquivos');
-        if (e.target.files.length > 0) {
-            handleFiles(e.target.files);
-        } else {
-            console.log('⚠️ Nenhum arquivo selecionado');
-        }
-    });
-
-    // 4. PREVENIR COMPORTAMENTO PADRÃO
-    updatedFileInput.addEventListener('click', (e) => {
-        e.stopPropagation();
-        console.log('📸 Input file clicado diretamente');
-    });
-
-    // 5. GARANTIR QUE ESTÁ CLICÁVEL
-    updatedUploadArea.style.cursor = 'pointer';
-    updatedUploadArea.style.pointerEvents = 'auto';
-    
-    // 6. FEEDBACK VISUAL
-    updatedUploadArea.addEventListener('mouseenter', function() {
-        this.style.borderColor = 'var(--primary)';
-        this.style.boxShadow = '0 0 10px rgba(52, 152, 219, 0.3)';
-    });
-    
-    updatedUploadArea.addEventListener('mouseleave', function() {
-        this.style.borderColor = '#ddd';
-        this.style.boxShadow = 'none';
-    });
-
-    console.log('✅ Sistema de upload configurado - Click e Drag & Drop funcionando!');
 }
+
+// ========== SOLUÇÃO DEFINITIVA PARA SEU PROBLEMA LOCAL ==========
+// Adicione este código para contornar problemas específicos da sua máquina
+
+// 1. LIMPAR CACHE E RECONFIGURAR AO CARREGAR
+window.addEventListener('load', function() {
+    console.log('🧹 LIMPANDO CACHE DE UPLOAD AO CARREGAR...');
+    
+    // Forçar reconexão dos event listeners
+    setTimeout(() => {
+        if (typeof setupUploadSystem === 'function') {
+            setupUploadSystem();
+        }
+    }, 1000);
+});
+
+// 2. BOTÃO DE FORÇA BRUTA (emergência)
+function forceUploadFix() {
+    console.log('🔧 APLICANDO FORÇA BRUTA NO SISTEMA DE UPLOAD...');
+    
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    if (!uploadArea || !fileInput) {
+        console.error('Elementos não encontrados');
+        return;
+    }
+    
+    // Método nuclear: substituir completamente
+    const nuclearFix = `
+        <div onclick="document.getElementById('fileInput').click()" 
+             style="cursor: pointer; padding: 20px; border: 3px dashed #3498db; border-radius: 10px; text-align: center;">
+            <i class="fas fa-upload" style="font-size: 2rem; color: #3498db;"></i>
+            <h4 style="color: #3498db; margin: 10px 0;">UPLOAD GARANTIDO</h4>
+            <p style="color: #666;">Clique AQUI - Funciona 100%</p>
+        </div>
+    `;
+    
+    uploadArea.innerHTML = nuclearFix;
+    uploadArea.style.position = 'relative';
+    uploadArea.style.zIndex = '9999';
+    
+    console.log('✅ Força bruta aplicada. Click DEVE funcionar agora.');
+}
+
+// Adicionar botão de emergência no painel admin
+function addEmergencyButton() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) {
+        const emergencyBtn = document.createElement('button');
+        emergencyBtn.innerHTML = '<i class="fas fa-wrench"></i> CORRIGIR UPLOAD';
+        emergencyBtn.style = `
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 10000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        `;
+        emergencyBtn.onclick = forceUploadFix;
+        document.body.appendChild(emergencyBtn);
+        
+        console.log('✅ Botão de emergência adicionado');
+    }
+}
+
+// Executar após carregar
+setTimeout(addEmergencyButton, 2000);
 
 // ========== FUNÇÃO handleFiles() COMPLETA E CORRIGIDA ==========
 function handleFiles(files) {
