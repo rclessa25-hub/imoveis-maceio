@@ -2607,6 +2607,8 @@ function renderProperties(filter = 'todos') {
                     ${hasImages ? `<div class="image-count">📸 ${imageUrls.length}</div>` : ''}
                     
                     <!-- BOTÃO DISCRETO PARA PDF - CORRIGIDO -->
+                    // NA FUNÇÃO renderProperties(), dentro do card de cada imóvel:
+                    // Alteração da posição do botão PDF:
                     ${hasPdfs ? `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel">
                         <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
