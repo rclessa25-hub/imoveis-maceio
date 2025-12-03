@@ -3629,6 +3629,46 @@ function removeFile(index) {
         }
     }
 }
+
+// ========== TESTE DE CONEXÃO SUPABASE DETALHADO ==========
+async function testSupabaseDetailed() {
+    console.log('🔍 Testando conexão com Supabase...');
+    
+    try {
+        // Teste 1: Acesso básico
+        const test1 = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        console.log('Teste 1 - Status:', test1.status, test1.ok ? '✅ OK' : '❌ FALHOU');
+        
+        // Teste 2: Storage
+        const test2 = await fetch(`${SUPABASE_URL}/storage/v1/bucket/properties`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        console.log('Teste 2 - Storage:', test2.status, test2.ok ? '✅ OK' : '❌ FALHOU');
+        
+        // Teste 3: Ping
+        const test3 = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+            method: 'HEAD',
+            headers: {
+                'apikey': SUPABASE_KEY
+            }
+        });
+        console.log('Teste 3 - Ping:', test3.status, test3.ok ? '✅ OK' : '❌ FALHOU');
+        
+        return test1.ok;
+        
+    } catch (error) {
+        console.error('❌ Erro detalhado na conexão:', error);
+        return false;
+    }
+}
         
 // ========== INICIALIZAÇÃO CORRIGIDA ==========
 // ========== ADICIONAR DEBUG NA INICIALIZAÇÃO ==========
