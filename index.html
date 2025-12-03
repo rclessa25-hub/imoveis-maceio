@@ -1938,7 +1938,7 @@ function showPdfPreview() {
 function removePdfFile(index) {
     if (confirm('Tem certeza que deseja excluir este PDF?')) {
         selectedPdfFiles.splice(index, 1);
-        showPdfPreviewWithDelete();
+        showPdfPreviewWithDelete(); // Usar função com botão "X"
         
         // Atualizar input file
         const dataTransfer = new DataTransfer();
