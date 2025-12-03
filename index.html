@@ -1111,20 +1111,27 @@
             transform: scale(1.1);
         }
         
-        /* CONTADOR DE FOTOS - ENCOSTADO NA MARGEM DIREITA E INFERIOR */
+        /* CONTADOR DE FOTOS - CONTAINER MÍNIMO */
         .image-count {
             position: absolute;
-            bottom: 2px; /* Encostado na borda inferior */
-            right: 2px; /* Encostado na borda direita */
-            background: rgba(0,0,0,0.85); /* Mais opaco para melhor contraste */
+            bottom: 1px;
+            right: 1px;
+            background: rgba(0,0,0,0.9);
             color: white;
-            padding: 0.2rem 0.5rem;
-            border-radius: 12px 0 12px 12px; /* Canto superior direito quadrado */
-            font-size: 0.75rem;
+            padding: 0.1rem 0.35rem; /* MÍNIMO possível */
+            border-radius: 8px 0 8px 8px; /* Menos arredondado */
+            font-size: 0.75rem; /* Fonte NORMAL */
             z-index: 10;
             white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1); /* Borda sutil interna */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+            font-weight: 600; /* Negrito para melhor visibilidade */
+            min-width: 22px; /* Mínima largura */
+            height: 18px; /* Altura mínima */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            border: 0.5px solid rgba(255,255,255,0.15); /* Borda fina para definição */
         }
         
         /* ========== ESTILOS PARA UPLOAD E PREVIEW ========== */
