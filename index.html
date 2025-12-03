@@ -4555,6 +4555,10 @@ async function testSupabaseDetailed() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
     
+    // TEMPORARIAMENTE desabilitar verificação constitucional inicial
+    // para evitar alertas durante desenvolvimento
+    // enforceConstitutionalGuideline(); // COMENTE ESTA LINHA
+    
     // LIMPAR QUALQUER DADO REMANESCENTE DO FORMULÁRIO
     if (typeof cancelEdit === 'function') {
         cancelEdit(); // Limpa formulário ao carregar a página
