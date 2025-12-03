@@ -3181,8 +3181,7 @@ async function deleteFromStorage(imageUrl) {
         return false;
     }
 }
-
-// ========== CORREÇÃO DA FUNÇÃO setupUploadSystem() ==========
+// ========== FUNÇÃO setupUploadSystem() CORRIGIDA ==========
 function setupUploadSystem() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
@@ -3194,32 +3193,43 @@ function setupUploadSystem() {
 
     console.log('🔧 Configurando sistema de upload de imagens/vídeos...');
 
-    // ESTILOS INICIAIS
-    uploadArea.style.cursor = 'pointer';
-    uploadArea.style.transition = 'all 0.3s ease';
+    // REMOVER TODOS OS EVENT LISTENERS ANTIGOS (com clonagem)
+    const newUploadArea = uploadArea.cloneNode(true);
+    const newFileInput = fileInput.cloneNode(true);
+    
+    uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
 
-    // DRAG AND DROP
-    uploadArea.addEventListener('dragover', (e) => {
+    // ATUALIZAR REFERÊNCIAS
+    const updatedUploadArea = document.getElementById('uploadArea');
+    const updatedFileInput = document.getElementById('fileInput');
+
+    if (!updatedUploadArea || !updatedFileInput) {
+        console.error('❌ Erro ao clonar elementos de upload');
+        return;
+    }
+
+    // 1. DRAG AND DROP
+    updatedUploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        uploadArea.style.borderColor = 'var(--primary)';
-        uploadArea.style.background = '#f0f8ff';
+        updatedUploadArea.style.borderColor = 'var(--primary)';
+        updatedUploadArea.style.background = '#f0f8ff';
         console.log('📸 Drag over ativo');
     });
 
-    uploadArea.addEventListener('dragleave', (e) => {
+    updatedUploadArea.addEventListener('dragleave', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        uploadArea.style.borderColor = '#ddd';
-        uploadArea.style.background = '';
-        console.log('📸 Drag leave');
+        updatedUploadArea.style.borderColor = '#ddd';
+        updatedUploadArea.style.background = '';
     });
 
-    uploadArea.addEventListener('drop', (e) => {
+    updatedUploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        uploadArea.style.borderColor = '#ddd';
-        uploadArea.style.background = '';
+        updatedUploadArea.style.borderColor = '#ddd';
+        updatedUploadArea.style.background = '';
         
         if (e.dataTransfer.files.length > 0) {
             console.log('📸 Arquivos arrastados:', e.dataTransfer.files.length);
@@ -3227,28 +3237,50 @@ function setupUploadSystem() {
         }
     });
 
-    // CLICK PARA SELECIONAR
-    uploadArea.addEventListener('click', (e) => {
+    // 2. CLICK PARA SELECIONAR (CORREÇÃO CRÍTICA)
+    updatedUploadArea.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('📸 Click na área de upload');
-        fileInput.click();
+        console.log('📸 Área de upload CLICADA - Abrindo seletor de arquivos...');
+        
+        // Forçar o click no input file
+        setTimeout(() => {
+            updatedFileInput.click();
+        }, 10);
     });
 
-    // MUDANÇA NO INPUT DE ARQUIVO
-    fileInput.addEventListener('change', (e) => {
-        console.log('📸 Input file alterado:', e.target.files.length, 'arquivos');
+    // 3. MUDANÇA NO INPUT DE ARQUIVO
+    updatedFileInput.addEventListener('change', (e) => {
+        console.log('📸 Input file ALTERADO:', e.target.files.length, 'arquivos');
         if (e.target.files.length > 0) {
             handleFiles(e.target.files);
+        } else {
+            console.log('⚠️ Nenhum arquivo selecionado');
         }
     });
 
-    // PREVENIR COMPORTAMENTO PADRÃO DO INPUT
-    fileInput.addEventListener('click', (e) => {
+    // 4. PREVENIR COMPORTAMENTO PADRÃO
+    updatedFileInput.addEventListener('click', (e) => {
         e.stopPropagation();
+        console.log('📸 Input file clicado diretamente');
     });
 
-    console.log('✅ Sistema de upload de imagens/vídeos configurado!');
+    // 5. GARANTIR QUE ESTÁ CLICÁVEL
+    updatedUploadArea.style.cursor = 'pointer';
+    updatedUploadArea.style.pointerEvents = 'auto';
+    
+    // 6. FEEDBACK VISUAL
+    updatedUploadArea.addEventListener('mouseenter', function() {
+        this.style.borderColor = 'var(--primary)';
+        this.style.boxShadow = '0 0 10px rgba(52, 152, 219, 0.3)';
+    });
+    
+    updatedUploadArea.addEventListener('mouseleave', function() {
+        this.style.borderColor = '#ddd';
+        this.style.boxShadow = 'none';
+    });
+
+    console.log('✅ Sistema de upload configurado - Click e Drag & Drop funcionando!');
 }
 
 // ========== FUNÇÃO handleFiles() COMPLETA E CORRIGIDA ==========
@@ -3357,25 +3389,80 @@ async function uploadFile(file) {
     }
 }
 
-// ========== FUNÇÃO cancelEdit() DO BACKUP ==========
+// ========== FUNÇÃO cancelEdit() COMPLETA E CORRIGIDA ==========
 function cancelEdit() {
-    editingPropertyId = null;
-    const form = document.getElementById('propertyForm');
-    if (form) form.reset();
+    console.log('❌ Cancelando edição...');
     
-    document.getElementById('formTitle').textContent = 'Adicionar Novo Imóvel';
+    editingPropertyId = null;
+    
+    // 1. LIMPAR FORMULÁRIO COMPLETAMENTE
+    const form = document.getElementById('propertyForm');
+    if (form) {
+        form.reset(); // Isso limpa inputs, textareas, selects
+        
+        // Limpar manualmente campos que form.reset() não limpa completamente
+        document.getElementById('propTitle').value = '';
+        document.getElementById('propPrice').value = '';
+        document.getElementById('propLocation').value = '';
+        document.getElementById('propDescription').value = ''; // CORREÇÃO CRÍTICA
+        document.getElementById('propFeatures').value = '';
+        document.getElementById('propType').selectedIndex = 0;
+        document.getElementById('propBadge').selectedIndex = 0;
+        document.getElementById('propHasVideo').checked = false;
+    }
+    
+    // 2. ATUALIZAR TÍTULO
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Adicionar Novo Imóvel';
+    }
+    
+    // 3. ATUALIZAR BOTÃO
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
     }
-    document.getElementById('cancelEditBtn').style.display = 'none';
     
+    // 4. ESCONDER BOTÃO CANCELAR
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
+    
+    // 5. LIMPAR ARQUIVOS SELECIONADOS
     selectedFiles = [];
     selectedPdfFiles = [];
-    showPreview();
-    resetPdfUploadSystem();
     
-    console.log('✅ Edição cancelada - sistemas resetados');
+    // 6. LIMPAR PREVIEWS DE IMAGENS
+    const preview = document.getElementById('uploadPreview');
+    if (preview) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+    }
+    
+    // 7. LIMPAR PREVIEWS DE PDFs
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+    }
+    
+    // 8. LIMPAR INPUTS DE ARQUIVO
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) {
+        pdfFileInput.value = '';
+    }
+    
+    // 9. RECONFIGURAR SISTEMAS DE UPLOAD
+    setTimeout(() => {
+        setupUploadSystem(); // Reconfigurar click
+        setupPdfUploadSystem(); // Reconfigurar PDFs
+    }, 100);
+    
+    console.log('✅ Edição cancelada - Formulário completamente limpo');
 }
 
 // ========== FUNÇÃO resetPdfUploadSystem() ==========
