@@ -1000,15 +1000,15 @@
             border-left: 4px solid var(--primary);
         }
 
-        /* ÍCONE DO PDF - COLADO AO CONTADOR E BORDA MÍNIMA */
+        /* ÍCONE DO PDF - À ESQUERDA DO CONTADOR, TAMBÉM ENCOSTADO NA BORDA INFERIOR */
         .pdf-access {
             position: absolute;
-            bottom: 2px; /* Quase tocando a borda inferior */
-            right: 10px; /* Posição original */
-            background: rgba(255, 255, 255, 0.95); /* Mais opaco */
+            bottom: 2px; /* Encostado na borda inferior */
+            right: 35px; /* À esquerda do contador (contador ocupa ~30px + espaço) */
+            background: rgba(255, 255, 255, 0.95);
             border: none;
             border-radius: 50%;
-            width: 28px; /* Ligeiramente menor */
+            width: 28px;
             height: 28px;
             cursor: pointer;
             display: flex;
@@ -1017,10 +1017,11 @@
             font-size: 0.75rem;
             color: var(--primary);
             transition: all 0.3s ease;
-            z-index: 15; /* Sobre o contador */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* Sombra mais forte */
-            border: 1px solid rgba(0,0,0,0.1); /* Borda sutil para definição */
+            z-index: 15; /* Sobre o contador quando hover */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid rgba(0,0,0,0.15);
         }
+
 
         .pdf-access:hover {
             background: white;
@@ -1110,19 +1111,20 @@
             transform: scale(1.1);
         }
         
-        /* CONTADOR DE FOTOS - COLADO AO ÍCONE E BORDA MÍNIMA */
+        /* CONTADOR DE FOTOS - ENCOSTADO NA MARGEM DIREITA E INFERIOR */
         .image-count {
             position: absolute;
-            bottom: 2px; /* Quase tocando a borda inferior */
-            right: 40px; /* Colado ao ícone do PDF (30px do ícone + 10px posição) */
-            background: rgba(0,0,0,0.8); /* Mais escuro para contraste */
+            bottom: 2px; /* Encostado na borda inferior */
+            right: 2px; /* Encostado na borda direita */
+            background: rgba(0,0,0,0.85); /* Mais opaco para melhor contraste */
             color: white;
-            padding: 0.2rem 0.5rem; /* Padding reduzido */
-            border-radius: 12px; /* Border-radius menor */
-            font-size: 0.75rem; /* Fonte um pouco menor */
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px 0 12px 12px; /* Canto superior direito quadrado */
+            font-size: 0.75rem;
             z-index: 10;
             white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Sombra sutil */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1); /* Borda sutil interna */
         }
         
         /* ========== ESTILOS PARA UPLOAD E PREVIEW ========== */
