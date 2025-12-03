@@ -2106,8 +2106,9 @@ function saveToLocalStorage(propertyData) {
 }
         
 // ========== SISTEMA DO PAINEL ADMIN ==========
-const ADMIN_PASSWORD = "weber123";
+const ADMIN_PASSWORD = "wl654";
 
+// ========== FUNÇÃO toggleAdminPanel() CORRIGIDA ==========
 function toggleAdminPanel() {
     const password = prompt("Digite a senha de acesso ao painel:");
     if (password === ADMIN_PASSWORD) {
@@ -2115,7 +2116,15 @@ function toggleAdminPanel() {
         if (panel) {
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
             if (panel.style.display === 'block') {
+                // LIMPAR FORMULÁRIO AO ABRIR PAINEL
+                cancelEdit(); // Chama a função que limpa tudo
                 loadPropertyList();
+                
+                // GARANTIR QUE O UPLOAD FUNCIONE
+                setTimeout(() => {
+                    setupUploadSystem();
+                    setupPdfUploadSystem();
+                }, 300);
             }
         }
     } else {
@@ -3876,9 +3885,15 @@ async function testSupabaseDetailed() {
 // ========== INICIALIZAÇÃO CORRIGIDA ==========
 // ========== ADICIONAR DEBUG NA INICIALIZAÇÃO ==========
 // ========== INICIALIZAÇÃO COMPLETA E ATUALIZADA ==========
+// Adicione no início do DOMContentLoaded, antes de tudo:
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
-   
+    
+    // LIMPAR QUALQUER DADO REMANESCENTE DO FORMULÁRIO
+    if (typeof cancelEdit === 'function') {
+        cancelEdit(); // Limpa formulário ao carregar a página
+    }
+        
     // Aplicar diretriz constitucional
     enforceConstitutionalGuideline();
     
