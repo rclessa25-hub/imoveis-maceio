@@ -1789,6 +1789,7 @@ async function loadProperties() {
 
 // ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVAS IMAGENS ==========
 // ========== CORREÇÃO DA FUNÇÃO showNewImagePreview() ==========
+// ========== FUNÇÃO showNewImagePreview() ATUALIZADA ==========
 function showNewImagePreview() {
     console.log('🔍 showNewImagePreview() chamada com', selectedFiles.length, 'arquivos');
     
@@ -1798,52 +1799,64 @@ function showNewImagePreview() {
         return;
     }
     
-    // VERIFICAÇÃO CRÍTICA: Não manipular DOM se não houver arquivos
-    if (selectedFiles.length === 0) {
-        // Mantenha o conteúdo existente se houver
-        if (!preview.innerHTML.includes('Nenhuma nova foto selecionada')) {
-            preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
-        }
-        return;
-    }
-    
-    console.log('🎨 Renderizando preview de novas imagens...');
-    
-    // EVITAR CONFLITO: Usar um container temporário
-    const tempContainer = document.createElement('div');
-    tempContainer.style.display = 'flex';
-    tempContainer.style.gap = '10px';
-    tempContainer.style.flexWrap = 'wrap';
-    tempContainer.style.marginBottom = '1rem';
-    
     // Verificar se já existe seção de novas imagens
     let newImagesSection = document.getElementById('newImagesSection');
     
     if (!newImagesSection) {
-        // Criar a seção apenas uma vez
-        newImagesSection = document.createElement('div');
-        newImagesSection.id = 'newImagesSection';
-        newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
-        preview.appendChild(newImagesSection);
-    } else {
-        // Limpar apenas o conteúdo interno, não o elemento
-        const existingContent = newImagesSection.innerHTML.split('<p')[0];
-        newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+        console.log('⚠️ Seção de novas imagens não encontrada, criando...');
+        const existingSection = document.getElementById('existingImagesSection');
+        if (existingSection) {
+            // Criar após a seção existente
+            newImagesSection = document.createElement('div');
+            newImagesSection.id = 'newImagesSection';
+            newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            existingSection.parentNode.insertBefore(newImagesSection, existingSection.nextSibling);
+        } else {
+            // Criar na área principal
+            newImagesSection = document.createElement('div');
+            newImagesSection.id = 'newImagesSection';
+            newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            preview.appendChild(newImagesSection);
+        }
     }
     
-    // Processar cada arquivo - USAR APENAS FileReader se necessário
-    let processedCount = 0;
-    const maxFilesToProcess = 10; // Limitar para evitar sobrecarga
+    // Se ainda não encontrou a seção, sair
+    if (!newImagesSection) {
+        console.error('❌ Não foi possível criar seção de novas imagens');
+        return;
+    }
     
-    selectedFiles.slice(0, maxFilesToProcess).forEach((file, index) => {
+    // LIMPAR APENAS O CONTEÚDO DA SEÇÃO DE NOVAS (não a seção inteira)
+    const header = newImagesSection.querySelector('p');
+    if (header) {
+        // Manter o cabeçalho e limpar o resto
+        newImagesSection.innerHTML = '';
+        newImagesSection.appendChild(header);
+    } else {
+        newImagesSection.innerHTML = '<p style="color: #666; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+    }
+
+    if (selectedFiles.length === 0) {
+        newImagesSection.innerHTML += '<p style="color: #666; text-align: center; padding: 1rem;">Nenhuma nova foto selecionada</p>';
+        return;
+    }
+
+    console.log('🎨 Renderizando', selectedFiles.length, 'NOVAS imagens');
+    
+    // Container para as novas imagens
+    const newContainer = document.createElement('div');
+    newContainer.style.display = 'flex';
+    newContainer.style.flexWrap = 'wrap';
+    newContainer.style.gap = '10px';
+    newContainer.style.marginBottom = '1rem';
+    
+    selectedFiles.forEach((file, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'image-preview-container';
         fileItem.style.position = 'relative';
-        fileItem.style.display = 'inline-block';
         fileItem.style.margin = '5px';
 
         if (file.type.startsWith('image/')) {
-            // Usar URL.createObjectURL em vez de FileReader para melhor performance
             const imageUrl = URL.createObjectURL(file);
             
             fileItem.innerHTML = `
@@ -1851,9 +1864,10 @@ function showNewImagePreview() {
                      style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px dashed #3498db;"
                      onload="URL.revokeObjectURL(this.src)" 
                      onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                <!-- BOTÃO "X" NO CANTO SUPERIOR DIREITO -->
                 <button class="delete-image-btn" onclick="removeNewFile(${index})" 
                         style="background: #3498db;" 
-                        title="Remover esta foto da lista de novas">×</button>
+                        title="Remover esta foto">×</button>
                 <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">
                     ${file.name.substring(0, 12)}${file.name.length > 12 ? '...' : ''}
                 </div>
@@ -1868,9 +1882,10 @@ function showNewImagePreview() {
                     <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">
                         ${file.name.substring(0, 12)}${file.name.length > 12 ? '...' : ''}
                     </p>
+                    <!-- BOTÃO "X" NO CANTO SUPERIOR DIREITO -->
                     <button class="delete-image-btn" onclick="removeNewFile(${index})" 
                             style="background: #3498db;" 
-                            title="Remover este vídeo da lista de novos">×</button>
+                            title="Remover este vídeo">×</button>
                 </div>
                 <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; color: #666;">
                     ${(file.size / 1024 / 1024).toFixed(1)} MB
@@ -1878,14 +1893,11 @@ function showNewImagePreview() {
             `;
         }
         
-        tempContainer.appendChild(fileItem);
-        processedCount++;
+        newContainer.appendChild(fileItem);
     });
     
-    // Adicionar ao DOM de uma só vez (evita múltiplas manipulações)
-    newImagesSection.appendChild(tempContainer);
-    
-    console.log('✅ Preview renderizado para', processedCount, 'arquivos');
+    newImagesSection.appendChild(newContainer);
+    console.log('✅ Seção de novas imagens atualizada');
 }
 
 // ========== NOVA FUNÇÃO: REMOVER NOVA IMAGEM/VIDEO ==========
@@ -3239,6 +3251,72 @@ function setupUploadSystem() {
     console.log('✅ Sistema de upload de imagens/vídeos configurado!');
 }
 
+// ========== FUNÇÃO handleFiles() COMPLETA E CORRIGIDA ==========
+function handleFiles(files) {
+    console.log('📸 Arquivos recebidos no handleFiles:', files.length);
+    
+    const newFiles = Array.from(files);
+    
+    // Verificar se há arquivos válidos
+    const validFiles = newFiles.filter(file => 
+        file.type.startsWith('image/') || file.type.startsWith('video/')
+    );
+    
+    if (validFiles.length === 0) {
+        alert('⚠️ Por favor, selecione apenas imagens ou vídeos!');
+        return;
+    }
+    
+    // Contar arquivos atuais
+    const currentCount = selectedFiles.length;
+    const totalAfterAdd = currentCount + validFiles.length;
+    
+    // Limitar a 10 arquivos no total
+    if (totalAfterAdd > 10) {
+        alert('⚠️ Máximo de 10 arquivos permitidos!');
+        return;
+    }
+    
+    // Verificar tamanho dos arquivos (5MB max)
+    for (const file of validFiles) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`⚠️ O arquivo "${file.name}" é muito grande! Máximo: 5MB`);
+            return;
+        }
+    }
+    
+    // Adicionar arquivos à lista
+    validFiles.forEach(file => {
+        selectedFiles.push(file);
+    });
+    
+    console.log('📸 Total de arquivos selecionados:', selectedFiles.length);
+    
+    // ✅ CORREÇÃO CRÍTICA: Chamar showNewImagePreview() para mostrar as fotos
+    setTimeout(() => {
+        console.log('🔄 Chamando showNewImagePreview()...');
+        if (typeof showNewImagePreview === 'function') {
+            showNewImagePreview();
+            console.log('✅ showNewImagePreview() executada com sucesso');
+        } else {
+            console.error('❌ showNewImagePreview() não é uma função!');
+            // Fallback: usar showPreview() se existir
+            if (typeof showPreview === 'function') {
+                showPreview();
+            }
+        }
+    }, 100);
+    
+    // Atualizar input file
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.files = dataTransfer.files;
+        console.log('📸 Input file atualizado');
+    }
+}
+        
 // ========== UPLOAD PARA SUPABASE ==========
 async function uploadFile(file) {
     try {
@@ -3279,6 +3357,44 @@ async function uploadFile(file) {
     }
 }
 
+// ========== FUNÇÃO cancelEdit() DO BACKUP ==========
+function cancelEdit() {
+    editingPropertyId = null;
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+    
+    document.getElementById('formTitle').textContent = 'Adicionar Novo Imóvel';
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+    }
+    document.getElementById('cancelEditBtn').style.display = 'none';
+    
+    selectedFiles = [];
+    selectedPdfFiles = [];
+    showPreview();
+    resetPdfUploadSystem();
+    
+    console.log('✅ Edição cancelada - sistemas resetados');
+}
+
+// ========== FUNÇÃO resetPdfUploadSystem() ==========
+function resetPdfUploadSystem() {
+    console.log('🔄 Resetando sistema de upload de PDFs...');
+    
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+    }
+    
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) {
+        pdfFileInput.value = '';
+    }
+    
+    console.log('✅ Sistema de PDFs resetado');
+}
+        
 // ========== CORREÇÃO DA FUNÇÃO SALVAR PROPRIEDADE PARA IMAGENS ==========
 async function saveProperty(propertyData) {
     try {
@@ -3672,17 +3788,25 @@ async function testSupabaseDetailed() {
         
 // ========== INICIALIZAÇÃO CORRIGIDA ==========
 // ========== ADICIONAR DEBUG NA INICIALIZAÇÃO ==========
+// ========== INICIALIZAÇÃO COMPLETA E ATUALIZADA ==========
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Sistema Weber Lessa Iniciado');
    
     // Aplicar diretriz constitucional
     enforceConstitutionalGuideline();
     
-    // Testar conexão com Supabase
+    // Testar conexão com Supabase DETALHADO
+    console.log('🔍 Testando conexão com Supabase...');
     const supabaseOk = await testSupabaseConnection();
     
     if (!supabaseOk) {
-        console.log('⚠️ Supabase não disponível, usando modo local');
+        console.log('⚠️ ATENÇÃO: Problemas detectados com Supabase!');
+        console.log('📌 Possíveis causas:');
+        console.log('1. Conexão com internet instável');
+        console.log('2. VPN ativa interferindo');
+        console.log('3. Credenciais incorretas ou expiradas');
+        console.log('4. Restrições de CORS no navegador');
+        console.log('🔄 Usando modo local como fallback...');
     } else {
         console.log('✅ Supabase conectado com sucesso!');
         
@@ -3699,12 +3823,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupPdfUploadSystem();
     
     // DEBUG: Verificar se os elementos de upload foram configurados
-    console.log('🔍 Verificando configuração do upload de PDFs:', {
-        uploadArea: document.getElementById('uploadArea'),
-        pdfUploadArea: document.getElementById('pdfUploadArea'),
-        fileInput: document.getElementById('fileInput'),
-        pdfFileInput: document.getElementById('pdfFileInput')
-    });
+    console.log('🔍 Verificando configuração do sistema:');
+    console.log('- uploadArea:', document.getElementById('uploadArea') ? '✅' : '❌');
+    console.log('- pdfUploadArea:', document.getElementById('pdfUploadArea') ? '✅' : '❌');
+    console.log('- fileInput:', document.getElementById('fileInput') ? '✅' : '❌');
+    console.log('- pdfFileInput:', document.getElementById('pdfFileInput') ? '✅' : '❌');
     
     // Configurar filtros
     const filterButtons = document.querySelectorAll('.filter-btn');
@@ -3720,7 +3843,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Testar acesso às imagens
     testImageAccess();
     
-    console.log('✅ Sistema Weber Lessa carregado!');
+    console.log('✅ Sistema Weber Lessa carregado e pronto!');
 });
 
   </script>
