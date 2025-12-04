@@ -2288,323 +2288,13 @@ const observer = new MutationObserver(function(mutations) {
         }
     });
 });
-
-// Iniciar observação quando DOM carregar
-document.addEventListener('DOMContentLoaded', function() {
-    const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel) {
-        observer.observe(adminPanel, { attributes: true });
-    }
-});
-
-
-// Adicionar estilos ao documento
-const styleSheet = document.createElement("style");
-styleSheet.textContent = galleryStyles;
-document.head.appendChild(styleSheet);
-
-// Variáveis globais para a galeria
-let currentGalleryImages = [];
-let currentGalleryIndex = 0;
-let touchStartX = 0;
-let touchEndX = 0;
-const SWIPE_THRESHOLD = 50;
-
-// ========== FUNÇÃO PARA CRIAR GALERIA NO IMÓVEL ==========
-function createPropertyGallery(property) {
-    // Verificar se há imagens
-    const hasImages = property.images && 
-                     property.images.length > 0 && 
-                     property.images !== 'EMPTY';
-    
-    const imageUrls = hasImages ? 
-        property.images.split(',').filter(url => url.trim() !== '') : 
-        [];
-    
-    const firstImageUrl = imageUrls.length > 0 ? 
-        imageUrls[0] : 
-        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
-    
-    // Se só tem uma imagem, mostrar imagem estática
-    if (imageUrls.length <= 1) {
-        return `
-            <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-                <img src="${firstImageUrl}" 
-                     style="width: 100%; height: 100%; object-fit: cover;"
-                     alt="${property.title}"
-                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
-                
-                ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-                    `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>` : ''}
-            </div>
-        `;
-    }
-    
-    // Se tem múltiplas imagens, criar galeria
-    return `
-        <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-            <div class="property-gallery-container" onclick="openGallery(${property.id})">
-                <img src="${firstImageUrl}" 
-                     class="property-gallery-image"
-                     alt="${property.title}"
-                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                
-                <!-- Indicador de galeria MOBILE -->
-                <div class="gallery-indicator-mobile">
-                    <i class="fas fa-images"></i>
-                    <span>${imageUrls.length}</span>
-                </div>
-                
-                <!-- Pontos indicadores -->
-                <div class="gallery-controls">
-                    ${imageUrls.map((_, index) => `
-                        <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
-                             data-index="${index}"
-                             onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
-                    `).join('')}
-                </div>
-                
-                <!-- Ícone de expansão -->
-                <div class="gallery-expand-icon" onclick="openGallery(${property.id})">
-                    <i class="fas fa-expand"></i>
-                </div>
-            </div>
-            
-            ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-            ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-            
-            <!-- Botão PDF (agora no canto inferior direito) -->
-            ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-                `<button class="pdf-access" onclick="event.stopPropagation(); showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
-                    <i class="fas fa-file-pdf"></i>
-                </button>` : ''}
-        </div>
-    `;
-}
-
-// ========== FUNÇÃO PARA ABRIR GALERIA ==========
-function openGallery(propertyId) {
-    const property = properties.find(p => p.id === propertyId);
-    if (!property) return;
-    
-    const hasImages = property.images && 
-                     property.images.length > 0 && 
-                     property.images !== 'EMPTY';
-    
-    if (!hasImages) return;
-    
-    currentGalleryImages = property.images.split(',').filter(url => url.trim() !== '');
-    currentGalleryIndex = 0;
-    
-    // Criar ou atualizar modal da galeria
-    let galleryModal = document.getElementById('propertyGalleryModal');
-    
-    if (!galleryModal) {
-        galleryModal = document.createElement('div');
-        galleryModal.id = 'propertyGalleryModal';
-        galleryModal.className = 'gallery-modal';
-        galleryModal.innerHTML = `
-            <div class="gallery-modal-content">
-                <!-- Área para swipe -->
-                <div class="gallery-swipe-area" 
-                     ontouchstart="handleTouchStart(event)"
-                     ontouchend="handleTouchEnd(event)"></div>
-                
-                <!-- Imagem -->
-                <img id="galleryCurrentImage" class="gallery-modal-image" 
-                     src="${currentGalleryImages[0]}"
-                     alt="Imagem ${currentGalleryIndex + 1} de ${currentGalleryImages.length}">
-                
-                <!-- Controles -->
-                <div class="gallery-modal-controls">
-                    <button class="gallery-modal-btn" onclick="prevGalleryImage()" 
-                            aria-label="Imagem anterior">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    
-                    <div id="galleryCounter" class="gallery-counter">
-                        ${currentGalleryIndex + 1} / ${currentGalleryImages.length}
-                    </div>
-                    
-                    <button class="gallery-modal-btn" onclick="nextGalleryImage()" 
-                            aria-label="Próxima imagem">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-                
-                <!-- Botão fechar -->
-                <button class="gallery-modal-close" onclick="closeGallery()" 
-                        aria-label="Fechar galeria">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-        document.body.appendChild(galleryModal);
-        
-        // Adicionar suporte a teclado
-        document.addEventListener('keydown', handleGalleryKeyboard);
-    } else {
-        // Atualizar imagem atual
-        document.getElementById('galleryCurrentImage').src = currentGalleryImages[0];
-        document.getElementById('galleryCounter').textContent = 
-            `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
-    }
-    
-    // Mostrar modal
-    galleryModal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; // Prevenir scroll
-    
-    // Focar no botão fechar para acessibilidade
-    setTimeout(() => {
-        const closeBtn = galleryModal.querySelector('.gallery-modal-close');
-        if (closeBtn) closeBtn.focus();
-    }, 100);
-}
-
-// ========== FUNÇÃO PARA FECHAR GALERIA ==========
-function closeGallery() {
-    const galleryModal = document.getElementById('propertyGalleryModal');
-    if (galleryModal) {
-        galleryModal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restaurar scroll
-        
-        // Remover listener de teclado
-        document.removeEventListener('keydown', handleGalleryKeyboard);
-        
-        // Retornar foco para o elemento que abriu a galeria
-        if (lastGalleryOpener) {
-            lastGalleryOpener.focus();
-            lastGalleryOpener = null;
-        }
-    }
-}
-
-// ========== FUNÇÕES DE NAVEGAÇÃO DA GALERIA ==========
-function showGalleryImage(propertyId, index) {
-    const property = properties.find(p => p.id === propertyId);
-    if (!property) return;
-    
-    const hasImages = property.images && 
-                     property.images.length > 0 && 
-                     property.images !== 'EMPTY';
-    
-    if (!hasImages) return;
-    
-    const images = property.images.split(',').filter(url => url.trim() !== '');
-    if (index < 0 || index >= images.length) return;
-    
-    // Atualizar imagem no card
-    const container = document.querySelector(`[onclick="openGallery(${propertyId})"]`);
-    if (container) {
-        const img = container.querySelector('.property-gallery-image');
-        if (img) {
-            img.src = images[index];
-            img.onerror = function() {
-                this.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
-            };
-        }
-        
-        // Atualizar dots ativos
-        const dots = container.querySelectorAll('.gallery-dot');
-        dots.forEach((dot, i) => {
-            dot.classList.toggle('active', i === index);
-        });
-    }
-}
-
-function nextGalleryImage() {
-    if (currentGalleryImages.length === 0) return;
-    
-    currentGalleryIndex = (currentGalleryIndex + 1) % currentGalleryImages.length;
-    updateGalleryModal();
-}
-
-function prevGalleryImage() {
-    if (currentGalleryImages.length === 0) return;
-    
-    currentGalleryIndex = (currentGalleryIndex - 1 + currentGalleryImages.length) % currentGalleryImages.length;
-    updateGalleryModal();
-}
-
-function updateGalleryModal() {
-    const imageElement = document.getElementById('galleryCurrentImage');
-    const counterElement = document.getElementById('galleryCounter');
-    
-    if (imageElement && counterElement) {
-        imageElement.src = currentGalleryImages[currentGalleryIndex];
-        counterElement.textContent = `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
-        
-        // Animar transição
-        imageElement.style.opacity = '0';
-        setTimeout(() => {
-            imageElement.style.opacity = '1';
-        }, 50);
-    }
-}
-
-// ========== SUPPORTE A SWIPE PARA MOBILE ==========
-function handleTouchStart(event) {
-    touchStartX = event.changedTouches[0].screenX;
-    event.stopPropagation();
-}
-
-function handleTouchEnd(event) {
-    touchEndX = event.changedTouches[0].screenX;
-    handleSwipe();
-    event.stopPropagation();
-}
-
-function handleSwipe() {
-    const diff = touchStartX - touchEndX;
-    
-    // Swipe esquerda (próxima imagem)
-    if (diff > SWIPE_THRESHOLD) {
-        nextGalleryImage();
-    }
-    // Swipe direita (imagem anterior)
-    else if (diff < -SWIPE_THRESHOLD) {
-        prevGalleryImage();
-    }
-}
-
-// ========== SUPORTE A TECLADO ==========
-function handleGalleryKeyboard(event) {
-    const galleryModal = document.getElementById('propertyGalleryModal');
-    if (!galleryModal || galleryModal.style.display !== 'block') return;
-    
-    switch(event.key) {
-        case 'ArrowLeft':
-            prevGalleryImage();
-            event.preventDefault();
-            break;
-        case 'ArrowRight':
-            nextGalleryImage();
-            event.preventDefault();
-            break;
-        case 'Escape':
-            closeGallery();
-            event.preventDefault();
-            break;
-        case ' ':
-        case 'Enter':
-            // Evitar comportamento padrão do espaço
-            if (event.target.tagName !== 'BUTTON') {
-                event.preventDefault();
-            }
-            break;
-    }
-}
         
 // ========== CONFIGURAÇÃO SUPABASE ==========
 const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
 
 // ========== ESTILOS DA GALERIA DE IMÓVEIS ==========
+// MOVA ESTA VARIÁVEL PARA O TOPO DO SCRIPT, ANTES DE QUALQUER OUTRO CÓDIGO QUE A USE
 const galleryStyles = `
 /* ========== GALERIA DE IMÓVEIS - MOBILE FIRST ========== */
 .property-gallery-container {
@@ -2896,6 +2586,298 @@ const galleryStyles = `
         
 console.log('🚀 Weber Lessa Imóveis - Sistema Iniciado');
 
+// ========== SISTEMA DE GALERIA DE IMÓVEIS ==========
+// Variáveis globais para a galeria
+let currentGalleryImages = [];
+let currentGalleryIndex = 0;
+let touchStartX = 0;
+let touchEndX = 0;
+const SWIPE_THRESHOLD = 50;
+
+// ========== FUNÇÃO PARA CRIAR GALERIA NO IMÓVEL ==========
+function createPropertyGallery(property) {
+    // Verificar se há imagens
+    const hasImages = property.images && 
+                     property.images.length > 0 && 
+                     property.images !== 'EMPTY';
+    
+    const imageUrls = hasImages ? 
+        property.images.split(',').filter(url => url.trim() !== '') : 
+        [];
+    
+    const firstImageUrl = imageUrls.length > 0 ? 
+        imageUrls[0] : 
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+    
+    // Se só tem uma imagem, mostrar imagem estática
+    if (imageUrls.length <= 1) {
+        return `
+            <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
+                <img src="${firstImageUrl}" 
+                     style="width: 100%; height: 100%; object-fit: cover;"
+                     alt="${property.title}"
+                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
+                
+                ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
+                    `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>` : ''}
+            </div>
+        `;
+    }
+    
+    // Se tem múltiplas imagens, criar galeria
+    return `
+        <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
+            <div class="property-gallery-container" onclick="openGallery(${property.id})">
+                <img src="${firstImageUrl}" 
+                     class="property-gallery-image"
+                     alt="${property.title}"
+                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                
+                <!-- Indicador de galeria MOBILE -->
+                <div class="gallery-indicator-mobile">
+                    <i class="fas fa-images"></i>
+                    <span>${imageUrls.length}</span>
+                </div>
+                
+                <!-- Pontos indicadores -->
+                <div class="gallery-controls">
+                    ${imageUrls.map((_, index) => `
+                        <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
+                             data-index="${index}"
+                             onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
+                    `).join('')}
+                </div>
+                
+                <!-- Ícone de expansão -->
+                <div class="gallery-expand-icon" onclick="openGallery(${property.id})">
+                    <i class="fas fa-expand"></i>
+                </div>
+            </div>
+            
+            ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+            ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+            
+            <!-- Botão PDF -->
+            ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
+                `<button class="pdf-access" onclick="event.stopPropagation(); showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
+                    <i class="fas fa-file-pdf"></i>
+                </button>` : ''}
+        </div>
+    `;
+}
+
+// ========== FUNÇÃO PARA ABRIR GALERIA ==========
+function openGallery(propertyId) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+    
+    const hasImages = property.images && 
+                     property.images.length > 0 && 
+                     property.images !== 'EMPTY';
+    
+    if (!hasImages) return;
+    
+    currentGalleryImages = property.images.split(',').filter(url => url.trim() !== '');
+    currentGalleryIndex = 0;
+    
+    // Criar ou atualizar modal da galeria
+    let galleryModal = document.getElementById('propertyGalleryModal');
+    
+    if (!galleryModal) {
+        galleryModal = document.createElement('div');
+        galleryModal.id = 'propertyGalleryModal';
+        galleryModal.className = 'gallery-modal';
+        galleryModal.innerHTML = `
+            <div class="gallery-modal-content">
+                <!-- Área para swipe -->
+                <div class="gallery-swipe-area" 
+                     ontouchstart="handleTouchStart(event)"
+                     ontouchend="handleTouchEnd(event)"></div>
+                
+                <!-- Imagem -->
+                <img id="galleryCurrentImage" class="gallery-modal-image" 
+                     src="${currentGalleryImages[0]}"
+                     alt="Imagem ${currentGalleryIndex + 1} de ${currentGalleryImages.length}">
+                
+                <!-- Controles -->
+                <div class="gallery-modal-controls">
+                    <button class="gallery-modal-btn" onclick="prevGalleryImage()" 
+                            aria-label="Imagem anterior">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    
+                    <div id="galleryCounter" class="gallery-counter">
+                        ${currentGalleryIndex + 1} / ${currentGalleryImages.length}
+                    </div>
+                    
+                    <button class="gallery-modal-btn" onclick="nextGalleryImage()" 
+                            aria-label="Próxima imagem">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Botão fechar -->
+                <button class="gallery-modal-close" onclick="closeGallery()" 
+                        aria-label="Fechar galeria">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(galleryModal);
+        
+        // Adicionar suporte a teclado
+        document.addEventListener('keydown', handleGalleryKeyboard);
+    } else {
+        // Atualizar imagem atual
+        document.getElementById('galleryCurrentImage').src = currentGalleryImages[0];
+        document.getElementById('galleryCounter').textContent = 
+            `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
+    }
+    
+    // Mostrar modal
+    galleryModal.style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevenir scroll
+    
+    // Focar no botão fechar para acessibilidade
+    setTimeout(() => {
+        const closeBtn = galleryModal.querySelector('.gallery-modal-close');
+        if (closeBtn) closeBtn.focus();
+    }, 100);
+}
+
+// ========== FUNÇÃO PARA FECHAR GALERIA ==========
+function closeGallery() {
+    const galleryModal = document.getElementById('propertyGalleryModal');
+    if (galleryModal) {
+        galleryModal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restaurar scroll
+        
+        // Remover listener de teclado
+        document.removeEventListener('keydown', handleGalleryKeyboard);
+    }
+}
+
+// ========== FUNÇÕES DE NAVEGAÇÃO DA GALERIA ==========
+function showGalleryImage(propertyId, index) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+    
+    const hasImages = property.images && 
+                     property.images.length > 0 && 
+                     property.images !== 'EMPTY';
+    
+    if (!hasImages) return;
+    
+    const images = property.images.split(',').filter(url => url.trim() !== '');
+    if (index < 0 || index >= images.length) return;
+    
+    // Atualizar imagem no card
+    const container = document.querySelector(`[onclick="openGallery(${propertyId})"]`);
+    if (container) {
+        const img = container.querySelector('.property-gallery-image');
+        if (img) {
+            img.src = images[index];
+            img.onerror = function() {
+                this.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+            };
+        }
+        
+        // Atualizar dots ativos
+        const dots = container.querySelectorAll('.gallery-dot');
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+        });
+    }
+}
+
+function nextGalleryImage() {
+    if (currentGalleryImages.length === 0) return;
+    
+    currentGalleryIndex = (currentGalleryIndex + 1) % currentGalleryImages.length;
+    updateGalleryModal();
+}
+
+function prevGalleryImage() {
+    if (currentGalleryImages.length === 0) return;
+    
+    currentGalleryIndex = (currentGalleryIndex - 1 + currentGalleryImages.length) % currentGalleryImages.length;
+    updateGalleryModal();
+}
+
+function updateGalleryModal() {
+    const imageElement = document.getElementById('galleryCurrentImage');
+    const counterElement = document.getElementById('galleryCounter');
+    
+    if (imageElement && counterElement) {
+        imageElement.src = currentGalleryImages[currentGalleryIndex];
+        counterElement.textContent = `${currentGalleryIndex + 1} / ${currentGalleryImages.length}`;
+        
+        // Animar transição
+        imageElement.style.opacity = '0';
+        setTimeout(() => {
+            imageElement.style.opacity = '1';
+        }, 50);
+    }
+}
+
+// ========== SUPORTE A SWIPE PARA MOBILE ==========
+function handleTouchStart(event) {
+    touchStartX = event.changedTouches[0].screenX;
+    event.stopPropagation();
+}
+
+function handleTouchEnd(event) {
+    touchEndX = event.changedTouches[0].screenX;
+    handleSwipe();
+    event.stopPropagation();
+}
+
+function handleSwipe() {
+    const diff = touchStartX - touchEndX;
+    
+    // Swipe esquerda (próxima imagem)
+    if (diff > SWIPE_THRESHOLD) {
+        nextGalleryImage();
+    }
+    // Swipe direita (imagem anterior)
+    else if (diff < -SWIPE_THRESHOLD) {
+        prevGalleryImage();
+    }
+}
+
+// ========== SUPORTE A TECLADO ==========
+function handleGalleryKeyboard(event) {
+    const galleryModal = document.getElementById('propertyGalleryModal');
+    if (!galleryModal || galleryModal.style.display !== 'block') return;
+    
+    switch(event.key) {
+        case 'ArrowLeft':
+            prevGalleryImage();
+            event.preventDefault();
+            break;
+        case 'ArrowRight':
+            nextGalleryImage();
+            event.preventDefault();
+            break;
+        case 'Escape':
+            closeGallery();
+            event.preventDefault();
+            break;
+        case ' ':
+        case 'Enter':
+            // Evitar comportamento padrão do espaço
+            if (event.target.tagName !== 'BUTTON') {
+                event.preventDefault();
+            }
+            break;
+    }
+}
+        
 // ========== SISTEMA DE IMÓVEIS ==========
 let properties = [];
 let editingPropertyId = null;
@@ -3157,6 +3139,8 @@ function removePdfFile(index) {
 }
 
 // ========== RENDERIZAR IMÓVEIS CORRIGIDO ==========
+// ========== ATUALIZAR A FUNÇÃO renderProperties() ==========
+// Substitua a função renderProperties existente por esta versão:
 function renderProperties(filter = 'todos') {
     const container = document.getElementById('properties-container');
     if (!container) {
@@ -3183,21 +3167,6 @@ function renderProperties(filter = 'todos') {
     
     filteredProperties.forEach(property => {
         const features = Array.isArray(property.features) ? property.features : (property.features ? property.features.split(',') : []);
-        
-        // DEBUG: Verificar imagens
-        const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
-        const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
-        const firstImageUrl = imageUrls.length > 0 ? imageUrls[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
-        
-        // CORREÇÃO CRÍTICA: Verificar PDFs de forma segura
-        const hasPdfs = property.pdfs && 
-                       property.pdfs.length > 0 && 
-                       property.pdfs !== 'EMPTY' && 
-                       property.pdfs !== 'null' && 
-                       property.pdfs !== 'undefined';
-        
-        // CORREÇÃO: has_video em vez de hasVideo
-        const hasVideo = property.has_video !== undefined ? property.has_video : property.hasVideo;
         
         // USAR A NOVA GALERIA DE IMAGENS
         const propertyGalleryHTML = createPropertyGallery(property);
@@ -5219,72 +5188,13 @@ async function testSupabaseDetailed() {
 // ========== ADICIONAR DEBUG NA INICIALIZAÇÃO ==========
 // ========== INICIALIZAÇÃO COMPLETA E ATUALIZADA ==========
 // Adicione no início do DOMContentLoaded, antes de tudo:
-// ========== INICIALIZAÇÃO COMPLETA E ATUALIZADA ==========
+// ========== INICIALIZAR GALERIA NO DOMContentLoaded ==========
+// Adicione este código ao final do DOMContentLoaded:
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Sistema Weber Lessa Iniciado');
-    
-    // TEMPORARIAMENTE desabilitar verificação constitucional inicial
-    // para evitar alertas durante desenvolvimento
-    // enforceConstitutionalGuideline(); // COMENTE ESTA LINHA
-    
-    // LIMPAR QUALQUER DADO REMANESCENTE DO FORMULÁRIO
-    if (typeof cancelEdit === 'function') {
-        cancelEdit(); // Limpa formulário ao carregar a página
-    }
-    
-    // Aplicar diretriz constitucional
-    enforceConstitutionalGuideline();
-    
-    // Testar conexão com Supabase DETALHADO
-    console.log('🔍 Testando conexão com Supabase...');
-    const supabaseOk = await testSupabaseConnection();
-    
-    if (!supabaseOk) {
-        console.log('⚠️ ATENÇÃO: Problemas detectados com Supabase!');
-        console.log('📌 Possíveis causas:');
-        console.log('1. Conexão com internet instável');
-        console.log('2. VPN ativa interferindo');
-        console.log('3. Credenciais incorretas ou expiradas');
-        console.log('4. Restrições de CORS no navegador');
-        console.log('🔄 Usando modo local como fallback...');
-    } else {
-        console.log('✅ Supabase conectado com sucesso!');
-        
-        // Verificar se o campo pdfs existe no Supabase
-        await ensurePdfFieldExists();
-    }
-    
-    // Carregar propriedades
-    await loadProperties();
-    
-    // Configurar formulário e sistemas de upload
-    setupForm();
-    setupUploadSystem();
-    setupPdfUploadSystem();
-    
-    // DEBUG: Verificar se os elementos de upload foram configurados
-    console.log('🔍 Verificando configuração do sistema:');
-    console.log('- uploadArea:', document.getElementById('uploadArea') ? '✅' : '❌');
-    console.log('- pdfUploadArea:', document.getElementById('pdfUploadArea') ? '✅' : '❌');
-    console.log('- fileInput:', document.getElementById('fileInput') ? '✅' : '❌');
-    console.log('- pdfFileInput:', document.getElementById('pdfFileInput') ? '✅' : '❌');
-    
-    // Configurar filtros
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            const text = this.textContent.trim();
-            renderProperties(text === 'Todos' ? 'todos' : text);
-        });
-    });
-    
-    // Testar acesso às imagens
-    testImageAccess();
+    // ... seu código existente ...
     
     // ========== INICIALIZAR GALERIA DE FOTOS ==========
-    console.log('🎨 Inicializando galeria de fotos...');
+    console.log('🎨 Inicializando galeria de fotos MOBILE FIRST...');
     
     // Adicionar estilos da galeria
     const styleSheet = document.createElement("style");
@@ -5360,7 +5270,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     
     console.log('✅ Galeria de fotos MOBILE FIRST inicializada!');
-    console.log('✅ Sistema Weber Lessa completamente carregado e pronto!');
     
     // TESTE: Verificar se a galeria está funcionando
     setTimeout(() => {
@@ -5368,7 +5277,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('- Função createPropertyGallery:', typeof createPropertyGallery === 'function' ? '✅' : '❌');
         console.log('- Função openGallery:', typeof openGallery === 'function' ? '✅' : '❌');
         console.log('- Função closeGallery:', typeof closeGallery === 'function' ? '✅' : '❌');
-        console.log('- Variável galleryStyles:', galleryStyles ? '✅ (definida)' : '❌');
         
         // Verificar se há imóveis com múltiplas imagens
         const propertiesWithMultipleImages = properties.filter(p => {
