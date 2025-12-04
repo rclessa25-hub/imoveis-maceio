@@ -2583,9 +2583,187 @@ const galleryStyles = `
     user-select: none;
 }
 `;
+// ========== FUNÇÃO PARA CARREGAR E EXIBIR IMÓVEIS ==========
+async function initializeProperties() {
+    console.log('🔍 Inicializando sistema de imóveis...');
+    
+    // Tentar carregar do Supabase primeiro
+    try {
+        console.log('📡 Tentando carregar do Supabase...');
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=*&order=created_at.desc`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ ${data.length} imóveis carregados do Supabase`);
+            
+            // Processar os dados
+            properties = Array.isArray(data) ? data : [];
+            
+            // Garantir que todos os campos estejam corretos
+            properties = properties.map(property => {
+                // Se images estiver vazio, usar imagem padrão
+                if (!property.images || property.images === 'EMPTY' || property.images.trim() === '') {
+                    property.images = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+                }
+                
+                // Garantir que pdfs seja uma string válida
+                if (!property.pdfs || property.pdfs === 'null' || property.pdfs === 'undefined') {
+                    property.pdfs = '';
+                }
+                
+                return property;
+            });
+            
+        } else {
+            throw new Error('Supabase não disponível');
+        }
+        
+    } catch (error) {
+        console.log('⚠️ Supabase não acessível:', error.message);
+        console.log('🔄 Carregando dados locais...');
+        
+        // Carregar do localStorage
+        const localData = localStorage.getItem('weberlessa_properties');
+        if (localData) {
+            properties = JSON.parse(localData);
+            console.log(`📁 ${properties.length} imóveis carregados do localStorage`);
+        } else {
+            // Usar dados iniciais
+            properties = getInitialProperties();
+            console.log(`🎯 ${properties.length} imóveis de exemplo carregados`);
+            
+            // Salvar no localStorage para referência futura
+            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+        }
+    }
+    
+    // VERIFICAÇÃO CRÍTICA: Mostrar debug dos dados
+    console.log('📊 DEBUG - Total de imóveis carregados:', properties.length);
+    if (properties.length > 0) {
+        console.log('📋 Lista de imóveis carregados:');
+        properties.forEach((p, i) => {
+            console.log(`${i + 1}. ${p.title} - ${p.price} (ID: ${p.id})`);
+        });
+    } else {
+        console.error('❌ NENHUM IMÓVEL CARREGADO!');
+        // Adicionar um imóvel de exemplo se estiver vazio
+        properties = getInitialProperties();
+        console.log('➕ Adicionados imóveis de exemplo:', properties.length);
+    }
+    
+    // Renderizar os imóveis
+    renderProperties();
+    
+    // Configurar filtros
+    setupFilters();
+    
+    console.log('✅ Sistema de imóveis inicializado com sucesso!');
+}
+
+// ========== FUNÇÃO PARA CONFIGURAR FILTROS ==========
+function setupFilters() {
+    console.log('🎛️ Configurando filtros...');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover classe active de todos os botões
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Adicionar classe active ao botão clicado
+            this.classList.add('active');
+            
+            // Obter o texto do filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            console.log(`🎯 Filtrando por: ${filter}`);
+            renderProperties(filter);
+        });
+    });
+}
         
 console.log('🚀 Weber Lessa Imóveis - Sistema Iniciado');
 
+  // ========== FUNÇÕES DE OTIMIZAÇÃO MOBILE ==========
+
+// Detectar se é dispositivo móvel
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Otimizar galeria para mobile
+function optimizeGalleryForMobile() {
+    if (!isMobileDevice()) return;
+    
+    console.log('📱 Otimizando galeria para mobile...');
+    
+    // Ajustar tamanho das imagens para mobile
+    const galleryContainers = document.querySelectorAll('.property-gallery-container');
+    galleryContainers.forEach(container => {
+        container.style.height = '300px'; // Mais alto para mobile
+    });
+    
+    // Ajustar botões para touch
+    const galleryButtons = document.querySelectorAll('.gallery-modal-btn, .gallery-modal-close');
+    galleryButtons.forEach(button => {
+        button.style.minWidth = '50px';
+        button.style.minHeight = '50px';
+        button.style.fontSize = '1.5rem';
+    });
+}
+
+// Função para configurar eventos da galeria
+function setupGalleryEvents() {
+    // Adicionar evento para fechar galeria ao clicar fora
+    document.addEventListener('click', function(event) {
+        const galleryModal = document.getElementById('propertyGalleryModal');
+        if (galleryModal && galleryModal.style.display === 'block') {
+            if (event.target === galleryModal) {
+                closeGallery();
+            }
+        }
+    });
+    
+    // Adicionar suporte a teclado para navegação na galeria
+    document.addEventListener('keydown', function(event) {
+        const galleryModal = document.getElementById('propertyGalleryModal');
+        if (!galleryModal || galleryModal.style.display !== 'block') return;
+        
+        switch(event.key) {
+            case 'ArrowLeft':
+                event.preventDefault();
+                prevGalleryImage();
+                break;
+            case 'ArrowRight':
+                event.preventDefault();
+                nextGalleryImage();
+                break;
+            case 'Escape':
+                event.preventDefault();
+                closeGallery();
+                break;
+        }
+    });
+    
+    // Adicionar evento de toque para swipe
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    // Prevenir zoom com dois dedos na galeria
+    document.addEventListener('gesturestart', function(event) {
+        const galleryModal = document.getElementById('propertyGalleryModal');
+        if (galleryModal && galleryModal.style.display === 'block') {
+            event.preventDefault();
+        }
+    });
+}      
+        
 // ========== SISTEMA DE GALERIA DE IMÓVEIS ==========
 // Variáveis globais para a galeria
 let currentGalleryImages = [];
@@ -2916,54 +3094,6 @@ function getInitialProperties() {
             created_at: new Date().toISOString()
         }
     ];
-}
-
-// ========== CORREÇÃO DO CARREGAMENTO DE IMÓVEIS ==========
-async function loadProperties() {
-    try {
-        console.log('📡 Carregando imóveis do Supabase...');
-        
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            properties = Array.isArray(data) ? data : [];
-            console.log(`✅ ${properties.length} imóveis carregados do Supabase`);
-            
-            // CORREÇÃO CRÍTICA: Garantir que todos os campos sejam tratados corretamente
-            properties = properties.map(property => {
-                // Se images estiver vazio, usar imagens padrão
-                if (!property.images || property.images === 'EMPTY' || property.images.trim() === '') {
-                    property.images = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
-                }
-                
-                // CORREÇÃO: Garantir que pdfs seja sempre uma string válida
-                if (!property.pdfs || property.pdfs === 'null' || property.pdfs === 'undefined') {
-                    property.pdfs = '';
-                }
-                
-                return property;
-            });
-            
-        } else {
-            console.log('⚠️ Supabase não acessível, usando dados locais');
-            throw new Error('Supabase não disponível');
-        }
-        
-    } catch (error) {
-        console.log('🔄 Carregando dados locais...', error);
-        const localData = localStorage.getItem('weberlessa_properties');
-        properties = localData ? JSON.parse(localData) : getInitialProperties();
-    }
-    
-    renderProperties();
-    checkPdfData();
-    debugPropertyData();
 }
 
 // ========== NOVA FUNÇÃO: MOSTRAR PREVIEW DE NOVAS IMAGENS ==========
@@ -4945,7 +5075,7 @@ async function saveProperty(propertyData) {
         selectedPdfFiles = [];
         
         // Recarregar os dados do Supabase
-        await loadProperties();
+        await initializeProperties();
         
         // CORREÇÃO: Fechar o painel de edição após salvar
         cancelEdit();
@@ -5190,8 +5320,33 @@ async function testSupabaseDetailed() {
 // Adicione no início do DOMContentLoaded, antes de tudo:
 // ========== INICIALIZAR GALERIA NO DOMContentLoaded ==========
 // Adicione este código ao final do DOMContentLoaded:
+// ========== INICIALIZAÇÃO COMPLETA DO SISTEMA ==========
 document.addEventListener('DOMContentLoaded', async function() {
-    // ... seu código existente ...
+    console.log('🚀 Sistema Weber Lessa Iniciado');
+    
+    // Aplicar diretriz constitucional
+    enforceConstitutionalGuideline();
+    
+    // TESTE DE CONEXÃO
+    console.log('🔍 Testando conexões...');
+    const supabaseOk = await testSupabaseConnection();
+    console.log(`🌐 Supabase: ${supabaseOk ? '✅ Conectado' : '⚠️ Usando modo local'}`);
+    
+    // INICIALIZAR SISTEMA DE IMÓVEIS (IMPORTANTE: fazer primeiro!)
+    await initializeProperties();
+    
+    // Configurar formulário e sistemas de upload
+    setupForm();
+    setupUploadSystem();
+    setupPdfUploadSystem();
+    
+    // VERIFICAÇÃO FINAL DOS ELEMENTOS
+    console.log('🔍 Verificação final do sistema:');
+    console.log('- properties-container:', document.getElementById('properties-container') ? '✅' : '❌');
+    console.log('- Total de imóveis carregados:', properties.length);
+    
+    // TESTAR ACESSO ÀS IMAGENS
+    testImageAccess();
     
     // ========== INICIALIZAR GALERIA DE FOTOS ==========
     console.log('🎨 Inicializando galeria de fotos MOBILE FIRST...');
@@ -5201,101 +5356,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     styleSheet.textContent = galleryStyles;
     document.head.appendChild(styleSheet);
     
-    // Adicionar evento para fechar galeria ao clicar fora
-    document.addEventListener('click', function(event) {
-        const galleryModal = document.getElementById('propertyGalleryModal');
-        if (galleryModal && galleryModal.style.display === 'block') {
-            if (event.target === galleryModal) {
-                closeGallery();
-            }
-        }
-    });
-    
-    // Adicionar suporte a teclado para navegação na galeria
-    document.addEventListener('keydown', function(event) {
-        const galleryModal = document.getElementById('propertyGalleryModal');
-        if (!galleryModal || galleryModal.style.display !== 'block') return;
-        
-        switch(event.key) {
-            case 'ArrowLeft':
-                event.preventDefault();
-                prevGalleryImage();
-                break;
-            case 'ArrowRight':
-                event.preventDefault();
-                nextGalleryImage();
-                break;
-            case 'Escape':
-                event.preventDefault();
-                closeGallery();
-                break;
-            case ' ':
-                // Evitar que o espaço role a página quando a galeria estiver aberta
-                if (galleryModal.style.display === 'block') {
-                    event.preventDefault();
-                }
-                break;
-        }
-    });
-    
-    // Adicionar evento de toque para swipe
-    document.addEventListener('touchstart', function(event) {
-        const galleryModal = document.getElementById('propertyGalleryModal');
-        if (galleryModal && galleryModal.style.display === 'block') {
-            // Encontrar a área de swipe
-            const swipeArea = galleryModal.querySelector('.gallery-swipe-area');
-            if (swipeArea && swipeArea.contains(event.target)) {
-                handleTouchStart(event);
-            }
-        }
-    }, { passive: true });
-    
-    document.addEventListener('touchend', function(event) {
-        const galleryModal = document.getElementById('propertyGalleryModal');
-        if (galleryModal && galleryModal.style.display === 'block') {
-            // Encontrar a área de swipe
-            const swipeArea = galleryModal.querySelector('.gallery-swipe-area');
-            if (swipeArea && swipeArea.contains(event.target)) {
-                handleTouchEnd(event);
-            }
-        }
-    }, { passive: true });
-    
-    // Prevenir zoom com dois dedos na galeria
-    document.addEventListener('gesturestart', function(event) {
-        const galleryModal = document.getElementById('propertyGalleryModal');
-        if (galleryModal && galleryModal.style.display === 'block') {
-            event.preventDefault();
-        }
-    });
+    // Configurar eventos da galeria
+    setupGalleryEvents();
     
     console.log('✅ Galeria de fotos MOBILE FIRST inicializada!');
+    console.log('✅ Sistema Weber Lessa completamente carregado e pronto!');
     
-    // TESTE: Verificar se a galeria está funcionando
+    // TESTE FINAL: Verificar se os imóveis estão visíveis
     setTimeout(() => {
-        console.log('🔍 Testando funcionalidade da galeria...');
-        console.log('- Função createPropertyGallery:', typeof createPropertyGallery === 'function' ? '✅' : '❌');
-        console.log('- Função openGallery:', typeof openGallery === 'function' ? '✅' : '❌');
-        console.log('- Função closeGallery:', typeof closeGallery === 'function' ? '✅' : '❌');
-        
-        // Verificar se há imóveis com múltiplas imagens
-        const propertiesWithMultipleImages = properties.filter(p => {
-            const hasImages = p.images && p.images !== 'EMPTY' && p.images.length > 0;
-            if (!hasImages) return false;
-            const imageCount = p.images.split(',').filter(url => url.trim() !== '').length;
-            return imageCount > 1;
-        });
-        
-        console.log(`📊 Imóveis com múltiplas imagens: ${propertiesWithMultipleImages.length}`);
-        
-        if (propertiesWithMultipleImages.length > 0) {
-            console.log('🎉 A galeria funcionará para estes imóveis:');
-            propertiesWithMultipleImages.forEach(p => {
-                const imageCount = p.images.split(',').filter(url => url.trim() !== '').length;
-                console.log(`   - ${p.title}: ${imageCount} imagens`);
-            });
+        const container = document.getElementById('properties-container');
+        if (container && container.children.length > 0) {
+            console.log(`🎉 ${container.children.length} imóveis visíveis na página!`);
+        } else {
+            console.error('❌ NENHUM IMÓVEL VISÍVEL! Verificando problemas...');
+            // Tentativa de emergência: renderizar novamente
+            renderProperties();
         }
-    }, 1000);
+    }, 500);
+    
+    // Inicializar otimização mobile
+    if (isMobileDevice()) {
+        setTimeout(optimizeGalleryForMobile, 1000);
+    }
 });
 
   </script>
