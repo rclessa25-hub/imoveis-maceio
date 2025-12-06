@@ -1,1260 +1,546 @@
-/* css/header.css - Estilos do Header Weber Lessa */
-        :root {
-            --primary: #1a5276;
-            --secondary: #2980b9;
-            --accent: #3498db;
-            --gold: #f39c12;
-            --green: #27ae60;
-            --text: #2c3e50;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
-            --success: #27ae60;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--text);
-            background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
-            min-height: 100vh;
-        }
-        
-        /* ========== HEADER INTEGRADO COMPACTO ========== */
-        .header {
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            padding: 8px 0;
-            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
-            border-bottom: 2px solid #d4af37;
-            margin: 0;
-            min-height: auto;
-        }
-        
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 15px;
-            height: auto;
-        }
-        
-        /* ========== DESKTOP LAYOUT INTEGRADO ========== */
-        .header-integrated {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-            width: 100%;
-            padding: 5px 0;
-        }
-        
-        /* Lado Esquerdo: Branding */
-        .brand-section {
-            display: flex;
-            gap: 15px;
-            align-items: flex-start;
-            flex: 1;
-        }
-        
-        /* Logo Compacta */
-        .logo {
-            position: relative;
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(145deg, #1a5276, #0c2d48);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(26, 82, 118, 0.2);
-            border: 2px solid rgba(212, 175, 55, 0.3);
-            flex-shrink: 0;
-        }
-        
-        .logo-wl {
-            font-family: 'Georgia', serif;
-            font-size: 2.2rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ffffff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .logo-badge {
-            position: absolute;
-            bottom: -6px;
-            right: -6px;
-            width: 22px;
-            height: 22px;
-            background: linear-gradient(135deg, #d4af37, #b8941f);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 0.7rem;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-            border: 2px solid #ffffff;
-        }
-        
-        /* Informações da Marca */
-        .brand-info {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex: 1;
-        }
-        
-        .brand-name-compact {
-            display: flex;
-            flex-direction: column;
-            line-height: 1;
-        }
-        
-        .first-name-compact {
-            font-family: 'Georgia', serif;
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: #0c2d48;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            line-height: 1;
-        }
-        
-        .last-name-compact {
-            font-family: 'Georgia', serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1a5276;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin-top: -3px;
-            line-height: 1;
-        }
-        
-        /* CRECI Info Compacta */
-        .creci-info-compact {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .creci-badge-compact {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #f8f9fa;
-            padding: 5px 10px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .creci-badge-compact i {
-            color: #1a5276;
-            font-size: 0.9rem;
-        }
-        
-        .creci-label-compact {
-            font-size: 0.7rem;
-            color: #6c757d;
-            text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-        
-        .creci-number-compact {
-            font-size: 1rem;
-            font-weight: 900;
-            color: #0c2d48;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 1px;
-        }
-        
-        .certified-badge-compact {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background: linear-gradient(135deg, #1a5276, #2980b9);
-            padding: 5px 10px;
-            border-radius: 8px;
-            border: 1px solid #d4af37;
-        }
-        
-        .certified-badge-compact i {
-            color: #d4af37;
-            font-size: 0.8rem;
-        }
-        
-        .certified-badge-compact span {
-            color: #ffffff;
-            font-size: 0.7rem;
-            font-weight: 600;
-            letter-spacing: 0.8px;
-        }
-        
-        /* Especialização Compacta */
-        .specialty-compact {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 2px;
-        }
-        
-        .specialty-compact i {
-            color: #1a5276;
-            font-size: 1rem;
-        }
-        
-        .specialty-title-compact {
-            font-size: 0.9rem;
-            font-weight: 800;
-            color: #1a5276;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .specialty-subtitle-compact {
-            font-size: 0.75rem;
-            color: #495057;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-left: 5px;
-        }
-        
-        /* ========== LADO DIREITO: CONTATO E ENDEREÇO ========== */
-        .contact-section {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            min-width: 280px;
-            padding-top: 5px;
-        }
-        
-        /* Telefone/WhatsApp Compacto */
-        .phone-whatsapp-compact {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 10px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .phone-icons-compact {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .phone-icons-compact .fa-mobile-alt {
-            color: #1a5276;
-            font-size: 1.1rem;
-        }
-        
-        .phone-icons-compact .fa-whatsapp {
-            color: #25D366;
-            font-size: 1.1rem;
-        }
-        
-        .phone-number-compact {
-            display: flex;
-            align-items: baseline;
-            gap: 3px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .phone-prefix-compact {
-            font-size: 0.9rem;
-            color: #6c757d;
-            font-weight: 600;
-        }
-        
-        .phone-main-compact {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #1a5276;
-            letter-spacing: 0.5px;
-        }
-        
-        /* Endereço Compacto */
-        .address-compact {
-            display: flex;
-            gap: 10px;
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 10px;
-            border: 1px solid #e9ecef;
-            align-items: flex-start;
-        }
-        
-        .address-compact i {
-            color: #d4af37;
-            font-size: 1rem;
-            margin-top: 2px;
-        }
-        
-        .address-text-compact {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        
-        .address-line-1 {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #1a5276;
-            line-height: 1.2;
-        }
-        
-        .address-line-2 {
-            font-size: 0.8rem;
-            color: #495057;
-            line-height: 1.2;
-        }
-        
-        .address-line-3 {
-            font-size: 0.8rem;
-            color: #6c757d;
-            font-weight: 600;
-            line-height: 1.2;
-        }
-        
-        /* ========== MOBILE LAYOUT ULTRA COMPACTO ========== */
-        .mobile-header-ultimate {
-            display: none;
-            width: 100%;
-            padding: 5px 0;
-        }
-        
-        /* Linha 1: Logo + Nome + Telefone */
-        .mobile-row-1 {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 0 0 5px 0;
-            padding: 0;
-            width: 100%;
-        }
-        
-        .mobile-logo-mini {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(145deg, #1a5276, #0c2d48);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-family: 'Georgia', serif;
-            font-size: 1.2rem;
-            font-weight: 900;
-            box-shadow: 0 2px 6px rgba(26, 82, 118, 0.2);
-            flex-shrink: 0;
-        }
-        
-        .mobile-name-mini {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex: 1;
-            margin: 0 5px;
-        }
-        
-        .mobile-first-name-mini {
-            font-family: 'Georgia', serif;
-            font-size: 1.2rem;
-            font-weight: 900;
-            color: #0c2d48;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            line-height: 1;
-        }
-        
-        .mobile-last-name-mini {
-            font-family: 'Georgia', serif;
-            font-size: 1rem;
-            font-weight: 700;
-            color: #1a5276;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            line-height: 1;
-        }
-        
-        .mobile-phone-mini {
-            display: flex;
-            gap: 3px;
-            flex-shrink: 0;
-        }
-        
-        .mobile-phone-mini .fa-mobile-alt {
-            color: #1a5276;
-            font-size: 0.9rem;
-        }
-        
-        .mobile-phone-mini .fa-whatsapp {
-            color: #25D366;
-            font-size: 0.9rem;
-        }
-        
-        /* Linha 2: CRECI + Especialização */
-        .mobile-row-2 {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 3px 0;
-            padding: 0;
-            width: 100%;
-        }
-        
-        .mobile-creci-mini {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: #0c2d48;
-        }
-        
-        .mobile-creci-mini i {
-            color: #1a5276;
-            font-size: 0.7rem;
-        }
-        
-        .mobile-specialty-mini {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: #1a5276;
-        }
-        
-        .mobile-specialty-mini i {
-            color: #1a5276;
-            font-size: 0.7rem;
-        }
-        
-        /* Linha 3: Endereço + Certificado */
-        .mobile-row-3 {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 3px 0 0 0;
-            padding: 0;
-            width: 100%;
-        }
-        
-        .mobile-address-mini {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.65rem;
-            color: #495057;
-            font-weight: 600;
-        }
-        
-        .mobile-address-mini i {
-            color: #d4af37;
-            font-size: 0.7rem;
-        }
-        
-        .mobile-certified-mini {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: linear-gradient(135deg, #1a5276, #2980b9);
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 0.6rem;
-            color: white;
-            font-weight: 600;
-        }
-        
-        .mobile-certified-mini i {
-            color: #d4af37;
-            font-size: 0.6rem;
-        }
-        
-        /* ========== MEDIA QUERIES ========== */
-        @media (max-width: 1024px) {
-            .header-integrated {
-                gap: 15px;
-            }
-            
-            .contact-section {
-                min-width: 250px;
-            }
-            
-            .phone-main-compact {
-                font-size: 1.1rem;
-            }
-            
-            .address-line-1 {
-                font-size: 0.8rem;
-            }
-            
-            .address-line-2,
-            .address-line-3 {
-                font-size: 0.75rem;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .header-integrated {
-                display: none;
-            }
-            
-            .mobile-header-ultimate {
-                display: block;
-            }
-            
-            .header {
-                padding: 5px 0;
-            }
-            
-            .header-content {
-                padding: 0 10px;
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .mobile-header-ultimate {
-                display: none;
-            }
-            
-            .header-integrated {
-                display: flex;
-            }
-        }
-        
-        /* Ajuste para telas muito pequenas */
-        @media (max-width: 380px) {
-            .mobile-logo-mini {
-                width: 35px;
-                height: 35px;
-                font-size: 1rem;
-            }
-            
-            .mobile-first-name-mini {
-                font-size: 1rem;
-            }
-            
-            .mobile-last-name-mini {
-                font-size: 0.85rem;
-            }
-            
-            .mobile-creci-mini,
-            .mobile-specialty-mini {
-                font-size: 0.65rem;
-                padding: 3px 6px;
-            }
-            
-            .mobile-address-mini {
-                font-size: 0.6rem;
-            }
-            
-            .mobile-certified-mini {
-                font-size: 0.55rem;
-                padding: 2px 6px;
-            }
-        }
-            
-        /* Header e Navegação - Estilos Gerais */
-        .header {
-            background: rgba(255, 255, 255, 0.98);
-            padding: 1.5rem 1rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(rgba(26, 82, 118, 0.8), rgba(41, 128, 185, 0.8)), url('https://images.unsplash.com/photo-1544984243-ec57ea16fe25?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
-            background-size: cover;
-            background-position: center;
-            color: white;
-            text-align: center;
-            padding: 4rem 1rem;
-        }
-        
-        .hero h1 {
-            font-size: 2.8rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .hero p {
-            font-size: 1.3rem;
-            max-width: 700px;
-            margin: 0 auto 2rem;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-        
-        .cta-button {
-            display: inline-block;
-            background: var(--gold);
-            color: white;
-            padding: 0.9rem 2rem;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
-        }
-        
-        .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
-        }
-        
-        /* Serviços Section */
-        .services {
-            background: white;
-            padding: 4rem 1rem;
-        }
-        
-        .section-title {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        
-        .section-title h2 {
-            font-size: 2.2rem;
-            color: var(--primary);
-            margin-bottom: 1rem;
-        }
-        
-        .section-title p {
-            color: var(--dark);
-            max-width: 700px;
-            margin: 0 auto;
-            font-size: 1.1rem;
-        }
-        
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .service-card {
-            background: var(--light);
-            border-radius: 10px;
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-        
-        .service-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        
-        .service-icon {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-        }
-        
-        .service-card h3 {
-            font-size: 1.4rem;
-            margin-bottom: 1rem;
-            color: var(--primary);
-        }
-        
-        .service-card p {
-            color: var(--dark);
-        }
-        
-        /* Imóveis Section */
-        .properties {
-            padding: 4rem 1rem;
-            background: #f8f9fa;
-        }
-        
-        .filters {
-            background: white;
-            padding: 1.5rem;
-            margin: 0 auto 2rem;
-            max-width: 1200px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .filter-options {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .filter-btn {
-            background: var(--light);
-            border: none;
-            padding: 0.7rem 1.5rem;
-            border-radius: 30px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .filter-btn.active {
-            background: var(--primary);
-            color: white;
-        }
-        
-        .property-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .property-card {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .property-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-        }
-        
-        .property-image {
-            width: 100%;
-            height: 250px;
-            background: linear-gradient(45deg, var(--accent), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .rural-image {
-            background: linear-gradient(45deg, var(--green), #2ecc71);
-        }
-        
-        .property-badge {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: var(--gold);
-            color: white;
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        .rural-badge {
-            background: var(--green);
-        }
-        
-        .property-content {
-            padding: 1.5rem;
-        }
-        
-        .property-price {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-        }
-        
-        .property-title {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-            color: var(--text);
-        }
-        
-        .property-location {
-            color: #666;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .property-features {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-        
-        .feature-tag {
-            background: var(--accent);
-            color: white;
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-        
-        .rural-tag {
-            background: var(--green);
-        }
-        
-        .contact-btn {
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .contact-btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
-        }
-        
-        .video-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 0.3rem 0.6rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        /* Sobre Section */
-        .about {
-            background: white;
-            padding: 4rem 1rem;
-        }
-        
-        .about-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-            align-items: center;
-        }
-        
-        .about-text h2 {
-            font-size: 2.2rem;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-        }
-        
-        .about-text p {
-            margin-bottom: 1.5rem;
-            font-size: 1.1rem;
-            line-height: 1.7;
-        }
-        
-        .about-image {
-            background: linear-gradient(45deg, var(--accent), var(--secondary));
-            height: 400px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-        }
-        
-        /* Footer */
-        .footer {
-            background: var(--dark);
-            color: white;
-            padding: 3rem 1rem;
-        }
-        
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .footer-section h3 {
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
-            color: var(--gold);
-        }
-        
-        .footer-section p, .footer-section a {
-            color: #bbb;
-            margin-bottom: 0.8rem;
-            display: block;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-        
-        .footer-section a:hover {
-            color: white;
-        }
-        
-        .social-icons {
-            display: flex;
-            gap: 15px;
-            margin-top: 1rem;
-        }
-        
-        .social-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        
-        .social-icon:hover {
-            background: var(--accent);
-            transform: translateY(-3px);
-        }
-        
-        .copyright {
-            text-align: center;
-            margin-top: 3rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            color: #999;
-        }
-        
-        /* ========== ESTILOS DO PAINEL ADMIN ========== */
-        .admin-panel {
-            background: #f8f9fa;
-            padding: 2rem;
-            margin: 2rem auto;
-            max-width: 1000px;
-            border-radius: 10px;
-            display: none;
-        }
-        
-        .admin-toggle {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 1rem;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 1000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            font-size: 1.2rem;
-        }
-        
-        .property-item {
-            background: #f5f5f5;
-            padding: 1rem;
-            margin: 0.5rem 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 4px solid var(--primary);
-        }
+/* css/header.css - ESTILOS APENAS DO HEADER WEBER LESSA */
 
-        /* ÍCONE DO PDF - À ESQUERDA DO CONTADOR, TAMBÉM ENCOSTADO NA BORDA INFERIOR */
-        .pdf-access {
-            position: absolute;
-            bottom: 2px; /* Encostado na borda inferior */
-            right: 35px; /* À esquerda do contador (contador ocupa ~30px + espaço) */
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            border-radius: 50%;
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            color: var(--primary);
-            transition: all 0.3s ease;
-            z-index: 15; /* Sobre o contador quando hover */
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            border: 1px solid rgba(0,0,0,0.15);
-        }
+/* ========== HEADER INTEGRADO COMPACTO ========== */
+.header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 8px 0;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+    border-bottom: 2px solid #d4af37;
+    margin: 0;
+    min-height: auto;
+}
 
+.header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 15px;
+    height: auto;
+}
 
-        .pdf-access:hover {
-            background: white;
-            transform: scale(1.1);
-            box-shadow: 0 3px 12px rgba(0,0,0,0.4);
-            color: #1a5276; /* Cor primária mais forte no hover */
-        }
+/* ========== DESKTOP LAYOUT INTEGRADO ========== */
+.header-integrated {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+    padding: 5px 0;
+}
 
-        .pdf-modal {
-             display: none;
-             position: fixed;
-             top: 0;
-             left: 0;
-             width: 100%;
-             height: 100%;
-             background: rgba(0,0,0,0.8);
-             z-index: 1000;
-             align-items: center;
-             justify-content: center;
-        }
+/* Lado Esquerdo: Branding */
+.brand-section {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    flex: 1;
+}
 
-        .pdf-modal-content {
-              background: white;
-              padding: 2rem;
-              border-radius: 10px;
-              max-width: 400px;
-              width: 90%;
-              text-align: center;
-        }
+/* Logo Compacta */
+.logo {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(145deg, #1a5276, #0c2d48);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(26, 82, 118, 0.2);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    flex-shrink: 0;
+}
 
-        .pdf-preview {
-              margin: 1rem 0;
-              padding: 1rem;
-              background: #f8f9fa;
-              border-radius: 5px;
-        }
+.logo-wl {
+    font-family: 'Georgia', serif;
+    font-size: 2.2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffffff, #f0f0f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
 
-        .pdf-file-item {
-              display: flex;
-              align-items: center;
-              gap: 10px;
-              padding: 0.5rem;
-              margin: 0.5rem 0;
-              background: white;
-              border-radius: 5px;
-              border: 1px solid #ddd;
-        }
+.logo-badge {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #d4af37, #b8941f);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 0.7rem;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid #ffffff;
+}
 
-        .pdf-password-input {
-              width: 100%;
-              padding: 0.8rem;
-              margin: 1rem 0;
-              border: 1px solid #ddd;
-              border-radius: 5px;
-              font-size: 1rem;
-        }
+/* Informações da Marca */
+.brand-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
 
-        /* ========== NOVOS ESTILOS PARA EXCLUSÃO DE FOTOS ========== */
-        .image-preview-container {
-            position: relative;
-            display: inline-block;
-            margin: 5px;
-        }
-        
-        .delete-image-btn {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .delete-image-btn:hover {
-            background: #c0392b;
-            transform: scale(1.1);
-        }
-        
-        /* CONTADOR DE FOTOS - CONTAINER MÍNIMO */
-        .image-count {
-            position: absolute;
-            bottom: 1px;
-            right: 1px;
-            background: rgba(0,0,0,0.9);
-            color: white;
-            padding: 0.1rem 0.35rem; /* MÍNIMO possível */
-            border-radius: 8px 0 8px 8px; /* Menos arredondado */
-            font-size: 0.75rem; /* Fonte NORMAL */
-            z-index: 10;
-            white-space: nowrap;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.6);
-            font-weight: 600; /* Negrito para melhor visibilidade */
-            min-width: 22px; /* Mínima largura */
-            height: 18px; /* Altura mínima */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            border: 0.5px solid rgba(255,255,255,0.15); /* Borda fina para definição */
-        }
-        
-        /* ========== ESTILOS PARA UPLOAD E PREVIEW ========== */
-        /* Diferenciação entre existentes e novos */
-        #existingImagesSection .image-preview-container,
-        #existingPdfsSection .image-preview-container {
-            border: 2px solid var(--success);
-        }
-        
-        #existingImagesSection .delete-image-btn,
-        #existingPdfsSection .delete-image-btn {
-            background: #e74c3c;
-        }
-        
-        #newImagesSection .image-preview-container {
-            border: 2px dashed #3498db;
-        }
-        
-        #newImagesSection .delete-image-btn,
-        #newPdfsSection .delete-image-btn {
-            background: #3498db;
-        }
-        
-        #newImagesSection .delete-image-btn:hover,
-        #newPdfsSection .delete-image-btn:hover {
-            background: #2980b9;
-        }
-        
-        #newPdfsSection .pdf-file-item {
-            border: 2px dashed #3498db;
-            background: #f8faff;
-        }
-        
-        /* Separação visual */
-        #existingImagesSection,
-        #existingPdfsSection {
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 2px solid #eee;
-        }
-        
-        #newImagesSection,
-        #newPdfsSection {
-            margin-top: 1rem;
-            padding-top: 1.5rem;
-        }
-        
-        /* Melhor visualização dos containers */
-        #existingImagesSection > div,
-        #newImagesSection > div,
-        #existingPdfsSection > div,
-        #newPdfsSection > div {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
-        
-        /* Estilo para PDF preview */
-        .pdf-file-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 0.8rem;
-            margin: 0.5rem 0;
-            background: white;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            transition: all 0.3s ease;
-        }
-        
-        .pdf-file-item:hover {
-            border-color: var(--accent);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        /* Correção para elementos de upload */
-        #pdfUploadArea * {
-            pointer-events: none;
-        }
-        
-        #pdfUploadArea {
-            pointer-events: auto;
-        }
-        
-        .delete-image-btn {
-            pointer-events: auto;
-        }
-        
-        .image-preview-container {
-            pointer-events: auto;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-            
-            .contact-info {
-                text-align: center;
-            }
-            
-            .hero h1 {
-                font-size: 2.2rem;
-            }
-            
-            .about-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .property-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .filter-options {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .filter-btn {
-                width: 100%;
-                max-width: 250px;
-            }
-            
-            .property-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-        }
+.brand-name-compact {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
+.first-name-compact {
+    font-family: 'Georgia', serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #0c2d48;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.last-name-compact {
+    font-family: 'Georgia', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a5276;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: -3px;
+    line-height: 1;
+}
+
+/* CRECI Info Compacta */
+.creci-info-compact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.creci-badge-compact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8f9fa;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.creci-badge-compact i {
+    color: #1a5276;
+    font-size: 0.9rem;
+}
+
+.creci-label-compact {
+    font-size: 0.7rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.creci-number-compact {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0c2d48;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.certified-badge-compact {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid #d4af37;
+}
+
+.certified-badge-compact i {
+    color: #d4af37;
+    font-size: 0.8rem;
+}
+
+.certified-badge-compact span {
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+}
+
+/* Especialização Compacta */
+.specialty-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.specialty-compact i {
+    color: #1a5276;
+    font-size: 1rem;
+}
+
+.specialty-title-compact {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #1a5276;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.specialty-subtitle-compact {
+    font-size: 0.75rem;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-left: 5px;
+}
+
+/* ========== LADO DIREITO: CONTATO E ENDEREÇO ========== */
+.contact-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 280px;
+    padding-top: 5px;
+}
+
+/* Telefone/WhatsApp Compacto */
+.phone-whatsapp-compact {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.phone-icons-compact {
+    display: flex;
+    gap: 5px;
+}
+
+.phone-icons-compact .fa-mobile-alt {
+    color: #1a5276;
+    font-size: 1.1rem;
+}
+
+.phone-icons-compact .fa-whatsapp {
+    color: #25D366;
+    font-size: 1.1rem;
+}
+
+.phone-number-compact {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.phone-prefix-compact {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.phone-main-compact {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a5276;
+    letter-spacing: 0.5px;
+}
+
+/* Endereço Compacto */
+.address-compact {
+    display: flex;
+    gap: 10px;
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    align-items: flex-start;
+}
+
+.address-compact i {
+    color: #d4af37;
+    font-size: 1rem;
+    margin-top: 2px;
+}
+
+.address-text-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.address-line-1 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1a5276;
+    line-height: 1.2;
+}
+
+.address-line-2 {
+    font-size: 0.8rem;
+    color: #495057;
+    line-height: 1.2;
+}
+
+.address-line-3 {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* ========== MOBILE LAYOUT ULTRA COMPACTO ========== */
+.mobile-header-ultimate {
+    display: none;
+    width: 100%;
+    padding: 5px 0;
+}
+
+/* Linha 1: Logo + Nome + Telefone */
+.mobile-row-1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 5px 0;
+    padding: 0;
+    width: 100%;
+}
+
+.mobile-logo-mini {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(145deg, #1a5276, #0c2d48);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Georgia', serif;
+    font-size: 1.2rem;
+    font-weight: 900;
+    box-shadow: 0 2px 6px rgba(26, 82, 118, 0.2);
+    flex-shrink: 0;
+}
+
+.mobile-name-mini {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    margin: 0 5px;
+}
+
+.mobile-first-name-mini {
+    font-family: 'Georgia', serif;
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #0c2d48;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.mobile-last-name-mini {
+    font-family: 'Georgia', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a5276;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.mobile-phone-mini {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.mobile-phone-mini .fa-mobile-alt {
+    color: #1a5276;
+    font-size: 0.9rem;
+}
+
+.mobile-phone-mini .fa-whatsapp {
+    color: #25D366;
+    font-size: 0.9rem;
+}
+
+/* Linha 2: CRECI + Especialização */
+.mobile-row-2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 3px 0;
+    padding: 0;
+    width: 100%;
+}
+
+.mobile-creci-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0c2d48;
+}
+
+.mobile-creci-mini i {
+    color: #1a5276;
+    font-size: 0.7rem;
+}
+
+.mobile-specialty-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #1a5276;
+}
+
+.mobile-specialty-mini i {
+    color: #1a5276;
+    font-size: 0.7rem;
+}
+
+/* Linha 3: Endereço + Certificado */
+.mobile-row-3 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 3px 0 0 0;
+    padding: 0;
+    width: 100%;
+}
+
+.mobile-address-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.65rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.mobile-address-mini i {
+    color: #d4af37;
+    font-size: 0.7rem;
+}
+
+.mobile-certified-mini {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.6rem;
+    color: white;
+    font-weight: 600;
+}
+
+.mobile-certified-mini i {
+    color: #d4af37;
+    font-size: 0.6rem;
+}
+
+/* ========== MEDIA QUERIES DO HEADER ========== */
+@media (max-width: 1024px) {
+    .header-integrated {
+        gap: 15px;
+    }
+    
+    .contact-section {
+        min-width: 250px;
+    }
+    
+    .phone-main-compact {
+        font-size: 1.1rem;
+    }
+    
+    .address-line-1 {
+        font-size: 0.8rem;
+    }
+    
+    .address-line-2,
+    .address-line-3 {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-integrated {
+        display: none;
+    }
+    
+    .mobile-header-ultimate {
+        display: block;
+    }
+    
+    .header {
+        padding: 5px 0;
+    }
+    
+    .header-content {
+        padding: 0 10px;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-header-ultimate {
+        display: none;
+    }
+    
+    .header-integrated {
+        display: flex;
+    }
+}
+
+/* Ajuste para telas muito pequenas */
+@media (max-width: 380px) {
+    .mobile-logo-mini {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .mobile-first-name-mini {
+        font-size: 1rem;
+    }
+    
+    .mobile-last-name-mini {
+        font-size: 0.85rem;
+    }
+    
+    .mobile-creci-mini,
+    .mobile-specialty-mini {
+        font-size: 0.65rem;
+        padding: 3px 6px;
+    }
+    
+    .mobile-address-mini {
+        font-size: 0.6rem;
+    }
+    
+    .mobile-certified-mini {
+        font-size: 0.55rem;
+        padding: 2px 6px;
+    }
+}
