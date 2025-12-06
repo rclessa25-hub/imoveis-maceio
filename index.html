@@ -3793,28 +3793,28 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
     <!-- ANTES do fechamento </body> -->
-    <script type="module" src="js/modules/utils.js"></script>
+    <script src="js/modules/utils.js"></script>
     
-    <script>
+    //<script>
     // TESTE DE VARIÁVEIS GLOBAIS
-    console.log('🔍 TESTE DE VARIÁVEIS GLOBAIS:');
-    console.log('SUPABASE_URL:', typeof SUPABASE_URL, SUPABASE_URL);
-    console.log('SUPABASE_KEY:', typeof SUPABASE_KEY, SUPABASE_KEY ? '✅ DEFINIDA' : '❌ NÃO DEFINIDA');
-    console.log('ADMIN_PASSWORD:', typeof ADMIN_PASSWORD, ADMIN_PASSWORD);
-    console.log('isMobileDevice:', typeof isMobileDevice, isMobileDevice);
+    //console.log('🔍 TESTE DE VARIÁVEIS GLOBAIS:');
+    //console.log('SUPABASE_URL:', typeof SUPABASE_URL, SUPABASE_URL);
+    //console.log('SUPABASE_KEY:', typeof SUPABASE_KEY, SUPABASE_KEY ? '✅ DEFINIDA' : '❌ NÃO DEFINIDA');
+    //console.log('ADMIN_PASSWORD:', typeof ADMIN_PASSWORD, ADMIN_PASSWORD);
+    //console.log('isMobileDevice:', typeof isMobileDevice, isMobileDevice);
 
     // Testar se as funções existem
-    if (typeof initializeProperties === 'function') {
-        console.log('✅ initializeProperties existe');
+    //if (typeof initializeProperties === 'function') {
+    //    console.log('✅ initializeProperties existe');
         // Forçar inicialização
-        setTimeout(() => {
-            console.log('🔄 Forçando inicialização de imóveis...');
-            initializeProperties();
-        }, 1000);
-    } else {
-        console.error('❌ initializeProperties NÃO existe!');
-    }
-    </script>
+    //    setTimeout(() => {
+    //        console.log('🔄 Forçando inicialização de imóveis...');
+    //        initializeProperties();
+    //    }, 1000);
+    //} else {
+    //    console.error('❌ initializeProperties NÃO existe!');
+    //}
+    //</script>
         
 </body>
 </html>
