@@ -404,6 +404,41 @@ body {
     color: #999;
 }
 
+/* ========== ESTILOS PARA PDFs ========== */
+.pdf-file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+}
+
+.pdf-file-item:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Correção para elementos de upload */
+#pdfUploadArea * {
+    pointer-events: none;
+}
+
+#pdfUploadArea {
+    pointer-events: auto;
+}
+
+.delete-image-btn {
+    pointer-events: auto;
+}
+
+.image-preview-container {
+    pointer-events: auto;
+}
+
 /* ========== RESPONSIVIDADE GERAL ========== */
 @media (max-width: 768px) {
     .header-content {
