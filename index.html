@@ -3796,7 +3796,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+    <script src="js/modules/utils.js"></script>
+    <script>
+    console.log('🔍 TESTE: SUPABASE_URL existe?', typeof SUPABASE_URL);
+    if (SUPABASE_URL) {
+        console.log('✅ SUPABASE_URL:', SUPABASE_URL);
+    }
 </script>
-<script src="js/modules/utils.js"></script>
 </body>
 </html>
