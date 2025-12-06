@@ -1,25 +1,35 @@
-// js/modules/utils.js - Funções utilitárias do sistema Weber Lessa
+// js/modules/utils.js - VERSÃO CORRIGIDA PARA VARIÁVEIS GLOBAIS
+
+console.log('🔧 Módulo utils.js carregado');
 
 // ========== CONSTANTES GLOBAIS ==========
-const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
-const ADMIN_PASSWORD = "wl654";
-const PDF_PASSWORD = "doc123";
+// ATENÇÃO: Usar window. para tornar as variáveis globais
+window.SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
+window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+window.ADMIN_PASSWORD = "wl654";
+window.PDF_PASSWORD = "doc123";
+
+console.log('✅ Constantes globais definidas:', {
+    SUPABASE_URL: window.SUPABASE_URL ? '✅' : '❌',
+    SUPABASE_KEY: window.SUPABASE_KEY ? '✅' : '❌',
+    ADMIN_PASSWORD: window.ADMIN_PASSWORD ? '✅' : '❌',
+    PDF_PASSWORD: window.PDF_PASSWORD ? '✅' : '❌'
+});
 
 // ========== FUNÇÕES UTILITÁRIAS ==========
 
 // Detectar dispositivo móvel
-function isMobileDevice() {
+window.isMobileDevice = function() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
+};
 
 // Testar conexão com Supabase
-async function testSupabaseConnection() {
+window.testSupabaseConnection = async function() {
     try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
             headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
             }
         });
         return response.ok;
@@ -27,10 +37,10 @@ async function testSupabaseConnection() {
         console.error('❌ Erro na conexão Supabase:', error);
         return false;
     }
-}
+};
 
 // Testar acesso às imagens
-async function testImageAccess() {
+window.testImageAccess = async function() {
     console.log('🔍 Testando acesso às imagens...');
     
     const testImages = [
@@ -51,40 +61,40 @@ async function testImageAccess() {
             console.log(`❌ Erro ao acessar imagem: ${imgUrl} - ${error.message}`);
         }
     }
-}
+};
 
 // Log formatado para módulos
-function logModule(moduleName, message) {
+window.logModule = function(moduleName, message) {
     const timestamp = new Date().toLocaleTimeString();
     console.log(`[${timestamp}] [${moduleName}] ${message}`);
-}
+};
 
 // Verificar se elemento existe
-function elementExists(id) {
+window.elementExists = function(id) {
     const element = document.getElementById(id);
     return element !== null;
-}
+};
 
 // Formatar preço
-function formatPrice(price) {
+window.formatPrice = function(price) {
     if (!price) return 'R$ 0,00';
     return price.toString().replace('.', ',');
-}
+};
 
 // Validar email
-function isValidEmail(email) {
+window.isValidEmail = function(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
-}
+};
 
 // Validar telefone
-function isValidPhone(phone) {
+window.isValidPhone = function(phone) {
     const re = /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/;
     return re.test(phone);
-}
+};
 
 // Copiar para clipboard
-async function copyToClipboard(text) {
+window.copyToClipboard = async function(text) {
     try {
         await navigator.clipboard.writeText(text);
         return true;
@@ -92,10 +102,10 @@ async function copyToClipboard(text) {
         console.error('❌ Erro ao copiar:', err);
         return false;
     }
-}
+};
 
 // Debounce function (para eventos frequentes)
-function debounce(func, wait) {
+window.debounce = function(func, wait) {
     let timeout;
     return function executedFunction(...args) {
         const later = () => {
@@ -105,10 +115,10 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
-}
+};
 
 // Throttle function (para scroll/resize)
-function throttle(func, limit) {
+window.throttle = function(func, limit) {
     let inThrottle;
     return function() {
         const args = arguments;
@@ -119,23 +129,6 @@ function throttle(func, limit) {
             setTimeout(() => inThrottle = false, limit);
         }
     };
-}
-
-// Exportar funções (para uso em outros módulos)
-export {
-    SUPABASE_URL,
-    SUPABASE_KEY,
-    ADMIN_PASSWORD,
-    PDF_PASSWORD,
-    isMobileDevice,
-    testSupabaseConnection,
-    testImageAccess,
-    logModule,
-    elementExists,
-    formatPrice,
-    isValidEmail,
-    isValidPhone,
-    copyToClipboard,
-    debounce,
-    throttle
 };
+
+console.log('✅ Módulo utils.js completamente carregado');
