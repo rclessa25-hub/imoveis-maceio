@@ -1,1 +1,370 @@
+/* css/admin.css - Estilos do Painel Administrativo */
 
+/* ========== ESTILOS DO PAINEL ADMIN ========== */
+.admin-panel {
+    background: #f8f9fa;
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 1000px;
+    border-radius: 10px;
+    display: none;
+}
+
+.admin-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    font-size: 1.2rem;
+}
+
+.property-item {
+    background: #f5f5f5;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid var(--primary);
+}
+
+/* ÍCONE DO PDF */
+.pdf-access {
+    position: absolute;
+    bottom: 2px;
+    right: 35px;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--primary);
+    transition: all 0.3s ease;
+    z-index: 15;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,0,0,0.15);
+}
+
+.pdf-access:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+    color: #1a5276;
+}
+
+.pdf-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+.pdf-preview {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.pdf-file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    background: white;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.pdf-password-input {
+    width: 100%;
+    padding: 0.8rem;
+    margin: 1rem 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+/* ========== EXCLUSÃO DE FOTOS ========== */
+.image-preview-container {
+    position: relative;
+    display: inline-block;
+    margin: 5px;
+}
+
+.delete-image-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.delete-image-btn:hover {
+    background: #c0392b;
+    transform: scale(1.1);
+}
+
+/* CONTADOR DE FOTOS */
+.image-count {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 0.1rem 0.35rem;
+    border-radius: 8px 0 8px 8px;
+    font-size: 0.75rem;
+    z-index: 10;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    font-weight: 600;
+    min-width: 22px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border: 0.5px solid rgba(255,255,255,0.15);
+}
+
+/* ========== UPLOAD E PREVIEW ========== */
+#existingImagesSection .image-preview-container,
+#existingPdfsSection .image-preview-container {
+    border: 2px solid var(--success);
+}
+
+#existingImagesSection .delete-image-btn,
+#existingPdfsSection .delete-image-btn {
+    background: #e74c3c;
+}
+
+#newImagesSection .image-preview-container {
+    border: 2px dashed #3498db;
+}
+
+#newImagesSection .delete-image-btn,
+#newPdfsSection .delete-image-btn {
+    background: #3498db;
+}
+
+#newImagesSection .delete-image-btn:hover,
+#newPdfsSection .delete-image-btn:hover {
+    background: #2980b9;
+}
+
+#newPdfsSection .pdf-file-item {
+    border: 2px dashed #3498db;
+    background: #f8faff;
+}
+
+#existingImagesSection,
+#existingPdfsSection {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #eee;
+}
+
+#newImagesSection,
+#newPdfsSection {
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+}
+
+#existingImagesSection > div,
+#newImagesSection > div,
+#existingPdfsSection > div,
+#newPdfsSection > div {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+/* Estilos específicos do formulário admin */
+#propertyForm input,
+#propertyForm textarea,
+#propertyForm select {
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+    font-size: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#propertyForm input:focus,
+#propertyForm textarea:focus,
+#propertyForm select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26, 82, 118, 0.1);
+}
+
+#propertyForm button[type="submit"] {
+    background: var(--success);
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+#propertyForm button[type="submit"]:hover {
+    background: #219653;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(33, 150, 83, 0.3);
+}
+
+#cancelEditBtn {
+    background: #95a5a6;
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+#cancelEditBtn:hover {
+    background: #7f8c8d;
+}
+
+/* Área de upload */
+#uploadArea,
+#pdfUploadArea {
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    margin: 1rem 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fafafa;
+}
+
+#uploadArea:hover,
+#pdfUploadArea:hover {
+    border-color: var(--primary);
+    background: #f0f8ff;
+}
+
+#uploadPreview,
+#pdfUploadPreview {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    min-height: 60px;
+}
+
+/* Botões do admin */
+.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close) {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 3px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close):hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+.admin-panel button[style*="background: #e74c3c"] {
+    background: #e74c3c !important;
+}
+
+.admin-panel button[style*="background: #e74c3c"]:hover {
+    background: #c0392b !important;
+}
+
+/* Responsividade do admin */
+@media (max-width: 768px) {
+    .admin-panel {
+        padding: 1rem;
+        margin: 1rem;
+    }
+    
+    #propertyForm {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    #propertyForm > div {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .property-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .property-item > div:last-child {
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .admin-toggle {
+        bottom: 70px;
+        right: 20px;
+        padding: 0.8rem;
+        font-size: 1rem;
+    }
+}
