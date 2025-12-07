@@ -1,0 +1,96 @@
+name: Gerar Relatório
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Criar relatório
+      run: |
+        mkdir -p reports
+        
+        # Criar index.html
+        cat > reports/index.html << 'HTML'
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Relatório - Imóveis Maceió</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background: #0d1117;
+                    color: white;
+                    padding: 20px;
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+                h1 { color: #2ea44f; }
+                .card {
+                    background: #161b22;
+                    border: 1px solid #30363d;
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin: 20px 0;
+                }
+                a { color: #58a6ff; }
+            </style>
+        </head>
+        <body>
+            <h1>📋 Relatório do Projeto</h1>
+            <p><strong>Imóveis Maceió</strong> - Sistema completo para gestão de imóveis</p>
+            
+            <div class="card">
+                <h3>✅ Status: Ativo</h3>
+                <p>Sistema de relatórios funcionando corretamente.</p>
+            </div>
+            
+            <div class="card">
+                <h3>🔗 Links Importantes</h3>
+                <ul>
+                    <li><a href="https://rclessa25-hub.github.io/imoveis-maceio/" target="_blank">🌐 Site Principal</a></li>
+                    <li><a href="https://github.com/rclessa25-hub/imoveis-maceio" target="_blank">💻 Repositório GitHub</a></li>
+                    <li><a href="https://syztbxvpdaplpetmixmt.supabase.co" target="_blank">🗄️ Supabase</a></li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <h3>📊 Informações</h3>
+                <p><strong>Gerado em:</strong> $(date '+%d/%m/%Y às %H:%M')</p>
+                <p><strong>Workflow:</strong> GitHub Actions</p>
+                <p><strong>Atualização:</strong> Automática a cada execução</p>
+            </div>
+            
+            <footer style="margin-top: 40px; text-align: center; padding-top: 20px; border-top: 1px solid #30363d;">
+                <p>📈 Relatório gerado automaticamente</p>
+            </footer>
+        </body>
+        </html>
+        HTML
+        
+        echo "✅ Relatório criado!"
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+    
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2  # ← VERSÃO CORRIGIDA: v2
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
