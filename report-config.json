@@ -22,6 +22,16 @@
     "supabase": "https://syztbxvpdaplpetmixmt.supabase.co",
     "font_awesome": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/"
   },
+
+  supabase_config": {
+    "status": "CONECTADO",
+    "project_url": "https://syztbxvpdaplpetmixmt.supabase.co",
+    "services_used": ["Authentication", "Database", "Storage"],
+    "tables": ["properties", "users", "images"],
+    "authentication_methods": ["Email/Password"],
+    "connection_verified": true,
+    "last_sync": "Ativo agora"
+  }, 
   
   "architecture": {
     "type": "Modular - Component-based",
