@@ -23,7 +23,7 @@
     "font_awesome": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/"
   },
 
-  supabase_config": {
+    "supabase_config": {
     "status": "CONECTADO",
     "project_url": "https://syztbxvpdaplpetmixmt.supabase.co",
     "services_used": ["Authentication", "Database", "Storage"],
