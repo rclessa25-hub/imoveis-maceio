@@ -201,6 +201,3 @@ EOF
 
     - name: Publicar
       uses: actions/deploy-pages@v2
-
-# Ou servidor Node.js
-npx serve .
