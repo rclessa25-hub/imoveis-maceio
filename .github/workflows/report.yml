@@ -1,0 +1,43 @@
+name: Gerar Relatório
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Criar relatório simples
+      run: |
+        echo "Criando relatório..."
+        mkdir -p docs
+        
+        # Criar HTML básico
+        cat > docs/index.html << 'HTML'
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Relatório - Imóveis Maceió</title>
+            <style>
+                body { font-family: Arial; padding: 20px; }
+                h1 { color: green; }
+            </style>
+        </head>
+        <body>
+            <h1>✅ Relatório Gerado com Sucesso!</h1>
+            <p>Projeto: Imóveis Maceió</p>
+            <p>Data: $(date)</p>
+            <a href="https://rclessa25-hub.github.io/imoveis-maceio/">Voltar ao site</a>
+        </body>
+        </html>
+        HTML
+        
+        echo "Relatório criado em: docs/index.html"
+        ls -la docs/
+    
+    - name: Mostrar resultado
+      run: echo "✅ Workflow concluído!"
