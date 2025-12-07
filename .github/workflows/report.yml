@@ -1,23 +1,28 @@
-name: 📊 Gerar Relatório em /reports
+name: 📊 Gerar e Publicar Relatório
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   generate-report:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 📥 Checkout
+    - name: 📥 Checkout com permissão de escrita
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: 📁 Criar relatório em subpasta
+    - name: 📁 Criar relatório
       run: |
-        echo "Criando relatório em /reports..."
+        echo "Criando relatório em docs/reports..."
         
-        # Criar pasta docs/reports
+        # Criar estrutura
         mkdir -p docs/reports
         
         # Coletar estatísticas
@@ -26,211 +31,98 @@ jobs:
         JS_COUNT=$(find . -name "*.js" | wc -l)
         TOTAL=$((HTML_COUNT + CSS_COUNT + JS_COUNT))
         
-        # Criar HTML do relatório
+        # Criar relatório HTML
         cat > docs/reports/index.html << 'EOF'
         <!DOCTYPE html>
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>📋 Relatório Técnico - Imóveis Maceió</title>
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <title>📋 Relatório - Imóveis Maceió</title>
             <style>
-                :root {
-                    --primary: #2ea44f;
-                    --dark: #0d1117;
-                    --card: #161b22;
-                }
                 body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    background: var(--dark);
-                    color: #c9d1d9;
-                    line-height: 1.6;
-                    max-width: 1200px;
-                    margin: 0 auto;
+                    font-family: Arial, sans-serif;
                     padding: 20px;
+                    max-width: 800px;
+                    margin: 0 auto;
                 }
-                header {
-                    text-align: center;
-                    margin-bottom: 40px;
-                    padding-bottom: 20px;
-                    border-bottom: 2px solid var(--primary);
-                }
-                h1 { color: var(--primary); }
-                .stats-grid {
+                h1 { color: #2ea44f; }
+                .stats {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 20px;
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    gap: 15px;
                     margin: 30px 0;
                 }
                 .stat-box {
-                    background: var(--card);
-                    border: 1px solid #30363d;
+                    border: 2px solid #2ea44f;
                     border-radius: 10px;
-                    padding: 20px;
+                    padding: 15px;
                     text-align: center;
                 }
                 .stat-number {
-                    font-size: 2.5em;
+                    font-size: 2em;
+                    color: #2ea44f;
                     font-weight: bold;
-                    color: var(--primary);
-                }
-                .card {
-                    background: var(--card);
-                    border: 1px solid #30363d;
-                    border-radius: 10px;
-                    padding: 25px;
-                    margin: 25px 0;
-                }
-                pre {
-                    background: var(--card);
-                    padding: 15px;
-                    border-radius: 8px;
-                    overflow-x: auto;
-                    font-family: 'Monaco', 'Courier New', monospace;
-                }
-                .nav-buttons {
-                    display: flex;
-                    gap: 15px;
-                    margin: 20px 0;
-                }
-                .btn {
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    text-decoration: none;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 10px;
-                    font-weight: 500;
-                }
-                .btn-primary {
-                    background: var(--primary);
-                    color: white;
-                }
-                .btn-secondary {
-                    background: #24292e;
-                    color: white;
-                    border: 1px solid #30363d;
-                }
-                footer {
-                    margin-top: 50px;
-                    text-align: center;
-                    padding-top: 20px;
-                    border-top: 1px solid #30363d;
-                    color: #8b949e;
                 }
             </style>
         </head>
         <body>
-            <header>
-                <h1><i class="fas fa-file-alt"></i> Relatório Técnico</h1>
-                <h2>Imóveis Maceió - Análise Completa</h2>
-                <p>Gerado automaticamente em: $(date '+%d/%m/%Y às %H:%M')</p>
-            </header>
+            <h1>📋 Relatório Técnico</h1>
+            <p><strong>Imóveis Maceió</strong></p>
+            <p>Gerado em: $(date '+%d/%m/%Y %H:%M')</p>
             
-            <div class="stats-grid">
+            <div class="stats">
                 <div class="stat-box">
                     <div class="stat-number">${HTML_COUNT}</div>
-                    <div>Arquivos HTML</div>
+                    <div>HTML</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-number">${CSS_COUNT}</div>
-                    <div>Estilos CSS</div>
+                    <div>CSS</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-number">${JS_COUNT}</div>
-                    <div>Scripts JS</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number">${TOTAL}</div>
-                    <div>Total de Arquivos</div>
+                    <div>JavaScript</div>
                 </div>
             </div>
             
-            <div class="nav-buttons">
-                <a href="/imoveis-maceio/" class="btn btn-primary">
-                    <i class="fas fa-home"></i> Voltar ao Site
-                </a>
-                <a href="https://github.com/rclessa25-hub/imoveis-maceio" target="_blank" class="btn btn-secondary">
-                    <i class="fab fa-github"></i> Ver Código
-                </a>
-            </div>
+            <h2>✅ Sistema funcionando!</h2>
+            <p>Relatórios automáticos ativos.</p>
             
-            <div class="card">
-                <h2><i class="fas fa-sitemap"></i> Estrutura do Projeto</h2>
-                <pre><code>$(find . -maxdepth 3 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" \) | sort | head -25)</code></pre>
-                <p><small>Mostrando 25 principais arquivos</small></p>
-            </div>
-            
-            <div class="card">
-                <h2><i class="fas fa-cubes"></i> Arquitetura Modular</h2>
-                <p><strong>Módulos JavaScript detectados:</strong></p>
-                <ul>
-                    <li><code>admin.js</code> - Painel administrativo</li>
-                    <li><code>gallery.js</code> - Galeria de imagens</li>
-                    <li><code>properties.js</code> - Gestão de imóveis</li>
-                    <li><code>supabase.js</code> - Integração com banco</li>
-                    <li><code>utils.js</code> - Funções utilitárias</li>
-                </ul>
-            </div>
-            
-            <div class="card">
-                <h2><i class="fas fa-database"></i> Integrações</h2>
-                <ul>
-                    <li><strong>Supabase:</strong> Banco de dados e autenticação</li>
-                    <li><strong>Font Awesome:</strong> Biblioteca de ícones</li>
-                    <li><strong>GitHub Pages:</strong> Hospedagem estática</li>
-                </ul>
-            </div>
-            
-            <div class="card">
-                <h2><i class="fas fa-sync-alt"></i> Atualização Automática</h2>
-                <p>Este relatório é atualizado via GitHub Actions:</p>
-                <ul>
-                    <li>✅ A cada <strong>push</strong> no repositório</li>
-                    <li>✅ Execução <strong>manual</strong> disponível</li>
-                    <li>✅ Histórico completo de versões</li>
-                </ul>
-            </div>
-            
-            <footer>
-                <p><strong>📈 Sistema de Relatórios Automáticos</strong></p>
-                <p>Documentação técnica sempre atualizada | Acesso: <code>/reports/</code></p>
-                <p><a href="https://github.com/rclessa25-hub/imoveis-maceio/issues" style="color: #58a6ff;">
-                    <i class="fas fa-bug"></i> Reportar problema
-                </a></p>
-            </footer>
+            <p><a href="/imoveis-maceio/">← Voltar ao site principal</a></p>
         </body>
         </html>
         EOF
         
-        # Criar também um README para a pasta
-        cat > docs/reports/README.md << 'EOF'
-        # 📋 Relatório Técnico
-        
-        ## Visão Geral
-        Documentação automática do projeto Imóveis Maceió.
-        
-        ## Acesso
-        - **URL:** https://rclessa25-hub.github.io/imoveis-maceio/reports/
-        - **Site Principal:** https://rclessa25-hub.github.io/imoveis-maceio/
-        
-        ## Estatísticas
-        - HTML: ${HTML_COUNT} arquivos
-        - CSS: ${CSS_COUNT} arquivos
-        - JavaScript: ${JS_COUNT} arquivos
-        - Total: ${TOTAL} arquivos
-        
-        ## Atualização
-        Gerado automaticamente em: $(date)
-        
-        EOF
-        
-        echo "✅ Relatório criado em: docs/reports/"
-        echo "🌐 Acesse: https://rclessa25-hub.github.io/imoveis-maceio/reports/"
+        echo "✅ Relatório criado em docs/reports/index.html"
+        echo "📊 Estatísticas: HTML=${HTML_COUNT}, CSS=${CSS_COUNT}, JS=${JS_COUNT}"
     
-    - name: ✅ Conclusão
+    - name: 📤 Commit automático
       run: |
-        echo "🎉 RELATÓRIO GERADO COM SUCESSO!"
-        echo "📊 Disponível em: https://rclessa25-hub.github.io/imoveis-maceio/reports/"
-        echo "📈 Atualização automática configurada"
+        # Configurar git
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        
+        # Verificar mudanças
+        git status
+        
+        # Adicionar arquivos
+        git add docs/
+        
+        # Commit se houver mudanças
+        if ! git diff --cached --quiet; then
+          git commit -m "📊 Atualiza relatórios [$(date '+%d/%m %H:%M')]"
+          git push
+          echo "✅ Relatórios commitados no repositório"
+        else
+          echo "ℹ️  Nenhuma mudança para commit"
+        fi
+    
+    - name: ✅ Verificação final
+      run: |
+        echo "🎉 RELATÓRIO GERADO E SALVO!"
+        echo "📁 Local: docs/reports/index.html"
+        echo "🌐 URL: https://rclessa25-hub.github.io/imoveis-maceio/reports/"
+        echo ""
+        echo "Estrutura criada:"
+        find docs -type f 2>/dev/null || echo "Pasta docs não encontrada"
