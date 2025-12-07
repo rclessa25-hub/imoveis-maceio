@@ -1,0 +1,98 @@
+name: 🚀 Gerar Relatório do Projeto
+
+on:
+  push:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 0'  # Executa todo domingo à meia-noite
+  workflow_dispatch:      # Permite execução manual
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout do repositório
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 🐍 Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: 📦 Instalar dependências
+      run: |
+        pip install markdown Pygments
+        sudo apt-get update
+        sudo apt-get install -y tree
+
+    - name: 📝 Criar script de geração
+      run: |
+        cat > generate_report.py << 'EOF'
+        #!/usr/bin/env python3
+        import os
+        import json
+        import markdown
+        from datetime import datetime
+        
+        # Ler configuração
+        with open('report-config.json', 'r') as f:
+            config = json.load(f)
+        
+        # Obter estrutura do projeto
+        def get_structure():
+            import subprocess
+            try:
+                result = subprocess.run(['tree', '-a', '--charset=utf-8'], 
+                                      capture_output=True, text=True)
+                return result.stdout if result.returncode == 0 else "Estrutura não disponível"
+            except:
+                return "Instale 'tree' para ver a estrutura completa"
+        
+        # Gerar relatório Markdown
+        def generate_markdown():
+            content = []
+            content.append(f"# 📋 Relatório do Projeto: {config['project_name']}")
+            content.append(f"**Gerado em:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+            content.append(f"**Versão:** {config.get('version', '1.0.0')}")
+            content.append("")
+            
+            # Visão Geral
+            content.append("## 🎯 Visão Geral")
+            content.append(config['project_description'])
+            content.append("")
+            
+            # Links
+            content.append("## 🔗 Links Importantes")
+            for name, url in config['external_links'].items():
+                content.append(f"- **{name.replace('_', ' ').title()}:** [{url}]({url})")
+            content.append("")
+            
+            # Estrutura
+            content.append("## 📁 Estrutura do Projeto")
+            content.append("```")
+            content.append(get_structure())
+            content.append("```")
+            content.append("")
+            
+            # Features
+            content.append("## ✨ Funcionalidades")
+            for feature, enabled in config['features'].items():
+                if enabled:
+                    content.append(f"- ✅ {feature.replace('_', ' ').title()}")
+            content.append("")
+            
+            # Instalação
+            content.append("## ⚙️ Instalação")
+            content.append("""
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/rclessa25-hub/imoveis-maceio.git
+   cd imoveis-maceio
