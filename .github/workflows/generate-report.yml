@@ -135,7 +135,12 @@ jobs:
         
         # Ou servidor Node.js
         npx serve .
-1. Clone o repositório:
+
+        # Adicione esta nova seção sobre Supabase:
+        if "supabase_config" in config:
+            content.append("### 🔗 Configuração do Supabase (JÁ CONECTADO)")
+            content.append("""
+        
    ```bash
    git clone https://github.com/rclessa25-hub/imoveis-maceio.git
    cd imoveis-maceio
