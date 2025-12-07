@@ -93,6 +93,57 @@ jobs:
             content.append("## ⚙️ Instalação")
             content.append("""
 1. Clone o repositório:
+    - name: 📊 Analisar estrutura modular
+      run: |
+        echo "## 📁 ANÁLISE DA ESTRUTURA MODULAR" > structure-analysis.md
+        echo "" >> structure-analysis.md
+        
+        # Contar arquivos por tipo
+        echo "### 📈 Estatísticas de Arquivos" >> structure-analysis.md
+        echo "" >> structure-analysis.md
+        echo "- **Total HTML:** $(find . -name '*.html' -type f | wc -l)" >> structure-analysis.md
+        echo "- **Total CSS:** $(find . -name '*.css' -type f | wc -l)" >> structure-analysis.md
+        echo "- **Total JS:** $(find . -name '*.js' -type f | wc -l)" >> structure-analysis.md
+        echo "- **Total Imagens:** $(find ./assets/images -type f 2>/dev/null | wc -l)" >> structure-analysis.md
+        echo "" >> structure-analysis.md
+        
+        # Listar módulos
+        echo "### 🧩 Módulos JavaScript" >> structure-analysis.md
+        echo "" >> structure-analysis.md
+        for file in js/modules/*.js; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            lines=$(wc -l < "$file")
+            echo "- **${filename}:** $lines linhas" >> structure-analysis.md
+          fi
+        done
+        echo "" >> structure-analysis.md
+        
+        # Listar componentes
+        echo "### 🧱 Componentes" >> structure-analysis.md
+        echo "" >> structure-analysis.md
+        for file in js/components/*.js; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file" .js)
+            echo "- **${filename}:** Componente reutilizável" >> structure-analysis.md
+          fi
+        done
+        echo "" >> structure-analysis.md
+        
+        # Listar estilos
+        echo "### 🎨 Estilos CSS" >> structure-analysis.md
+        echo "" >> structure-analysis.md
+        for file in css/*.css; do
+          if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            lines=$(wc -l < "$file")
+            echo "- **${filename}:** $lines linhas" >> structure-analysis.md
+          fi
+        done
+        
+        # Mover para reports
+        mkdir -p reports
+        mv structure-analysis.md reports/
    ```bash
    git clone https://github.com/rclessa25-hub/imoveis-maceio.git
    cd imoveis-maceio
