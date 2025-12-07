@@ -2,85 +2,21 @@ name: Gerar Relatório
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Criar relatório básico
+      - name: Criar relatório simples
         run: |
           mkdir -p reports
-          
-          # Criar index.html
-          cat > reports/index.html << 'HTML'
-          <!DOCTYPE html>
-          <html lang="pt-BR">
-          <head>
-              <meta charset="UTF-8">
-              <title>Relatório - Imóveis Maceió</title>
-              <style>
-                  body {
-                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                      background: #0d1117;
-                      color: #c9d1d9;
-                      padding: 20px;
-                      max-width: 1000px;
-                      margin: 0 auto;
-                  }
-                  h1 { color: #2ea44f; }
-                  .card {
-                      background: #161b22;
-                      border: 1px solid #30363d;
-                      border-radius: 8px;
-                      padding: 20px;
-                      margin: 20px 0;
-                  }
-              </style>
-          </head>
-          <body>
-              <h1>📋 Relatório do Projeto</h1>
-              <p><strong>Projeto:</strong> Imóveis Maceió</p>
-              <p><strong>Data:</strong> $(date)</p>
-              
-              <div class="card">
-                  <h3>✅ Status: Ativo</h3>
-                  <p>Sistema de relatórios funcionando!</p>
-              </div>
-              
-              <div class="card">
-                  <h3>🔗 Links</h3>
-                  <ul>
-                      <li><a href="https://rclessa25-hub.github.io/imoveis-maceio/">Site Principal</a></li>
-                      <li><a href="https://github.com/rclessa25-hub/imoveis-maceio">Repositório</a></li>
-                  </ul>
-              </div>
-          </body>
-          </html>
-          HTML
-          
-          echo "✅ Relatório criado em reports/"
+          echo "# Relatório do Projeto" > reports/README.md
+          echo "## Imóveis Maceió" >> reports/README.md
+          echo "Gerado em: $(date)" >> reports/README.md
+          echo "✅ Relatório criado!"
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-
-        
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: './reports'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
-      uses: actions/deploy-pages@v2
+      - name: Mostrar estrutura
+        run: ls -la reports/
