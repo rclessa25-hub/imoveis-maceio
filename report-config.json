@@ -1,0 +1,42 @@
+{
+  "project_name": "Imóveis Maceió",
+  "project_description": "Sistema completo de gestão e exibição de imóveis em Maceió com painel administrativo integrado ao Supabase",
+  "version": "1.0.0",
+  "author": "rclessa25-hub",
+  "report_language": "pt-BR",
+  
+  "sections": {
+    "overview": true,
+    "structure": true,
+    "dependencies": true,
+    "api_documentation": true,
+    "installation": true,
+    "usage": true,
+    "contributing": true
+  },
+  
+  "external_links": {
+    "live_demo": "https://rclessa25-hub.github.io/imoveis-maceio/",
+    "repository": "https://github.com/rclessa25-hub/imoveis-maceio",
+    "supabase": "https://syztbxvpdaplpetmixmt.supabase.co",
+    "font_awesome": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/"
+  },
+  
+  "features": {
+    "supabase_integration": true,
+    "responsive_design": true,
+    "admin_panel": true,
+    "search_filter": true,
+    "image_gallery": true,
+    "contact_form": true
+  },
+  
+  "output_formats": ["html", "markdown"],
+  "auto_update": true,
+  
+  "theme": "dark",
+  
+  "contact": {
+    "github_issues": "https://github.com/rclessa25-hub/imoveis-maceio/issues"
+  }
+}
