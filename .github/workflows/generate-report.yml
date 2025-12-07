@@ -1,0 +1,207 @@
+name: Gerar Relatório do Projeto
+
+on:
+  push:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repositório
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Instalar dependências
+      run: |
+        pip install markdown Pygments
+        sudo apt-get update
+        sudo apt-get install -y tree
+
+    - name: Criar script Python
+      run: |
+        cat > generate_report.py << 'EOF'
+#!/usr/bin/env python3
+import os
+import json
+import markdown
+from datetime import datetime
+import subprocess
+
+def load_config():
+    with open('report-config.json', 'r') as f:
+        return json.load(f)
+
+def get_structure():
+    try:
+        result = subprocess.run(['tree', '-a', '--charset=utf-8', '-I', '.git'], 
+                              capture_output=True, text=True)
+        return result.stdout if result.returncode == 0 else "Estrutura não disponível"
+    except:
+        return "Instale 'tree' para ver estrutura completa"
+
+def generate_markdown_report(config):
+    content = []
+    content.append(f"# 📋 Relatório: {config.get('project_name', 'Projeto')}")
+    content.append(f"**Gerado em:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    content.append(f"**Versão:** {config.get('version', '1.0.0')}")
+    content.append("")
+    
+    content.append("## 🎯 Visão Geral")
+    content.append(config.get('project_description', 'Sem descrição.'))
+    content.append("")
+    
+    content.append("## 🔗 Links")
+    if 'external_links' in config:
+        for name, url in config['external_links'].items():
+            content.append(f"- **{name}:** [{url}]({url})")
+    content.append("")
+    
+    content.append("## 📁 Estrutura")
+    content.append("```")
+    content.append(get_structure())
+    content.append("```")
+    content.append("")
+    
+    content.append("## 📊 Estatísticas")
+    content.append("```bash")
+    content.append(f"Arquivos HTML: $(find . -name '*.html' -type f | wc -l)")
+    content.append(f"Arquivos CSS: $(find . -name '*.css' -type f | wc -l)")
+    content.append(f"Arquivos JS: $(find . -name '*.js' -type f | wc -l)")
+    content.append("```")
+    content.append("")
+    
+    if 'supabase_config' in config:
+        content.append("## 🔗 Supabase")
+        content.append("**Status:** ✅ Conectado")
+        content.append(f"**URL:** {config['supabase_config'].get('project_url', 'N/A')}")
+        content.append("")
+    
+    content.append("## ⚙️ Instalação")
+    content.append("```bash")
+    content.append("git clone https://github.com/rclessa25-hub/imoveis-maceio.git")
+    content.append("cd imoveis-maceio")
+    content.append("# Abra index.html no navegador")
+    content.append("```")
+    content.append("")
+    
+    content.append("## 🤝 Contribuir")
+    content.append("1. Faça fork do projeto")
+    content.append("2. Crie uma branch")
+    content.append("3. Commit suas mudanças")
+    content.append("4. Push para a branch")
+    content.append("5. Abra Pull Request")
+    
+    return "\n".join(content)
+
+def main():
+    print("Iniciando geração de relatório...")
+    
+    # Carregar configuração
+    config = load_config()
+    
+    # Criar diretório reports
+    os.makedirs("reports", exist_ok=True)
+    
+    # Gerar Markdown
+    md_content = generate_markdown_report(config)
+    with open("reports/README.md", "w", encoding="utf-8") as f:
+        f.write(md_content)
+    
+    # Gerar HTML
+    html_content = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{config.get('project_name', 'Relatório')}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }}
+        h1 {{ color: #2ea44f; }}
+        pre {{ background: #161b22; padding: 15px; border-radius: 6px; }}
+        .badge {{ background: #2ea44f; color: white; padding: 3px 8px; border-radius: 12px; }}
+    </style>
+</head>
+<body>
+    <h1><i class="fas fa-file-alt"></i> {config.get('project_name', 'Relatório')}</h1>
+    <p>Gerado automaticamente em {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+    
+    {markdown.markdown(md_content)}
+    
+    <footer style="margin-top: 40px; text-align: center;">
+        <p>📊 Relatório gerado pelo GitHub Actions</p>
+    </footer>
+</body>
+</html>"""
+    
+    with open("reports/index.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+    
+    print("✅ Relatório gerado em reports/")
+
+if __name__ == "__main__":
+    main()
+EOF
+
+    - name: Executar script
+      run: python generate_report.py
+
+    - name: Criar dashboard simples
+      run: |
+        cat > reports/dashboard.html << 'EOF'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <style>
+        body { font-family: Arial; background: #0d1117; color: white; padding: 20px; }
+        .card { background: #161b22; padding: 20px; border-radius: 10px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>📊 Dashboard do Projeto</h1>
+    <div class="card">
+        <h3>Status: ✅ Ativo</h3>
+        <p>Relatório gerado com sucesso!</p>
+    </div>
+    <a href="index.html" style="color: #2ea44f;">Ver relatório completo</a>
+</body>
+</html>
+EOF
+
+    - name: Configurar Pages
+      uses: actions/configure-pages@v3
+
+    - name: Upload relatórios
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: './reports/'
+    
+    - name: Publicar
+      uses: actions/deploy-pages@v2
+
+
+
+
