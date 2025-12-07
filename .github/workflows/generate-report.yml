@@ -57,16 +57,27 @@ jobs:
                 return "Instale 'tree' para ver a estrutura completa"
         
         # Gerar relatório Markdown
+ # Substitua a função generate_markdown() por esta:
+
         def generate_markdown():
             content = []
             content.append(f"# 📋 Relatório do Projeto: {config['project_name']}")
+            content.append(f"**Arquitetura:** {config['architecture']['type']}")
             content.append(f"**Gerado em:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-            content.append(f"**Versão:** {config.get('version', '1.0.0')}")
+            content.append(f"**Versão:** {config.get('version', '2.0.0')}")
             content.append("")
             
             # Visão Geral
             content.append("## 🎯 Visão Geral")
             content.append(config['project_description'])
+            content.append("")
+            
+            # Arquitetura
+            content.append("## 🏗️ Arquitetura do Sistema")
+            content.append(f"**Tipo:** {config['architecture']['type']}")
+            content.append(f"**Framework Frontend:** {config['architecture']['frontend_framework']}")
+            content.append(f"**Arquitetura CSS:** {config['architecture']['css_architecture']}")
+            content.append(f"**Gerenciamento de Estado:** {config['architecture']['state_management']}")
             content.append("")
             
             # Links
@@ -75,24 +86,59 @@ jobs:
                 content.append(f"- **{name.replace('_', ' ').title()}:** [{url}]({url})")
             content.append("")
             
-            # Estrutura
-            content.append("## 📁 Estrutura do Projeto")
+            # Estrutura Modular
+            content.append("## 📁 Estrutura Modular")
             content.append("```")
             content.append(get_structure())
             content.append("```")
             content.append("")
             
+            # Módulos
+            content.append("## 🧩 Módulos do Sistema")
+            for category, items in config['architecture']['structure'].items():
+                if items:
+                    content.append(f"### {category.title()}")
+                    for item in items:
+                        content.append(f"- {item}")
+                    content.append("")
+            
             # Features
-            content.append("## ✨ Funcionalidades")
+            content.append("## ✨ Funcionalidades da Arquitetura")
             for feature, enabled in config['features'].items():
                 if enabled:
                     content.append(f"- ✅ {feature.replace('_', ' ').title()}")
             content.append("")
             
+            # Tecnologias
+            content.append("## 🛠️ Tecnologias Utilizadas")
+            for category, techs in config['technologies'].items():
+                if techs:
+                    content.append(f"### {category.title()}")
+                    for tech in techs:
+                        content.append(f"- {tech}")
+                    content.append("")
+            
             # Instalação
-            content.append("## ⚙️ Instalação")
+            content.append("## ⚙️ Instalação e Configuração")
             content.append("""
+        ### Para Desenvolvedores:
+        ```bash
+        # Clone o repositório
+        git clone https://github.com/rclessa25-hub/imoveis-maceio.git
+        cd imoveis-maceio
+        
+        # Estrutura pronta - não requer build
+        # Abra index.html no navegador ou use:
+        
+        # Servidor local Python
+        python -m http.server 8000
+        
+        # Ou servidor Node.js
+        npx serve .
 1. Clone o repositório:
+   ```bash
+   git clone https://github.com/rclessa25-hub/imoveis-maceio.git
+   cd imoveis-maceio
     - name: 📊 Analisar estrutura modular
       run: |
         echo "## 📁 ANÁLISE DA ESTRUTURA MODULAR" > structure-analysis.md
