@@ -1736,20 +1736,6 @@ function renderProperties(filter = 'todos') {
     });
 }
 
-// ========== CORREÇÃO DO DEBUG DOS DADOS ==========
-function debugPropertyData() {
-    console.log('🐛 DEBUG - Dados dos Imóveis:');
-    properties.forEach((property, index) => {
-        console.log(`--- Imóvel ${index + 1} ---`);
-        console.log('Título:', property.title);
-        console.log('ID:', property.id);
-        console.log('PDFs:', property.pdfs);
-        console.log('Tipo de PDFs:', typeof property.pdfs);
-        console.log('Tem PDFs?', property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '');
-        console.log('---------------');
-    });
-}
-
 function checkPdfData() {
     console.log('🔍 Verificando dados dos PDFs...');
     properties.forEach((property, index) => {
