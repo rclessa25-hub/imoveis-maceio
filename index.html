@@ -1775,50 +1775,6 @@ function toggleAdminPanel() {
         alert("Senha incorreta!");
     }
 }
-
-function loadPropertyList() {
-    const container = document.getElementById('propertyList');
-    const countElement = document.getElementById('propertyCount');
-    
-    if (!container) return;
-    
-    container.innerHTML = '';
-    if (countElement) countElement.textContent = properties.length;
-    
-    if (properties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Nenhum imóvel cadastrado.</p>';
-        return;
-    }
-    
-    properties.forEach(property => {
-        const features = Array.isArray(property.features)   
-            ? property.features 
-            : (property.features ? property.features.split(',') : []);
-            
-        const item = document.createElement('div');
-        item.className = 'property-item';
-        item.innerHTML = `
-            <div style="flex: 1;">
-                <strong style="color: var(--primary);">${property.title}</strong><br>
-                <small>${property.price} - ${property.location}</small>
-                <div style="margin-top: 0.5rem;">
-                    ${features.map(f => 
-                        `<span style="background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.8rem; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.3rem;">${f.trim()}</span>`
-                    ).join('')}
-                </div>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button onclick="editProperty(${property.id})" style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-                <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
-                    <i class="fas fa-trash"></i> Excluir
-                </button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
         
 // ========== SISTEMA DE DOCUMENTOS PDF ==========
 let currentPdfPropertyId = null;
