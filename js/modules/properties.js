@@ -70,3 +70,13 @@ window.checkPdfData = function() {
         console.log(`Tem PDFs:`, property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '');
     });
 };
+
+// ========== FUNÇÃO 4: contactAgent() ==========
+window.contactAgent = function(id) {
+    const property = window.properties.find(p => p.id === id);
+    if (property) {
+        const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${property.price}`;
+        const whatsappURL = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
+        window.open(whatsappURL, '_blank');
+    }
+};
