@@ -80,3 +80,11 @@ window.contactAgent = function(id) {
         window.open(whatsappURL, '_blank');
     }
 };
+
+// ========== FUNÇÃO 5: viewProperty() ==========
+window.viewProperty = function(id) {
+    const property = window.properties.find(p => p.id === id);
+    if (property) {
+        alert(`🏠 ${property.title}\n\n💰 ${property.price}\n📍 ${property.location}\n\n${property.description}`);
+    }
+};
