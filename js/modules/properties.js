@@ -60,3 +60,13 @@ window.debugPropertyData = function() {
         console.log('---------------');
     });
 };
+
+// ========== FUNÇÃO 3: checkPdfData() ==========
+window.checkPdfData = function() {
+    console.log('🔍 Verificando dados dos PDFs...');
+    window.properties.forEach((property, index) => {
+        console.log(`Imóvel ${index + 1}: ${property.title}`);
+        console.log(`PDFs:`, property.pdfs);
+        console.log(`Tem PDFs:`, property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '');
+    });
+};
