@@ -1121,31 +1121,6 @@ async function initializeProperties() {
     console.log('✅ Sistema de imóveis inicializado com sucesso!');
 }
 
-// ========== FUNÇÃO PARA CONFIGURAR FILTROS ==========
-function setupFilters() {
-    console.log('🎛️ Configurando filtros...');
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Remover classe active de todos os botões
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // Adicionar classe active ao botão clicado
-            this.classList.add('active');
-            
-            // Obter o texto do filtro
-            const filterText = this.textContent.trim();
-            const filter = filterText === 'Todos' ? 'todos' : filterText;
-            
-            console.log(`🎯 Filtrando por: ${filter}`);
-            renderProperties(filter);
-        });
-    });
-}
-        
-console.log('🚀 Weber Lessa Imóveis - Sistema Iniciado');
-
   // ========== FUNÇÕES DE OTIMIZAÇÃO MOBILE ==========
 
 // Detectar se é dispositivo móvel
