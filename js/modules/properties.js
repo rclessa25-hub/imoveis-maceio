@@ -8,8 +8,7 @@ window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
 // ========== FUNÇÕES DO SISTEMA DE IMÓVEIS ==========
-// (As funções serão adicionadas aqui)
-// Dados iniciais com IMAGENS de exemplo
+
 // ========== FUNÇÃO 1: getInitialProperties() ==========
 window.getInitialProperties = function() {
     return [
@@ -47,7 +46,7 @@ window.getInitialProperties = function() {
 console.log('✅ getInitialProperties() carregada');
 
 // ========== CORREÇÃO DO DEBUG DOS DADOS ==========
-========== FUNÇÃO 2: debugPropertyData() ==========
+// ========== FUNÇÃO 2: debugPropertyData() ==========
 window.debugPropertyData = function() {
     console.log('🐛 DEBUG - Dados dos Imóveis:');
     window.properties.forEach((property, index) => {
@@ -166,7 +165,7 @@ window.loadPropertyList = function() {
 };
 
 // ========== SALVAR NO LOCALSTORAGE ==========
-/ ========== FUNÇÃO 8: saveToLocalStorage() ==========
+// ========== FUNÇÃO 8: saveToLocalStorage() ==========
 window.saveToLocalStorage = function(propertyData) {
     try {
         console.log('💾 Salvando no localStorage...');
@@ -210,3 +209,5 @@ window.saveToLocalStorage = function(propertyData) {
         return false;
     }
 };
+
+console.log('✅ properties.js com 8 funções carregadas');
