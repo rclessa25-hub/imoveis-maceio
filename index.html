@@ -3532,16 +3532,6 @@ function setupForm() {
     });
 }
         
-// ========== FUNÇÕES DE INTERAÇÃO ==========
-function contactAgent(id) {
-    const property = properties.find(p => p.id === id);
-    if (property) {
-        const message = `Olá! Tenho interesse no imóvel: ${property.title} - ${property.price}`;
-        const whatsappURL = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
-        window.open(whatsappURL, '_blank');
-    }
-}
-
 function viewProperty(id) {
     const property = properties.find(p => p.id === id);
     if (property) {
