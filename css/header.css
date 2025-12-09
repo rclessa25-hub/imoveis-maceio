@@ -565,35 +565,32 @@
 }
 
 /* ========== AJUSTE: MOSTRAR NÚMERO NO HEADER MOBILE ========== */
+/* ========== NÚMERO AO LADO DOS ÍCONES ========== */
 @media (max-width: 768px) {
     .mobile-phone-mini {
+        display: flex !important;
+        align-items: center;
+        gap: 5px;
         position: relative;
     }
     
+    /* Adicionar o número DEPOIS dos ícones */
     .mobile-phone-mini::after {
-        content: "(82) 9.9604-4513"; /* 🔥 SEU NÚMERO AQUI */
-        position: absolute;
-        top: 50%;
-        left: 100%;
-        transform: translateY(-50%);
-        margin-left: 8px;
-        white-space: nowrap;
-        font-size: 0.7rem;
-        font-weight: 600;
+        content: "(82) 9.9604-4513";
+        font-size: 0.75rem;
+        font-weight: 700;
         color: #1a5276;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 2px 6px;
-        border-radius: 4px;
-        border: 1px solid rgba(26, 82, 118, 0.2);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-left: 5px;
+        white-space: nowrap;
+        order: 3; /* Garantir que fique depois dos ícones */
     }
     
-    /* Ajustar para telas muito pequenas */
-    @media (max-width: 380px) {
-        .mobile-phone-mini::after {
-            font-size: 0.6rem;
-            padding: 1px 4px;
-            margin-left: 5px;
-        }
+    /* Garantir ordem: celular → whatsapp → número */
+    .mobile-phone-mini .fa-mobile-alt {
+        order: 1;
+    }
+    
+    .mobile-phone-mini .fa-whatsapp {
+        order: 2;
     }
 }
