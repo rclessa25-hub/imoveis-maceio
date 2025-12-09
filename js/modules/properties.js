@@ -45,3 +45,18 @@ window.getInitialProperties = function() {
 };
 
 console.log('✅ getInitialProperties() carregada');
+
+// ========== CORREÇÃO DO DEBUG DOS DADOS ==========
+========== FUNÇÃO 2: debugPropertyData() ==========
+window.debugPropertyData = function() {
+    console.log('🐛 DEBUG - Dados dos Imóveis:');
+    window.properties.forEach((property, index) => {
+        console.log(`--- Imóvel ${index + 1} ---`);
+        console.log('Título:', property.title);
+        console.log('ID:', property.id);
+        console.log('PDFs:', property.pdfs);
+        console.log('Tipo de PDFs:', typeof property.pdfs);
+        console.log('Tem PDFs?', property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '');
+        console.log('---------------');
+    });
+};
