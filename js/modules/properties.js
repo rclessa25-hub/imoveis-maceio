@@ -164,3 +164,49 @@ window.loadPropertyList = function() {
         container.appendChild(item);
     });
 };
+
+// ========== SALVAR NO LOCALSTORAGE ==========
+/ ========== FUNÇÃO 8: saveToLocalStorage() ==========
+window.saveToLocalStorage = function(propertyData) {
+    try {
+        console.log('💾 Salvando no localStorage...');
+        
+        // Se estiver editando, atualizar o imóvel existente
+        if (window.editingPropertyId) {
+            const index = window.properties.findIndex(p => p.id === window.editingPropertyId);
+            if (index !== -1) {
+                // Manter o ID original e adicionar URLs das imagens
+                propertyData.id = window.editingPropertyId;
+                if (window.selectedFiles.length > 0) {
+                    // Em modo local, usar URLs de imagens de exemplo
+                    propertyData.images = "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+                }
+                window.properties[index] = { ...window.properties[index], ...propertyData };
+            }
+        } else {
+            // Novo imóvel
+            const newId = window.properties.length > 0 ? Math.max(...window.properties.map(p => p.id)) + 1 : 1;
+            const newProperty = {
+                id: newId,
+                ...propertyData,
+                images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80,https://images.unsplash.com/photo-1513584684374-8bab748fbf90?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+            };
+            window.properties.push(newProperty);
+        }
+        
+        localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties();
+        }
+        if (typeof window.loadPropertyList === 'function') {
+            window.loadPropertyList();
+        }
+        
+        console.log('✅ Salvo no localStorage com sucesso!');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro ao salvar no localStorage:', error);
+        return false;
+    }
+};
