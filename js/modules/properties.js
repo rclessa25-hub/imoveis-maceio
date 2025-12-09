@@ -88,3 +88,5 @@ window.viewProperty = function(id) {
         alert(`🏠 ${property.title}\n\n💰 ${property.price}\n📍 ${property.location}\n\n${property.description}`);
     }
 };
+
+console.log('✅ properties.js com 5 funções carregadas');
