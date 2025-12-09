@@ -90,3 +90,32 @@ window.viewProperty = function(id) {
 };
 
 console.log('✅ properties.js com 5 funções carregadas');
+
+// ========== FUNÇÃO 6: setupFilters() ==========
+window.setupFilters = function() {
+    console.log('🎛️ Configurando filtros...');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover classe active de todos os botões
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Adicionar classe active ao botão clicado
+            this.classList.add('active');
+            
+            // Obter o texto do filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            console.log(`🎯 Filtrando por: ${filter}`);
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties(filter);
+            } else {
+                console.error('❌ renderProperties() não disponível');
+            }
+        });
+    });
+};
+
+console.log('🚀 Weber Lessa Imóveis - Sistema Iniciado');
