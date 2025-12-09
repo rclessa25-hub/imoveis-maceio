@@ -1735,15 +1735,6 @@ function renderProperties(filter = 'todos') {
         container.innerHTML += card;
     });
 }
-
-function checkPdfData() {
-    console.log('🔍 Verificando dados dos PDFs...');
-    properties.forEach((property, index) => {
-        console.log(`Imóvel ${index + 1}: ${property.title}`);
-        console.log(`PDFs:`, property.pdfs);
-        console.log(`Tem PDFs:`, property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '');
-    });
-}
         
 // ========== SALVAR NO LOCALSTORAGE ==========
 function saveToLocalStorage(propertyData) {
