@@ -9,19 +9,31 @@ window.selectedPdfFiles = [];
 // ========== FUNÇÃO PRINCIPAL toggleAdminPanel ==========
 window.toggleAdminPanel = function() {
     console.log('🔄 toggleAdminPanel() chamada');
-    console.log('🔑 ADMIN_PASSWORD disponível?:', !!window.ADMIN_PASSWORD);
+
+// VERIFICAÇÃO EXTRA DE SEGURANÇA
+    if (!window.ADMIN_PASSWORD) {
+        console.error('❌ ADMIN_PASSWORD não definida!');
+        alert('⚠️ Sistema não configurado corretamente. Recarregue a página.');
+        return;
+    }
+    
+    console.log('🔑 ADMIN_PASSWORD disponível:', window.ADMIN_PASSWORD);
     console.log('🔑 Valor atual:', window.ADMIN_PASSWORD);
     
     // Verificar senha de administrador
     const password = prompt("Digite a senha de acesso ao painel:");
+
+    if (password === window.ADMIN_PASSWORD) {
+        console.log('✅ Senha CORRETA!');
     
     // DEBUG: Mostrar o que foi digitado
     console.log('🔑 Senha digitada:', password);
     console.log('🔑 Senha esperada:', window.ADMIN_PASSWORD);
     console.log('🔑 Comparação:', password === window.ADMIN_PASSWORD);
     
-    if (password === window.ADMIN_PASSWORD) {
+        if (password === window.ADMIN_PASSWORD) {
         console.log('✅ Senha CORRETA!');
+        
         const panel = document.getElementById('adminPanel');
         if (panel) {
             const isVisible = panel.style.display === 'block';
@@ -30,19 +42,21 @@ window.toggleAdminPanel = function() {
             
             if (!isVisible) {
                 // Carregar lista de imóveis
-                if (typeof window.loadPropertyList === 'function') {
-                    window.loadPropertyList();
-                }
-                
-                // Configurar formulário
-                if (typeof window.setupForm === 'function') {
-                    window.setupForm();
-                }
+                setTimeout(() => {
+                    if (typeof window.loadPropertyList === 'function') {
+                        window.loadPropertyList();
+                    }
+                    
+                    // Configurar formulário
+                    if (typeof window.setupForm === 'function') {
+                        window.setupForm();
+                    }
+                }, 100);
             }
         }
     } else {
-        console.error('❌ Senha INCORRETA!');
-        alert("❌ Senha incorreta! Use: " + window.ADMIN_PASSWORD);
+        console.error('❌ Senha INCORRETA! Digitada:', password, 'Esperada:', window.ADMIN_PASSWORD);
+        alert('❌ Senha incorreta!\n\nSenha correta: ' + window.ADMIN_PASSWORD);
     }
 };
 
