@@ -9,6 +9,7 @@ window.PDF_PASSWORD = "doc123";
 
 console.log('✅ Constantes definidas globalmente');
 
+// FUNÇÕES SUPABASE
 // ========== TESTE DE CONEXÃO SUPABASE ==========
 window.testSupabaseConnection = async function() {
     try {
@@ -30,6 +31,30 @@ window.testSupabaseConnection = async function() {
     }
 };
 
+window.testImageAccess = async function() {
+    console.log('🔍 Testando acesso às imagens...');
+    
+    const testImages = [
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341618532_thumbnail3.jpeg',
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341628860_thumbnail2.jpeg',
+        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341634876_thumbnail1.jpeg'
+    ];
+    
+    for (const imgUrl of testImages) {
+        try {
+            const response = await fetch(imgUrl);
+            if (response.ok) {
+                console.log(`✅ Imagem acessível: ${imgUrl}`);
+            } else {
+                console.log(`❌ Imagem não acessível: ${imgUrl} - Status: ${response.status}`);
+            }
+        } catch (error) {
+            console.log(`❌ Erro ao acessar imagem: ${imgUrl} - ${error.message}`);
+        }
+    }
+};
+
+// FUNÇÕES ADMIN
 // ========== FUNÇÃO toggleAdminPanel ==========
 window.toggleAdminPanel = function() {
     const password = prompt("Digite a senha de acesso ao painel:");
@@ -75,6 +100,7 @@ window.cancelEdit = function() {
     console.log('✅ Edição cancelada');
 };
 
+// UTILITÁRIOS
 // ========== FUNÇÕES UTILITÁRIAS ==========
 window.isMobileDevice = function() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -92,29 +118,6 @@ window.testSupabaseConnection = async function() {
     } catch (error) {
         console.error('❌ Erro na conexão Supabase:', error);
         return false;
-    }
-};
-
-window.testImageAccess = async function() {
-    console.log('🔍 Testando acesso às imagens...');
-    
-    const testImages = [
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341618532_thumbnail3.jpeg',
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341628860_thumbnail2.jpeg',
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341634876_thumbnail1.jpeg'
-    ];
-    
-    for (const imgUrl of testImages) {
-        try {
-            const response = await fetch(imgUrl);
-            if (response.ok) {
-                console.log(`✅ Imagem acessível: ${imgUrl}`);
-            } else {
-                console.log(`❌ Imagem não acessível: ${imgUrl} - Status: ${response.status}`);
-            }
-        } catch (error) {
-            console.log(`❌ Erro ao acessar imagem: ${imgUrl} - ${error.message}`);
-        }
     }
 };
 
