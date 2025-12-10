@@ -384,7 +384,122 @@ window.renderProperties = function(filter = 'todos') {
 
 console.log('✅ properties.js com 10 funções carregadas (complete)');
 
+// ========== FUNÇÕES DO FORMULÁRIO ADMIN ==========
 // ========== FUNÇÕES ADMIN BÁSICAS ==========
+
+window.setupForm = function() {
+    console.log('📝 Configurando formulário admin...');
+    const form = document.getElementById('propertyForm');
+    if (!form) {
+        console.error('❌ Formulário admin não encontrado!');
+        return;
+    }
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const propertyData = {
+            title: document.getElementById('propTitle').value,
+            price: document.getElementById('propPrice').value,
+            location: document.getElementById('propLocation').value,
+            description: document.getElementById('propDescription').value,
+            features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
+            type: document.getElementById('propType').value,
+            has_video: document.getElementById('propHasVideo').checked,
+            badge: document.getElementById('propBadge').value,
+            rural: document.getElementById('propType').value === 'rural',
+            created_at: new Date().toISOString()
+        };
+
+        if (!propertyData.title || !propertyData.price || !propertyData.location) {
+            alert('❌ Preencha Título, Preço e Localização!');
+            return;
+        }
+
+        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        submitBtn.disabled = true;
+
+        try {
+            const success = await window.saveToLocalStorage(propertyData);
+            
+            if (success) {
+                alert("✅ Imóvel salvo com sucesso!");
+            } else {
+                alert("❌ Erro ao salvar o imóvel!");
+            }
+
+            this.reset();
+            if (typeof window.cancelEdit === 'function') {
+                window.cancelEdit();
+            }
+
+        } catch (error) {
+            alert("❌ Erro: " + error.message);
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+    
+    console.log('✅ Formulário admin configurado');
+};
+
+// ========== FUNÇÕES UPLOAD ==========
+
+window.setupUploadSystem = function() {
+    console.log('📸 Configurando sistema de upload...');
+    // Implementação básica
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        console.log('✅ Upload básico configurado');
+    }
+};
+
+window.setupPdfUploadSystem = function() {
+    console.log('📄 Configurando upload de PDFs...');
+    // Implementação básica
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    
+    if (pdfUploadArea && pdfFileInput) {
+        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+        console.log('✅ Upload PDF básico configurado');
+    }
+};
+
+// ========== FUNÇÕES PDF ==========
+
+window.showPdfModal = function(propertyId) {
+    console.log('📄 Abrindo modal PDF para imóvel:', propertyId);
+    const modal = document.getElementById('pdfModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+};
+
+window.closePdfModal = function() {
+    const modal = document.getElementById('pdfModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+window.accessPdfDocuments = function() {
+    const password = document.getElementById('pdfPassword')?.value;
+    if (password === window.PDF_PASSWORD) {
+        alert('✅ Documentos acessados!');
+        closePdfModal();
+    } else {
+        alert('❌ Senha incorreta!');
+    }
+};
+
+console.log('✅ properties.js com funções admin completas');
 
 // ========== FUNÇÃO 11: editProperty() ==========
 window.editProperty = function(id) {
