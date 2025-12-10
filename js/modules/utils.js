@@ -9,6 +9,72 @@ window.PDF_PASSWORD = "doc123";
 
 console.log('✅ Constantes definidas globalmente');
 
+// ========== TESTE DE CONEXÃO SUPABASE ==========
+window.testSupabaseConnection = async function() {
+    try {
+        console.log('🔍 Testando conexão Supabase...');
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            }
+        });
+        
+        const isConnected = response.ok;
+        console.log(`🌐 Supabase: ${isConnected ? '✅ Conectado' : '❌ Não conectado'}`);
+        return isConnected;
+        
+    } catch (error) {
+        console.error('❌ Erro na conexão Supabase:', error.message);
+        return false;
+    }
+};
+
+// ========== FUNÇÃO toggleAdminPanel ==========
+window.toggleAdminPanel = function() {
+    const password = prompt("Digite a senha de acesso ao painel:");
+    if (password === window.ADMIN_PASSWORD) {
+        const panel = document.getElementById('adminPanel');
+        if (panel) {
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            if (panel.style.display === 'block') {
+                // Limpar formulário ao abrir
+                if (typeof cancelEdit === 'function') {
+                    cancelEdit();
+                }
+                // Carregar lista de imóveis
+                if (typeof loadPropertyList === 'function') {
+                    loadPropertyList();
+                }
+            }
+        }
+    } else {
+        alert("Senha incorreta!");
+    }
+};
+
+// ========== FUNÇÕES ADMIN BÁSICAS ==========
+window.cancelEdit = function() {
+    console.log('❌ Cancelando edição...');
+    window.editingPropertyId = null;
+    
+    const form = document.getElementById('propertyForm');
+    if (form) form.reset();
+    
+    // Limpar previews
+    const preview = document.getElementById('uploadPreview');
+    if (preview) preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+    
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+    
+    // Resetar arrays
+    window.selectedFiles = [];
+    window.selectedPdfFiles = [];
+    
+    console.log('✅ Edição cancelada');
+};
+
 // ========== FUNÇÕES UTILITÁRIAS ==========
 window.isMobileDevice = function() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
