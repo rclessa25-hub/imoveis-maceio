@@ -1,5 +1,7 @@
 // js/modules/properties.js - Sistema principal de imóveis
-console.log('🚀 properties.js carregado');
+window.initializeProperties = async function() {
+    console.log('🏠 Inicializando sistema de imóveis...');
+    console.log('🚀 properties.js carregado');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -8,7 +10,11 @@ window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
 // ========== FUNÇÕES DO SISTEMA DE IMÓVEIS ==========
-
+  // Se já tiver imóveis, não fazer nada
+    if (window.properties && window.properties.length > 0) {
+        console.log('✅ Imóveis já carregados:', window.properties.length);
+        return window.properties;
+    }
 // ========== FUNÇÃO 1: getInitialProperties() ==========
 window.getInitialProperties = function() {
     return [
