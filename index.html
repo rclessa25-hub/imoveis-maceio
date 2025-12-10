@@ -431,119 +431,60 @@
     <script src="js/modules/admin.js"></script>           <!-- QUARTO: sistema admin -->
     <script src="js/main.js"></script>                    <!-- ÚLTIMO: orquestração -->
     
-    <!-- ========== INICIALIZAÇÃO FINAL + DIAGNÓSTICO ========== -->
+  <!-- ========== DIAGNÓSTICO SIMPLIFICADO ========== -->
     <script>
-    // DIAGNÓSTICO AUTOMÁTICO (aparece na tela)
-    setTimeout(() => {
-        const diag = document.createElement('div');
-        diag.id = 'webDiagnostic';
-        diag.style.cssText = `
-            position: fixed; top: 10px; right: 10px; 
-            background: white; padding: 15px; border: 2px solid #1a5276;
-            border-radius: 8px; z-index: 9999; font-size: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 300px;
-        `;
-        
-        const status = {
-            'utils.js': typeof isMobileDevice === 'function',
-            'properties.js': typeof initializeProperties === 'function',
-            'gallery.js': typeof openGallery === 'function',
-            'main.js': typeof initializeWeberLessaSystem === 'function',
-            'SUPABASE_URL': !!window.SUPABASE_URL,
-            'toggleAdminPanel': typeof toggleAdminPanel === 'function',
-            'Imóveis carregados': window.properties ? window.properties.length : 0
-        };
-        
-        diag.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <strong style="color: #1a5276;">🔍 Diagnóstico WL</strong>
-                <button onclick="document.getElementById('webDiagnostic').remove()" 
-                        style="background: none; border: none; color: #666; cursor: pointer; font-size: 16px;">×</button>
-            </div>
-            ${Object.entries(status).map(([key, val]) => `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; padding: 3px 0; border-bottom: 1px solid #eee;">
-                    <span>${key}:</span>
-                    <span style="color: ${val ? '#27ae60' : '#e74c3c'}; font-weight: bold;">
-                        ${typeof val === 'boolean' ? (val ? '✅' : '❌') : val}
-                    </span>
-                </div>
-            `).join('')}
-            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; font-size: 10px; color: #666;">
-                Weber Lessa - CRECI: 654/AL
-            </div>
-        `;
-        
-        document.body.appendChild(diag);
-        
-        // Auto-remover após 30 segundos
-        setTimeout(() => {
-            if (document.getElementById('webDiagnostic')) {
-                document.getElementById('webDiagnostic').remove();
-            }
-        }, 30000);
-    }, 1500);
-    
-    // INICIALIZAÇÃO PRINCIPAL
+    // INICIALIZAÇÃO SEGURA
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🏠 DOM Pronto - Weber Lessa Imóveis');
         
-        // Conectar botão admin
+        // Conectar botão admin - VERIFICAÇÃO DE SEGURANÇA
         const adminBtn = document.querySelector('.admin-toggle');
         if (adminBtn) {
             adminBtn.onclick = function() {
-                if (typeof toggleAdminPanel === 'function') {
-                    toggleAdminPanel();
+                // Primeiro verificar se as funções essenciais carregaram
+                if (typeof window.toggleAdminPanel === 'function') {
+                    console.log('✅ Chamando toggleAdminPanel()');
+                    window.toggleAdminPanel();
                 } else {
-                    alert('❌ Sistema admin não carregou. Recarregue a página.');
+                    console.error('❌ toggleAdminPanel não disponível');
+                    
+                    // Tentar carregar novamente as dependências
+                    if (!window.SUPABASE_URL) {
+                        console.log('🔄 Tentando recarregar utils.js...');
+                        const script = document.createElement('script');
+                        script.src = 'js/modules/utils.js';
+                        document.head.appendChild(script);
+                        
+                        script.onload = function() {
+                            console.log('✅ utils.js recarregado');
+                            alert('🔧 Sistema admin recarregado. Tente novamente.');
+                        };
+                    }
                 }
             };
             console.log('✅ Botão admin configurado');
         }
     });
     
-    // INICIALIZAÇÃO COMPLETA APÓS CARREGAR TUDO
-    window.addEventListener('load', async function() {
-        console.log('📦 TODOS recursos carregados - Iniciando sistema...');
+    // DIAGNÓSTICO SIMPLES
+    setTimeout(() => {
+        const status = {
+            'utils.js': typeof isMobileDevice === 'function',
+            'properties.js': typeof initializeProperties === 'function', 
+            'gallery.js': typeof openGallery === 'function',
+            'main.js': typeof initializeWeberLessaSystem === 'function',
+            'SUPABASE_URL': !!window.SUPABASE_URL,
+            'toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
+        };
         
-        // Opção 1: Usar main.js se disponível
-        if (typeof initializeWeberLessaSystem === 'function') {
-            console.log('🚀 Usando main.js...');
-            try {
-                await initializeWeberLessaSystem();
-                console.log('✅ Sistema inicializado via main.js');
-            } catch (error) {
-                console.error('❌ Erro no main.js:', error);
-                iniciarFallback();
-            }
-        } 
-        // Opção 2: Fallback manual
-        else {
-            console.log('⚠️ main.js não disponível - usando fallback');
-            iniciarFallback();
+        console.log('🔍 DIAGNÓSTICO DO SISTEMA:', status);
+        
+        // Mostrar alerta apenas se crítico
+        if (!status['utils.js'] || !status['SUPABASE_URL']) {
+            console.warn('⚠️ Dependências críticas faltando:', 
+                Object.entries(status).filter(([k, v]) => !v).map(([k]) => k));
         }
-    });
-    
-    // FUNÇÃO DE FALLBACK (se main.js falhar)
-    function iniciarFallback() {
-        console.log('🔄 Iniciando fallback...');
-        
-        // 1. Carregar imóveis
-        if (typeof initializeProperties === 'function') {
-            initializeProperties().then(() => {
-                console.log('✅ Imóveis carregados (fallback)');
-            }).catch(error => {
-                console.error('❌ Erro ao carregar imóveis:', error);
-            });
-        }
-        
-        // 2. Configurar admin básico
-        setTimeout(() => {
-            if (typeof setupForm === 'function') {
-                setupForm();
-                console.log('✅ Formulário configurado');
-            }
-        }, 500);
-    }
+    }, 2000);
     </script>
 </body>
 </html>
