@@ -216,24 +216,58 @@ console.log('✅ properties.js com 8 funções carregadas');
 window.initializeProperties = async function() {
     console.log('🔍 Inicializando sistema de imóveis...');
     
-    // Primeiro tentar carregar do localStorage
-    const localData = localStorage.getItem('weberlessa_properties');
-    if (localData) {
+    // Primeiro tentar carregar do Supabase
+    let loadedFromSupabase = false;
+    
+    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
         try {
-            window.properties = JSON.parse(localData);
-            console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
+            console.log('📡 Tentando carregar do Supabase...');
+            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*&order=created_at.desc`, {
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ ${data.length} imóveis carregados do Supabase`);
+                window.properties = Array.isArray(data) ? data : [];
+                loadedFromSupabase = true;
+                
+                // Salvar no localStorage como backup
+                localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
+            } else {
+                console.log('⚠️ Supabase não disponível, usando localStorage...');
+            }
         } catch (error) {
-            console.log('⚠️ Erro ao carregar do localStorage:', error);
-            window.properties = window.getInitialProperties();
+            console.log('⚠️ Erro ao acessar Supabase:', error.message);
         }
-    } else {
-        // Usar dados iniciais
-        window.properties = window.getInitialProperties();
-        console.log(`🎯 ${window.properties.length} imóveis de exemplo carregados`);
-        
-        // Salvar no localStorage para referência futura
-        localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
     }
+    
+    // Se não carregou do Supabase, tentar localStorage
+    if (!loadedFromSupabase) {
+        const localData = localStorage.getItem('weberlessa_properties');
+        if (localData) {
+            try {
+                window.properties = JSON.parse(localData);
+                console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
+            } catch (error) {
+                console.log('⚠️ Erro ao carregar do localStorage:', error);
+                window.properties = window.getInitialProperties();
+            }
+        } else {
+            // Usar dados iniciais
+            window.properties = window.getInitialProperties();
+            console.log(`🎯 ${window.properties.length} imóveis de exemplo carregados`);
+            
+            // Salvar no localStorage para referência futura
+            localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
+        }
+    }
+    
+    // DEBUG: Mostrar quantos imóveis carregados
+    console.log(`📊 Total de imóveis carregados: ${window.properties.length}`);
     
     // Renderizar os imóveis
     if (typeof window.renderProperties === 'function') {
@@ -253,6 +287,13 @@ window.initializeProperties = async function() {
         setTimeout(() => {
             window.setupFilters();
         }, 200);
+    }
+    
+    // Configurar admin se disponível
+    if (typeof window.loadPropertyList === 'function') {
+        setTimeout(() => {
+            window.loadPropertyList();
+        }, 300);
     }
     
     console.log('✅ Sistema de imóveis inicializado com sucesso!');
@@ -342,3 +383,50 @@ window.renderProperties = function(filter = 'todos') {
 };
 
 console.log('✅ properties.js com 10 funções carregadas (complete)');
+
+// ========== FUNÇÕES ADMIN BÁSICAS ==========
+
+// ========== FUNÇÃO 11: editProperty() ==========
+window.editProperty = function(id) {
+    const property = window.properties.find(p => p.id === id);
+    if (!property) return;
+    
+    window.editingPropertyId = id;
+    
+    // Preencher formulário básico
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    
+    alert("Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
+};
+
+// ========== FUNÇÃO 12: deleteProperty() ==========
+window.deleteProperty = function(id) {
+    if (!confirm('Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+    
+    const index = window.properties.findIndex(p => p.id === id);
+    if (index !== -1) {
+        window.properties.splice(index, 1);
+        
+        // Atualizar localStorage
+        localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
+        
+        // Recarregar lista
+        if (typeof window.loadPropertyList === 'function') {
+            window.loadPropertyList();
+        }
+        
+        // Re-renderizar
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties();
+        }
+        
+        alert('✅ Imóvel excluído com sucesso!');
+    }
+};
+
+console.log('✅ properties.js com 12 funções carregadas (admin básico)');
