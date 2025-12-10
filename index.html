@@ -3172,174 +3172,86 @@ async function testSupabaseDetailed() {
     }
 }
 
-<!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
-
-    <!-- ========== ORDEM DE CARREGAMENTO CORRIGIDA ========== -->
-    <!-- UTILS PRIMEIRO (sem dependências) -->
-    <script src="js/modules/utils.js"></script>
+// ========== INICIALIZAÇÃO CORRIGIDA ==========
+// ========== ADICIONAR DEBUG NA INICIALIZAÇÃO ==========
+// ========== INICIALIZAÇÃO COMPLETA E ATUALIZADA ==========
+// Adicione no início do DOMContentLoaded, antes de tudo:
+// ========== INICIALIZAR GALERIA NO DOMContentLoaded ==========
+// Adicione este código ao final do DOMContentLoaded:
+// ========== INICIALIZAÇÃO COMPLETA DO SISTEMA ==========
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Sistema Weber Lessa Iniciado');
     
-    <!-- PROPERTIES DEPENDE DE UTILS -->
-    <script src="js/modules/properties.js"></script>
+    // Aplicar diretriz constitucional
+    enforceConstitutionalGuideline();
     
-    <!-- GALLERY DEPENDE DE PROPERTIES -->
-    <script src="js/modules/gallery.js"></script>
+    // TESTE DE CONEXÃO
+    console.log('🔍 Testando conexões...');
+    const supabaseOk = await testSupabaseConnection();
+    console.log(`🌐 Supabase: ${supabaseOk ? '✅ Conectado' : '⚠️ Usando modo local'}`);
     
-    <!-- MAIN DEPENDE DE TODOS -->
-    <script src="js/main.js"></script>
-
-    <!-- Inicialização simplificada -->
-    <script>
-    // Inicialização mínima e segura
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('📄 DOM completamente carregado');
-        console.log('🔍 Verificando funções disponíveis...');
-        console.log('- initializeWeberLessaSystem:', typeof initializeWeberLessaSystem);
-        console.log('- initializeProperties:', typeof initializeProperties);
-        console.log('- setupFilters:', typeof setupFilters);
-        console.log('- renderProperties:', typeof renderProperties);
-        
-        // Pequeno delay para garantir carregamento dos módulos
-        setTimeout(() => {
-            if (typeof initializeWeberLessaSystem === 'function') {
-                console.log('🚀 Iniciando sistema via main.js...');
-                initializeWeberLessaSystem();
-            } else {
-                console.warn('⚠️ Módulo main.js não disponível, usando fallback...');
-                // Fallback direto - ORDEM CORRETA
-                if (typeof initializeProperties === 'function') {
-                    console.log('🏠 Inicializando propriedades...');
-                    initializeProperties().then(() => {
-                        console.log('✅ Propriedades inicializadas');
-                        // Configurar filtros
-                        if (typeof setupFilters === 'function') {
-                            console.log('🎛️ Configurando filtros...');
-                            setupFilters();
-                        }
-                        // Otimizar mobile
-                        restoreMobileFunctions();
-                    }).catch(error => {
-                        console.error('❌ Erro ao inicializar propriedades:', error);
-                        emergencyMobileInitialization();
-                    });
-                } else {
-                    console.error('❌ initializeProperties não encontrado!');
-                    emergencyMobileInitialization();
-                }
-            }
-        }, 100);
-    });
-
-    // ========== FUNÇÕES MOBILE RECUPERADAS ==========
-    function restoreMobileFunctions() {
-        console.log('📱 Restaurando funções mobile...');
-        
-        // Função mobile para otimização
-        if (typeof isMobileDevice === 'function' && isMobileDevice()) {
-            console.log('📱 Otimizando para mobile...');
-            
-            // Otimizar galeria para mobile
-            if (typeof optimizeGalleryForMobile === 'function') {
-                setTimeout(optimizeGalleryForMobile, 1000);
-            }
-            
-            // Otimizar header mobile
-            optimizeMobileHeader();
+    // INICIALIZAR SISTEMA DE IMÓVEIS (IMPORTANTE: fazer primeiro!)
+    await initializeProperties();
+    
+    // Configurar formulário e sistemas de upload
+    setupForm();
+    setupUploadSystem();
+    setupPdfUploadSystem();
+    
+    // VERIFICAÇÃO FINAL DOS ELEMENTOS
+    console.log('🔍 Verificação final do sistema:');
+    console.log('- properties-container:', document.getElementById('properties-container') ? '✅' : '❌');
+    console.log('- Total de imóveis carregados:', properties.length);
+    
+    // TESTAR ACESSO ÀS IMAGENS
+    testImageAccess();
+    
+    // ========== INICIALIZAR GALERIA DE FOTOS ==========
+    // ========== INICIALIZAR GALERIA ==========
+    console.log('🎨 Inicializando galeria de fotos MOBILE FIRST...');
+    
+    // Adicionar estilos da galeria
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = galleryStyles;
+    document.head.appendChild(styleSheet);
+    
+    // Configurar eventos da galeria
+    setupGalleryEvents();
+    
+    console.log('✅ Galeria de fotos MOBILE FIRST inicializada!');
+    console.log('✅ Sistema Weber Lessa completamente carregado e pronto!');
+    
+    // TESTE FINAL: Verificar se os imóveis estão visíveis
+    setTimeout(() => {
+        const container = document.getElementById('properties-container');
+        if (container && container.children.length > 0) {
+            console.log(`🎉 ${container.children.length} imóveis visíveis na página!`);
+        } else {
+            console.error('❌ NENHUM IMÓVEL VISÍVEL! Verificando problemas...');
+            // Tentativa de emergência: renderizar novamente
+            renderProperties();
         }
-    }
-
-    function optimizeMobileHeader() {
-        // Corrigir header mobile fixo
-        const mobileHeader = document.querySelector('.mobile-header-ultimate');
-        if (mobileHeader && typeof isMobileDevice === 'function' && isMobileDevice()) {
-            // Garantir que está fixo no topo
-            mobileHeader.style.position = 'fixed';
-            mobileHeader.style.top = '0';
-            mobileHeader.style.zIndex = '1000';
-            mobileHeader.style.width = '100%';
-            
-            // Ajustar padding do body para compensar header fixo
-            document.body.style.paddingTop = '130px';
-        }
-    }
-
-    function emergencyMobileInitialization() {
-        console.log('🚨 Inicialização de emergência...');
-        
-        // 1. Carregar imóveis
-        setTimeout(() => {
-            if (typeof getInitialProperties === 'function') {
-                console.log('🔄 Carregando imóveis de emergência...');
-                window.properties = getInitialProperties();
-                
-                // 2. Renderizar imóveis
-                if (typeof renderProperties === 'function') {
-                    console.log('🎨 Renderizando imóveis...');
-                    renderProperties();
-                } else {
-                    console.error('❌ renderProperties não encontrado!');
-                }
-                
-                // 3. Configurar filtros (CRÍTICO!)
-                if (typeof setupFilters === 'function') {
-                    console.log('🎛️ Configurando filtros...');
-                    setTimeout(() => {
-                        setupFilters();
-                    }, 300);
-                } else {
-                    console.error('❌ setupFilters não encontrado!');
-                }
-            } else {
-                console.error('❌ getInitialProperties não encontrado!');
-            }
-            
-            // 4. Configurar galeria
-            if (typeof setupGalleryEvents === 'function') {
-                console.log('🖼️ Configurando galeria...');
-                setTimeout(() => {
-                    setupGalleryEvents();
-                }, 500);
-            }
-            
-            // 5. Otimizar mobile
-            setTimeout(() => {
-                restoreMobileFunctions();
-            }, 1000);
-            
-        }, 500);
-    }
-
-    // Função de teste rápido
-    function testAllFunctions() {
-        console.log('🧪 TESTANDO TODAS AS FUNÇÕES:');
-        
-        const requiredFunctions = [
-            'initializeProperties',
-            'renderProperties',
-            'setupFilters',
-            'createPropertyGallery',
-            'openGallery',
-            'contactAgent',
-            'isMobileDevice'
-        ];
-        
-        requiredFunctions.forEach(funcName => {
-            const exists = typeof window[funcName] === 'function';
-            console.log(`${funcName}: ${exists ? '✅' : '❌'}`);
-        });
-        
-        // Testar imediatamente
-        if (typeof initializeProperties === 'function') {
-            console.log('🔄 Testando inicialização...');
-            initializeProperties().then(() => {
-                console.log('✅ Inicialização completa');
-            }).catch(error => {
-                console.error('❌ Erro na inicialização:', error);
-            });
-        }
-    }
+    }, 500);
     
-    // Testar funções após carregamento
-    setTimeout(testAllFunctions, 2000);
+    // Inicializar otimização mobile
+    if (isMobileDevice()) {
+        setTimeout(optimizeGalleryForMobile, 1000);
+    }
+  // Inicializar otimização mobile
+    if (isMobileDevice()) {
+        setTimeout(optimizeGalleryForMobile, 1000);
+    }
+});
+
     </script>
+    <script src="js/modules/utils.js"></script>
+    <script src="js/modules/properties.js"></script>
+    <script src="js/modules/gallery.js"></script>
+    <script>
+    console.log('🔍 TESTE: SUPABASE_URL existe?', typeof SUPABASE_URL);
+    if (SUPABASE_URL) {
+        console.log('✅ SUPABASE_URL:', SUPABASE_URL);
+    }
+</script>
 </body>
 </html>
