@@ -3172,196 +3172,224 @@ async function testSupabaseDetailed() {
     }
 }
         
-<!-- ========== INICIALIZAÇÃO DO SISTEMA (VERSÃO SIMPLIFICADA) ========== -->
+<!-- ========== INICIALIZAÇÃO SIMPLES E FUNCIONAL ========== -->
 <script>
-// Inicialização unificada para desktop/mobile
+// REMOVA TODO O CÓDIGO ANTERIOR E COLE APENAS ISSO:
+
+// 1. Inicialização básica que SEMPRE funciona
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM Carregado - Iniciando sistema Weber Lessa');
+    console.log('🚀 Sistema Weber Lessa iniciando...');
     
-    // Inicialização comum para todos dispositivos
-    initializeWeberLessaSystem();
+    // Esperar um pouco para módulos carregarem
+    setTimeout(initializeSystem, 500);
 });
 
-// Função de inicialização robusta
-function initializeWeberLessaSystem() {
-    console.log('🌐 Inicializando sistema...');
+// 2. Função principal SIMPLES
+function initializeSystem() {
+    console.log('🔧 Inicializando sistema...');
     
-    // 1. Verificar se estamos em mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    console.log(`📱 Dispositivo: ${isMobile ? 'Mobile' : 'Desktop'}`);
-    
-    // 2. Configurações específicas para mobile
-    if (isMobile) {
-        setupMobileOptimizations();
-    }
-    
-    // 3. Inicializar sistema principal
-    initializeMainSystem();
-    
-    // 4. Configurar eventos
-    setupEventListeners();
-}
-
-// Configurações mobile
-function setupMobileOptimizations() {
-    console.log('📱 Aplicando otimizações mobile...');
-    
-    // Ajustar header mobile (se necessário)
-    const mobileHeader = document.querySelector('.mobile-header-ultimate');
-    if (mobileHeader) {
-        // Header já está fixo via CSS, apenas garantir
-        mobileHeader.style.position = 'fixed';
-        mobileHeader.style.top = '0';
-        mobileHeader.style.zIndex = '1000';
-    }
-    
-    // Ajustar body padding para header fixo
-    document.body.style.paddingTop = '130px';
-    
-    // Otimizar galeria para touch
-    if (typeof optimizeGalleryForMobile === 'function') {
-        setTimeout(optimizeGalleryForMobile, 1000);
-    }
-}
-
-// Sistema principal
-function initializeMainSystem() {
-    console.log('🏠 Inicializando sistema principal...');
-    
-    // 1. Carregar imóveis
+    // A. Carregar imóveis (usar função que existe)
     if (typeof initializeProperties === 'function') {
-        initializeProperties().catch(error => {
+        console.log('✅ initializeProperties encontrado, executando...');
+        initializeProperties().then(() => {
+            console.log('✅ Imóveis carregados com sucesso');
+        }).catch(error => {
             console.error('❌ Erro ao carregar imóveis:', error);
-            loadFallbackProperties();
+            loadPropertiesDirectly();
         });
     } else {
-        console.warn('⚠️ initializeProperties não encontrado, usando fallback');
-        loadFallbackProperties();
+        console.warn('⚠️ initializeProperties NÃO encontrado');
+        loadPropertiesDirectly();
     }
     
-    // 2. Configurar filtros
-    setTimeout(() => {
-        if (typeof setupFilters === 'function') {
-            setupFilters();
-        } else {
-            setupFiltersManually();
-        }
-    }, 300);
+    // B. Configurar filtros DIRETO (sem dependências)
+    setTimeout(setupFiltersDirect, 1000);
 }
 
-// Fallback para imóveis
-function loadFallbackProperties() {
-    console.log('🔄 Carregando imóveis de fallback...');
+// 3. Carregar imóveis DIRETAMENTE (fallback)
+function loadPropertiesDirectly() {
+    console.log('🔄 Carregando imóveis diretamente...');
     
-    if (typeof getInitialProperties === 'function') {
-        window.properties = getInitialProperties();
-        console.log(`✅ ${window.properties.length} imóveis carregados (fallback)`);
-        
-        if (typeof renderProperties === 'function') {
-            renderProperties();
-        }
-    }
-}
-
-// Configurar filtros manualmente
-function setupFiltersManually() {
-    console.log('🎛️ Configurando filtros manualmente...');
-    
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    if (filterButtons.length === 0) {
-        console.warn('⚠️ Nenhum botão de filtro encontrado');
+    // Verificar se já tem dados
+    if (window.properties && window.properties.length > 0) {
+        console.log(`✅ Já tem ${window.properties.length} imóveis`);
         return;
     }
     
-    filterButtons.forEach(button => {
+    // Usar getInitialProperties se existir
+    if (typeof getInitialProperties === 'function') {
+        window.properties = getInitialProperties();
+        console.log(`✅ ${window.properties.length} imóveis carregados do fallback`);
+    } else {
+        // Dados de EMERGÊNCIA
+        window.properties = [
+            {
+                id: 1,
+                title: "Casa 2Qtos - Forene",
+                price: "R$ 180.000",
+                location: "Residência Conj. Portal do Renascer, Forene",
+                description: "Casa a 100m do CEASA com 125,40m² de área total.",
+                features: ["02 Quartos", "Sala", "Cozinha", "02 Banheiros"],
+                type: "residencial",
+                badge: "Destaque",
+                images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+            },
+            {
+                id: 2,
+                title: "Apartamento 4Qtos - Ponta Verde",
+                price: "R$ 1.500.000",
+                location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
+                description: "Apartamento amplo com 178m² de área privativa.",
+                features: ["4Qtos s/ 3 suítes", "Sala ampla", "02 vagas"],
+                type: "residencial",
+                badge: "Luxo",
+                images: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+            }
+        ];
+        console.log(`✅ ${window.properties.length} imóveis de emergência carregados`);
+    }
+    
+    // Renderizar
+    if (typeof renderProperties === 'function') {
+        renderProperties();
+    } else {
+        renderPropertiesDirectly();
+    }
+}
+
+// 4. Renderizar DIRETAMENTE
+function renderPropertiesDirectly() {
+    console.log('🎨 Renderizando imóveis diretamente...');
+    
+    const container = document.getElementById('properties-container');
+    if (!container) {
+        console.error('❌ Container de propriedades não encontrado!');
+        return;
+    }
+    
+    if (!window.properties || window.properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel disponível.</p>';
+        return;
+    }
+    
+    let html = '';
+    window.properties.forEach(prop => {
+        html += `
+            <div class="property-card">
+                <div class="property-image">
+                    <img src="${prop.images ? prop.images.split(',')[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}" 
+                         style="width: 100%; height: 250px; object-fit: cover;">
+                    ${prop.badge ? `<div class="property-badge">${prop.badge}</div>` : ''}
+                </div>
+                <div class="property-content">
+                    <div class="property-price">${prop.price}</div>
+                    <h3 class="property-title">${prop.title}</h3>
+                    <div class="property-location">
+                        <i class="fas fa-map-marker-alt"></i> ${prop.location}
+                    </div>
+                    <p>${prop.description}</p>
+                    <div class="property-features">
+                        ${Array.isArray(prop.features) ? prop.features.map(f => 
+                            `<span class="feature-tag">${f.trim()}</span>`
+                        ).join('') : ''}
+                    </div>
+                    <button class="contact-btn" onclick="contactAgentDirect(${prop.id})">
+                        <i class="fab fa-whatsapp"></i> Entrar em Contato
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    console.log(`✅ ${window.properties.length} imóveis renderizados diretamente`);
+}
+
+// 5. Configurar filtros DIRETAMENTE
+function setupFiltersDirect() {
+    console.log('🎛️ Configurando filtros diretamente...');
+    
+    const buttons = document.querySelectorAll('.filter-btn');
+    if (buttons.length === 0) {
+        console.warn('⚠️ Nenhum botão de filtro encontrado no HTML');
+        return;
+    }
+    
+    buttons.forEach(btn => {
+        // Remover eventos antigos
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+    });
+    
+    // Re-aplicar aos novos botões
+    document.querySelectorAll('.filter-btn').forEach(button => {
         button.addEventListener('click', function() {
-            // Remover active de todos
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // Adicionar active ao clicado
+            // Ativar botão clicado
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             
-            // Aplicar filtro
-            const filter = this.textContent.trim() === 'Todos' ? 'todos' : this.textContent.trim();
-            console.log(`🎯 Aplicando filtro: ${filter}`);
+            // Filtrar
+            const filter = this.textContent.trim();
+            console.log(`🎯 Filtro selecionado: ${filter}`);
             
-            if (typeof renderProperties === 'function') {
-                renderProperties(filter);
-            }
+            // Filtrar localmente
+            filterPropertiesDirect(filter);
         });
     });
     
-    console.log(`✅ ${filterButtons.length} filtros configurados`);
+    console.log(`✅ ${buttons.length} filtros configurados diretamente`);
 }
 
-// Configurar eventos
-function setupEventListeners() {
-    console.log('🔗 Configurando eventos...');
+// 6. Filtrar DIRETAMENTE
+function filterPropertiesDirect(filterType) {
+    if (!window.properties) return;
     
-    // Galeria
-    if (typeof setupGalleryEvents === 'function') {
-        setTimeout(() => setupGalleryEvents(), 500);
-    }
+    const filtered = filterType === 'Todos' || filterType === 'todos' 
+        ? window.properties 
+        : window.properties.filter(p => {
+            if (filterType === 'Residencial') return p.type === 'residencial';
+            if (filterType === 'Comercial') return p.type === 'comercial';
+            if (filterType === 'Rural') return p.type === 'rural';
+            if (filterType === 'Minha Casa Minha Vida') return p.badge === 'MCMV';
+            return true;
+        });
     
-    // Testar após 2 segundos
-    setTimeout(testSystemFunctionality, 2000);
+    console.log(`🔍 ${filtered.length} imóveis após filtrar por "${filterType}"`);
+    renderPropertiesDirectly(filtered);
 }
 
-// Testar funcionalidade
-function testSystemFunctionality() {
-    console.log('🧪 Testando funcionalidades...');
-    
-    // Verificar imóveis
-    const propertyCards = document.querySelectorAll('.property-card');
-    console.log(`🏠 Imóveis visíveis: ${propertyCards.length}`);
-    
-    // Verificar filtros
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    console.log(`🎛️ Botões de filtro: ${filterButtons.length}`);
-    
-    // Aviso se nenhum imóvel
-    if (propertyCards.length === 0) {
-        console.error('❌ NENHUM IMÓVEL VISÍVEL!');
-        alert('⚠️ Não foi possível carregar os imóveis. Recarregue a página.');
+// 7. Contato direto
+function contactAgentDirect(id) {
+    const prop = window.properties.find(p => p.id === id);
+    if (prop) {
+        const message = `Olá! Tenho interesse no imóvel: ${prop.title} - ${prop.price}`;
+        const url = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
     }
 }
 
-// Função global para forçar recarregamento
-window.forceReloadProperties = function() {
-    console.log('🔄 Forçando recarregamento de imóveis...');
-    if (typeof initializeProperties === 'function') {
-        initializeProperties();
-    } else {
-        loadFallbackProperties();
+// 8. Teste automático
+setTimeout(() => {
+    const cards = document.querySelectorAll('.property-card');
+    console.log(`🧪 TESTE: ${cards.length} imóveis visíveis na página`);
+    
+    if (cards.length === 0) {
+        console.error('❌ NENHUM IMÓVEL CARREGADO! Forçando carga...');
+        loadPropertiesDirectly();
+        setupFiltersDirect();
     }
-};
+}, 2000);
+
+console.log('✅ Sistema de inicialização pronto');
 </script>
 
-<!-- ========== ORDEM DE CARREGAMENTO OTIMIZADA ========== -->
+<!-- ========== CARREGAMENTO DOS MÓDULOS ========== -->
+<!-- ORDEM SIMPLES E FUNCIONAL -->
 <script src="js/modules/utils.js"></script>
 <script src="js/modules/properties.js"></script>
 <script src="js/modules/gallery.js"></script>
 <script src="js/main.js"></script>
 
-<!-- BOTÃO DE EMERGÊNCIA PARA MOBILE -->
-<div id="mobileEmergency" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
-    <button onclick="forceReloadProperties()" 
-            style="background: #e74c3c; color: white; border: none; padding: 12px 18px; border-radius: 50px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        🔄 RECARREGAR IMÓVEIS
-    </button>
-</div>
-
-<script>
-// Mostrar botão de emergência em mobile após 5 segundos se não houver imóveis
-setTimeout(() => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const propertyCards = document.querySelectorAll('.property-card');
-    
-    if (isMobile && propertyCards.length === 0) {
-        document.getElementById('mobileEmergency').style.display = 'block';
-        console.log('📱 Botão de emergência ativado para mobile');
-    }
-}, 5000);
-</script>
+<!-- REMOVA TODOS OS BOTÕES E DIVS EXTRAS! -->
 </body>
 </html>
