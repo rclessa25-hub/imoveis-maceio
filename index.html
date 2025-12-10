@@ -3176,42 +3176,68 @@ async function testSupabaseDetailed() {
 // Adicione no início do DOMContentLoaded, antes de tudo:
 <!-- Remover TODO o bloco DOMContentLoaded -->
 <!-- Adicionar script main.js -->
-<script>
-    // Inicialização com fallback seguro
+    <!-- Scripts na ORDEM CORRETA -->
+    <script src="js/modules/utils.js"></script>
+    <script src="js/modules/properties.js"></script>
+    <script src="js/modules/gallery.js"></script>
+    <script src="js/main.js" defer></script>
+    
+    <script>
+    // Inicialização SEGURA - VERIFICAR ORDEM
     document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🏠 DOM Carregado - Verificando sistema...');
+        
+        // 1. Testar se módulos básicos estão carregados
+        console.log('🔍 Verificando módulos:');
+        console.log('- utils.js:', typeof isMobileDevice === 'function' ? '✅' : '❌');
+        console.log('- properties.js:', typeof initializeProperties === 'function' ? '✅' : '❌');
+        console.log('- gallery.js:', typeof openGallery === 'function' ? '✅' : '❌');
+        console.log('- main.js:', typeof initializeWeberLessaSystem === 'function' ? '✅' : '❌');
+        
+        // 2. Se main.js estiver disponível, usá-lo
         if (typeof initializeWeberLessaSystem === 'function') {
+            console.log('🚀 Usando main.js para inicialização');
             await initializeWeberLessaSystem();
-        } else {
-            // Fallback: usar inicialização original
-            console.log('⚠️ Usando inicialização de fallback');
+        } 
+        // 3. Se não, usar inicialização direta (FALLBACK CRÍTICO)
+        else {
+            console.log('⚠️ main.js não disponível - Usando fallback direto');
             
-            // Inicializar propriedades se disponível
+            // Inicializar sistema de imóveis
             if (typeof initializeProperties === 'function') {
+                console.log('📦 Inicializando imóveis...');
                 await initializeProperties();
+                
+                // CONFIGURAR FILTROS (ESSE É O PROBLEMA!)
+                if (typeof setupFilters === 'function') {
+                    console.log('🎛️ Configurando filtros...');
+                    setupFilters();
+                } else {
+                    console.error('❌ setupFilters() não encontrado!');
+                }
+            } else {
+                console.error('❌ initializeProperties() não encontrado!');
             }
             
-            // Configurar formulários
+            // Configurar galeria se disponível
+            if (typeof setupGalleryEvents === 'function') {
+                setupGalleryEvents();
+            }
+            
+            // Configurar admin se disponível
             if (typeof setupForm === 'function') {
                 setupForm();
             }
-            
-            // Configurar upload
             if (typeof setupUploadSystem === 'function') {
                 setupUploadSystem();
             }
         }
     });
-        
+    
+    // Teste SUPABASE (apenas informação)
+    setTimeout(() => {
+        console.log('🌐 SUPABASE_URL:', window.SUPABASE_URL || 'Não definido');
+    }, 1000);
     </script>
-    <script src="js/modules/utils.js"></script>
-    <script src="js/modules/properties.js"></script>
-    <script src="js/modules/gallery.js"></script>
-    <script src="js/main.js" defer></script>
-    <script>
-    console.log('🔍 TESTE: SUPABASE_URL existe?', typeof SUPABASE_URL);
-    if (SUPABASE_URL) {
-        console.log('✅ SUPABASE_URL:', SUPABASE_URL);
-    }
-</script>
 </body>
 </html>
