@@ -9,8 +9,8 @@ window.selectedPdfFiles = [];
 // ========== FUNÇÃO PRINCIPAL toggleAdminPanel ==========
 window.toggleAdminPanel = function() {
     console.log('🔄 toggleAdminPanel() chamada');
-
-// VERIFICAÇÃO EXTRA DE SEGURANÇA
+    
+    // VERIFICAÇÃO EXTRA DE SEGURANÇA
     if (!window.ADMIN_PASSWORD) {
         console.error('❌ ADMIN_PASSWORD não definida!');
         alert('⚠️ Sistema não configurado corretamente. Recarregue a página.');
@@ -18,20 +18,11 @@ window.toggleAdminPanel = function() {
     }
     
     console.log('🔑 ADMIN_PASSWORD disponível:', window.ADMIN_PASSWORD);
-    console.log('🔑 Valor atual:', window.ADMIN_PASSWORD);
     
-    // Verificar senha de administrador
-    const password = prompt("Digite a senha de acesso ao painel:");
-
+    // Usar um prompt mais simples
+    const password = prompt(`Acesso ao Painel do Corretor\n\nDigite a senha de administrador:`);
+    
     if (password === window.ADMIN_PASSWORD) {
-        console.log('✅ Senha CORRETA!');
-    
-    // DEBUG: Mostrar o que foi digitado
-    console.log('🔑 Senha digitada:', password);
-    console.log('🔑 Senha esperada:', window.ADMIN_PASSWORD);
-    console.log('🔑 Comparação:', password === window.ADMIN_PASSWORD);
-    
-        if (password === window.ADMIN_PASSWORD) {
         console.log('✅ Senha CORRETA!');
         
         const panel = document.getElementById('adminPanel');
