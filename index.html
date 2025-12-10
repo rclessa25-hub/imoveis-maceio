@@ -3238,6 +3238,42 @@ async function testSupabaseDetailed() {
     setTimeout(() => {
         console.log('🌐 SUPABASE_URL:', window.SUPABASE_URL || 'Não definido');
     }, 1000);
+
+// SCRIPT DE EMERGÊNCIA - Forçar funcionamento
+setTimeout(() => {
+    console.log('🚨 EXECUTANDO SCRIPT DE EMERGÊNCIA');
+    
+    // 1. Verificar se há imóveis
+    if (window.properties && window.properties.length > 0) {
+        console.log(`📦 ${window.properties.length} imóveis na memória`);
+        
+        // 2. Forçar renderização
+        if (typeof renderProperties === 'function') {
+            renderProperties();
+            console.log('🔄 Renderização forçada');
+        }
+        
+        // 3. Configurar filtros manualmente
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        if (filterButtons.length > 0) {
+            console.log(`🎛️ ${filterButtons.length} botões encontrados - Configurando...`);
+            
+            filterButtons.forEach(button => {
+                button.onclick = function() {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    const filter = this.textContent.trim();
+                    if (typeof renderProperties === 'function') {
+                        renderProperties(filter === 'Todos' ? 'todos' : filter);
+                    }
+                };
+            });
+            
+            console.log('✅ Filtros configurados manualmente');
+        }
+    }
+}, 2000);
+        
     </script>
 </body>
 </html>
