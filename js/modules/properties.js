@@ -210,4 +210,10 @@ window.saveToLocalStorage = function(propertyData) {
     }
 };
 
+/ Garantir que initializeProperties está disponível globalmente
+console.log('🔧 PROPERTIES.JS - Funções disponíveis:');
+console.log('- initializeProperties:', typeof window.initializeProperties);
+console.log('- renderProperties:', typeof window.renderProperties);
+console.log('- setupFilters:', typeof window.setupFilters);
+
 console.log('✅ properties.js com 8 funções carregadas');
