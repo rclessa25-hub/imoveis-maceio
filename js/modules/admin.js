@@ -9,44 +9,57 @@ window.selectedPdfFiles = [];
 // ========== FUNÇÃO PRINCIPAL toggleAdminPanel ==========
 window.toggleAdminPanel = function() {
     console.log('🔄 toggleAdminPanel() chamada');
+    console.log('🔑 ADMIN_PASSWORD disponível?:', !!window.ADMIN_PASSWORD);
+    console.log('🔑 Valor atual:', window.ADMIN_PASSWORD);
     
     // Verificar senha de administrador
     const password = prompt("Digite a senha de acesso ao painel:");
+    
+    // DEBUG: Mostrar o que foi digitado
+    console.log('🔑 Senha digitada:', password);
+    console.log('🔑 Senha esperada:', window.ADMIN_PASSWORD);
+    console.log('🔑 Comparação:', password === window.ADMIN_PASSWORD);
+    
     if (password === window.ADMIN_PASSWORD) {
+        console.log('✅ Senha CORRETA!');
         const panel = document.getElementById('adminPanel');
         if (panel) {
             const isVisible = panel.style.display === 'block';
             panel.style.display = isVisible ? 'none' : 'block';
             console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
-            // Quando abrir, configurar tudo
             if (!isVisible) {
-                // 1. Limpar formulário
-                if (typeof cancelEdit === 'function') {
-                    cancelEdit();
-                } else {
-                    // Fallback
-                    const form = document.getElementById('propertyForm');
-                    if (form) form.reset();
-                }
-                
-                // 2. Carregar lista de imóveis
+                // Carregar lista de imóveis
                 if (typeof window.loadPropertyList === 'function') {
                     window.loadPropertyList();
                 }
                 
-                // 3. Configurar botão de cancelar
-                const cancelBtn = document.getElementById('cancelEditBtn');
-                if (cancelBtn) {
-                    cancelBtn.onclick = cancelEdit;
-                    cancelBtn.style.display = 'none';
+                // Configurar formulário
+                if (typeof window.setupForm === 'function') {
+                    window.setupForm();
                 }
             }
         }
     } else {
-        alert("❌ Senha incorreta!");
+        console.error('❌ Senha INCORRETA!');
+        alert("❌ Senha incorreta! Use: " + window.ADMIN_PASSWORD);
     }
 };
+
+// ========== CONFIGURAÇÃO BÁSICA DO FORMULÁRIO ==========
+window.setupForm = function() {
+    console.log('📝 Configurando formulário...');
+    const form = document.getElementById('propertyForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('✅ Funcionalidade de adicionar imóvel em desenvolvimento.');
+        });
+        console.log('✅ Formulário configurado');
+    }
+};
+
+console.log('✅ Sistema admin carregado');
 
 // ========== FUNÇÃO CANCELAR EDIÇÃO ==========
 window.cancelEdit = function() {
