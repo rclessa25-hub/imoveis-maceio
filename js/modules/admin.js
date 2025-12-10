@@ -1,7 +1,12 @@
-// js/modules/admin.js - SISTEMA ADMIN MÍNIMO FUNCIONAL
+// js/modules/admin.js - SISTEMA ADMIN FUNCIONAL
 console.log('🔧 admin.js carregado - Sistema Administrativo');
 
-// ========== FUNÇÃO BÁSICA toggleAdminPanel ==========
+// ========== VARIÁVEIS GLOBAIS DO ADMIN ==========
+window.editingPropertyId = null;
+window.selectedFiles = [];
+window.selectedPdfFiles = [];
+
+// ========== FUNÇÃO PRINCIPAL toggleAdminPanel ==========
 window.toggleAdminPanel = function() {
     console.log('🔄 toggleAdminPanel() chamada');
     
@@ -14,9 +19,28 @@ window.toggleAdminPanel = function() {
             panel.style.display = isVisible ? 'none' : 'block';
             console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
-            // Carregar lista de imóveis quando abrir
-            if (!isVisible && typeof window.loadPropertyList === 'function') {
-                window.loadPropertyList();
+            // Quando abrir, configurar tudo
+            if (!isVisible) {
+                // 1. Limpar formulário
+                if (typeof cancelEdit === 'function') {
+                    cancelEdit();
+                } else {
+                    // Fallback
+                    const form = document.getElementById('propertyForm');
+                    if (form) form.reset();
+                }
+                
+                // 2. Carregar lista de imóveis
+                if (typeof window.loadPropertyList === 'function') {
+                    window.loadPropertyList();
+                }
+                
+                // 3. Configurar botão de cancelar
+                const cancelBtn = document.getElementById('cancelEditBtn');
+                if (cancelBtn) {
+                    cancelBtn.onclick = cancelEdit;
+                    cancelBtn.style.display = 'none';
+                }
             }
         }
     } else {
@@ -24,13 +48,166 @@ window.toggleAdminPanel = function() {
     }
 };
 
-// ========== FUNÇÃO DE FALLBACK ==========
-// Garantir que a função exista mesmo se outras partes falharem
-if (typeof window.toggleAdminPanel !== 'function') {
-    console.warn('⚠️ Definindo fallback para toggleAdminPanel');
-    window.toggleAdminPanel = function() {
-        alert('🔧 Sistema admin em manutenção. Tente novamente em instantes.');
-    };
-}
+// ========== FUNÇÃO CANCELAR EDIÇÃO ==========
+window.cancelEdit = function() {
+    console.log('❌ Cancelando edição...');
+    window.editingPropertyId = null;
+    
+    // Limpar formulário
+    const form = document.getElementById('propertyForm');
+    if (form) {
+        form.reset();
+        console.log('✅ Formulário limpo');
+    }
+    
+    // Resetar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Adicionar Novo Imóvel';
+    }
+    
+    // Resetar botão submit
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+    }
+    
+    // Ocultar botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
+    
+    // Limpar arrays de arquivos
+    window.selectedFiles = [];
+    window.selectedPdfFiles = [];
+    
+    // Limpar previews
+    const preview = document.getElementById('uploadPreview');
+    if (preview) {
+        preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
+    }
+    
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
+    }
+    
+    console.log('✅ Edição cancelada completamente');
+};
 
-console.log('✅ Sistema admin básico carregado');
+// ========== FUNÇÃO loadPropertyList ==========
+window.loadPropertyList = function() {
+    console.log('📋 Carregando lista de imóveis...');
+    
+    const container = document.getElementById('propertyList');
+    const countElement = document.getElementById('propertyCount');
+    
+    if (!container || !window.properties) {
+        console.error('❌ Container ou propriedades não encontrados');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    if (countElement) {
+        countElement.textContent = window.properties.length;
+    }
+    
+    if (window.properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Nenhum imóvel cadastrado.</p>';
+        return;
+    }
+    
+    window.properties.forEach(property => {
+        const features = Array.isArray(property.features) ? 
+            property.features : 
+            (property.features ? property.features.split(',') : []);
+        
+        const item = document.createElement('div');
+        item.className = 'property-item';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <strong style="color: var(--primary);">${property.title}</strong><br>
+                <small>${property.price} - ${property.location}</small>
+                <div style="margin-top: 0.5rem;">
+                    ${features.map(f => 
+                        `<span style="background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.8rem; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.3rem;">${f.trim()}</span>`
+                    ).join('')}
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="editProperty(${property.id})" style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="deleteProperty(${property.id})" style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+    
+    console.log(`✅ ${window.properties.length} imóveis listados`);
+};
+
+// ========== FUNÇÕES BÁSICAS DE ADMIN ==========
+window.editProperty = function(id) {
+    console.log(`📝 Editando imóvel ID: ${id}`);
+    alert(`🔧 Edição do imóvel ${id} - Funcionalidade em desenvolvimento`);
+};
+
+window.deleteProperty = function(id) {
+    console.log(`🗑️ Excluindo imóvel ID: ${id}`);
+    if (confirm('Tem certeza que deseja excluir este imóvel?')) {
+        alert(`✅ Imóvel ${id} excluído (simulação)`);
+        // Aqui você conectaria com properties.js depois
+    }
+};
+
+// ========== CONFIGURAÇÃO DO FORMULÁRIO ==========
+window.setupForm = function() {
+    console.log('📝 Configurando formulário...');
+    
+    const form = document.getElementById('propertyForm');
+    if (!form) {
+        console.error('❌ Formulário não encontrado');
+        return;
+    }
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('📤 Formulário submetido');
+        
+        const propertyData = {
+            title: document.getElementById('propTitle').value,
+            price: document.getElementById('propPrice').value,
+            location: document.getElementById('propLocation').value,
+            description: document.getElementById('propDescription').value,
+            features: document.getElementById('propFeatures').value,
+            type: document.getElementById('propType').value,
+            badge: document.getElementById('propBadge').value
+        };
+        
+        if (!propertyData.title || !propertyData.price || !propertyData.location) {
+            alert('❌ Preencha Título, Preço e Localização!');
+            return;
+        }
+        
+        console.log('📊 Dados do formulário:', propertyData);
+        alert('✅ Imóvel salvo com sucesso! (simulação)');
+        
+        // Limpar formulário
+        cancelEdit();
+        
+        // Atualizar lista
+        if (typeof loadPropertyList === 'function') {
+            loadPropertyList();
+        }
+    });
+    
+    console.log('✅ Formulário configurado');
+};
+
+// ========== INICIALIZAÇÃO DO MÓDULO ==========
+console.log('✅ Sistema admin básico carregado com funções essenciais');
