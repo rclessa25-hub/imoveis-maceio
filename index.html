@@ -426,7 +426,7 @@
 <button class="admin-toggle">
     <i class="fas fa-user-cog"></i>
 </button>
- 
+
 <!-- ========== SCRIPTS MODULARIZADOS ========== -->
 <script src="js/modules/utils.js"></script>
 <script src="js/modules/properties.js"></script>
@@ -434,71 +434,115 @@
 <script src="js/modules/admin.js"></script>
 <script src="js/main.js"></script>
 
-<!-- ========== INICIALIZAÇÃO SIMPLIFICADA ========== -->
+<!-- ========== INICIALIZAÇÃO FORÇADA ========== -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🏠 DOM Pronto - Weber Lessa Imóveis');
+// FORÇAR INICIALIZAÇÃO COMPLETA DO SISTEMA
+console.log('🎯 INICIALIZAÇÃO FORÇADA DO SISTEMA WEBER LESSA');
+
+// 1. Esperar DOM carregar
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🏠 DOM Carregado - Iniciando sistema completo...');
     
-    // DIAGNÓSTICO IMEDIATO
-    console.log('🔍 DIAGNÓSTICO INICIAL:');
-    console.log('- SUPABASE_URL:', window.SUPABASE_URL);
-    console.log('- isMobileDevice:', typeof isMobileDevice);
-    console.log('- toggleAdminPanel:', typeof window.toggleAdminPanel);
-    console.log('- properties:', window.properties ? window.properties.length : 0);
+    // DIAGNÓSTICO RÁPIDO
+    console.log('🔍 VERIFICAÇÃO DE DEPENDÊNCIAS:');
+    console.log('- utils.js carregado?', !!window.SUPABASE_URL);
+    console.log('- properties.js carregado?', typeof window.initializeProperties === 'function');
+    console.log('- gallery.js carregado?', typeof window.openGallery === 'function');
+    console.log('- admin.js carregado?', typeof window.toggleAdminPanel === 'function');
+    console.log('- main.js carregado?', typeof window.initializeWeberLessaSystem === 'function');
     
-    // Conectar botão admin - FORÇAR FUNCIONALIDADE
+    // FORÇAR INICIALIZAÇÃO
+    try {
+        if (typeof window.initializeWeberLessaSystem === 'function') {
+            console.log('🚀 Chamando initializeWeberLessaSystem()...');
+            await window.initializeWeberLessaSystem();
+            console.log('✅ Sistema inicializado com sucesso!');
+        } else {
+            console.error('❌ initializeWeberLessaSystem não encontrado!');
+            // Fallback manual
+            await initializeFallback();
+        }
+    } catch (error) {
+        console.error('❌ Erro na inicialização:', error);
+        await initializeFallback();
+    }
+    
+    // CONFIGURAR BOTÃO ADMIN
     const adminBtn = document.querySelector('.admin-toggle');
-    if (adminBtn) {
+    if (adminBtn && typeof window.toggleAdminPanel === 'function') {
         adminBtn.onclick = function() {
             console.log('🖱️ Botão admin clicado');
-            
-            // Verificação de segurança aprimorada
-            if (!window.SUPABASE_URL) {
-                console.error('❌ SUPABASE_URL não definido!');
-                alert('⚠️ Sistema não carregou completamente. Recarregue a página (Ctrl+F5).');
-                return;
-            }
-            
-            if (typeof window.toggleAdminPanel !== 'function') {
-                console.error('❌ toggleAdminPanel não encontrado!');
-                alert('⚠️ Função admin não disponível. Recarregue a página.');
-                return;
-            }
-            
-            console.log('✅ Chamando toggleAdminPanel()');
             window.toggleAdminPanel();
         };
         console.log('✅ Botão admin configurado');
-    } else {
-        console.error('❌ Botão admin não encontrado!');
     }
 });
 
-// DIAGNÓSTICO COMPLETO APÓS 3 SEGUNDOS
+// FALLBACK MANUAL SE O SISTEMA PRINCIPAL FALHAR
+async function initializeFallback() {
+    console.log('🔄 Usando fallback manual...');
+    
+    // 1. Carregar imóveis
+    if (typeof window.initializeProperties === 'function') {
+        console.log('🏠 Carregando imóveis (fallback)...');
+        await window.initializeProperties();
+    }
+    
+    // 2. Renderizar imóveis
+    if (typeof window.renderProperties === 'function') {
+        console.log('🎨 Renderizando imóveis (fallback)...');
+        window.renderProperties();
+    }
+    
+    // 3. Configurar filtros
+    if (typeof window.setupFilters === 'function') {
+        console.log('🎛️ Configurando filtros (fallback)...');
+        window.setupFilters();
+    }
+    
+    // 4. Configurar admin
+    if (typeof window.setupForm === 'function') {
+        console.log('📝 Configurando admin (fallback)...');
+        window.setupForm();
+    }
+    
+    console.log('✅ Fallback manual completo');
+}
+
+// DIAGNÓSTICO APÓS 3 SEGUNDOS
 setTimeout(() => {
-    console.log('📊 DIAGNÓSTICO FINAL DO SISTEMA:');
-    console.log('===============================');
+    console.log('📊 DIAGNÓSTICO FINAL:');
+    console.log('=====================');
     
-    const modules = [
-        { name: 'utils.js', check: () => !!window.SUPABASE_URL && typeof isMobileDevice === 'function' },
-        { name: 'properties.js', check: () => typeof window.initializeProperties === 'function' },
-        { name: 'gallery.js', check: () => typeof window.openGallery === 'function' },
-        { name: 'admin.js', check: () => typeof window.toggleAdminPanel === 'function' },
-        { name: 'main.js', check: () => typeof window.initializeWeberLessaSystem === 'function' }
-    ];
+    const checks = {
+        'Imóveis carregados': window.properties && window.properties.length > 0,
+        'Número de imóveis': window.properties ? window.properties.length : 0,
+        'Container visível': !!document.getElementById('properties-container'),
+        'Elementos no container': document.getElementById('properties-container')?.children.length || 0,
+        'Botões de filtro': document.querySelectorAll('.filter-btn').length,
+        'Função renderProperties': typeof window.renderProperties === 'function',
+        'Função setupFilters': typeof window.setupFilters === 'function',
+        'Função toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
+    };
     
-    modules.forEach(module => {
-        const status = module.check();
-        console.log(`${status ? '✅' : '❌'} ${module.name}: ${status ? 'CARREGADO' : 'FALHOU'}`);
+    Object.entries(checks).forEach(([key, value]) => {
+        console.log(`${value ? '✅' : '❌'} ${key}: ${value}`);
     });
     
-    console.log('===============================');
+    console.log('=====================');
     
-    // Verificar senha admin
-    console.log('🔑 ADMIN_PASSWORD definida?:', !!window.ADMIN_PASSWORD);
-    console.log('🔑 Valor da senha:', window.ADMIN_PASSWORD);
+    // Se não tem imóveis, forçar criação
+    if (!window.properties || window.properties.length === 0) {
+        console.warn('⚠️ NENHUM IMÓVEL CARREGADO - FORÇANDO CRIAÇÃO...');
+        if (typeof window.getInitialProperties === 'function') {
+            window.properties = window.getInitialProperties();
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties();
+            }
+        }
+    }
     
 }, 3000);
 </script>
 </body>
-</html>
+</html>    
