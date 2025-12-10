@@ -3174,7 +3174,7 @@ async function testSupabaseDetailed() {
 
 //<script>
 <!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
-<script>
+<!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
 // Inicialização segura após DOM carregado
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM Carregado - Iniciando sistema Weber Lessa');
@@ -3255,26 +3255,27 @@ function emergencyMobileInitialization() {
 }
 </script>
 
-    <!-- ========== ORDEM DE CARREGAMENTO CORRIGIDA ========== -->
-    <!-- UTILS PRIMEIRO (sem dependências) -->
-    <script src="js/modules/utils.js"></script>
-    
-    <!-- CONSTANTES DO SUPABASE AGORA VÊM DO UTILS -->
-    <script>
-    // Aguardar utils.js carregar
-    if (typeof SUPABASE_URL === 'undefined') {
-        console.warn('⚠️ SUPABASE_URL ainda não carregado, aguardando...');
-        // Será definido quando utils.js carregar completamente
-    }
-    </script>
-    
-    <!-- PROPERTIES DEPENDE DE UTILS -->
-    <script src="js/modules/properties.js"></script>
-    
-    <!-- GALLERY DEPENDE DE PROPERTIES -->
-    <script src="js/modules/gallery.js"></script>
-    
-    <!-- MAIN DEPENDE DE TODOS -->
-    <script src="js/main.js"></script>
+<!-- ========== ORDEM DE CARREGAMENTO CORRIGIDA ========== -->
+<!-- UTILS PRIMEIRO (sem dependências) -->
+<script src="js/modules/utils.js"></script>
+
+<!-- CONSTANTES DO SUPABASE AGORA VÊM DO UTILS -->
+<script>
+// Aguardar utils.js carregar
+if (typeof SUPABASE_URL === 'undefined') {
+    console.warn('⚠️ SUPABASE_URL ainda não carregado, aguardando...');
+    // Será definido quando utils.js carregar completamente
+}
+</script>
+
+<!-- PROPERTIES DEPENDE DE UTILS -->
+<script src="js/modules/properties.js"></script>
+
+<!-- GALLERY DEPENDE DE PROPERTIES -->
+<script src="js/modules/gallery.js"></script>
+
+<!-- MAIN DEPENDE DE TODOS -->
+<script src="js/main.js"></script>
+</script>
 </body>
 </html>
