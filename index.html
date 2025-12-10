@@ -3311,6 +3311,45 @@ async function testSupabaseDetailed() {
             }
         }
     }, 3000);
+
+// SCRIPT ULTRA-EMERGÊNCIA
+console.log('🚨🚨 ULTRA-EMERGÊNCIA: Verificando estado do sistema');
+
+// 1. Criar funções se não existirem
+if (typeof window.renderProperties !== 'function') {
+    console.log('🛠️ Criando renderProperties() de emergência');
+    window.renderProperties = function() {
+        const container = document.getElementById('properties-container');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="property-card">
+                <div class="property-image">
+                    <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" style="width:100%;height:250px;object-fit:cover;">
+                </div>
+                <div class="property-content">
+                    <div class="property-price">R$ 180.000</div>
+                    <h3>Casa 2Qtos - Forene</h3>
+                    <div><i class="fas fa-map-marker-alt"></i> Residência Conj. Portal do Renascer</div>
+                    <p>Casa a 100m do CEASA, 125,40m², 02 Quartos, Sala, Cozinha, 02 Banheiros.</p>
+                    <button class="contact-btn">
+                        <i class="fab fa-whatsapp"></i> Entrar em Contato
+                    </button>
+                </div>
+            </div>
+        `;
+        console.log('✅ Imóvel de emergência renderizado');
+    };
+}
+
+// 2. Executar após 1 segundo (tempo para scripts carregarem)
+setTimeout(() => {
+    console.log('🔄 Executando renderização de emergência...');
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties();
+    }
+}, 1000);
+        
     </script>
 </body>
 </html>
