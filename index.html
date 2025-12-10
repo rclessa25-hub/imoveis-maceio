@@ -3171,225 +3171,110 @@ async function testSupabaseDetailed() {
         return false;
     }
 }
-        
-<!-- ========== INICIALIZAÇÃO SIMPLES E FUNCIONAL ========== -->
-<script>
-// REMOVA TODO O CÓDIGO ANTERIOR E COLE APENAS ISSO:
 
-// 1. Inicialização básica que SEMPRE funciona
+//<script>
+<!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
+<script>
+// Inicialização segura após DOM carregado
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Sistema Weber Lessa iniciando...');
+    console.log('🚀 DOM Carregado - Iniciando sistema Weber Lessa');
     
-    // Esperar um pouco para módulos carregarem
-    setTimeout(initializeSystem, 500);
+    // Recuperar funções mobile dos filtros (que foram removidas)
+    restoreMobileFunctions();
+    
+    // Verificar se main.js carregou
+    if (typeof safeInitialize === 'function') {
+        safeInitialize();
+    } else {
+        console.error('❌ main.js não carregou corretamente - usando fallback');
+        emergencyMobileInitialization();
+    }
 });
 
-// 2. Função principal SIMPLES
-function initializeSystem() {
-    console.log('🔧 Inicializando sistema...');
+// ========== FUNÇÕES MOBILE RECUPERADAS ==========
+function restoreMobileFunctions() {
+    console.log('📱 Restaurando funções mobile...');
     
-    // A. Carregar imóveis (usar função que existe)
-    if (typeof initializeProperties === 'function') {
-        console.log('✅ initializeProperties encontrado, executando...');
-        initializeProperties().then(() => {
-            console.log('✅ Imóveis carregados com sucesso');
-        }).catch(error => {
-            console.error('❌ Erro ao carregar imóveis:', error);
-            loadPropertiesDirectly();
-        });
-    } else {
-        console.warn('⚠️ initializeProperties NÃO encontrado');
-        loadPropertiesDirectly();
-    }
-    
-    // B. Configurar filtros DIRETO (sem dependências)
-    setTimeout(setupFiltersDirect, 1000);
-}
-
-// 3. Carregar imóveis DIRETAMENTE (fallback)
-function loadPropertiesDirectly() {
-    console.log('🔄 Carregando imóveis diretamente...');
-    
-    // Verificar se já tem dados
-    if (window.properties && window.properties.length > 0) {
-        console.log(`✅ Já tem ${window.properties.length} imóveis`);
-        return;
-    }
-    
-    // Usar getInitialProperties se existir
-    if (typeof getInitialProperties === 'function') {
-        window.properties = getInitialProperties();
-        console.log(`✅ ${window.properties.length} imóveis carregados do fallback`);
-    } else {
-        // Dados de EMERGÊNCIA
-        window.properties = [
-            {
-                id: 1,
-                title: "Casa 2Qtos - Forene",
-                price: "R$ 180.000",
-                location: "Residência Conj. Portal do Renascer, Forene",
-                description: "Casa a 100m do CEASA com 125,40m² de área total.",
-                features: ["02 Quartos", "Sala", "Cozinha", "02 Banheiros"],
-                type: "residencial",
-                badge: "Destaque",
-                images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            },
-            {
-                id: 2,
-                title: "Apartamento 4Qtos - Ponta Verde",
-                price: "R$ 1.500.000",
-                location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
-                description: "Apartamento amplo com 178m² de área privativa.",
-                features: ["4Qtos s/ 3 suítes", "Sala ampla", "02 vagas"],
-                type: "residencial",
-                badge: "Luxo",
-                images: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-            }
-        ];
-        console.log(`✅ ${window.properties.length} imóveis de emergência carregados`);
-    }
-    
-    // Renderizar
-    if (typeof renderProperties === 'function') {
-        renderProperties();
-    } else {
-        renderPropertiesDirectly();
+    // Função mobile para otimização (do código removido)
+    if (typeof isMobileDevice === 'function' && isMobileDevice()) {
+        console.log('📱 Otimizando para mobile...');
+        
+        // Otimizar galeria para mobile
+        if (typeof optimizeGalleryForMobile === 'function') {
+            setTimeout(optimizeGalleryForMobile, 1000);
+        }
+        
+        // Otimizar header mobile
+        optimizeMobileHeader();
     }
 }
 
-// 4. Renderizar DIRETAMENTE
-function renderPropertiesDirectly() {
-    console.log('🎨 Renderizando imóveis diretamente...');
-    
-    const container = document.getElementById('properties-container');
-    if (!container) {
-        console.error('❌ Container de propriedades não encontrado!');
-        return;
-    }
-    
-    if (!window.properties || window.properties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel disponível.</p>';
-        return;
-    }
-    
-    let html = '';
-    window.properties.forEach(prop => {
-        html += `
-            <div class="property-card">
-                <div class="property-image">
-                    <img src="${prop.images ? prop.images.split(',')[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}" 
-                         style="width: 100%; height: 250px; object-fit: cover;">
-                    ${prop.badge ? `<div class="property-badge">${prop.badge}</div>` : ''}
-                </div>
-                <div class="property-content">
-                    <div class="property-price">${prop.price}</div>
-                    <h3 class="property-title">${prop.title}</h3>
-                    <div class="property-location">
-                        <i class="fas fa-map-marker-alt"></i> ${prop.location}
-                    </div>
-                    <p>${prop.description}</p>
-                    <div class="property-features">
-                        ${Array.isArray(prop.features) ? prop.features.map(f => 
-                            `<span class="feature-tag">${f.trim()}</span>`
-                        ).join('') : ''}
-                    </div>
-                    <button class="contact-btn" onclick="contactAgentDirect(${prop.id})">
-                        <i class="fab fa-whatsapp"></i> Entrar em Contato
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    container.innerHTML = html;
-    console.log(`✅ ${window.properties.length} imóveis renderizados diretamente`);
-}
-
-// 5. Configurar filtros DIRETAMENTE
-function setupFiltersDirect() {
-    console.log('🎛️ Configurando filtros diretamente...');
-    
-    const buttons = document.querySelectorAll('.filter-btn');
-    if (buttons.length === 0) {
-        console.warn('⚠️ Nenhum botão de filtro encontrado no HTML');
-        return;
-    }
-    
-    buttons.forEach(btn => {
-        // Remover eventos antigos
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-    });
-    
-    // Re-aplicar aos novos botões
-    document.querySelectorAll('.filter-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            // Ativar botão clicado
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Filtrar
-            const filter = this.textContent.trim();
-            console.log(`🎯 Filtro selecionado: ${filter}`);
-            
-            // Filtrar localmente
-            filterPropertiesDirect(filter);
-        });
-    });
-    
-    console.log(`✅ ${buttons.length} filtros configurados diretamente`);
-}
-
-// 6. Filtrar DIRETAMENTE
-function filterPropertiesDirect(filterType) {
-    if (!window.properties) return;
-    
-    const filtered = filterType === 'Todos' || filterType === 'todos' 
-        ? window.properties 
-        : window.properties.filter(p => {
-            if (filterType === 'Residencial') return p.type === 'residencial';
-            if (filterType === 'Comercial') return p.type === 'comercial';
-            if (filterType === 'Rural') return p.type === 'rural';
-            if (filterType === 'Minha Casa Minha Vida') return p.badge === 'MCMV';
-            return true;
-        });
-    
-    console.log(`🔍 ${filtered.length} imóveis após filtrar por "${filterType}"`);
-    renderPropertiesDirectly(filtered);
-}
-
-// 7. Contato direto
-function contactAgentDirect(id) {
-    const prop = window.properties.find(p => p.id === id);
-    if (prop) {
-        const message = `Olá! Tenho interesse no imóvel: ${prop.title} - ${prop.price}`;
-        const url = `https://wa.me/5582996044513?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
+function optimizeMobileHeader() {
+    // Corrigir header mobile fixo (do código original)
+    const mobileHeader = document.querySelector('.mobile-header-ultimate');
+    if (mobileHeader && isMobileDevice()) {
+        // Garantir que está fixo no topo
+        mobileHeader.style.position = 'fixed';
+        mobileHeader.style.top = '0';
+        mobileHeader.style.zIndex = '1000';
+        
+        // Ajustar padding do body para compensar header fixo
+        document.body.style.paddingTop = '130px';
     }
 }
 
-// 8. Teste automático
-setTimeout(() => {
-    const cards = document.querySelectorAll('.property-card');
-    console.log(`🧪 TESTE: ${cards.length} imóveis visíveis na página`);
+function emergencyMobileInitialization() {
+    console.log('🚨 Inicialização de emergência mobile...');
     
-    if (cards.length === 0) {
-        console.error('❌ NENHUM IMÓVEL CARREGADO! Forçando carga...');
-        loadPropertiesDirectly();
-        setupFiltersDirect();
-    }
-}, 2000);
-
-console.log('✅ Sistema de inicialização pronto');
+    // Carregar imóveis
+    setTimeout(() => {
+        if (typeof initializeProperties === 'function') {
+            initializeProperties().catch(() => {
+                if (typeof getInitialProperties === 'function') {
+                    window.properties = getInitialProperties();
+                }
+                if (typeof renderProperties === 'function') {
+                    renderProperties();
+                }
+            });
+        }
+        
+        // Configurar galeria
+        if (typeof setupGalleryEvents === 'function') {
+            setupGalleryEvents();
+        }
+        
+        // Configurar filtros (IMPORTANTE!)
+        if (typeof setupFilters === 'function') {
+            setupFilters();
+        }
+        
+        // Otimizar mobile
+        restoreMobileFunctions();
+    }, 500);
+}
 </script>
 
-<!-- ========== CARREGAMENTO DOS MÓDULOS ========== -->
-<!-- ORDEM SIMPLES E FUNCIONAL -->
-<script src="js/modules/utils.js"></script>
-<script src="js/modules/properties.js"></script>
-<script src="js/modules/gallery.js"></script>
-<script src="js/main.js"></script>
-
-<!-- REMOVA TODOS OS BOTÕES E DIVS EXTRAS! -->
+    <!-- ========== ORDEM DE CARREGAMENTO CORRIGIDA ========== -->
+    <!-- UTILS PRIMEIRO (sem dependências) -->
+    <script src="js/modules/utils.js"></script>
+    
+    <!-- CONSTANTES DO SUPABASE AGORA VÊM DO UTILS -->
+    <script>
+    // Aguardar utils.js carregar
+    if (typeof SUPABASE_URL === 'undefined') {
+        console.warn('⚠️ SUPABASE_URL ainda não carregado, aguardando...');
+        // Será definido quando utils.js carregar completamente
+    }
+    </script>
+    
+    <!-- PROPERTIES DEPENDE DE UTILS -->
+    <script src="js/modules/properties.js"></script>
+    
+    <!-- GALLERY DEPENDE DE PROPERTIES -->
+    <script src="js/modules/gallery.js"></script>
+    
+    <!-- MAIN DEPENDE DE TODOS -->
+    <script src="js/main.js"></script>
 </body>
 </html>
