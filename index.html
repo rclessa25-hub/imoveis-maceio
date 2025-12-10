@@ -3177,103 +3177,140 @@ async function testSupabaseDetailed() {
 <!-- Remover TODO o bloco DOMContentLoaded -->
 <!-- Adicionar script main.js -->
     <!-- Scripts na ORDEM CORRETA -->
-    <script src="js/modules/utils.js"></script>
-    <script src="js/modules/properties.js"></script>
-    <script src="js/modules/gallery.js"></script>
+ <!-- Scripts na ORDEM CORRETA COM defer -->
+    <script src="js/modules/utils.js" defer></script>
+    <script src="js/modules/properties.js" defer></script>
+    <script src="js/modules/gallery.js" defer></script>
     <script src="js/main.js" defer></script>
     
     <script>
-    // Inicialização SEGURA - VERIFICAR ORDEM
-    document.addEventListener('DOMContentLoaded', async function() {
-        console.log('🏠 DOM Carregado - Verificando sistema...');
+    // Inicialização SEGURA - ESPERAR TODOS OS SCRIPTS
+    window.addEventListener('load', async function() {
+        console.log('🏁 TODOS os recursos carregados - Iniciando sistema...');
         
         // 1. Testar se módulos básicos estão carregados
-        console.log('🔍 Verificando módulos:');
+        console.log('🔍 Verificando módulos após load:');
         console.log('- utils.js:', typeof isMobileDevice === 'function' ? '✅' : '❌');
         console.log('- properties.js:', typeof initializeProperties === 'function' ? '✅' : '❌');
         console.log('- gallery.js:', typeof openGallery === 'function' ? '✅' : '❌');
         console.log('- main.js:', typeof initializeWeberLessaSystem === 'function' ? '✅' : '❌');
+        console.log('- window.SUPABASE_URL:', window.SUPABASE_URL ? '✅' : '❌');
         
-        // 2. Se main.js estiver disponível, usá-lo
+        // 2. Tentar usar main.js primeiro
         if (typeof initializeWeberLessaSystem === 'function') {
             console.log('🚀 Usando main.js para inicialização');
-            await initializeWeberLessaSystem();
+            try {
+                await initializeWeberLessaSystem();
+                console.log('✅ main.js inicialização completa');
+            } catch (error) {
+                console.error('❌ Erro no main.js:', error);
+                usarFallbackDireto();
+            }
         } 
-        // 3. Se não, usar inicialização direta (FALLBACK CRÍTICO)
+        // 3. Se não, usar inicialização direta
         else {
             console.log('⚠️ main.js não disponível - Usando fallback direto');
-            
-            // Inicializar sistema de imóveis
-            if (typeof initializeProperties === 'function') {
-                console.log('📦 Inicializando imóveis...');
-                await initializeProperties();
-                
-                // CONFIGURAR FILTROS (ESSE É O PROBLEMA!)
-                if (typeof setupFilters === 'function') {
-                    console.log('🎛️ Configurando filtros...');
-                    setupFilters();
-                } else {
-                    console.error('❌ setupFilters() não encontrado!');
-                }
-            } else {
-                console.error('❌ initializeProperties() não encontrado!');
-            }
-            
-            // Configurar galeria se disponível
-            if (typeof setupGalleryEvents === 'function') {
-                setupGalleryEvents();
-            }
-            
-            // Configurar admin se disponível
-            if (typeof setupForm === 'function') {
-                setupForm();
-            }
-            if (typeof setupUploadSystem === 'function') {
-                setupUploadSystem();
-            }
+            usarFallbackDireto();
         }
     });
     
-    // Teste SUPABASE (apenas informação)
-    setTimeout(() => {
-        console.log('🌐 SUPABASE_URL:', window.SUPABASE_URL || 'Não definido');
-    }, 1000);
-
-// SCRIPT DE EMERGÊNCIA - Forçar funcionamento
-setTimeout(() => {
-    console.log('🚨 EXECUTANDO SCRIPT DE EMERGÊNCIA');
-    
-    // 1. Verificar se há imóveis
-    if (window.properties && window.properties.length > 0) {
-        console.log(`📦 ${window.properties.length} imóveis na memória`);
+    // Função de fallback direto
+    function usarFallbackDireto() {
+        console.log('🔄 Executando fallback direto...');
         
-        // 2. Forçar renderização
-        if (typeof renderProperties === 'function') {
-            renderProperties();
-            console.log('🔄 Renderização forçada');
+        // 1. Inicializar propriedades se disponível
+        if (typeof initializeProperties === 'function') {
+            console.log('📦 Inicializando imóveis...');
+            initializeProperties().then(() => {
+                console.log('✅ Imóveis inicializados');
+            }).catch(error => {
+                console.error('❌ Erro ao inicializar imóveis:', error);
+                // Tentar forçar renderização mínima
+                renderizarImoveisBasico();
+            });
+        } else {
+            console.error('❌ initializeProperties() não encontrado!');
+            renderizarImoveisBasico();
         }
         
-        // 3. Configurar filtros manualmente
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        if (filterButtons.length > 0) {
-            console.log(`🎛️ ${filterButtons.length} botões encontrados - Configurando...`);
-            
-            filterButtons.forEach(button => {
-                button.onclick = function() {
-                    filterButtons.forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-                    const filter = this.textContent.trim();
-                    if (typeof renderProperties === 'function') {
-                        renderProperties(filter === 'Todos' ? 'todos' : filter);
-                    }
-                };
-            });
-            
-            console.log('✅ Filtros configurados manualmente');
+        // 2. Configurar filtros
+        if (typeof setupFilters === 'function') {
+            setTimeout(() => {
+                setupFilters();
+                console.log('✅ Filtros configurados');
+            }, 500);
+        }
+        
+        // 3. Configurar galeria
+        if (typeof setupGalleryEvents === 'function') {
+            setTimeout(() => {
+                setupGalleryEvents();
+                console.log('✅ Galeria configurada');
+            }, 1000);
         }
     }
-}, 2000);
+    
+    // Função de emergência absoluta
+    function renderizarImoveisBasico() {
+        console.log('🚨 RENDERIZAÇÃO BÁSICA DE EMERGÊNCIA');
+        const container = document.getElementById('properties-container');
+        if (!container) return;
         
+        // Criar imóveis básicos
+        const imoveisBasicos = [
+            {
+                id: 1,
+                title: "Casa 2Qtos - Forene",
+                price: "R$ 180.000",
+                location: "Residência Conj. Portal do Renascer, Forene",
+                description: "Casa a 100m do CEASA, 125,40m², 02 Quartos, Sala, Cozinha, 02 Banheiros, Varanda, 02 Vagas.",
+                features: ["02 Quartos", "2 Banheiros", "2 Vagas"],
+                images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+            },
+            {
+                id: 2,
+                title: "Apartamento 4Qtos - Ponta Verde",
+                price: "R$ 1.500.000",
+                location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
+                description: "Apartamento amplo, 178m², 4 Qtos sendo 3 suítes, sala ampla com varanda.",
+                features: ["4 Quartos", "3 Suítes", "2 Vagas"],
+                images: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
+            }
+        ];
+        
+        // Renderizar
+        imoveisBasicos.forEach(property => {
+            container.innerHTML += `
+                <div class="property-card">
+                    <div class="property-image">
+                        <img src="${property.images}" style="width:100%;height:250px;object-fit:cover;">
+                    </div>
+                    <div class="property-content">
+                        <div class="property-price">${property.price}</div>
+                        <h3>${property.title}</h3>
+                        <div><i class="fas fa-map-marker-alt"></i> ${property.location}</div>
+                        <p>${property.description}</p>
+                        <button onclick="window.open('https://wa.me/5582996044513?text=Olá! Tenho interesse no imóvel: ${encodeURIComponent(property.title)}', '_blank')" class="contact-btn">
+                            <i class="fab fa-whatsapp"></i> Entrar em Contato
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        console.log('✅ Imóveis básicos renderizados (emergência)');
+    }
+    
+    // Timeout de segurança
+    setTimeout(() => {
+        const container = document.getElementById('properties-container');
+        if (container && container.children.length === 0) {
+            console.log('⚠️ Timeout - Nenhum imóvel renderizado após 3 segundos');
+            if (typeof renderizarImoveisBasico === 'function') {
+                renderizarImoveisBasico();
+            }
+        }
+    }, 3000);
     </script>
 </body>
 </html>
