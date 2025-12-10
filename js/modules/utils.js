@@ -106,21 +106,6 @@ window.isMobileDevice = function() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-window.testSupabaseConnection = async function() {
-    try {
-        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`
-            }
-        });
-        return response.ok;
-    } catch (error) {
-        console.error('❌ Erro na conexão Supabase:', error);
-        return false;
-    }
-};
-
 window.logModule = function(moduleName, message) {
     const timestamp = new Date().toLocaleTimeString();
     console.log(`[${timestamp}] [${moduleName}] ${message}`);
