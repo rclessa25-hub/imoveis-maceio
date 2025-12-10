@@ -174,21 +174,42 @@ function safeInitialize() {
     
     console.log('📦 Módulos carregados:', loadedModules);
     
-    // Aguardar carregamento completo
-    setTimeout(() => {
+    // Verificar constantes críticas
+    if (typeof SUPABASE_URL === 'undefined') {
+        console.warn('⚠️ SUPABASE_URL não definido, aguardando utils.js...');
+        // Aguardar mais tempo se necessário
+        setTimeout(() => {
+            if (typeof SUPABASE_URL !== 'undefined') {
+                continueInitialization();
+            } else {
+                console.error('❌ SUPABASE_URL nunca carregou');
+                emergencyFallback();
+            }
+        }, 500);
+    } else {
+        continueInitialization();
+    }
+    
+    function continueInitialization() {
         if (typeof initializeWeberLessaSystem === 'function') {
             // Atualizar status por referência
             updateModuleStatus('main', 'initializing');
             initializeWeberLessaSystem().then(() => {
                 updateModuleStatus('main', 'complete');
+                
+                // Testar filtros após inicialização
+                setTimeout(() => {
+                    if (typeof testFilters === 'function') {
+                        testFilters();
+                    }
+                }, 1000);
             });
         } else {
             console.error('❌ initializeWeberLessaSystem não disponível');
             emergencyFallback();
         }
-    }, 100);
+    }
 }
-
 // ========== TESTE INCREMENTAL (Passo 3) ==========
 // Colocar NO FINAL do arquivo, APÓS todas as funções
 console.log('🧪 TESTE 1: main.js carregado?', typeof safeInitialize === 'function');
@@ -208,6 +229,94 @@ window.debugInitialize = function() {
             console.error('❌ TESTE MANUAL: Erro:', err);
         });
     }
+};
+
+// ========== CORREÇÃO DOS FILTROS ==========
+function setupFiltersFix() {
+    console.log('🎛️ Configurando filtros corrigidos...');
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (filterButtons.length === 0) {
+        console.warn('⚠️ Botões de filtro não encontrados!');
+        return;
+    }
+    
+    filterButtons.forEach(button => {
+        // Remover listeners antigos
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+    });
+    
+    // Re-aplicar listeners
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover classe active de todos os botões
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Adicionar classe active ao botão clicado
+            this.classList.add('active');
+            
+            // Obter o texto do filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            console.log(`🎯 Filtrando por: ${filter}`);
+            
+            // Chamar renderProperties se existir
+            if (typeof renderProperties === 'function') {
+                renderProperties(filter);
+            } else {
+                console.error('❌ renderProperties() não disponível');
+            }
+        });
+    });
+    
+    console.log(`✅ ${filterButtons.length} filtros configurados`);
+}
+
+// ========== INICIALIZAÇÃO CORRIGIDA ==========
+// Modificar a função setupAuxiliarySystems para incluir filtros
+const originalSetupAuxiliarySystems = setupAuxiliarySystems;
+window.setupAuxiliarySystems = function() {
+    console.log('🔧 Configurando sistemas auxiliares CORRIGIDOS...');
+    
+    // Chamar original
+    if (typeof originalSetupAuxiliarySystems === 'function') {
+        originalSetupAuxiliarySystems();
+    }
+    
+    // Adicionar configuração dos filtros
+    setupFiltersFix();
+    
+    // Se houver função setupFilters no properties.js, também chamar
+    if (typeof setupFilters === 'function') {
+        setupFilters();
+    }
+};
+
+// ========== TESTE DOS FILTROS ==========
+window.testFilters = function() {
+    console.log('🧪 Testando filtros...');
+    
+    // Verificar se filtros existem
+    const filtersContainer = document.querySelector('.filter-options');
+    if (!filtersContainer) {
+        console.error('❌ Container de filtros não encontrado!');
+        return false;
+    }
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    console.log(`✅ ${filterButtons.length} botões de filtro encontrados`);
+    
+    // Testar clique no primeiro filtro
+    if (filterButtons.length > 0) {
+        console.log('🧪 Simulando clique no filtro...');
+        filterButtons[0].click();
+    }
+    
+    return filterButtons.length > 0;
 };
 
 // ========== EXPORTAÇÃO ==========
