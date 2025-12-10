@@ -1,48 +1,71 @@
-// ========== INICIALIZAÇÃO CORRIGIDA ==========
-// ========== ADICIONAR DEBUG NA INICIALIZAÇÃO ==========
-// ========== INICIALIZAÇÃO COMPLETA E ATUALIZADA ==========
-// Adicione no início do DOMContentLoaded, antes de tudo:
-// ========== INICIALIZAR GALERIA NO DOMContentLoaded ==========
-// Adicione este código ao final do DOMContentLoaded:
-// ========== INICIALIZAÇÃO COMPLETA DO SISTEMA ==========
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Sistema Weber Lessa Iniciado');
+// js/main.js - MÓDULO DE INICIALIZAÇÃO
+console.log('🚀 main.js carregado - Sistema de Inicialização');
+
+window.initializeWeberLessaSystem = async function() {
+    console.log('🚀 Sistema Weber Lessa Iniciando');
     
     // Aplicar diretriz constitucional
-    enforceConstitutionalGuideline();
+    if (typeof enforceConstitutionalGuideline === 'function') {
+        enforceConstitutionalGuideline();
+    }
     
     // TESTE DE CONEXÃO
     console.log('🔍 Testando conexões...');
-    const supabaseOk = await testSupabaseConnection();
+    let supabaseOk = false;
+    
+    if (typeof testSupabaseConnection === 'function') {
+        supabaseOk = await testSupabaseConnection();
+    }
     console.log(`🌐 Supabase: ${supabaseOk ? '✅ Conectado' : '⚠️ Usando modo local'}`);
     
     // INICIALIZAR SISTEMA DE IMÓVEIS (IMPORTANTE: fazer primeiro!)
-    await initializeProperties();
+    if (typeof initializeProperties === 'function') {
+        await initializeProperties();
+    } else {
+        console.error('❌ initializeProperties() não disponível!');
+        return false;
+    }
     
     // Configurar formulário e sistemas de upload
-    setupForm();
-    setupUploadSystem();
-    setupPdfUploadSystem();
+    if (typeof setupForm === 'function') {
+        setupForm();
+    }
+    
+    if (typeof setupUploadSystem === 'function') {
+        setupUploadSystem();
+    }
+    
+    if (typeof setupPdfUploadSystem === 'function') {
+        setupPdfUploadSystem();
+    }
     
     // VERIFICAÇÃO FINAL DOS ELEMENTOS
     console.log('🔍 Verificação final do sistema:');
     console.log('- properties-container:', document.getElementById('properties-container') ? '✅' : '❌');
-    console.log('- Total de imóveis carregados:', properties.length);
+    
+    if (typeof window.properties !== 'undefined') {
+        console.log('- Total de imóveis carregados:', window.properties.length);
+    }
     
     // TESTAR ACESSO ÀS IMAGENS
-    testImageAccess();
+    if (typeof testImageAccess === 'function') {
+        await testImageAccess();
+    }
     
     // ========== INICIALIZAR GALERIA DE FOTOS ==========
-    // ========== INICIALIZAR GALERIA ==========
     console.log('🎨 Inicializando galeria de fotos MOBILE FIRST...');
     
-    // Adicionar estilos da galeria
-    const styleSheet = document.createElement("style");
-    styleSheet.textContent = galleryStyles;
-    document.head.appendChild(styleSheet);
+    // Adicionar estilos da galeria (se existir em gallery.js)
+    if (typeof window.galleryStyles !== 'undefined') {
+        const styleSheet = document.createElement("style");
+        styleSheet.textContent = window.galleryStyles;
+        document.head.appendChild(styleSheet);
+    }
     
     // Configurar eventos da galeria
-    setupGalleryEvents();
+    if (typeof setupGalleryEvents === 'function') {
+        setupGalleryEvents();
+    }
     
     console.log('✅ Galeria de fotos MOBILE FIRST inicializada!');
     console.log('✅ Sistema Weber Lessa completamente carregado e pronto!');
@@ -55,16 +78,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             console.error('❌ NENHUM IMÓVEL VISÍVEL! Verificando problemas...');
             // Tentativa de emergência: renderizar novamente
-            renderProperties();
+            if (typeof renderProperties === 'function') {
+                renderProperties();
+            }
         }
     }, 500);
     
     // Inicializar otimização mobile
-    if (isMobileDevice()) {
-        setTimeout(optimizeGalleryForMobile, 1000);
+    if (typeof isMobileDevice === 'function' && isMobileDevice()) {
+        setTimeout(() => {
+            if (typeof optimizeGalleryForMobile === 'function') {
+                optimizeGalleryForMobile();
+            }
+        }, 1000);
     }
-  // Inicializar otimização mobile
-    if (isMobileDevice()) {
-        setTimeout(optimizeGalleryForMobile, 1000);
-    }
-});
+    
+    return true;
+};
