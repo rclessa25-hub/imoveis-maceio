@@ -3172,108 +3172,196 @@ async function testSupabaseDetailed() {
     }
 }
         
-<!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
+<!-- ========== INICIALIZAÇÃO DO SISTEMA (VERSÃO SIMPLIFICADA) ========== -->
 <script>
-// Inicialização segura após DOM carregado
+// Inicialização unificada para desktop/mobile
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM Carregado - Iniciando sistema Weber Lessa');
     
-    // Recuperar funções mobile dos filtros (que foram removidas)
-    restoreMobileFunctions();
-    
-    // Verificar se main.js carregou
-    if (typeof safeInitialize === 'function') {
-        safeInitialize();
-    } else {
-        console.error('❌ main.js não carregou corretamente - usando fallback');
-        emergencyMobileInitialization();
-    }
+    // Inicialização comum para todos dispositivos
+    initializeWeberLessaSystem();
 });
 
-// ========== FUNÇÕES MOBILE RECUPERADAS ==========
-function restoreMobileFunctions() {
-    console.log('📱 Restaurando funções mobile...');
+// Função de inicialização robusta
+function initializeWeberLessaSystem() {
+    console.log('🌐 Inicializando sistema...');
     
-    // Função mobile para otimização (do código removido)
-    if (typeof isMobileDevice === 'function' && isMobileDevice()) {
-        console.log('📱 Otimizando para mobile...');
-        
-        // Otimizar galeria para mobile
-        if (typeof optimizeGalleryForMobile === 'function') {
-            setTimeout(optimizeGalleryForMobile, 1000);
-        }
-        
-        // Otimizar header mobile
-        optimizeMobileHeader();
+    // 1. Verificar se estamos em mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log(`📱 Dispositivo: ${isMobile ? 'Mobile' : 'Desktop'}`);
+    
+    // 2. Configurações específicas para mobile
+    if (isMobile) {
+        setupMobileOptimizations();
     }
+    
+    // 3. Inicializar sistema principal
+    initializeMainSystem();
+    
+    // 4. Configurar eventos
+    setupEventListeners();
 }
 
-function optimizeMobileHeader() {
-    // Corrigir header mobile fixo (do código original)
+// Configurações mobile
+function setupMobileOptimizations() {
+    console.log('📱 Aplicando otimizações mobile...');
+    
+    // Ajustar header mobile (se necessário)
     const mobileHeader = document.querySelector('.mobile-header-ultimate');
-    if (mobileHeader && isMobileDevice()) {
-        // Garantir que está fixo no topo
+    if (mobileHeader) {
+        // Header já está fixo via CSS, apenas garantir
         mobileHeader.style.position = 'fixed';
         mobileHeader.style.top = '0';
         mobileHeader.style.zIndex = '1000';
-        
-        // Ajustar padding do body para compensar header fixo
-        document.body.style.paddingTop = '130px';
+    }
+    
+    // Ajustar body padding para header fixo
+    document.body.style.paddingTop = '130px';
+    
+    // Otimizar galeria para touch
+    if (typeof optimizeGalleryForMobile === 'function') {
+        setTimeout(optimizeGalleryForMobile, 1000);
     }
 }
 
-function emergencyMobileInitialization() {
-    console.log('🚨 Inicialização de emergência mobile...');
+// Sistema principal
+function initializeMainSystem() {
+    console.log('🏠 Inicializando sistema principal...');
     
-    // Carregar imóveis
+    // 1. Carregar imóveis
+    if (typeof initializeProperties === 'function') {
+        initializeProperties().catch(error => {
+            console.error('❌ Erro ao carregar imóveis:', error);
+            loadFallbackProperties();
+        });
+    } else {
+        console.warn('⚠️ initializeProperties não encontrado, usando fallback');
+        loadFallbackProperties();
+    }
+    
+    // 2. Configurar filtros
     setTimeout(() => {
-        if (typeof initializeProperties === 'function') {
-            initializeProperties().catch(() => {
-                if (typeof getInitialProperties === 'function') {
-                    window.properties = getInitialProperties();
-                }
-                if (typeof renderProperties === 'function') {
-                    renderProperties();
-                }
-            });
-        }
-        
-        // Configurar galeria
-        if (typeof setupGalleryEvents === 'function') {
-            setupGalleryEvents();
-        }
-        
-        // Configurar filtros (IMPORTANTE!)
         if (typeof setupFilters === 'function') {
             setupFilters();
+        } else {
+            setupFiltersManually();
         }
-        
-        // Otimizar mobile
-        restoreMobileFunctions();
-    }, 500);
+    }, 300);
 }
+
+// Fallback para imóveis
+function loadFallbackProperties() {
+    console.log('🔄 Carregando imóveis de fallback...');
+    
+    if (typeof getInitialProperties === 'function') {
+        window.properties = getInitialProperties();
+        console.log(`✅ ${window.properties.length} imóveis carregados (fallback)`);
+        
+        if (typeof renderProperties === 'function') {
+            renderProperties();
+        }
+    }
+}
+
+// Configurar filtros manualmente
+function setupFiltersManually() {
+    console.log('🎛️ Configurando filtros manualmente...');
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (filterButtons.length === 0) {
+        console.warn('⚠️ Nenhum botão de filtro encontrado');
+        return;
+    }
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover active de todos
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Adicionar active ao clicado
+            this.classList.add('active');
+            
+            // Aplicar filtro
+            const filter = this.textContent.trim() === 'Todos' ? 'todos' : this.textContent.trim();
+            console.log(`🎯 Aplicando filtro: ${filter}`);
+            
+            if (typeof renderProperties === 'function') {
+                renderProperties(filter);
+            }
+        });
+    });
+    
+    console.log(`✅ ${filterButtons.length} filtros configurados`);
+}
+
+// Configurar eventos
+function setupEventListeners() {
+    console.log('🔗 Configurando eventos...');
+    
+    // Galeria
+    if (typeof setupGalleryEvents === 'function') {
+        setTimeout(() => setupGalleryEvents(), 500);
+    }
+    
+    // Testar após 2 segundos
+    setTimeout(testSystemFunctionality, 2000);
+}
+
+// Testar funcionalidade
+function testSystemFunctionality() {
+    console.log('🧪 Testando funcionalidades...');
+    
+    // Verificar imóveis
+    const propertyCards = document.querySelectorAll('.property-card');
+    console.log(`🏠 Imóveis visíveis: ${propertyCards.length}`);
+    
+    // Verificar filtros
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    console.log(`🎛️ Botões de filtro: ${filterButtons.length}`);
+    
+    // Aviso se nenhum imóvel
+    if (propertyCards.length === 0) {
+        console.error('❌ NENHUM IMÓVEL VISÍVEL!');
+        alert('⚠️ Não foi possível carregar os imóveis. Recarregue a página.');
+    }
+}
+
+// Função global para forçar recarregamento
+window.forceReloadProperties = function() {
+    console.log('🔄 Forçando recarregamento de imóveis...');
+    if (typeof initializeProperties === 'function') {
+        initializeProperties();
+    } else {
+        loadFallbackProperties();
+    }
+};
 </script>
 
-    <!-- ========== ORDEM DE CARREGAMENTO CORRIGIDA ========== -->
-    <!-- UTILS PRIMEIRO (sem dependências) -->
-    <script src="js/modules/utils.js"></script>
+<!-- ========== ORDEM DE CARREGAMENTO OTIMIZADA ========== -->
+<script src="js/modules/utils.js"></script>
+<script src="js/modules/properties.js"></script>
+<script src="js/modules/gallery.js"></script>
+<script src="js/main.js"></script>
+
+<!-- BOTÃO DE EMERGÊNCIA PARA MOBILE -->
+<div id="mobileEmergency" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <button onclick="forceReloadProperties()" 
+            style="background: #e74c3c; color: white; border: none; padding: 12px 18px; border-radius: 50px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        🔄 RECARREGAR IMÓVEIS
+    </button>
+</div>
+
+<script>
+// Mostrar botão de emergência em mobile após 5 segundos se não houver imóveis
+setTimeout(() => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const propertyCards = document.querySelectorAll('.property-card');
     
-    <!-- CONSTANTES DO SUPABASE AGORA VÊM DO UTILS -->
-    <script>
-    // Aguardar utils.js carregar
-    if (typeof SUPABASE_URL === 'undefined') {
-        console.warn('⚠️ SUPABASE_URL ainda não carregado, aguardando...');
-        // Será definido quando utils.js carregar completamente
+    if (isMobile && propertyCards.length === 0) {
+        document.getElementById('mobileEmergency').style.display = 'block';
+        console.log('📱 Botão de emergência ativado para mobile');
     }
-    </script>
-    
-    <!-- PROPERTIES DEPENDE DE UTILS -->
-    <script src="js/modules/properties.js"></script>
-    
-    <!-- GALLERY DEPENDE DE PROPERTIES -->
-    <script src="js/modules/gallery.js"></script>
-    
-    <!-- MAIN DEPENDE DE TODOS -->
-    <script src="js/main.js"></script>
+}, 5000);
+</script>
 </body>
 </html>
