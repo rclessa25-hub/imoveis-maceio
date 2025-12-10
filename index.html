@@ -3173,112 +3173,11 @@ async function testSupabaseDetailed() {
 }
 
 <!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
-<script>
-<!-- Scripts modulares -->
-<script src="js/modules/utils.js"></script>
-<script src="js/modules/properties.js"></script>
-<script src="js/modules/gallery.js"></script>
-<script src="js/main.js"></script>
-
-<!-- Inicialização simplificada -->
-<script>
-// Inicialização mínima e segura
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('📄 DOM completamente carregado');
-    
-    // Pequeno delay para garantir carregamento dos módulos
-    setTimeout(() => {
-        if (typeof initializeWeberLessaSystem === 'function') {
-            console.log('🚀 Iniciando sistema via main.js...');
-            initializeWeberLessaSystem();
-        } else {
-            console.warn('⚠️ Módulo main.js não disponível, usando fallback...');
-            // Fallback direto
-            if (typeof initializeProperties === 'function') {
-                initializeProperties();
-            }
-            if (typeof setupGalleryEvents === 'function') {
-                setupGalleryEvents();
-            }
-        }
-    }, 50);
-});
-
-// ========== FUNÇÕES MOBILE RECUPERADAS ==========
-function restoreMobileFunctions() {
-    console.log('📱 Restaurando funções mobile...');
-    
-    // Função mobile para otimização (do código removido)
-    if (typeof isMobileDevice === 'function' && isMobileDevice()) {
-        console.log('📱 Otimizando para mobile...');
-        
-        // Otimizar galeria para mobile
-        if (typeof optimizeGalleryForMobile === 'function') {
-            setTimeout(optimizeGalleryForMobile, 1000);
-        }
-        
-        // Otimizar header mobile
-        optimizeMobileHeader();
-    }
-}
-
-function optimizeMobileHeader() {
-    // Corrigir header mobile fixo (do código original)
-    const mobileHeader = document.querySelector('.mobile-header-ultimate');
-    if (mobileHeader && isMobileDevice()) {
-        // Garantir que está fixo no topo
-        mobileHeader.style.position = 'fixed';
-        mobileHeader.style.top = '0';
-        mobileHeader.style.zIndex = '1000';
-        
-        // Ajustar padding do body para compensar header fixo
-        document.body.style.paddingTop = '130px';
-    }
-}
-
-function emergencyMobileInitialization() {
-    console.log('🚨 Inicialização de emergência mobile...');
-    
-    // Carregar imóveis
-    setTimeout(() => {
-        if (typeof initializeProperties === 'function') {
-            initializeProperties().catch(() => {
-                if (typeof getInitialProperties === 'function') {
-                    window.properties = getInitialProperties();
-                }
-                if (typeof renderProperties === 'function') {
-                    renderProperties();
-                }
-            });
-        }
-        
-        // Configurar galeria
-        if (typeof setupGalleryEvents === 'function') {
-            setupGalleryEvents();
-        }
-        
-        // Configurar filtros (IMPORTANTE!)
-        if (typeof setupFilters === 'function') {
-            setupFilters();
-        }
-        
-        // Otimizar mobile
-        restoreMobileFunctions();
-    }, 500);
-}
-</script>
 
     <!-- ========== ORDEM DE CARREGAMENTO CORRIGIDA ========== -->
     <!-- UTILS PRIMEIRO (sem dependências) -->
     <script src="js/modules/utils.js"></script>
     
-    <!-- CONSTANTES DO SUPABASE AGORA VÊM DO UTILS -->
-    <script>
-    // Aguardar utils.js carregar
-    if (typeof SUPABASE_URL === 'undefined') {
-        console.warn('⚠️ SUPABASE_URL ainda não carregado, aguardando...');
-        // Será definido quando utils.js carregar completamente
-    }
     <!-- PROPERTIES DEPENDE DE UTILS -->
     <script src="js/modules/properties.js"></script>
     
@@ -3287,6 +3186,160 @@ function emergencyMobileInitialization() {
     
     <!-- MAIN DEPENDE DE TODOS -->
     <script src="js/main.js"></script>
+
+    <!-- Inicialização simplificada -->
+    <script>
+    // Inicialização mínima e segura
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 DOM completamente carregado');
+        console.log('🔍 Verificando funções disponíveis...');
+        console.log('- initializeWeberLessaSystem:', typeof initializeWeberLessaSystem);
+        console.log('- initializeProperties:', typeof initializeProperties);
+        console.log('- setupFilters:', typeof setupFilters);
+        console.log('- renderProperties:', typeof renderProperties);
+        
+        // Pequeno delay para garantir carregamento dos módulos
+        setTimeout(() => {
+            if (typeof initializeWeberLessaSystem === 'function') {
+                console.log('🚀 Iniciando sistema via main.js...');
+                initializeWeberLessaSystem();
+            } else {
+                console.warn('⚠️ Módulo main.js não disponível, usando fallback...');
+                // Fallback direto - ORDEM CORRETA
+                if (typeof initializeProperties === 'function') {
+                    console.log('🏠 Inicializando propriedades...');
+                    initializeProperties().then(() => {
+                        console.log('✅ Propriedades inicializadas');
+                        // Configurar filtros
+                        if (typeof setupFilters === 'function') {
+                            console.log('🎛️ Configurando filtros...');
+                            setupFilters();
+                        }
+                        // Otimizar mobile
+                        restoreMobileFunctions();
+                    }).catch(error => {
+                        console.error('❌ Erro ao inicializar propriedades:', error);
+                        emergencyMobileInitialization();
+                    });
+                } else {
+                    console.error('❌ initializeProperties não encontrado!');
+                    emergencyMobileInitialization();
+                }
+            }
+        }, 100);
+    });
+
+    // ========== FUNÇÕES MOBILE RECUPERADAS ==========
+    function restoreMobileFunctions() {
+        console.log('📱 Restaurando funções mobile...');
+        
+        // Função mobile para otimização
+        if (typeof isMobileDevice === 'function' && isMobileDevice()) {
+            console.log('📱 Otimizando para mobile...');
+            
+            // Otimizar galeria para mobile
+            if (typeof optimizeGalleryForMobile === 'function') {
+                setTimeout(optimizeGalleryForMobile, 1000);
+            }
+            
+            // Otimizar header mobile
+            optimizeMobileHeader();
+        }
+    }
+
+    function optimizeMobileHeader() {
+        // Corrigir header mobile fixo
+        const mobileHeader = document.querySelector('.mobile-header-ultimate');
+        if (mobileHeader && typeof isMobileDevice === 'function' && isMobileDevice()) {
+            // Garantir que está fixo no topo
+            mobileHeader.style.position = 'fixed';
+            mobileHeader.style.top = '0';
+            mobileHeader.style.zIndex = '1000';
+            mobileHeader.style.width = '100%';
+            
+            // Ajustar padding do body para compensar header fixo
+            document.body.style.paddingTop = '130px';
+        }
+    }
+
+    function emergencyMobileInitialization() {
+        console.log('🚨 Inicialização de emergência...');
+        
+        // 1. Carregar imóveis
+        setTimeout(() => {
+            if (typeof getInitialProperties === 'function') {
+                console.log('🔄 Carregando imóveis de emergência...');
+                window.properties = getInitialProperties();
+                
+                // 2. Renderizar imóveis
+                if (typeof renderProperties === 'function') {
+                    console.log('🎨 Renderizando imóveis...');
+                    renderProperties();
+                } else {
+                    console.error('❌ renderProperties não encontrado!');
+                }
+                
+                // 3. Configurar filtros (CRÍTICO!)
+                if (typeof setupFilters === 'function') {
+                    console.log('🎛️ Configurando filtros...');
+                    setTimeout(() => {
+                        setupFilters();
+                    }, 300);
+                } else {
+                    console.error('❌ setupFilters não encontrado!');
+                }
+            } else {
+                console.error('❌ getInitialProperties não encontrado!');
+            }
+            
+            // 4. Configurar galeria
+            if (typeof setupGalleryEvents === 'function') {
+                console.log('🖼️ Configurando galeria...');
+                setTimeout(() => {
+                    setupGalleryEvents();
+                }, 500);
+            }
+            
+            // 5. Otimizar mobile
+            setTimeout(() => {
+                restoreMobileFunctions();
+            }, 1000);
+            
+        }, 500);
+    }
+
+    // Função de teste rápido
+    function testAllFunctions() {
+        console.log('🧪 TESTANDO TODAS AS FUNÇÕES:');
+        
+        const requiredFunctions = [
+            'initializeProperties',
+            'renderProperties',
+            'setupFilters',
+            'createPropertyGallery',
+            'openGallery',
+            'contactAgent',
+            'isMobileDevice'
+        ];
+        
+        requiredFunctions.forEach(funcName => {
+            const exists = typeof window[funcName] === 'function';
+            console.log(`${funcName}: ${exists ? '✅' : '❌'}`);
+        });
+        
+        // Testar imediatamente
+        if (typeof initializeProperties === 'function') {
+            console.log('🔄 Testando inicialização...');
+            initializeProperties().then(() => {
+                console.log('✅ Inicialização completa');
+            }).catch(error => {
+                console.error('❌ Erro na inicialização:', error);
+            });
+        }
+    }
+    
+    // Testar funções após carregamento
+    setTimeout(testAllFunctions, 2000);
     </script>
 </body>
 </html>
