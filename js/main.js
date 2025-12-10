@@ -95,3 +95,41 @@ window.initializeWeberLessaSystem = async function() {
     
     return true;
 };
+
+// main.js - ADICIONAR NO FINAL DA FUNÇÃO initializeWeberLessaSystem
+
+    // ========== CONFIGURAR FILTROS (CRÍTICO) ==========
+    console.log('🎛️ Configurando sistema de filtros...');
+    if (typeof setupFilters === 'function') {
+        setupFilters();
+        console.log('✅ Filtros configurados');
+    } else {
+        console.error('❌ setupFilters() não disponível!');
+    }
+    
+    // ========== TESTE DE INTEGRAÇÃO RÁPIDO ==========
+    setTimeout(() => {
+        console.log('🧪 TESTE DE INTEGRAÇÃO:');
+        
+        const testResults = {
+            'Imóveis carregados': window.properties && Array.isArray(window.properties),
+            'Número de imóveis': window.properties ? window.properties.length : 0,
+            'Container encontrado': !!document.getElementById('properties-container'),
+            'Filtros ativos': document.querySelectorAll('.filter-btn').length > 0,
+            'Função renderProperties': typeof renderProperties === 'function',
+            'Função setupFilters': typeof setupFilters === 'function'
+        };
+        
+        console.table(testResults);
+        
+        // Se imóveis carregados mas não visíveis, forçar renderização
+        if (window.properties && window.properties.length > 0) {
+            const container = document.getElementById('properties-container');
+            if (!container || container.children.length === 0) {
+                console.log('🔄 Imóveis carregados mas não visíveis - Forçando renderização...');
+                if (typeof renderProperties === 'function') {
+                    renderProperties();
+                }
+            }
+        }
+    }, 1000);
