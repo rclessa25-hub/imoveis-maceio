@@ -3174,20 +3174,34 @@ async function testSupabaseDetailed() {
 
 <!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
 <script>
-// Inicialização segura após DOM carregado
+<!-- Scripts modulares -->
+<script src="js/modules/utils.js"></script>
+<script src="js/modules/properties.js"></script>
+<script src="js/modules/gallery.js"></script>
+<script src="js/main.js"></script>
+
+<!-- Inicialização simplificada -->
+<script>
+// Inicialização mínima e segura
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM Carregado - Iniciando sistema Weber Lessa');
+    console.log('📄 DOM completamente carregado');
     
-    // Recuperar funções mobile dos filtros (que foram removidas)
-    restoreMobileFunctions();
-    
-    // Verificar se main.js carregou
-    if (typeof safeInitialize === 'function') {
-        safeInitialize();
-    } else {
-        console.error('❌ main.js não carregou corretamente - usando fallback');
-        emergencyMobileInitialization();
-    }
+    // Pequeno delay para garantir carregamento dos módulos
+    setTimeout(() => {
+        if (typeof initializeWeberLessaSystem === 'function') {
+            console.log('🚀 Iniciando sistema via main.js...');
+            initializeWeberLessaSystem();
+        } else {
+            console.warn('⚠️ Módulo main.js não disponível, usando fallback...');
+            // Fallback direto
+            if (typeof initializeProperties === 'function') {
+                initializeProperties();
+            }
+            if (typeof setupGalleryEvents === 'function') {
+                setupGalleryEvents();
+            }
+        }
+    }, 50);
 });
 
 // ========== FUNÇÕES MOBILE RECUPERADAS ==========
@@ -3265,16 +3279,7 @@ if (typeof SUPABASE_URL === 'undefined') {
     console.warn('⚠️ SUPABASE_URL ainda não carregado, aguardando...');
     // Será definido quando utils.js carregar completamente
 }
-</script>
 
-<!-- PROPERTIES DEPENDE DE UTILS -->
-<script src="js/modules/properties.js"></script>
-
-<!-- GALLERY DEPENDE DE PROPERTIES -->
-<script src="js/modules/gallery.js"></script>
-
-<!-- MAIN DEPENDE DE TODOS -->
-<script src="js/main.js"></script>
 </script>
 </body>
 </html>
