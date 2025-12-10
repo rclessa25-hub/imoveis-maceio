@@ -7,6 +7,29 @@ window.editingPropertyId = null;
 window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
+// ========== VERIFICAÇÃO DE CARREGAMENTO ==========
+console.log('🔍 VERIFICAÇÃO DE CARREGAMENTO:');
+console.log('- window.properties definido?', !!window.properties);
+console.log('- É array?', Array.isArray(window.properties));
+console.log('- SUPABASE_URL:', window.SUPABASE_URL);
+
+// Forçar inicialização se não foi chamada
+setTimeout(() => {
+    if (!window.properties || window.properties.length === 0) {
+        console.log('⚠️ properties vazio - verificando se precisa inicializar...');
+        
+        // Verificar se o DOM já carregou
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            console.log('🔄 DOM já carregado - chamando initializeProperties...');
+            if (typeof window.initializeProperties === 'function') {
+                window.initializeProperties().then(() => {
+                    console.log('✅ Properties inicializados via timeout');
+                });
+            }
+        }
+    }
+}, 1000);
+
 // ========== FUNÇÃO 1: getInitialProperties() ==========
 window.getInitialProperties = function() {
     return [
