@@ -397,10 +397,10 @@
     </div>
 </section>
 
-    <button class="admin-toggle" onclick="toggleAdminPanel()">
+   <button class="admin-toggle" onclick="toggleAdminPanel()">
         <i class="fas fa-user-cog"></i>
     </button>
-
+    
     <!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
     <div id="pdfModal" class="pdf-modal">
         <div class="pdf-modal-content">
@@ -422,69 +422,83 @@
             </p>
         </div>
     </div>
-
-    <script>
-  <!-- ========== SCRIPTS MODULARIZADOS ========== -->
-    <script src="js/modules/utils.js"></script>           <!-- PRIMEIRO: constantes globais -->
-    <script src="js/modules/properties.js"></script>      <!-- SEGUNDO: sistema de imóveis -->
-    <script src="js/modules/gallery.js"></script>         <!-- TERCEIRO: galeria de fotos -->
-    <script src="js/modules/admin.js"></script>           <!-- QUARTO: sistema admin -->
-    <script src="js/main.js"></script>                    <!-- ÚLTIMO: orquestração -->
     
-  <!-- ========== DIAGNÓSTICO SIMPLIFICADO ========== -->
-    <script>
-    // INICIALIZAÇÃO SEGURA
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🏠 DOM Pronto - Weber Lessa Imóveis');
-        
-        // Conectar botão admin - VERIFICAÇÃO DE SEGURANÇA
-        const adminBtn = document.querySelector('.admin-toggle');
-        if (adminBtn) {
-            adminBtn.onclick = function() {
-                // Primeiro verificar se as funções essenciais carregaram
-                if (typeof window.toggleAdminPanel === 'function') {
-                    console.log('✅ Chamando toggleAdminPanel()');
-                    window.toggleAdminPanel();
-                } else {
-                    console.error('❌ toggleAdminPanel não disponível');
-                    
-                    // Tentar carregar novamente as dependências
-                    if (!window.SUPABASE_URL) {
-                        console.log('🔄 Tentando recarregar utils.js...');
-                        const script = document.createElement('script');
-                        script.src = 'js/modules/utils.js';
-                        document.head.appendChild(script);
-                        
-                        script.onload = function() {
-                            console.log('✅ utils.js recarregado');
-                            alert('🔧 Sistema admin recarregado. Tente novamente.');
-                        };
-                    }
-                }
-            };
-            console.log('✅ Botão admin configurado');
-        }
+<button class="admin-toggle">
+    <i class="fas fa-user-cog"></i>
+</button>
+ 
+<!-- ========== SCRIPTS MODULARIZADOS ========== -->
+<script src="js/modules/utils.js"></script>
+<script src="js/modules/properties.js"></script>
+<script src="js/modules/gallery.js"></script>
+<script src="js/modules/admin.js"></script>
+<script src="js/main.js"></script>
+
+<!-- ========== INICIALIZAÇÃO SIMPLIFICADA ========== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🏠 DOM Pronto - Weber Lessa Imóveis');
+    
+    // DIAGNÓSTICO IMEDIATO
+    console.log('🔍 DIAGNÓSTICO INICIAL:');
+    console.log('- SUPABASE_URL:', window.SUPABASE_URL);
+    console.log('- isMobileDevice:', typeof isMobileDevice);
+    console.log('- toggleAdminPanel:', typeof window.toggleAdminPanel);
+    console.log('- properties:', window.properties ? window.properties.length : 0);
+    
+    // Conectar botão admin - FORÇAR FUNCIONALIDADE
+    const adminBtn = document.querySelector('.admin-toggle');
+    if (adminBtn) {
+        adminBtn.onclick = function() {
+            console.log('🖱️ Botão admin clicado');
+            
+            // Verificação de segurança aprimorada
+            if (!window.SUPABASE_URL) {
+                console.error('❌ SUPABASE_URL não definido!');
+                alert('⚠️ Sistema não carregou completamente. Recarregue a página (Ctrl+F5).');
+                return;
+            }
+            
+            if (typeof window.toggleAdminPanel !== 'function') {
+                console.error('❌ toggleAdminPanel não encontrado!');
+                alert('⚠️ Função admin não disponível. Recarregue a página.');
+                return;
+            }
+            
+            console.log('✅ Chamando toggleAdminPanel()');
+            window.toggleAdminPanel();
+        };
+        console.log('✅ Botão admin configurado');
+    } else {
+        console.error('❌ Botão admin não encontrado!');
+    }
+});
+
+// DIAGNÓSTICO COMPLETO APÓS 3 SEGUNDOS
+setTimeout(() => {
+    console.log('📊 DIAGNÓSTICO FINAL DO SISTEMA:');
+    console.log('===============================');
+    
+    const modules = [
+        { name: 'utils.js', check: () => !!window.SUPABASE_URL && typeof isMobileDevice === 'function' },
+        { name: 'properties.js', check: () => typeof window.initializeProperties === 'function' },
+        { name: 'gallery.js', check: () => typeof window.openGallery === 'function' },
+        { name: 'admin.js', check: () => typeof window.toggleAdminPanel === 'function' },
+        { name: 'main.js', check: () => typeof window.initializeWeberLessaSystem === 'function' }
+    ];
+    
+    modules.forEach(module => {
+        const status = module.check();
+        console.log(`${status ? '✅' : '❌'} ${module.name}: ${status ? 'CARREGADO' : 'FALHOU'}`);
     });
     
-    // DIAGNÓSTICO SIMPLES
-    setTimeout(() => {
-        const status = {
-            'utils.js': typeof isMobileDevice === 'function',
-            'properties.js': typeof initializeProperties === 'function', 
-            'gallery.js': typeof openGallery === 'function',
-            'main.js': typeof initializeWeberLessaSystem === 'function',
-            'SUPABASE_URL': !!window.SUPABASE_URL,
-            'toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
-        };
-        
-        console.log('🔍 DIAGNÓSTICO DO SISTEMA:', status);
-        
-        // Mostrar alerta apenas se crítico
-        if (!status['utils.js'] || !status['SUPABASE_URL']) {
-            console.warn('⚠️ Dependências críticas faltando:', 
-                Object.entries(status).filter(([k, v]) => !v).map(([k]) => k));
-        }
-    }, 2000);
-    </script>
+    console.log('===============================');
+    
+    // Verificar senha admin
+    console.log('🔑 ADMIN_PASSWORD definida?:', !!window.ADMIN_PASSWORD);
+    console.log('🔑 Valor da senha:', window.ADMIN_PASSWORD);
+    
+}, 3000);
+</script>
 </body>
 </html>
