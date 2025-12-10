@@ -211,3 +211,134 @@ window.saveToLocalStorage = function(propertyData) {
 };
 
 console.log('✅ properties.js com 8 funções carregadas');
+
+// ========== FUNÇÃO 9: initializeProperties() ==========
+window.initializeProperties = async function() {
+    console.log('🔍 Inicializando sistema de imóveis...');
+    
+    // Primeiro tentar carregar do localStorage
+    const localData = localStorage.getItem('weberlessa_properties');
+    if (localData) {
+        try {
+            window.properties = JSON.parse(localData);
+            console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
+        } catch (error) {
+            console.log('⚠️ Erro ao carregar do localStorage:', error);
+            window.properties = window.getInitialProperties();
+        }
+    } else {
+        // Usar dados iniciais
+        window.properties = window.getInitialProperties();
+        console.log(`🎯 ${window.properties.length} imóveis de exemplo carregados`);
+        
+        // Salvar no localStorage para referência futura
+        localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
+    }
+    
+    // Renderizar os imóveis
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties();
+    } else {
+        console.error('❌ renderProperties() não disponível ainda');
+        // Forçar renderização básica
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties();
+            }
+        }, 100);
+    }
+    
+    // Configurar filtros se disponível
+    if (typeof window.setupFilters === 'function') {
+        setTimeout(() => {
+            window.setupFilters();
+        }, 200);
+    }
+    
+    console.log('✅ Sistema de imóveis inicializado com sucesso!');
+    return window.properties;
+};
+
+// ========== FUNÇÃO 10: renderProperties() ==========
+window.renderProperties = function(filter = 'todos') {
+    console.log('🎨 renderProperties() chamada com filtro:', filter);
+    
+    const container = document.getElementById('properties-container');
+    if (!container) {
+        console.error('❌ Container de propriedades não encontrado!');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    // Filtrar imóveis
+    let filteredProperties = window.properties || [];
+    if (filter !== 'todos') {
+        filteredProperties = filteredProperties.filter(p => {
+            if (filter === 'Residencial') return p.type === 'residencial';
+            if (filter === 'Comercial') return p.type === 'comercial';
+            if (filter === 'Rural') return p.type === 'rural';
+            if (filter === 'Minha Casa Minha Vida') return p.badge === 'MCMV';
+            return true;
+        });
+    }
+    
+    if (filteredProperties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel encontrado para este filtro.</p>';
+        return;
+    }
+    
+    console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
+    
+    // Usar createPropertyGallery() se disponível (do gallery.js)
+    const useGallery = typeof window.createPropertyGallery === 'function';
+    
+    filteredProperties.forEach(property => {
+        const features = Array.isArray(property.features) ? property.features : 
+                        (property.features ? property.features.split(',') : []);
+        
+        // Gerar HTML da galeria/imagem
+        let propertyImageHTML = '';
+        if (useGallery) {
+            propertyImageHTML = window.createPropertyGallery(property);
+        } else {
+            // Fallback simples
+            const firstImage = property.images ? property.images.split(',')[0] : 
+                             'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+            
+            propertyImageHTML = `
+                <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
+                    <img src="${firstImage}" 
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         alt="${property.title}"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                    ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                    ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                </div>
+            `;
+        }
+        
+        const card = `
+            <div class="property-card">
+                ${propertyImageHTML}
+                <div class="property-content">
+                    <div class="property-price">${property.price}</div>
+                    <h3 class="property-title">${property.title}</h3>
+                    <div class="property-location"><i class="fas fa-map-marker-alt"></i> ${property.location}</div>
+                    <p>${property.description}</p>
+                    <div class="property-features">
+                        ${features.map(f => `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
+                    </div>
+                    <button class="contact-btn" onclick="contactAgent(${property.id})">
+                        <i class="fab fa-whatsapp"></i> Entrar em Contato
+                    </button>
+                </div>
+            </div>
+        `;
+        container.innerHTML += card;
+    });
+    
+    console.log('✅ Imóveis renderizados com sucesso');
+};
+
+console.log('✅ properties.js com 10 funções carregadas (complete)');
