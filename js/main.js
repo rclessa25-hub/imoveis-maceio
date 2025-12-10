@@ -1,102 +1,114 @@
-// js/main.js - Sistema de inicialização principal Weber Lessa
-console.log('🚀 main.js - Sistema de inicialização carregado');
+// js/main.js - Sistema de inicialização principal (VERSÃO CORRIGIDA)
+console.log('🚀 main.js carregado - Inicialização principal');
 
-// ========== CACHE DE VERIFICAÇÕES (OTIMIZAÇÃO 3) ==========
-const criticalElementsCache = new Map();
-function getCriticalElement(id) {
-    if (!criticalElementsCache.has(id)) {
-        criticalElementsCache.set(id, document.getElementById(id));
+// ========== VARIÁVEIS GLOBAIS ==========
+window.APP_INITIALIZED = false;
+window.FILTERS_INITIALIZED = false;
+
+// ========== CACHE DE ELEMENTOS (OTIMIZAÇÃO) ==========
+const elementCache = new Map();
+window.getElement = function(id) {
+    if (!elementCache.has(id)) {
+        elementCache.set(id, document.getElementById(id));
     }
-    return criticalElementsCache.get(id);
-}
+    return elementCache.get(id);
+};
 
-// ========== INLINING CRÍTICO (OTIMIZAÇÃO 2) ==========
-function checkCriticalElements() {
-    return ['properties-container', 'adminPanel', 'propertyForm']
-        .map(id => !!getCriticalElement(id))
-        .every(Boolean);
-}
+// ========== VERIFICAÇÃO DE MÓDULOS ==========
+window.checkModules = function() {
+    console.log('🔍 Verificando módulos carregados:');
+    
+    const modules = {
+        'utils.js': typeof window.isMobileDevice === 'function',
+        'properties.js': typeof window.getInitialProperties === 'function',
+        'gallery.js': typeof window.openGallery === 'function'
+    };
+    
+    Object.entries(modules).forEach(([module, loaded]) => {
+        console.log(`- ${module}: ${loaded ? '✅' : '❌'}`);
+    });
+    
+    return Object.values(modules).every(Boolean);
+};
 
 // ========== SISTEMA DE INICIALIZAÇÃO PRINCIPAL ==========
 window.initializeWeberLessaSystem = async function() {
     console.log('🌐 Iniciando sistema Weber Lessa...');
     
     try {
-        // 1. Verificar diretriz constitucional
-        if (typeof enforceConstitutionalGuideline === 'function') {
-            enforceConstitutionalGuideline();
+        // 1. Verificar módulos
+        if (!window.checkModules()) {
+            console.warn('⚠️ Alguns módulos não carregaram completamente');
         }
         
-        // 2. Testar conexão Supabase
-        const supabaseOk = typeof testSupabaseConnection === 'function' 
-            ? await testSupabaseConnection() 
-            : false;
-        console.log(`🌐 Supabase: ${supabaseOk ? '✅ Conectado' : '⚠️ Usando modo local'}`);
-        
-        // 3. Inicializar sistema de imóveis (CORE)
-        if (typeof initializeProperties === 'function') {
-            await initializeProperties();
+        // 2. Inicializar propriedades
+        if (typeof window.initializeProperties === 'function') {
+            await window.initializeProperties();
+            console.log('✅ Sistema de imóveis inicializado');
         } else {
-            console.error('❌ initializeProperties() não encontrado!');
-            // Fallback: carregar dados básicos
-            if (typeof getInitialProperties === 'function') {
-                window.properties = getInitialProperties();
-                if (typeof renderProperties === 'function') {
-                    renderProperties();
-                }
-            }
+            console.error('❌ initializeProperties não encontrado');
+            window.loadFallbackProperties();
         }
         
-        // 4. Configurar sistemas auxiliares
-        setupAuxiliarySystems();
+        // 3. Configurar sistemas auxiliares
+        window.setupAuxiliarySystems();
         
-        // 5. Executar verificações finais
-        runFinalVerifications();
+        // 4. Verificar funcionamento
+        window.runFinalVerifications();
         
+        window.APP_INITIALIZED = true;
         console.log('✅ Sistema Weber Lessa completamente inicializado!');
         
     } catch (error) {
-        console.error('❌ Erro crítico na inicialização:', error);
-        // Fallback de emergência
-        emergencyFallback();
+        console.error('❌ Erro na inicialização:', error);
+        window.emergencyFallback();
     }
 };
 
 // ========== CONFIGURAÇÃO DE SISTEMAS AUXILIARES ==========
-function setupAuxiliarySystems() {
+window.setupAuxiliarySystems = function() {
     console.log('🔧 Configurando sistemas auxiliares...');
     
-    // 1. Formulário admin
-    if (typeof setupForm === 'function') {
-        setupForm();
+    // 1. Formulário admin (se existir)
+    if (typeof window.setupForm === 'function') {
+        window.setupForm();
     }
     
-    // 2. Sistema de upload
-    if (typeof setupUploadSystem === 'function') {
-        setupUploadSystem();
+    // 2. Sistema de upload (se existir)
+    if (typeof window.setupUploadSystem === 'function') {
+        window.setupUploadSystem();
     }
     
-    // 3. Sistema de PDFs
-    if (typeof setupPdfUploadSystem === 'function') {
-        setupPdfUploadSystem();
+    // 3. Sistema de galeria
+    if (typeof window.setupGalleryEvents === 'function') {
+        window.setupGalleryEvents();
     }
     
-    // 4. Sistema de galeria
-    if (typeof setupGalleryEvents === 'function') {
-        setupGalleryEvents();
-    }
-    
-    // 5. Otimização mobile
-    if (typeof isMobileDevice === 'function' && isMobileDevice()) {
-        console.log('📱 Dispositivo mobile detectado, otimizando...');
-        if (typeof optimizeGalleryForMobile === 'function') {
-            setTimeout(optimizeGalleryForMobile, 1000);
+    // 4. Otimização mobile
+    if (typeof window.isMobileDevice === 'function' && window.isMobileDevice()) {
+        console.log('📱 Otimizando para mobile...');
+        if (typeof window.optimizeGalleryForMobile === 'function') {
+            setTimeout(window.optimizeGalleryForMobile, 1000);
         }
     }
-}
+};
+
+// ========== FALLBACK DE PROPRIEDADES ==========
+window.loadFallbackProperties = function() {
+    console.log('🔄 Carregando propriedades de fallback...');
+    
+    if (typeof window.getInitialProperties === 'function') {
+        window.properties = window.getInitialProperties();
+        console.log(`✅ ${window.properties.length} imóveis carregados (fallback)`);
+        
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties();
+        }
+    }
+};
 
 // ========== VERIFICAÇÕES FINAIS ==========
-function runFinalVerifications() {
+window.runFinalVerifications = function() {
     console.log('🔍 Executando verificações finais...');
     
     // Verificar elementos críticos
@@ -107,64 +119,31 @@ function runFinalVerifications() {
     ];
     
     criticalElements.forEach(id => {
-        console.log(`- ${id}: ${getCriticalElement(id) ? '✅' : '❌'}`);
-    });
-    
-    // Verificar funções críticas
-    const criticalFunctions = [
-        'renderProperties',
-        'openGallery',
-        'toggleAdminPanel',
-        'contactAgent'
-    ];
-    
-    criticalFunctions.forEach(func => {
-        console.log(`- ${func}(): ${typeof window[func] === 'function' ? '✅' : '❌'}`);
+        const element = window.getElement(id);
+        console.log(`- ${id}: ${element ? '✅' : '❌'}`);
     });
     
     // Contar imóveis renderizados
     setTimeout(() => {
-        const container = getCriticalElement('properties-container');
+        const container = window.getElement('properties-container');
         if (container && container.children.length > 0) {
             console.log(`🎉 ${container.children.length} imóveis visíveis na página!`);
         } else {
-            console.warn('⚠️ Nenhum imóvel visível! Tentando recuperação...');
-            if (typeof renderProperties === 'function') {
-                renderProperties();
-            }
+            console.warn('⚠️ Nenhum imóvel visível!');
         }
     }, 500);
-}
+};
 
 // ========== FALLBACK DE EMERGÊNCIA ==========
-function emergencyFallback() {
-    console.log('🚨 ATIVANDO MODO DE EMERGÊNCIA');
+window.emergencyFallback = function() {
+    console.log('🚨 Ativando modo de emergência...');
     
-    // Tentar carregar dados básicos
-    if (typeof getInitialProperties === 'function') {
-        window.properties = getInitialProperties();
-        console.log('✅ Dados básicos carregados (emergência)');
-    }
-    
-    // Tentar renderizar
-    if (typeof renderProperties === 'function' && window.properties && window.properties.length > 0) {
-        renderProperties();
-        console.log('✅ Renderização de emergência executada');
-    }
-    
-    alert('⚠️ Sistema iniciado em modo de segurança. Algumas funcionalidades podem estar limitadas.');
-}
-
-// ========== PASSAGEM POR REFERÊNCIA (OTIMIZAÇÃO 4) ==========
-const moduleStatuses = {};
-function updateModuleStatus(moduleName, status) {
-    // Modifica objeto existente por referência (eficiente)
-    moduleStatuses[moduleName] = status;
-    return moduleStatuses;
-}
+    window.loadFallbackProperties();
+    alert('⚠️ Sistema iniciado em modo de segurança.');
+};
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA SEGURA ==========
-function safeInitialize() {
+window.safeInitialize = function() {
     console.log('🔒 Inicialização segura iniciada...');
     
     // Verificar se módulos carregaram
@@ -174,150 +153,41 @@ function safeInitialize() {
     
     console.log('📦 Módulos carregados:', loadedModules);
     
-    // Verificar constantes críticas
-    if (typeof SUPABASE_URL === 'undefined') {
-        console.warn('⚠️ SUPABASE_URL não definido, aguardando utils.js...');
-        // Aguardar mais tempo se necessário
-        setTimeout(() => {
-            if (typeof SUPABASE_URL !== 'undefined') {
-                continueInitialization();
-            } else {
-                console.error('❌ SUPABASE_URL nunca carregou');
-                emergencyFallback();
-            }
-        }, 500);
-    } else {
-        continueInitialization();
-    }
-    
-    function continueInitialization() {
-        if (typeof initializeWeberLessaSystem === 'function') {
-            // Atualizar status por referência
-            updateModuleStatus('main', 'initializing');
-            initializeWeberLessaSystem().then(() => {
-                updateModuleStatus('main', 'complete');
-                
-                // Testar filtros após inicialização
-                setTimeout(() => {
-                    if (typeof testFilters === 'function') {
-                        testFilters();
-                    }
-                }, 1000);
-            });
+    // Aguardar carregamento completo
+    setTimeout(() => {
+        if (typeof window.initializeWeberLessaSystem === 'function') {
+            window.initializeWeberLessaSystem();
         } else {
             console.error('❌ initializeWeberLessaSystem não disponível');
-            emergencyFallback();
+            window.emergencyFallback();
         }
-    }
-}
-// ========== TESTE INCREMENTAL (Passo 3) ==========
-// Colocar NO FINAL do arquivo, APÓS todas as funções
-console.log('🧪 TESTE 1: main.js carregado?', typeof safeInitialize === 'function');
-console.log('🧪 TESTE 2: Otimizações ativas?', {
-    cache: typeof getCriticalElement === 'function',
-    inline: typeof checkCriticalElements === 'function',
-    reference: typeof updateModuleStatus === 'function'
-});
-
-// Teste de inicialização manual (debug - opcional)
-window.debugInitialize = function() {
-    console.log('🧪 TESTE MANUAL: Executando inicialização...');
-    if (typeof initializeWeberLessaSystem === 'function') {
-        initializeWeberLessaSystem().then(() => {
-            console.log('✅ TESTE MANUAL: Inicialização completa');
-        }).catch(err => {
-            console.error('❌ TESTE MANUAL: Erro:', err);
-        });
-    }
+    }, 100);
 };
 
-// ========== CORREÇÃO DOS FILTROS ==========
-function setupFiltersFix() {
-    console.log('🎛️ Configurando filtros corrigidos...');
+// ========== TESTE DO MÓDULO ==========
+window.testMainModule = function() {
+    console.log('🧪 Testando módulo main.js:');
     
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    if (filterButtons.length === 0) {
-        console.warn('⚠️ Botões de filtro não encontrados!');
-        return;
-    }
+    const functions = [
+        'safeInitialize',
+        'initializeWeberLessaSystem',
+        'setupAuxiliarySystems',
+        'checkModules'
+    ];
     
-    filterButtons.forEach(button => {
-        // Remover listeners antigos
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
+    functions.forEach(func => {
+        console.log(`- ${func}: ${typeof window[func] === 'function' ? '✅' : '❌'}`);
     });
     
-    // Re-aplicar listeners
-    document.querySelectorAll('.filter-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            // Remover classe active de todos os botões
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Adicionar classe active ao botão clicado
-            this.classList.add('active');
-            
-            // Obter o texto do filtro
-            const filterText = this.textContent.trim();
-            const filter = filterText === 'Todos' ? 'todos' : filterText;
-            
-            console.log(`🎯 Filtrando por: ${filter}`);
-            
-            // Chamar renderProperties se existir
-            if (typeof renderProperties === 'function') {
-                renderProperties(filter);
-            } else {
-                console.error('❌ renderProperties() não disponível');
-            }
-        });
-    });
-    
-    console.log(`✅ ${filterButtons.length} filtros configurados`);
-}
-
-// ========== INICIALIZAÇÃO CORRIGIDA ==========
-// Modificar a função setupAuxiliarySystems para incluir filtros
-const originalSetupAuxiliarySystems = setupAuxiliarySystems;
-window.setupAuxiliarySystems = function() {
-    console.log('🔧 Configurando sistemas auxiliares CORRIGIDOS...');
-    
-    // Chamar original
-    if (typeof originalSetupAuxiliarySystems === 'function') {
-        originalSetupAuxiliarySystems();
-    }
-    
-    // Adicionar configuração dos filtros
-    setupFiltersFix();
-    
-    // Se houver função setupFilters no properties.js, também chamar
-    if (typeof setupFilters === 'function') {
-        setupFilters();
-    }
+    return functions.every(func => typeof window[func] === 'function');
 };
 
-// ========== TESTE DOS FILTROS ==========
-window.testFilters = function() {
-    console.log('🧪 Testando filtros...');
-    
-    // Verificar se filtros existem
-    const filtersContainer = document.querySelector('.filter-options');
-    if (!filtersContainer) {
-        console.error('❌ Container de filtros não encontrado!');
-        return false;
-    }
-    
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    console.log(`✅ ${filterButtons.length} botões de filtro encontrados`);
-    
-    // Testar clique no primeiro filtro
-    if (filterButtons.length > 0) {
-        console.log('🧪 Simulando clique no filtro...');
-        filterButtons[0].click();
-    }
-    
-    return filterButtons.length > 0;
-};
+// ========== EXPORTAÇÃO CONSISTENTE ==========
+console.log('✅ main.js carregado - Funções expostas via window');
 
-// ========== EXPORTAÇÃO ==========
-console.log('✅ main.js completamente carregado e pronto');
+// Teste automático do módulo
+setTimeout(() => {
+    if (typeof window.testMainModule === 'function') {
+        window.testMainModule();
+    }
+}, 500);
