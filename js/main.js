@@ -89,9 +89,9 @@ window.initializeWeberLessaSystem = async function(options = {}) {
 // Validar módulos disponíveis
 function validateModules() {
     const modules = {
-        utils: typeof isMobileDevice === 'function',
-        properties: typeof initializeProperties === 'function',
-        gallery: typeof openGallery === 'function',
+        utils: typeof window.isMobileDevice === 'function',
+        properties: typeof window.initializeProperties === 'function',
+        gallery: typeof window.openGallery === 'function',
         core: false
     };
     
@@ -292,6 +292,47 @@ window.getSystemStatus = function() {
         time: new Date().toISOString()
     };
 };
+
+// Função emergencial para configurar filtros
+function setupFiltersEmergency() {
+    console.log('🚨 Configurando filtros em modo emergência...');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    if (filterButtons.length === 0) {
+        console.error('❌ Botões de filtro não encontrados!');
+        return;
+    }
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover classe active de todos
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            // Adicionar ao clicado
+            this.classList.add('active');
+            
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            console.log(`🎯 Filtrando por: ${filter}`);
+            
+            // Renderizar com filtro
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties(filter);
+            } else {
+                console.error('❌ renderProperties não disponível');
+            }
+        });
+    });
+    
+    console.log(`✅ ${filterButtons.length} botões de filtro configurados`);
+}
+
+// Executar após carregamento
+setTimeout(() => {
+    if (typeof setupFilters !== 'function') {
+        setupFiltersEmergency();
+    }
+}, 1000);
 
 // ========== EXPORTAÇÃO DO MÓDULO ==========
 console.log('✅ main.js completamente carregado e pronto');
