@@ -120,4 +120,26 @@ window.throttle = function(func, limit) {
     };
 };
 
+// ========== DEBUG DO CARREGAMENTO ==========
+console.log('🔧 utils.js - DEBUG DE CARREGAMENTO:');
+console.log('- SUPABASE_URL:', window.SUPABASE_URL);
+console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD ? '***' + window.ADMIN_PASSWORD.slice(-3) : 'NÃO DEFINIDA');
+console.log('- PDF_PASSWORD:', window.PDF_PASSWORD ? '***' + window.PDF_PASSWORD.slice(-3) : 'NÃO DEFINIDA');
+
+// Verificar se está sendo carregado no GitHub Pages
+console.log('- Hostname:', window.location.hostname);
+console.log('- É GitHub Pages?', window.location.hostname.includes('github.io'));
+
+// Teste de conexão básico
+if (window.SUPABASE_URL) {
+    console.log('🌐 Testando acesso ao Supabase...');
+    fetch(window.SUPABASE_URL, { method: 'HEAD' })
+        .then(response => {
+            console.log('📡 Supabase acessível?', response.ok);
+        })
+        .catch(error => {
+            console.log('❌ Não foi possível acessar Supabase:', error.message);
+        });
+}
+
 console.log('✅ utils.js completamente carregado');
