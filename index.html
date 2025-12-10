@@ -3174,7 +3174,6 @@ async function testSupabaseDetailed() {
 
 <!-- Remover TODO o bloco DOMContentLoaded -->
 <!-- Adicionar script main.js -->
-<script src="js/main.js" defer></script>
 <script>
     // Inicialização com fallback seguro
     document.addEventListener('DOMContentLoaded', async function() {
@@ -3205,6 +3204,7 @@ async function testSupabaseDetailed() {
     <script src="js/modules/utils.js"></script>
     <script src="js/modules/properties.js"></script>
     <script src="js/modules/gallery.js"></script>
+    <script src="js/main.js" defer></script>
     <script>
     console.log('🔍 TESTE: SUPABASE_URL existe?', typeof SUPABASE_URL);
     if (SUPABASE_URL) {
