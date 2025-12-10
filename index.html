@@ -3176,64 +3176,45 @@ async function testSupabaseDetailed() {
 // Adicione no início do DOMContentLoaded, antes de tudo:
 <!-- Remover TODO o bloco DOMContentLoaded -->
 <!-- Adicionar script main.js -->
-    <!-- Scripts na ORDEM CORRETA -->
- <!-- Scripts na ORDEM CORRETA COM defer -->
-    <script src="js/modules/utils.js" defer></script>
-    <script src="js/modules/properties.js" defer></script>
-    <script src="js/modules/gallery.js" defer></script>
-    <script src="js/main.js" defer></script>
+ <!-- Scripts na ORDEM CORRETA -->
+    <script src="js/modules/utils.js"></script>
+    <script src="js/modules/properties.js"></script>
+    <script src="js/modules/gallery.js"></script>
+    <script src="js/main.js"></script>
     
     <script>
     // Inicialização SEGURA - ESPERAR TODOS OS SCRIPTS
     window.addEventListener('load', async function() {
-        console.log('🏁 TODOS os recursos carregados - Iniciando sistema...');
+        console.log('🏁 TODOS os recursos carregados - Iniciando sistema Weber Lessa...');
         
-        // 1. Testar se módulos básicos estão carregados
-        console.log('🔍 Verificando módulos após load:');
-        console.log('- utils.js:', typeof isMobileDevice === 'function' ? '✅' : '❌');
-        console.log('- properties.js:', typeof initializeProperties === 'function' ? '✅' : '❌');
-        console.log('- gallery.js:', typeof openGallery === 'function' ? '✅' : '❌');
-        console.log('- main.js:', typeof initializeWeberLessaSystem === 'function' ? '✅' : '❌');
-        console.log('- window.SUPABASE_URL:', window.SUPABASE_URL ? '✅' : '❌');
+        // 1. Verificar constantes Supabase
+        console.log('🔍 Verificando configurações:');
+        console.log('- SUPABASE_URL:', window.SUPABASE_URL ? '✅ Definido' : '❌ NÃO DEFINIDO');
+        console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD ? '✅ Definido' : '❌ NÃO DEFINIDO');
         
-        // 2. Tentar usar main.js primeiro
-        if (typeof initializeWeberLessaSystem === 'function') {
-            console.log('🚀 Usando main.js para inicialização');
-            try {
-                await initializeWeberLessaSystem();
-                console.log('✅ main.js inicialização completa');
-            } catch (error) {
-                console.error('❌ Erro no main.js:', error);
-                usarFallbackDireto();
-            }
-        } 
-        // 3. Se não, usar inicialização direta
-        else {
-            console.log('⚠️ main.js não disponível - Usando fallback direto');
-            usarFallbackDireto();
+        // 2. Testar conexão Supabase
+        if (typeof testSupabaseConnection === 'function') {
+            const supabaseOk = await testSupabaseConnection();
+            console.log(`🌐 Supabase: ${supabaseOk ? '✅ Conectado' : '⚠️ Usando modo local'}`);
         }
-    });
-    
-    // Função de fallback direto
-    function usarFallbackDireto() {
-        console.log('🔄 Executando fallback direto...');
         
-        // 1. Inicializar propriedades se disponível
+        // 3. Inicializar sistema principal
         if (typeof initializeProperties === 'function') {
             console.log('📦 Inicializando imóveis...');
-            initializeProperties().then(() => {
-                console.log('✅ Imóveis inicializados');
-            }).catch(error => {
+            try {
+                await initializeProperties();
+                console.log('✅ Sistema de imóveis inicializado');
+            } catch (error) {
                 console.error('❌ Erro ao inicializar imóveis:', error);
-                // Tentar forçar renderização mínima
+                // Forçar renderização de emergência
                 renderizarImoveisBasico();
-            });
+            }
         } else {
             console.error('❌ initializeProperties() não encontrado!');
             renderizarImoveisBasico();
         }
         
-        // 2. Configurar filtros
+        // 4. Configurar filtros
         if (typeof setupFilters === 'function') {
             setTimeout(() => {
                 setupFilters();
@@ -3241,35 +3222,42 @@ async function testSupabaseDetailed() {
             }, 500);
         }
         
-        // 3. Configurar galeria
+        // 5. Configurar galeria
         if (typeof setupGalleryEvents === 'function') {
             setTimeout(() => {
                 setupGalleryEvents();
                 console.log('✅ Galeria configurada');
-            }, 1000);
+            }, 800);
         }
-    }
+        
+        // 6. Configurar botão admin
+        const adminToggleBtn = document.querySelector('.admin-toggle');
+        if (adminToggleBtn && typeof toggleAdminPanel === 'function') {
+            adminToggleBtn.onclick = toggleAdminPanel;
+            console.log('✅ Botão admin configurado');
+        }
+    });
     
-    // Função de emergência absoluta
+    // Função de emergência
     function renderizarImoveisBasico() {
-        console.log('🚨 RENDERIZAÇÃO BÁSICA DE EMERGÊNCIA');
+        console.log('🚨 Renderização básica de emergência');
         const container = document.getElementById('properties-container');
         if (!container) return;
         
-        // Criar imóveis básicos
+        // Usar dados iniciais
         const imoveisBasicos = [
             {
                 id: 1,
                 title: "Casa 2Qtos - Forene",
                 price: "R$ 180.000",
                 location: "Residência Conj. Portal do Renascer, Forene",
-                description: "Casa a 100m do CEASA, 125,40m², 02 Quartos, Sala, Cozinha, 02 Banheiros, Varanda, 02 Vagas.",
+                description: "Casa a 100m do CEASA, 125,40m², 02 Quartos, Sala, Cozinha, 02 Banheiros.",
                 features: ["02 Quartos", "2 Banheiros", "2 Vagas"],
                 images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
             },
             {
                 id: 2,
-                title: "Apartamento 4Qtos - Ponta Verde",
+                title: "Apartamento 4Qtos - Ponta Verde", 
                 price: "R$ 1.500.000",
                 location: "Rua Saleiro Pitão, Ponta Verde - Maceió/AL",
                 description: "Apartamento amplo, 178m², 4 Qtos sendo 3 suítes, sala ampla com varanda.",
@@ -3278,7 +3266,6 @@ async function testSupabaseDetailed() {
             }
         ];
         
-        // Renderizar
         imoveisBasicos.forEach(property => {
             container.innerHTML += `
                 <div class="property-card">
@@ -3298,58 +3285,17 @@ async function testSupabaseDetailed() {
             `;
         });
         
-        console.log('✅ Imóveis básicos renderizados (emergência)');
+        console.log('✅ 2 imóveis básicos renderizados (emergência)');
     }
     
     // Timeout de segurança
     setTimeout(() => {
         const container = document.getElementById('properties-container');
         if (container && container.children.length === 0) {
-            console.log('⚠️ Timeout - Nenhum imóvel renderizado após 3 segundos');
-            if (typeof renderizarImoveisBasico === 'function') {
-                renderizarImoveisBasico();
-            }
+            console.log('⚠️ Nenhum imóvel após 3 segundos - Executando emergência');
+            renderizarImoveisBasico();
         }
     }, 3000);
-
-// SCRIPT ULTRA-EMERGÊNCIA
-console.log('🚨🚨 ULTRA-EMERGÊNCIA: Verificando estado do sistema');
-
-// 1. Criar funções se não existirem
-if (typeof window.renderProperties !== 'function') {
-    console.log('🛠️ Criando renderProperties() de emergência');
-    window.renderProperties = function() {
-        const container = document.getElementById('properties-container');
-        if (!container) return;
-        
-        container.innerHTML = `
-            <div class="property-card">
-                <div class="property-image">
-                    <img src="https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" style="width:100%;height:250px;object-fit:cover;">
-                </div>
-                <div class="property-content">
-                    <div class="property-price">R$ 180.000</div>
-                    <h3>Casa 2Qtos - Forene</h3>
-                    <div><i class="fas fa-map-marker-alt"></i> Residência Conj. Portal do Renascer</div>
-                    <p>Casa a 100m do CEASA, 125,40m², 02 Quartos, Sala, Cozinha, 02 Banheiros.</p>
-                    <button class="contact-btn">
-                        <i class="fab fa-whatsapp"></i> Entrar em Contato
-                    </button>
-                </div>
-            </div>
-        `;
-        console.log('✅ Imóvel de emergência renderizado');
-    };
-}
-
-// 2. Executar após 1 segundo (tempo para scripts carregarem)
-setTimeout(() => {
-    console.log('🔄 Executando renderização de emergência...');
-    if (typeof window.renderProperties === 'function') {
-        window.renderProperties();
-    }
-}, 1000);
-        
     </script>
 </body>
 </html>
