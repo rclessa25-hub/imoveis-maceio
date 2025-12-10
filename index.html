@@ -425,10 +425,11 @@
 
     <script>
   <!-- ========== SCRIPTS MODULARIZADOS ========== -->
-    <script src="js/modules/utils.js"></script>
-    <script src="js/modules/properties.js"></script>
-    <script src="js/modules/gallery.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/modules/utils.js"></script>           <!-- PRIMEIRO: constantes globais -->
+    <script src="js/modules/properties.js"></script>      <!-- SEGUNDO: sistema de imóveis -->
+    <script src="js/modules/gallery.js"></script>         <!-- TERCEIRO: galeria de fotos -->
+    <script src="js/modules/admin.js"></script>           <!-- QUARTO: sistema admin -->
+    <script src="js/main.js"></script>                    <!-- ÚLTIMO: orquestração -->
     
     <!-- ========== INICIALIZAÇÃO FINAL + DIAGNÓSTICO ========== -->
     <script>
