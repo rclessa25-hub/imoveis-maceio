@@ -1,37 +1,31 @@
 // js/modules/admin.js - SISTEMA ADMIN FUNCIONAL
 console.log('🔧 admin.js carregado - Sistema Administrativo');
 
-// ========== CONFIGURAÇÕES DO ADMIN ==========
-const ADMIN_CONFIG = {
-    password: "wl654",
-    panelId: "adminPanel",
-    buttonClass: "admin-toggle",
-    storageKey: "weberlessa_properties"
-};
-
 // No início do admin.js, após o console.log inicial
 console.log('🔑 VERIFICAÇÃO DE SEGURANÇA ADMIN:');
 console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD);
 console.log('- SUPABASE_URL:', window.SUPABASE_URL ? '✅ Definido' : '❌ Não definido');
 console.log('- Local atual:', window.location.href);
 
-// Verificar se estamos no GitHub Pages (pode ter restrições)
-if (window.location.hostname.includes('github.io')) {
-    console.log('🌐 Executando no GitHub Pages');
-}
+// ========== CONFIGURAÇÕES ==========
+const ADMIN_CONFIG = {
+    password: "wl654",
+    pdfPassword: "doc123",
+    panelId: "adminPanel",
+    buttonClass: "admin-toggle",
+    storageKey: "weberlessa_properties"
+};
 
 // ========== VARIÁVEIS GLOBAIS DO ADMIN ==========
 window.editingPropertyId = null;
 window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
-// ========== FUNÇÕES PRINCIPAIS ==========
-
-// 1. Função para alternar painel admin
-function toggleAdminPanel() {
-    console.log('🔄 toggleAdminPanel() executada');
+// ========== FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL ==========
+window.toggleAdminPanel = function() {
+    console.log('🔄 toggleAdminPanel() executada do admin.js');
     
-    const password = prompt("🔒 Acesso Restrito\n\nDigite a senha do corretor:");
+    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha de administrador:");
     
     if (password === ADMIN_CONFIG.password) {
         const panel = document.getElementById(ADMIN_CONFIG.panelId);
@@ -42,116 +36,20 @@ function toggleAdminPanel() {
             console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
             if (!isVisible) {
-                // Carregar lista quando abrir
+                // Quando abrir, carregar lista
                 setTimeout(() => {
-                    if (typeof loadPropertyList === 'function') {
-                        loadPropertyList();
+                    if (typeof window.loadPropertyList === 'function') {
+                        window.loadPropertyList();
                     }
                 }, 100);
             }
-        } else {
-            console.error('❌ Painel admin não encontrado');
         }
     } else {
-        alert('❌ Senha incorreta!\n\nContate o corretor para acesso.');
+        alert('❌ Senha incorreta!\n\nUse: ' + ADMIN_CONFIG.password);
     }
-}
-
-// 2. Configurar botão admin
-function setupAdminButton() {
-    console.log('🔧 Configurando botão admin...');
-    
-    const adminBtn = document.querySelector(`.${ADMIN_CONFIG.buttonClass}`);
-    
-    if (!adminBtn) {
-        console.error('❌ Botão admin não encontrado!');
-        return false;
-    }
-    
-    console.log('✅ Botão admin encontrado:', adminBtn);
-    
-    // Remover qualquer evento anterior
-    const newBtn = adminBtn.cloneNode(true);
-    adminBtn.parentNode.replaceChild(newBtn, adminBtn);
-    
-    // Adicionar evento de clique
-    newBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('🖱️ Botão admin clicado');
-        toggleAdminPanel();
-    });
-    
-    // Adicionar estilo para ser visível
-    newBtn.style.cursor = 'pointer';
-    newBtn.style.zIndex = '1000';
-    
-    console.log('✅ Botão admin configurado com sucesso');
-    return true;
-}
-
-// 3. Inicializar sistema admin completo
-function initializeAdminSystem() {
-    console.log('🚀 Inicializando sistema admin...');
-    
-    // Verificar se o painel existe
-    const panel = document.getElementById(ADMIN_CONFIG.panelId);
-    if (!panel) {
-        console.error('❌ Painel admin não encontrado no DOM');
-        return false;
-    }
-    
-    // Esconder painel inicialmente
-    panel.style.display = 'none';
-    console.log('✅ Painel admin inicializado (oculto)');
-    
-    // Configurar botão
-    const buttonReady = setupAdminButton();
-    
-    if (buttonReady) {
-        console.log('✅ Sistema admin completamente inicializado');
-        return true;
-    } else {
-        console.error('❌ Falha ao configurar sistema admin');
-        return false;
-    }
-}
-
-// Função auxiliar para debug
-window.debugAdmin = function() {
-    console.log('🔍 DEBUG ADMIN:');
-    console.log('- toggleAdminPanel é função?', typeof window.toggleAdminPanel);
-    console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD);
-    
-    // Testar prompt manualmente
-    const testPassword = 'wl654';
-    console.log('🧪 Teste de senha:', testPassword === window.ADMIN_PASSWORD);
-    
-    return typeof window.toggleAdminPanel === 'function';
 };
 
-/ ========== EXPORTAÇÃO PARA WINDOW ==========
-// Exportar funções principais
-window.toggleAdminPanel = toggleAdminPanel;
-window.setupAdminButton = setupAdminButton;
-window.initializeAdminSystem = initializeAdminSystem;
-
-// ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-// Aguardar DOM carregar
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🏠 DOM carregado - inicializando admin...');
-        setTimeout(initializeAdminSystem, 500);
-    });
-} else {
-    console.log('🏠 DOM já carregado - inicializando admin agora...');
-    setTimeout(initializeAdminSystem, 300);
-}
-
-console.log('✅ admin.js pronto com 3 funções principais');
-
-console.log('✅ Sistema admin carregado');
-
+// ========== FUNÇÕES DO FORMULÁRIO ==========
 // ========== FUNÇÃO CANCELAR EDIÇÃO ==========
 window.cancelEdit = function() {
     console.log('❌ Cancelando edição...');
@@ -255,6 +153,31 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados`);
 };
 
+window.properties.forEach(property => {
+        const item = document.createElement('div');
+        item.className = 'property-item';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <strong style="color: var(--primary);">${property.title}</strong><br>
+                <small>${property.price} - ${property.location}</small>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="editProperty(${property.id})" 
+                        style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer;">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="deleteProperty(${property.id})" 
+                        style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+    
+    console.log(`✅ ${window.properties.length} imóveis listados`);
+};
+
 // ========== FUNÇÕES BÁSICAS DE ADMIN ==========
 window.editProperty = function(id) {
     console.log(`📝 Editando imóvel ID: ${id}`);
@@ -266,6 +189,29 @@ window.deleteProperty = function(id) {
     if (confirm('Tem certeza que deseja excluir este imóvel?')) {
         alert(`✅ Imóvel ${id} excluído (simulação)`);
         // Aqui você conectaria com properties.js depois
+    }
+};
+
+// ========== FUNÇÕES PDF ==========
+window.showPdfModal = function(propertyId) {
+    console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
+    alert('📄 Sistema de PDFs em desenvolvimento');
+};
+
+window.accessPdfDocuments = function() {
+    const password = document.getElementById('pdfPassword')?.value;
+    if (password === "doc123") {
+        alert('✅ Documentos PDF acessados com sucesso!');
+        closePdfModal();
+    } else {
+        alert('❌ Senha incorreta para documentos PDF!');
+    }
+};
+
+window.closePdfModal = function() {
+    const modal = document.getElementById('pdfModal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 };
 
@@ -313,28 +259,140 @@ window.setupForm = function() {
     console.log('✅ Formulário configurado');
 };
 
-// ========== FUNÇÕES PDF ==========
-window.showPdfModal = function(propertyId) {
-    console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
-    alert('📄 Sistema de PDFs em desenvolvimento');
-};
-
-window.accessPdfDocuments = function() {
-    const password = document.getElementById('pdfPassword')?.value;
-    if (password === "doc123") {
-        alert('✅ Documentos PDF acessados com sucesso!');
-        closePdfModal();
-    } else {
-        alert('❌ Senha incorreta para documentos PDF!');
+// ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
+function initializeAdminSystem() {
+    console.log('🚀 Inicializando sistema admin...');
+    
+    // 1. Esconder painel inicialmente
+    const panel = document.getElementById(ADMIN_CONFIG.panelId);
+    if (panel) {
+        panel.style.display = 'none';
+        console.log('✅ Painel admin inicializado (oculto)');
     }
-};
-
-window.closePdfModal = function() {
-    const modal = document.getElementById('pdfModal');
-    if (modal) {
-        modal.style.display = 'none';
+    
+    // 2. Configurar botão
+    const adminBtn = document.querySelector('.' + ADMIN_CONFIG.buttonClass);
+    if (adminBtn) {
+        // Remover onclick inline se existir
+        adminBtn.removeAttribute('onclick');
+        
+        // Adicionar event listener
+        adminBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Botão admin clicado (do admin.js)');
+            window.toggleAdminPanel();
+        });
+        
+        console.log('✅ Botão admin configurado');
     }
-};
+    
+    // 3. Configurar formulário
+    if (typeof window.setupForm === 'function') {
+        window.setupForm();
+        console.log('✅ Formulário configurado');
+    }
+    
+    console.log('✅ Sistema admin completamente inicializado');
+}
+
+// ========== EXECUTAR INICIALIZAÇÃO ==========
+// Aguardar DOM carregar
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initializeAdminSystem, 500);
+    });
+} else {
+    setTimeout(initializeAdminSystem, 300);
+}
 
 // ========== INICIALIZAÇÃO DO MÓDULO ==========
 console.log('✅ Sistema admin básico carregado com funções essenciais');
+console.log('✅ admin.js pronto e aguardando inicialização');
+
+// Verificar se estamos no GitHub Pages (pode ter restrições)
+if (window.location.hostname.includes('github.io')) {
+    console.log('🌐 Executando no GitHub Pages');
+}
+
+// 2. Configurar botão admin
+function setupAdminButton() {
+    console.log('🔧 Configurando botão admin...');
+    
+    const adminBtn = document.querySelector(`.${ADMIN_CONFIG.buttonClass}`);
+    
+    if (!adminBtn) {
+        console.error('❌ Botão admin não encontrado!');
+        return false;
+    }
+    
+    console.log('✅ Botão admin encontrado:', adminBtn);
+    
+    // Remover qualquer evento anterior
+    const newBtn = adminBtn.cloneNode(true);
+    adminBtn.parentNode.replaceChild(newBtn, adminBtn);
+    
+    // Adicionar evento de clique
+    newBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🖱️ Botão admin clicado');
+        toggleAdminPanel();
+    });
+    
+    // Adicionar estilo para ser visível
+    newBtn.style.cursor = 'pointer';
+    newBtn.style.zIndex = '1000';
+    
+    console.log('✅ Botão admin configurado com sucesso');
+    return true;
+}
+
+// Função auxiliar para debug
+window.debugAdmin = function() {
+    console.log('🔍 DEBUG ADMIN:');
+    console.log('- toggleAdminPanel é função?', typeof window.toggleAdminPanel);
+    console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD);
+    
+    // Testar prompt manualmente
+    const testPassword = 'wl654';
+    console.log('🧪 Teste de senha:', testPassword === window.ADMIN_PASSWORD);
+    
+    return typeof window.toggleAdminPanel === 'function';
+};
+
+/ ========== EXPORTAÇÃO PARA WINDOW ==========
+// Exportar funções principais
+window.toggleAdminPanel = toggleAdminPanel;
+window.setupAdminButton = setupAdminButton;
+window.initializeAdminSystem = initializeAdminSystem;
+
+// ========== INICIALIZAÇÃO AUTOMÁTICA ==========
+// Aguardar DOM carregar
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🏠 DOM carregado - inicializando admin...');
+        setTimeout(initializeAdminSystem, 500);
+    });
+} else {
+    console.log('🏠 DOM já carregado - inicializando admin agora...');
+    setTimeout(initializeAdminSystem, 300);
+}
+
+console.log('✅ admin.js pronto com 3 funções principais');
+
+console.log('✅ Sistema admin carregado');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
