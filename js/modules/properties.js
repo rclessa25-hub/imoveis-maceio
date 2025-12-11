@@ -238,6 +238,25 @@ window.setupFilters = function() {
         return;
     }
     
+    // ATUALIZAÇÃO: FORÇAR "Todos" como ativo inicial
+    const defaultActive = document.querySelector('.filter-btn.active') || 
+                         document.querySelector('.filter-btn');
+    
+    if (defaultActive) {
+        defaultActive.classList.add('active');
+        console.log('✅ Botão padrão ativado:', defaultActive.textContent);
+        
+        // Se for "Todos", renderizar imediatamente
+        if (defaultActive.textContent.trim() === 'Todos') {
+            setTimeout(() => {
+                console.log('🎯 Renderizando imóveis com filtro "todos" inicial...');
+                if (typeof window.renderProperties === 'function') {
+                    window.renderProperties('todos');
+                }
+            }, 100);
+        }
+    }
+    
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
             // Remover active de todos
