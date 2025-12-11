@@ -559,64 +559,6 @@ setTimeout(() => {
     
 }, 3000);
     
-    // SOLUÇÃO DE EMERGÊNCIA PARA O ADMIN
-if (typeof toggleAdminPanel === 'undefined') {
-    console.log('⚠️ toggleAdminPanel não definida - criando função emergencial');
-    
-    window.toggleAdminPanel = function() {
-        console.log('🔄 Função emergencial executada');
-        const password = prompt("Digite a senha do corretor:");
-        
-        if (password === "wl654") {
-            const panel = document.getElementById('adminPanel');
-            if (panel) {
-                const isVisible = panel.style.display === 'block';
-                panel.style.display = isVisible ? 'none' : 'block';
-                console.log('✅ Painel ' + (isVisible ? 'fechado' : 'aberto'));
-                
-                // Se abrindo, carregar lista
-                if (!isVisible) {
-                    setTimeout(() => {
-                        if (typeof loadPropertyList === 'function') {
-                            loadPropertyList();
-                        }
-                    }, 100);
-                }
-            }
-        } else {
-            alert('❌ Senha incorreta!');
-        }
-    };
-    
-    console.log('✅ Função emergencial criada');
-}
-
-// Configurar botão admin manualmente
-setTimeout(() => {
-    console.log('🔧 Configurando botão admin manualmente...');
-    
-    const adminBtn = document.querySelector('.admin-toggle');
-    if (adminBtn) {
-        // Remover onclick inline
-        adminBtn.removeAttribute('onclick');
-        
-        // Adicionar event listener
-        adminBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🖱️ Botão admin clicado (manual)');
-            
-            if (typeof toggleAdminPanel === 'function') {
-                toggleAdminPanel();
-            } else {
-                alert('⚠️ Sistema admin não carregado. Recarregue a página.');
-            }
-        });
-        
-        console.log('✅ Botão admin configurado manualmente');
-    }
-}, 1000);
-    
 </script>
 </body>
 </html>
