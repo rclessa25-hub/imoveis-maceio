@@ -469,23 +469,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // 5. Configurar botão admin
-    const adminBtn = document.querySelector('.admin-toggle');
-    if (adminBtn) {
-        adminBtn.onclick = function() {
-            console.log('🔑 Botão admin clicado');
-            const password = prompt("Digite a senha do corretor:");
-            if (password === "wl654") {
-                const panel = document.getElementById('adminPanel');
-                if (panel) {
-                    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-                    alert('✅ Painel ' + (panel.style.display === 'block' ? 'aberto' : 'fechado'));
-                }
-            } else {
-                alert('❌ Senha incorreta!');
-            }
-        };
-        console.log('✅ Botão admin configurado');
-    }
+//    const adminBtn = document.querySelector('.admin-toggle');
+//    if (adminBtn) {
+//        adminBtn.onclick = function() {
+//            console.log('🔑 Botão admin clicado');
+//            const password = prompt("Digite a senha do corretor:");
+//            if (password === "wl654") {
+//                const panel = document.getElementById('adminPanel');
+//                if (panel) {
+//                    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+//                    alert('✅ Painel ' + (panel.style.display === 'block' ? 'aberto' : 'fechado'));
+//                }
+//            } else {
+//                alert('❌ Senha incorreta!');
+//            }
+//        };
+//        console.log('✅ Botão admin configurado');
+//    }
     
     console.log('🚀 Sistema Weber Lessa pronto!');
 });
