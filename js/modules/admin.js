@@ -1,5 +1,28 @@
 // js/modules/admin.js - SISTEMA ADMIN FUNCIONAL
 console.log('🔧 admin.js carregado - Sistema Administrativo');
+// No início do admin.js, após o console.log inicial
+console.log('🔑 VERIFICAÇÃO DE SEGURANÇA ADMIN:');
+console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD);
+console.log('- SUPABASE_URL:', window.SUPABASE_URL ? '✅ Definido' : '❌ Não definido');
+console.log('- Local atual:', window.location.href);
+
+// Verificar se estamos no GitHub Pages (pode ter restrições)
+if (window.location.hostname.includes('github.io')) {
+    console.log('🌐 Executando no GitHub Pages');
+}
+
+// Função auxiliar para debug
+window.debugAdmin = function() {
+    console.log('🔍 DEBUG ADMIN:');
+    console.log('- toggleAdminPanel é função?', typeof window.toggleAdminPanel);
+    console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD);
+    
+    // Testar prompt manualmente
+    const testPassword = 'wl654';
+    console.log('🧪 Teste de senha:', testPassword === window.ADMIN_PASSWORD);
+    
+    return typeof window.toggleAdminPanel === 'function';
+};
 
 // ========== VARIÁVEIS GLOBAIS DO ADMIN ==========
 window.editingPropertyId = null;
