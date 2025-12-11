@@ -452,6 +452,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('- main.js carregado?', typeof window.initializeWeberLessaSystem === 'function');
     
     // FORÇAR INICIALIZAÇÃO
+   // FORÇAR INICIALIZAÇÃO
     try {
         if (typeof window.initializeWeberLessaSystem === 'function') {
             console.log('🚀 Chamando initializeWeberLessaSystem()...');
@@ -467,37 +468,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         await initializeFallback();
     }
     
-    // **CORREÇÃO CRÍTICA: CONFIGURAR BOTÃO ADMIN CORRETAMENTE**
-    console.log('🔧 Configurando botão admin...');
+    // CONFIGURAR BOTÃO ADMIN
     const adminBtn = document.querySelector('.admin-toggle');
-    
-    if (adminBtn) {
-        console.log('✅ Botão admin encontrado no DOM');
-        
-        // REMOVER QUALQUER EVENT LISTENER EXISTENTE (limpar)
-        const newAdminBtn = adminBtn.cloneNode(true);
-        adminBtn.parentNode.replaceChild(newAdminBtn, adminBtn);
-        
-        // ADICIONAR NOVO EVENT LISTENER
-        newAdminBtn.onclick = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🖱️ Botão admin CLICADO (novo listener)');
-            
-            if (typeof window.toggleAdminPanel === 'function') {
-                console.log('✅ Chamando toggleAdminPanel()...');
-                window.toggleAdminPanel();
-            } else {
-                console.error('❌ toggleAdminPanel não é uma função!');
-                console.log('🔍 Tipo:', typeof window.toggleAdminPanel);
-                console.log('🔍 Valor:', window.toggleAdminPanel);
-                alert('⚠️ Função admin não disponível. Recarregue a página.');
-            }
+    if (adminBtn && typeof window.toggleAdminPanel === 'function') {
+        adminBtn.onclick = function() {
+            console.log('🖱️ Botão admin clicado');
+            window.toggleAdminPanel();
         };
-        
-        console.log('✅ Botão admin CONFIGURADO com novo listener');
-    } else {
-        console.error('❌ Botão admin NÃO ENCONTRADO no DOM!');
+        console.log('✅ Botão admin configurado');
     }
 });
 
@@ -532,23 +510,6 @@ async function initializeFallback() {
     console.log('✅ Fallback manual completo');
 }
 
-// **TESTE DIRETO DO BOTÃO ADMIN**
-setTimeout(() => {
-    console.log('🔍 TESTANDO BOTÃO ADMIN...');
-    
-    const testBtn = document.querySelector('.admin-toggle');
-    if (testBtn) {
-        console.log('✅ Botão admin presente no DOM');
-        console.log('🔗 HTML do botão:', testBtn.outerHTML);
-        
-        // Testar clique programático
-        console.log('🧪 Testando clique programático...');
-        testBtn.click();
-    } else {
-        console.error('❌ Botão admin NÃO ENCONTRADO para teste');
-    }
-}, 2000);
-    
 // DIAGNÓSTICO APÓS 3 SEGUNDOS
 setTimeout(() => {
     console.log('📊 DIAGNÓSTICO FINAL:');
@@ -563,7 +524,6 @@ setTimeout(() => {
         'Função renderProperties': typeof window.renderProperties === 'function',
         'Função setupFilters': typeof window.setupFilters === 'function',
         'Função toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
-        'ADMIN_PASSWORD definida': !!window.ADMIN_PASSWORD
     };
     
     Object.entries(checks).forEach(([key, value]) => {
@@ -586,4 +546,4 @@ setTimeout(() => {
 }, 3000);
 </script>
 </body>
-</html>    
+</html>
