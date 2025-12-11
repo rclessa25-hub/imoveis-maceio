@@ -1,6 +1,6 @@
 // js/modules/properties.js - SISTEMA PRINCIPAL DE IMÓVEIS (VERSÃO CORRIGIDA)
 console.log('🚀 properties.js carregado - SISTEMA PRINCIPAL');
-
+console.log('🚀 properties.js carregado - MODO OFFLINE');
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = window.properties || [];
 window.editingPropertyId = null;
