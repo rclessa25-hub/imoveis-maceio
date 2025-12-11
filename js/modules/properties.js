@@ -7,6 +7,11 @@ window.editingPropertyId = null;
 window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
+// FORÇAR DADOS INICIAIS IMEDIATAMENTE
+console.log('🔄 Forçando inicialização de dados...');
+window.properties = window.getInitialProperties ? window.getInitialProperties() : [];
+console.log(`✅ ${window.properties.length} imóveis carregados localmente`);
+
 // ========== VERIFICAÇÃO DE CARREGAMENTO ==========
 console.log('🔍 VERIFICAÇÃO DE CARREGAMENTO:');
 console.log('- window.properties definido?', !!window.properties);
