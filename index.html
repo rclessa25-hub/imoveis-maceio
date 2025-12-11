@@ -517,6 +517,23 @@ async function initializeFallback() {
     console.log('✅ Fallback manual completo');
 }
 
+    // VERIFICAÇÃO DE DIAGNÓSTICO
+    console.log('🔍 DIAGNÓSTICO DO ADMIN:');
+    console.log('1. Botões admin:', document.querySelectorAll('.admin-toggle').length);
+    console.log('2. Painel admin:', document.getElementById('adminPanel') ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+    console.log('3. toggleAdminPanel:', typeof toggleAdminPanel);
+    console.log('4. ADMIN_PASSWORD:', window.ADMIN_PASSWORD || 'NÃO DEFINIDA');
+
+// Testar clique manual
+setTimeout(() => {
+    const testBtn = document.querySelector('.admin-toggle');
+    if (testBtn) {
+        console.log('✅ Botão encontrado, testando clique...');
+        // Simular clique programático
+        testBtn.click();
+    }
+}, 2000);
+    
 // DIAGNÓSTICO APÓS 3 SEGUNDOS
 setTimeout(() => {
     console.log('📊 DIAGNÓSTICO FINAL:');
