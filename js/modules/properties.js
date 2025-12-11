@@ -535,4 +535,46 @@ window.setupForm = function() {
     console.log('✅ Formulário admin configurado');
 };
 
-console.log('✅ properties.js completamente carregado - 10 funções disponíveis');
+// ========== FUNÇÃO loadPropertyList() PARA O ADMIN ==========
+window.loadPropertyList = function() {
+    console.log('📋 Carregando lista para admin...');
+    
+    const container = document.getElementById('propertyList');
+    if (!container) {
+        console.log('⚠️ propertyList não encontrado (admin fechado?)');
+        return;
+    }
+    
+    if (!window.properties || window.properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">Nenhum imóvel cadastrado</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    window.properties.forEach(property => {
+        const item = document.createElement('div');
+        item.className = 'property-item';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <strong>${property.title}</strong><br>
+                <small>${property.price} - ${property.location}</small>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="alert('Editar: ${property.title}')" 
+                        style="background: var(--accent); color: white; padding: 0.5rem 1rem; border: none; border-radius: 3px; cursor: pointer;">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="if(confirm('Excluir ${property.title}?')) alert('Excluído!')" 
+                        style="background: #e74c3c; color: white; padding: 0.5rem 1rem; border: none; border-radius: 3px; cursor: pointer;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+    
+    console.log(`✅ ${window.properties.length} imóveis listados no admin`);
+};
+
+console.log('✅ properties.js completamente carregado - 11 funções disponíveis');
