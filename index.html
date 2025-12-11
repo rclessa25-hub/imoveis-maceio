@@ -487,7 +487,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 //        console.log('✅ Botão admin configurado');
 //        }
     
-    console.log('🚀 Sistema Weber Lessa pronto!');
+        console.log('🚀 Sistema Weber Lessa pronto!');
     });
 
 // FALLBACK MANUAL SE O SISTEMA PRINCIPAL FALHAR
@@ -536,6 +536,13 @@ setTimeout(() => {
         'Função setupFilters': typeof window.setupFilters === 'function',
         'Função toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
     };
+
+    console.log(`✅ Imóveis: ${window.properties ? window.properties.length : 0}`);
+    console.log(`✅ Container: ${document.getElementById('properties-container')?.children.length || 0} cards`);
+    console.log(`✅ Botão admin: ${document.querySelector('.admin-toggle') ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
+    console.log(`✅ Painel admin: ${document.getElementById('adminPanel') ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
+    console.log('=====================');
+    }, 2000);
     
     Object.entries(checks).forEach(([key, value]) => {
         console.log(`${value ? '✅' : '❌'} ${key}: ${value}`);
