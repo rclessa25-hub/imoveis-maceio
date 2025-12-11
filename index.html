@@ -532,6 +532,23 @@ async function initializeFallback() {
     console.log('✅ Fallback manual completo');
 }
 
+// **TESTE DIRETO DO BOTÃO ADMIN**
+setTimeout(() => {
+    console.log('🔍 TESTANDO BOTÃO ADMIN...');
+    
+    const testBtn = document.querySelector('.admin-toggle');
+    if (testBtn) {
+        console.log('✅ Botão admin presente no DOM');
+        console.log('🔗 HTML do botão:', testBtn.outerHTML);
+        
+        // Testar clique programático
+        console.log('🧪 Testando clique programático...');
+        testBtn.click();
+    } else {
+        console.error('❌ Botão admin NÃO ENCONTRADO para teste');
+    }
+}, 2000);
+    
 // DIAGNÓSTICO APÓS 3 SEGUNDOS
 setTimeout(() => {
     console.log('📊 DIAGNÓSTICO FINAL:');
