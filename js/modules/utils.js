@@ -13,20 +13,25 @@ console.log('✅ Constantes definidas globalmente');
 // ========== TESTE DE CONEXÃO SUPABASE ==========
 window.testSupabaseConnection = async function() {
     try {
-        console.log('🔍 Testando conexão Supabase...');
-        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+        console.log('🌐 Testando conexão Supabase (modo CORS)...');
+        
+        // Usar proxy CORS para GitHub Pages
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const testUrl = `${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`;
+        
+        const response = await fetch(proxyUrl + testUrl, {
             headers: {
                 'apikey': window.SUPABASE_KEY,
                 'Authorization': `Bearer ${window.SUPABASE_KEY}`
             }
         });
         
-        const isConnected = response.ok;
-        console.log(`🌐 Supabase: ${isConnected ? '✅ Conectado' : '❌ Não conectado'}`);
-        return isConnected;
+        const isOk = response.ok;
+        console.log('✅ Supabase acessível via proxy?', isOk);
+        return isOk;
         
     } catch (error) {
-        console.error('❌ Erro na conexão Supabase:', error.message);
+        console.log('⚠️ Supabase não acessível, usando modo offline');
         return false;
     }
 };
