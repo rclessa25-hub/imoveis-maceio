@@ -563,6 +563,7 @@ setTimeout(() => {
         'Função renderProperties': typeof window.renderProperties === 'function',
         'Função setupFilters': typeof window.setupFilters === 'function',
         'Função toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
+        'ADMIN_PASSWORD definida': !!window.ADMIN_PASSWORD
     };
     
     Object.entries(checks).forEach(([key, value]) => {
