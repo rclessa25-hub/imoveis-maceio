@@ -536,11 +536,6 @@ setTimeout(() => {
         'Função setupFilters': typeof window.setupFilters === 'function',
         'Função toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
     };
-
-    console.log(`✅ Botão admin: ${document.querySelector('.admin-toggle') ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
-    console.log(`✅ Painel admin: ${document.getElementById('adminPanel') ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
-    console.log('=====================');
-    }, 2000);
     
     Object.entries(checks).forEach(([key, value]) => {
         console.log(`${value ? '✅' : '❌'} ${key}: ${value}`);
