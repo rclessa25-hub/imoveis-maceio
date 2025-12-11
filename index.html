@@ -467,14 +467,37 @@ document.addEventListener('DOMContentLoaded', async function() {
         await initializeFallback();
     }
     
-    // CONFIGURAR BOTÃO ADMIN
+    // **CORREÇÃO CRÍTICA: CONFIGURAR BOTÃO ADMIN CORRETAMENTE**
+    console.log('🔧 Configurando botão admin...');
     const adminBtn = document.querySelector('.admin-toggle');
-    if (adminBtn && typeof window.toggleAdminPanel === 'function') {
-        adminBtn.onclick = function() {
-            console.log('🖱️ Botão admin clicado');
-            window.toggleAdminPanel();
+    
+    if (adminBtn) {
+        console.log('✅ Botão admin encontrado no DOM');
+        
+        // REMOVER QUALQUER EVENT LISTENER EXISTENTE (limpar)
+        const newAdminBtn = adminBtn.cloneNode(true);
+        adminBtn.parentNode.replaceChild(newAdminBtn, adminBtn);
+        
+        // ADICIONAR NOVO EVENT LISTENER
+        newAdminBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Botão admin CLICADO (novo listener)');
+            
+            if (typeof window.toggleAdminPanel === 'function') {
+                console.log('✅ Chamando toggleAdminPanel()...');
+                window.toggleAdminPanel();
+            } else {
+                console.error('❌ toggleAdminPanel não é uma função!');
+                console.log('🔍 Tipo:', typeof window.toggleAdminPanel);
+                console.log('🔍 Valor:', window.toggleAdminPanel);
+                alert('⚠️ Função admin não disponível. Recarregue a página.');
+            }
         };
-        console.log('✅ Botão admin configurado');
+        
+        console.log('✅ Botão admin CONFIGURADO com novo listener');
+    } else {
+        console.error('❌ Botão admin NÃO ENCONTRADO no DOM!');
     }
 });
 
