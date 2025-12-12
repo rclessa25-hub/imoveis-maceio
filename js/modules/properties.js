@@ -8,91 +8,111 @@ window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
 // ========== CARREGAMENTO HIERÁRQUICO ==========
-(async function autoInitialize() {
-    console.log('🔄 Inicialização hierárquica do sistema...');
+// ========== CARREGAMENTO HIERÁRQUICO (VERSÃO FUNCIONAL) ==========
+(function autoInitialize() {
+    console.log('🔄 Inicialização automática do sistema de imóveis...');
     
-    // 1. PRIMEIRO: Tentar carregar do Supabase
+    // 1. PRIMEIRO: Tentar Supabase com timeout rápido
     if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-        console.log('🌐 Tentando carregar do Supabase...');
+        console.log('🌐 Tentando conexão Supabase...');
         
-        try {
-            // Usar CORS proxy para GitHub Pages
-            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-            const supabaseUrl = `${window.SUPABASE_URL}/rest/v1/properties?select=*&order=created_at.desc`;
-            
-            const response = await fetch(proxyUrl + supabaseUrl, {
-                headers: {
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
-                }
-            });
-            
+        // Usar approach direto sem proxy complexo
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
+            method: 'GET',
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            mode: 'cors',
+            signal: controller.signal
+        })
+        .then(response => {
+            clearTimeout(timeoutId);
             if (response.ok) {
-                const data = await response.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    window.properties = data;
-                    
-                    // Garantir que todos os campos existam
-                    window.properties = window.properties.map(property => ({
-                        id: property.id,
-                        title: property.title || 'Sem título',
-                        price: property.price || 'R$ 0,00',
-                        location: property.location || 'Local não informado',
-                        description: property.description || '',
-                        features: property.features || '',
-                        type: property.type || 'residencial',
-                        has_video: property.has_video || false,
-                        badge: property.badge || 'Novo',
-                        rural: property.rural || false,
-                        images: property.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                        pdfs: property.pdfs || '',
-                        created_at: property.created_at || new Date().toISOString()
-                    }));
-                    
-                    console.log(`✅ ${window.properties.length} imóveis carregados do Supabase`);
-                    
-                    // Salvar backup no localStorage
-                    savePropertiesToStorage();
-                    
-                    // Renderizar imediatamente
+                return response.json();
+            }
+            throw new Error(`HTTP ${response.status}`);
+        })
+        .then(data => {
+            if (Array.isArray(data) && data.length > 0) {
+                window.properties = data;
+                console.log(`✅ ${data.length} imóveis carregados do Supabase`);
+                
+                // Garantir estrutura correta
+                window.properties = window.properties.map(property => ({
+                    id: property.id || Date.now(),
+                    title: property.title || 'Sem título',
+                    price: property.price || 'R$ 0,00',
+                    location: property.location || 'Local não informado',
+                    description: property.description || '',
+                    features: property.features || '',
+                    type: property.type || 'residencial',
+                    has_video: property.has_video || false,
+                    badge: property.badge || 'Novo',
+                    rural: property.rural || false,
+                    images: property.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    pdfs: property.pdfs || '',
+                    created_at: property.created_at || new Date().toISOString()
+                }));
+                
+                // Salvar backup no localStorage
+                savePropertiesToStorage();
+                
+                // Renderizar
+                renderIfReady();
+                return;
+            }
+            throw new Error('Dados vazios do Supabase');
+        })
+        .catch(error => {
+            clearTimeout(timeoutId);
+            console.log('📡 Supabase offline, tentando localStorage:', error.message);
+            loadFromLocalStorage();
+        });
+        
+    } else {
+        // Sem credenciais, ir direto para localStorage
+        console.log('🔑 Sem credenciais Supabase, indo para localStorage');
+        loadFromLocalStorage();
+    }
+    
+    function loadFromLocalStorage() {
+        try {
+            const stored = localStorage.getItem('weberlessa_properties');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    window.properties = parsed;
+                    console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
                     renderIfReady();
                     return;
                 }
             }
-            
-            console.log('⚠️ Supabase não retornou dados válidos');
-            
         } catch (error) {
-            console.log('⚠️ Erro ao acessar Supabase:', error.message);
-            console.log('📡 Continuando com fallback...');
+            console.log('⚠️ Erro no localStorage:', error);
         }
+        
+        // Último recurso: dados iniciais
+        window.properties = getInitialProperties();
+        console.log(`🎯 ${window.properties.length} imóveis iniciais carregados`);
+        savePropertiesToStorage();
+        renderIfReady();
     }
     
-    // 2. SEGUNDO: Tentar localStorage
-    try {
-        const stored = localStorage.getItem('weberlessa_properties');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                window.properties = parsed;
-                console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
-                renderIfReady();
-                return;
-            }
+    function renderIfReady() {
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(() => {
+                if (typeof window.renderProperties === 'function' && window.properties.length > 0) {
+                    window.renderProperties('todos');
+                    console.log('🎨 Imóveis renderizados automaticamente');
+                }
+            }, 500);
         }
-    } catch (error) {
-        console.log('⚠️ Erro no localStorage:', error);
     }
-    
-    // 3. TERCEIRO: Usar dados de exemplo
-    window.properties = getInitialProperties();
-    console.log(`🎯 ${window.properties.length} imóveis de exemplo carregados`);
-    
-    // Salvar no localStorage para próxima vez
-    savePropertiesToStorage();
-    
-    renderIfReady();
-    
 })();
 
 // Função auxiliar para renderizar quando pronto
@@ -146,65 +166,72 @@ window.getInitialProperties = getInitialProperties;
 
 // ========== FUNÇÃO 9: syncWithSupabase() ==========
 // ========== FUNÇÃO 9: syncWithSupabase() CORRIGIDA ==========
+// ========== FUNÇÃO DE SINCRONIZAÇÃO SIMPLIFICADA ==========
 window.syncWithSupabase = async function() {
-    console.log('🔄 Iniciando sincronização...');
+    console.log('🔄 Tentando sincronização direta com Supabase...');
     
-    // Usar a função de conexão segura
-    if (typeof window.supabaseFetch === 'function') {
-        const result = await window.supabaseFetch('/properties?select=*&order=created_at.desc');
-        
-        if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
-            // Verificar se já temos esses imóveis
-            const newProperties = result.data.filter(supabaseItem => {
-                return !window.properties.some(localItem => 
-                    localItem.id === supabaseItem.id || 
-                    (localItem.title === supabaseItem.title && localItem.location === supabaseItem.location)
-                );
-            });
-            
-            if (newProperties.length > 0) {
-                // Formatar os dados
-                const formattedProperties = newProperties.map(item => ({
-                    id: item.id || Date.now() + Math.random(),
-                    title: item.title || 'Sem título',
-                    price: item.price || 'R$ 0,00',
-                    location: item.location || 'Local não informado',
-                    description: item.description || '',
-                    features: item.features || '',
-                    type: item.type || 'residencial',
-                    has_video: item.has_video || false,
-                    badge: item.badge || 'Novo',
-                    rural: item.rural || false,
-                    images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                    pdfs: item.pdfs || '',
-                    created_at: item.created_at || new Date().toISOString()
-                }));
-                
-                // Adicionar ao array existente
-                window.properties = [...window.properties, ...formattedProperties];
-                
-                // Salvar no localStorage
-                window.savePropertiesToStorage();
-                
-                console.log(`✅ ${formattedProperties.length} novos imóveis sincronizados`);
-                
-                // Renderizar
-                if (typeof window.renderProperties === 'function') {
-                    window.renderProperties('todos');
-                }
-                
-                return { success: true, count: formattedProperties.length };
-            } else {
-                console.log('✅ Já sincronizado - nenhum imóvel novo');
-                return { success: true, count: 0 };
+    try {
+        // Tentar fetch direto (simples e direto)
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
             }
-        } else {
-            console.log('⚠️ Nenhum dado retornado do Supabase');
-            return { success: false, error: 'Sem dados' };
+        });
+        
+        if (response.ok) {
+            const supabaseData = await response.json();
+            
+            if (Array.isArray(supabaseData) && supabaseData.length > 0) {
+                // Adicionar apenas novos imóveis
+                const existingIds = window.properties.map(p => p.id);
+                const newProperties = supabaseData.filter(item => 
+                    !existingIds.includes(item.id)
+                );
+                
+                if (newProperties.length > 0) {
+                    // Formatar e adicionar
+                    const formatted = newProperties.map(item => ({
+                        id: item.id,
+                        title: item.title || 'Sem título',
+                        price: item.price || 'R$ 0,00',
+                        location: item.location || 'Local não informado',
+                        description: item.description || '',
+                        features: item.features || '',
+                        type: item.type || 'residencial',
+                        has_video: item.has_video || false,
+                        badge: item.badge || 'Novo',
+                        rural: item.rural || false,
+                        images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                        pdfs: item.pdfs || '',
+                        created_at: item.created_at || new Date().toISOString()
+                    }));
+                    
+                    window.properties = [...window.properties, ...formatted];
+                    savePropertiesToStorage();
+                    
+                    console.log(`✅ ${formatted.length} novos imóveis sincronizados`);
+                    
+                    // Renderizar
+                    if (typeof window.renderProperties === 'function') {
+                        window.renderProperties('todos');
+                    }
+                    
+                    return { success: true, count: formatted.length };
+                } else {
+                    console.log('✅ Já sincronizado - sem novos imóveis');
+                    return { success: true, count: 0 };
+                }
+            }
         }
-    } else {
-        console.log('⚠️ Função supabaseFetch não disponível');
-        return { success: false, error: 'API não disponível' };
+        
+        console.log('⚠️ Supabase não respondeu com dados válidos');
+        return { success: false, error: 'Dados inválidos' };
+        
+    } catch (error) {
+        console.error('❌ Erro na sincronização:', error);
+        return { success: false, error: error.message };
     }
 };
 
