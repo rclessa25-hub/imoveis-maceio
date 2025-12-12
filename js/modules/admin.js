@@ -16,81 +16,139 @@ window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
 // ========== FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL ==========
-window.toggleAdminPanel = function() {
-    console.log('🔄 toggleAdminPanel() executada do admin.js');
-    
-    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha de administrador:");
-    
-    if (password === ADMIN_CONFIG.password) {
-        const panel = document.getElementById(ADMIN_CONFIG.panelId);
+// ========== FUNÇÃO toggleAdminPanel() CORRIGIDA ==========
+function window.toggleAdminPanel() {
+    const password = prompt("Digite a senha de acesso ao painel:");
+    if (password === ADMIN_PASSWORD) {
+        const panel = document.getElementById('adminPanel');
         if (panel) {
-            const isVisible = panel.style.display === 'block';
-            panel.style.display = isVisible ? 'none' : 'block';
-            
-            console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
-            
-            if (!isVisible) {
-                // Quando abrir, carregar lista
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            if (panel.style.display === 'block') {
+                // LIMPAR FORMULÁRIO AO ABRIR PAINEL
+                cancelEdit(); // Chama a função que limpa tudo
+                loadPropertyList();
+                
+                // GARANTIR QUE O UPLOAD FUNCIONE
                 setTimeout(() => {
-                    if (typeof window.loadPropertyList === 'function') {
-                        window.loadPropertyList();
-                    }
-                }, 100);
+                    setupUploadSystem();
+                    setupPdfUploadSystem();
+                }, 300);
             }
         }
     } else {
-        alert('❌ Senha incorreta!\n\nUse: ' + ADMIN_CONFIG.password);
+        alert("Senha incorreta!");
+    }
+}
+
+// ========== SUBSTITUIR A FUNÇÃO toggleAdminPanel ==========
+const window.originalToggleAdminPanel = toggleAdminPanel;
+toggleAdminPanel = function() {
+    const password = prompt("Digite a senha de acesso ao painel:");
+    if (password === ADMIN_PASSWORD) {
+        originalToggleAdminPanel();
+        
+        // Após abrir painel, configurar monitor
+        setTimeout(() => {
+            setupAdminMonitor();
+        }, 300);
+    } else {
+        alert("Senha incorreta!");
     }
 };
 
+// ========== INICIALIZAR QUANDO ADMIN ABRIR ==========
+// Monitorar quando o painel ficar visível
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+            const adminPanel = document.getElementById('adminPanel');
+            if (adminPanel && adminPanel.style.display === 'block') {
+                setTimeout(() => {
+                    setupAdminMonitor();
+                    addMonitorControls();
+                }, 500);
+            }
+        }
+    });
+});
+
 // ========== FUNÇÕES DO FORMULÁRIO ==========
 // ========== FUNÇÃO CANCELAR EDIÇÃO ==========
-window.cancelEdit = function() {
+// ========== FUNÇÃO cancelEdit() COMPLETA E CORRIGIDA ==========
+function window.cancelEdit() {
     console.log('❌ Cancelando edição...');
-    window.editingPropertyId = null;
     
-    // Limpar formulário
+    editingPropertyId = null;
+    
+    // 1. LIMPAR FORMULÁRIO COMPLETAMENTE
     const form = document.getElementById('propertyForm');
     if (form) {
-        form.reset();
-        console.log('✅ Formulário limpo');
+        form.reset(); // Isso limpa inputs, textareas, selects
+        
+        // Limpar manualmente campos que form.reset() não limpa completamente
+        document.getElementById('propTitle').value = '';
+        document.getElementById('propPrice').value = '';
+        document.getElementById('propLocation').value = '';
+        document.getElementById('propDescription').value = ''; // CORREÇÃO CRÍTICA
+        document.getElementById('propFeatures').value = '';
+        document.getElementById('propType').selectedIndex = 0;
+        document.getElementById('propBadge').selectedIndex = 0;
+        document.getElementById('propHasVideo').checked = false;
     }
     
-    // Resetar título do formulário
+    // 2. ATUALIZAR TÍTULO
     const formTitle = document.getElementById('formTitle');
     if (formTitle) {
         formTitle.textContent = 'Adicionar Novo Imóvel';
     }
     
-    // Resetar botão submit
+    // 3. ATUALIZAR BOTÃO
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
     }
     
-    // Ocultar botão cancelar
+    // 4. ESCONDER BOTÃO CANCELAR
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.style.display = 'none';
     }
     
-    // Limpar arrays de arquivos
-    window.selectedFiles = [];
-    window.selectedPdfFiles = [];
+    // 5. LIMPAR ARQUIVOS SELECIONADOS
+    selectedFiles = [];
+    selectedPdfFiles = [];
     
-    // Limpar previews
+    // 6. LIMPAR PREVIEWS DE IMAGENS
     const preview = document.getElementById('uploadPreview');
     if (preview) {
         preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum arquivo selecionado</p>';
     }
     
+    // 7. LIMPAR PREVIEWS DE PDFs
     const pdfPreview = document.getElementById('pdfUploadPreview');
     if (pdfPreview) {
         pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum PDF selecionado</p>';
     }
     
-    console.log('✅ Edição cancelada completamente');
-};
+    // 8. LIMPAR INPUTS DE ARQUIVO
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) {
+        pdfFileInput.value = '';
+    }
+    
+    // 9. RECONFIGURAR SISTEMAS DE UPLOAD
+    setTimeout(() => {
+        setupUploadSystem(); // Reconfigurar click
+        setupPdfUploadSystem(); // Reconfigurar PDFs
+    }, 100);
+    
+    console.log('✅ Edição cancelada - Formulário completamente limpo');
+}
 
 // ========== FUNÇÃO loadPropertyList ==========
 window.loadPropertyList = function() {
@@ -173,85 +231,443 @@ window.properties.forEach(property => {
 };
 
 // ========== FUNÇÕES BÁSICAS DE ADMIN ==========
-window.editProperty = function(id) {
-    console.log(`📝 Editando imóvel ID: ${id}`);
-    alert(`🔧 Edição do imóvel ${id} - Funcionalidade em desenvolvimento`);
-};
+// ========== CORREÇÃO DA FUNÇÃO EDIT PROPERTY PARA FOTOS ==========
+// ========== FUNÇÃO editProperty() COMPLETA E CORRIGIDA ==========
+function editProperty(id) {
+    const property = properties.find(p => p.id === id);
+    if (!property) return;
 
-window.deleteProperty = function(id) {
-    console.log(`🗑️ Excluindo imóvel ID: ${id}`);
-    if (confirm('Tem certeza que deseja excluir este imóvel?')) {
-        alert(`✅ Imóvel ${id} excluído (simulação)`);
-        // Aqui você conectaria com properties.js depois
-    }
-};
-
-// ========== FUNÇÕES PDF ==========
-window.showPdfModal = function(propertyId) {
-    console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
-    alert('📄 Sistema de PDFs em desenvolvimento');
-};
-
-window.accessPdfDocuments = function() {
-    const password = document.getElementById('pdfPassword')?.value;
-    if (password === "doc123") {
-        alert('✅ Documentos PDF acessados com sucesso!');
-        closePdfModal();
-    } else {
-        alert('❌ Senha incorreta para documentos PDF!');
-    }
-};
-
-window.closePdfModal = function() {
-    const modal = document.getElementById('pdfModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-};
-
-// ========== CONFIGURAÇÃO DO FORMULÁRIO ==========
-window.setupForm = function() {
-    console.log('📝 Configurando formulário...');
+    editingPropertyId = id;
     
-    const form = document.getElementById('propertyForm');
-    if (!form) {
-        console.error('❌ Formulário não encontrado');
+    // Preencher formulário
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    
+    const features = Array.isArray(property.features) 
+        ? property.features 
+        : (property.features || '');
+    document.getElementById('propFeatures').value = Array.isArray(features) ? features.join(', ') : features;
+    
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+    
+    document.getElementById('propHasVideo').checked = property.has_video || false;
+    
+    // Atualizar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = 'Editar Imóvel';
+    }
+    
+    // Atualizar texto do botão
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
+    }
+    
+    // Mostrar botão cancelar
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'block';
+    }
+    
+    // CORREÇÃO: Inicializar arrays vazios mas manter referência para adições futuras
+    selectedFiles = [];
+    
+    // CORREÇÃO: Mostrar imagens existentes se houver - COM SEPARAÇÃO ENTRE EXISTENTES E NOVAS
+    const preview = document.getElementById('uploadPreview');
+    if (preview) {
+        preview.innerHTML = '';
+        
+        if (property.images && property.images.length > 0 && property.images !== 'EMPTY') {
+            const existingImages = property.images.split(',').filter(img => img.trim() !== '');
+            
+            // CORREÇÃO: Criar uma área separada para imagens existentes
+            preview.innerHTML = '<div id="existingImagesSection">';
+            preview.innerHTML += '<p style="color: var(--success); margin-bottom: 1rem;">📸 Fotos atuais do imóvel (clique no X para excluir):</p>';
+            
+            // Container para imagens existentes
+            const existingContainer = document.createElement('div');
+            existingContainer.style.display = 'flex';
+            existingContainer.style.gap = '10px';
+            existingContainer.style.flexWrap = 'wrap';
+            existingContainer.style.marginBottom = '1.5rem';
+            
+            existingImages.forEach((imgUrl, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'image-preview-container';
+                imgContainer.innerHTML = `
+                    <img src="${imgUrl}" 
+                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px; border: 2px solid var(--success);"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                    <button class="delete-image-btn" onclick="deleteExistingImage(${property.id}, ${index})" 
+                            title="Excluir esta foto">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Foto ${index + 1}</div>
+                `;
+                existingContainer.appendChild(imgContainer);
+            });
+            
+            preview.appendChild(existingContainer);
+            preview.innerHTML += '</div>';
+            
+            // CORREÇÃO: Adicionar seção para novas imagens
+            const newImagesSection = document.createElement('div');
+            newImagesSection.id = 'newImagesSection';
+            newImagesSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            preview.appendChild(newImagesSection);
+            
+            // Armazenar URLs das imagens existentes para referência futura
+            property.existingImageUrls = existingImages;
+            
+        } else {
+            preview.innerHTML = '<p style="color: #666; text-align: center;">Nenhuma foto cadastrada</p>';
+            
+            // CORREÇÃO: Adicionar seção para novas imagens mesmo quando não há existentes
+            const newImagesSection = document.createElement('div');
+            newImagesSection.id = 'newImagesSection';
+            newImagesSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📸 Novas fotos a serem adicionadas:</p>';
+            preview.appendChild(newImagesSection);
+        }
+    }
+    
+    // CORREÇÃO: Mostrar PDFs existentes se houver - COM SEPARAÇÃO ENTRE EXISTENTES E NOVOS
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = '';
+        
+        // CORREÇÃO: Verificar se há PDFs de forma segura
+        const hasPdfs = property.pdfs && 
+                       property.pdfs !== 'EMPTY' && 
+                       property.pdfs !== 'null' && 
+                       property.pdfs !== 'undefined' &&
+                       property.pdfs.trim() !== '';
+        
+        console.log('📄 Editando imóvel - Tem PDFs?', hasPdfs, 'PDFs:', property.pdfs);
+        
+        if (hasPdfs) {
+            const existingPdfs = property.pdfs.split(',').filter(url => url.trim() !== '');
+            
+            // CORREÇÃO: Criar uma área separada para PDFs existentes
+            pdfPreview.innerHTML = '<div id="existingPdfsSection">';
+            pdfPreview.innerHTML += '<p style="color: var(--success); margin-bottom: 1rem;">📄 Documentos atuais do imóvel (clique no X para excluir):</p>';
+            
+            const existingPdfContainer = document.createElement('div');
+            existingPdfContainer.style.display = 'flex';
+            existingPdfContainer.style.gap = '10px';
+            existingPdfContainer.style.flexWrap = 'wrap';
+            existingPdfContainer.style.marginBottom = '1.5rem';
+            
+            existingPdfs.forEach((pdfUrl, index) => {
+                // Extrair nome do arquivo da URL
+                const fileName = pdfUrl.split('/').pop() || `Documento ${index + 1}`;
+                
+                const pdfContainer = document.createElement('div');
+                pdfContainer.className = 'image-preview-container';
+                pdfContainer.innerHTML = `
+                    <div style="background: #f0f0f0; padding: 1rem; border-radius: 5px; text-align: center; width: 100px; height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;">
+                        <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.7rem; word-break: break-all;">${fileName}</p>
+                    </div>
+                    <button class="delete-image-btn" onclick="deleteExistingPdf(${property.id}, ${index})" 
+                            title="Excluir este documento">×</button>
+                    <div style="font-size: 0.7rem; text-align: center; margin-top: 5px; max-width: 100px; word-break: break-all;">Doc ${index + 1}</div>
+                `;
+                existingPdfContainer.appendChild(pdfContainer);
+            });
+            
+            pdfPreview.appendChild(existingPdfContainer);
+            pdfPreview.innerHTML += '</div>';
+            
+            // CORREÇÃO: Adicionar seção para novos PDFs
+            const newPdfsSection = document.createElement('div');
+            newPdfsSection.id = 'newPdfsSection';
+            newPdfsSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+            pdfPreview.appendChild(newPdfsSection);
+            
+            // Armazenar URLs dos PDFs existentes para referência futura
+            property.existingPdfUrls = existingPdfs;
+            
+        } else {
+            pdfPreview.innerHTML = '<p style="color: #666; text-align: center;">Nenhum documento PDF cadastrado</p>';
+            
+            // CORREÇÃO: Adicionar seção para novos PDFs mesmo quando não há existentes
+            const newPdfsSection = document.createElement('div');
+            newPdfsSection.id = 'newPdfsSection';
+            newPdfsSection.innerHTML = '<p style="color: #3498db; margin: 1.5rem 0 1rem;">📄 Novos documentos a serem adicionados:</p>';
+            pdfPreview.appendChild(newPdfsSection);
+        }
+    }
+
+// ========== FUNÇÃO PARA DELETAR IMÓVEL ==========
+function deleteProperty(id) {
+    if (!confirm('Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+
+    try {
+        // Remover do array local
+        const index = properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            properties.splice(index, 1);
+            
+            // Atualizar localStorage
+            localStorage.setItem('weberlessa_properties', JSON.stringify(properties));
+            
+            // Atualizar Supabase
+            fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            }).then(response => {
+                if (response.ok) {
+                    console.log('✅ Imóvel excluído do Supabase');
+                }
+            }).catch(error => {
+                console.log('⚠️ Erro ao excluir do Supabase, mas continuando...', error);
+            });
+            
+            // Recarregar a lista
+            loadPropertyList();
+            renderProperties();
+            
+            alert('✅ Imóvel excluído com sucesso!');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao excluir imóvel:', error);
+        alert('❌ Erro ao excluir o imóvel. Tente novamente.');
+    }
+}
+        
+// ========== FUNÇÃO AUXILIAR PARA EXCLUIR DO STORAGE ==========
+async function deleteFromStorage(imageUrl) {
+    try {
+        // Extrair o nome do arquivo da URL
+        const fileName = imageUrl.split('/').pop();
+        if (!fileName || fileName === 'EMPTY') return false;
+
+        const response = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/properties/${fileName}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY
+                }
+            }
+        );
+
+        return response.ok;
+    } catch (error) {
+        console.error('❌ Erro ao excluir do storage:', error);
+        return false;
+    }
+}
+    
+// ========== FUNÇÕES PDF ==========
+// ========== SISTEMA DE DOCUMENTOS PDF ==========
+let currentPdfPropertyId = null;
+// Mostrar modal de PDF
+function showPdfModal(propertyId) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+
+    currentPdfPropertyId = propertyId;
+    const modal = document.getElementById('pdfModal');
+    const title = document.getElementById('pdfModalTitle');
+    const preview = document.getElementById('pdfPreview');
+    
+    if (title) {
+        title.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos - ${property.title}`;
+    }
+    
+    if (preview) {
+        if (property.pdfs && property.pdfs.length > 0) {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            preview.innerHTML = `
+                <p><strong>${pdfUrls.length} documento(s) disponível(is):</strong></p>
+                ${pdfUrls.map((url, index) => `
+                    <div class="pdf-file-item">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                        <span>Documento ${index + 1}</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            preview.innerHTML = '<p>Nenhum documento disponível para este imóvel.</p>';
+        }
+    }
+    
+    // Resetar senha
+    const passwordInput = document.getElementById('pdfPassword');
+    if (passwordInput) passwordInput.value = '';
+    
+    modal.style.display = 'flex';
+}
+
+// Fechar modal
+function closePdfModal() {
+    const modal = document.getElementById('pdfModal');
+    modal.style.display = 'none';
+    currentPdfPropertyId = null;
+}
+
+// Acessar documentos com senha
+function accessPdfDocuments() {
+    const passwordInput = document.getElementById('pdfPassword');
+    const password = passwordInput ? passwordInput.value : '';
+    
+    if (password !== PDF_PASSWORD) {
+        alert('❌ Senha incorreta! Solicite a senha ao corretor.');
         return;
     }
     
-    form.addEventListener('submit', function(e) {
+    const property = properties.find(p => p.id === currentPdfPropertyId);
+    if (!property || !property.pdfs) {
+        alert('❌ Nenhum documento disponível para este imóvel.');
+        return;
+    }
+    
+    // Abrir todos os PDFs em novas abas
+    const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+    pdfUrls.forEach(url => {
+        window.open(url, '_blank');
+    });
+    
+    closePdfModal();
+    alert('✅ Documentos abertos com sucesso!');
+}
+        
+// ========== SISTEMA DE DOCUMENTOS PDF ==========
+let currentPdfPropertyId = null;
+// Mostrar modal de PDF
+function showPdfModal(propertyId) {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+
+    currentPdfPropertyId = propertyId;
+    const modal = document.getElementById('pdfModal');
+    const title = document.getElementById('pdfModalTitle');
+    const preview = document.getElementById('pdfPreview');
+    
+    if (title) {
+        title.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos - ${property.title}`;
+    }
+    
+    if (preview) {
+        if (property.pdfs && property.pdfs.length > 0) {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            preview.innerHTML = `
+                <p><strong>${pdfUrls.length} documento(s) disponível(is):</strong></p>
+                ${pdfUrls.map((url, index) => `
+                    <div class="pdf-file-item">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                        <span>Documento ${index + 1}</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            preview.innerHTML = '<p>Nenhum documento disponível para este imóvel.</p>';
+        }
+    }
+    
+    // Resetar senha
+    const passwordInput = document.getElementById('pdfPassword');
+    if (passwordInput) passwordInput.value = '';
+    
+    modal.style.display = 'flex';
+}
+
+// Fechar modal
+function closePdfModal() {
+    const modal = document.getElementById('pdfModal');
+    modal.style.display = 'none';
+    currentPdfPropertyId = null;
+}
+
+// Acessar documentos com senha
+function accessPdfDocuments() {
+    const passwordInput = document.getElementById('pdfPassword');
+    const password = passwordInput ? passwordInput.value : '';
+    
+    if (password !== PDF_PASSWORD) {
+        alert('❌ Senha incorreta! Solicite a senha ao corretor.');
+        return;
+    }
+    
+    const property = properties.find(p => p.id === currentPdfPropertyId);
+    if (!property || !property.pdfs) {
+        alert('❌ Nenhum documento disponível para este imóvel.');
+        return;
+    }
+    
+    // Abrir todos os PDFs em novas abas
+    const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+    pdfUrls.forEach(url => {
+        window.open(url, '_blank');
+    });
+    
+    closePdfModal();
+    alert('✅ Documentos abertos com sucesso!');
+}
+
+// ========== FORMULÁRIO CORRIGIDO ==========
+function setupForm() {
+    const form = document.getElementById('propertyForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
-        console.log('📤 Formulário submetido');
         
         const propertyData = {
             title: document.getElementById('propTitle').value,
             price: document.getElementById('propPrice').value,
             location: document.getElementById('propLocation').value,
             description: document.getElementById('propDescription').value,
-            features: document.getElementById('propFeatures').value,
+            features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
             type: document.getElementById('propType').value,
-            badge: document.getElementById('propBadge').value
+            has_video: document.getElementById('propHasVideo').checked,
+            badge: document.getElementById('propBadge').value,
+            rural: document.getElementById('propType').value === 'rural',
+            created_at: new Date().toISOString()
         };
-        
+
         if (!propertyData.title || !propertyData.price || !propertyData.location) {
             alert('❌ Preencha Título, Preço e Localização!');
             return;
         }
-        
-        console.log('📊 Dados do formulário:', propertyData);
-        alert('✅ Imóvel salvo com sucesso! (simulação)');
-        
-        // Limpar formulário
-        cancelEdit();
-        
-        // Atualizar lista
-        if (typeof loadPropertyList === 'function') {
-            loadPropertyList();
+
+        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        submitBtn.disabled = true;
+
+        try {
+            const success = await saveProperty(propertyData);
+            
+            if (success) {
+                alert("✅ Imóvel salvo com sucesso!");
+            } else {
+                alert("❌ Erro ao salvar o imóvel!");
+            }
+
+            this.reset();
+            cancelEdit();
+            selectedFiles = [];
+            selectedPdfFiles = [];
+            showNewImagePreview();
+            showNewPdfPreview();
+
+        } catch (error) {
+            alert("❌ Erro: " + error.message);
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
         }
     });
-    
-    console.log('✅ Formulário configurado');
-};
+}
 
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 function initializeAdminSystem() {
