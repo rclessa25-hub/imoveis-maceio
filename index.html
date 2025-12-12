@@ -422,201 +422,40 @@
 <button class="admin-toggle">
     <i class="fas fa-user-cog"></i>
 </button>
-    
+
 <!-- ========== SCRIPTS MODULARIZADOS ========== -->
 <script src="js/modules/utils.js"></script>
 <script src="js/modules/properties.js"></script>
 <script src="js/modules/gallery.js"></script>
 <script src="js/modules/admin.js"></script>
-<script src="js/main.js"></script>
 
-<!-- ========== INICIALIZAÇÃO FORÇADA ========== -->
+<!-- ========== INICIALIZAÇÃO BÁSICA DO SITE ========== -->
 <script>
-// FORÇAR INICIALIZAÇÃO COMPLETA DO SISTEMA
-console.log('🎯 INICIALIZAÇÃO FORÇADA DO SISTEMA WEBER LESSA');
+// APENAS INICIALIZAÇÃO BÁSICA - ADMIN VEM DO admin.js
+console.log('🎯 Inicialização básica do site Weber Lessa');
 
-// 1. Esperar DOM carregar
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🏠 DOM Carregado - Iniciando sistema completo...');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🏠 DOM carregado');
     
-    // DIAGNÓSTICO RÁPIDO
-    console.log('🔍 VERIFICAÇÃO DE DEPENDÊNCIAS:');
-    console.log('- utils.js carregado?', !!window.SUPABASE_URL);
-    console.log('- properties.js carregado?', typeof window.initializeProperties === 'function');
-    console.log('- gallery.js carregado?', typeof window.openGallery === 'function');
-    console.log('- admin.js carregado?', typeof window.toggleAdminPanel === 'function');
-    console.log('- main.js carregado?', typeof window.initializeWeberLessaSystem === 'function');
-    
-    // FORÇAR INICIALIZAÇÃO
-   // FORÇAR INICIALIZAÇÃO
-    try {
-        if (typeof window.initializeWeberLessaSystem === 'function') {
-            console.log('🚀 Chamando initializeWeberLessaSystem()...');
-            await window.initializeWeberLessaSystem();
-            console.log('✅ Sistema inicializado com sucesso!');
-        } else {
-            console.error('❌ initializeWeberLessaSystem não encontrado!');
-            // Fallback manual
-            await initializeFallback();
-        }
-    } catch (error) {
-        console.error('❌ Erro na inicialização:', error);
-        await initializeFallback();
-    }
-    
-    // 5. Configurar botão admin
-//    const adminBtn = document.querySelector('.admin-toggle');
-//    if (adminBtn) {
-//        adminBtn.onclick = function() {
-//            console.log('🔑 Botão admin clicado');
-//            const password = prompt("Digite a senha do corretor:");
-//            if (password === "wl654") {
-//                const panel = document.getElementById('adminPanel');
-//                if (panel) {
-//                    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-//                    alert('✅ Painel ' + (panel.style.display === 'block' ? 'aberto' : 'fechado'));
-//                }
-//            } else {
-//                alert('❌ Senha incorreta!');
-//            }
-//        };
-//        console.log('✅ Botão admin configurado');
-//        }
-//    
-        console.log('🚀 Sistema Weber Lessa pronto!');
-    });
-
-// FALLBACK MANUAL SE O SISTEMA PRINCIPAL FALHAR
-async function initializeFallback() {
-    console.log('🔄 Usando fallback manual...');
-    
-    // 1. Carregar imóveis
-    if (typeof window.initializeProperties === 'function') {
-        console.log('🏠 Carregando imóveis (fallback)...');
-        await window.initializeProperties();
-    }
-    
-    // 2. Renderizar imóveis
+    // Apenas garantir que imóveis sejam renderizados
     if (typeof window.renderProperties === 'function') {
-        console.log('🎨 Renderizando imóveis (fallback)...');
-        window.renderProperties();
+        setTimeout(() => window.renderProperties('todos'), 100);
     }
     
-    // 3. Configurar filtros
+    // Filtros
     if (typeof window.setupFilters === 'function') {
-        console.log('🎛️ Configurando filtros (fallback)...');
-        window.setupFilters();
+        setTimeout(window.setupFilters, 200);
     }
     
-    // 4. Configurar admin
-    if (typeof window.setupForm === 'function') {
-        console.log('📝 Configurando admin (fallback)...');
-        window.setupForm();
-    }
-    
-    console.log('✅ Fallback manual completo');
-}
+    console.log('✅ Site inicializado - Admin será carregado pelo admin.js');
+});
 
-    // VERIFICAÇÃO DE DIAGNÓSTICO
-    console.log('🔍 DIAGNÓSTICO DO ADMIN:');
-    console.log('1. Botões admin:', document.querySelectorAll('.admin-toggle').length);
-    console.log('2. Painel admin:', document.getElementById('adminPanel') ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
-    console.log('3. toggleAdminPanel:', typeof toggleAdminPanel);
-    console.log('4. ADMIN_PASSWORD:', window.ADMIN_PASSWORD || 'NÃO DEFINIDA');
-    
-// DIAGNÓSTICO APÓS 3 SEGUNDOS
+// Teste simples
 setTimeout(() => {
-    console.log('📊 DIAGNÓSTICO FINAL:');
-    console.log('=====================');
-   
-    const checks = {
-        'Imóveis carregados': window.properties && window.properties.length > 0,
-        'Número de imóveis': window.properties ? window.properties.length : 0,
-        'Container visível': !!document.getElementById('properties-container'),
-        'Elementos no container': document.getElementById('properties-container')?.children.length || 0,
-        'Botões de filtro': document.querySelectorAll('.filter-btn').length,
-        'Função renderProperties': typeof window.renderProperties === 'function',
-        'Função setupFilters': typeof window.setupFilters === 'function',
-        'Função toggleAdminPanel': typeof window.toggleAdminPanel === 'function'
-    };
-    
-    Object.entries(checks).forEach(([key, value]) => {
-        console.log(`${value ? '✅' : '❌'} ${key}: ${value}`);
-    });
-    
-    console.log('=====================');
-    
-    // Se não tem imóveis, forçar criação
-    if (!window.properties || window.properties.length === 0) {
-        console.warn('⚠️ NENHUM IMÓVEL CARREGADO - FORÇANDO CRIAÇÃO...');
-        if (typeof window.getInitialProperties === 'function') {
-            window.properties = window.getInitialProperties();
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties();
-            }
-        }
-    }
-    
-}, 3000);
-
-    // SOLUÇÃO DE EMERGÊNCIA PARA O ADMIN
-//if (typeof toggleAdminPanel === 'undefined') {
-//    console.log('⚠️ toggleAdminPanel não definida - criando função emergencial');
-    
-//    window.toggleAdminPanel = function() {
-//        console.log('🔄 Função emergencial executada');
-//        const password = prompt("Digite a senha do corretor:");
-//        
-//        if (password === "wl654") {
-//            const panel = document.getElementById('adminPanel');
-//            if (panel) {
-//                const isVisible = panel.style.display === 'block';
-//                panel.style.display = isVisible ? 'none' : 'block';
-//                console.log('✅ Painel ' + (isVisible ? 'fechado' : 'aberto'));
-//                
-//                // Se abrindo, carregar lista
-//                if (!isVisible) {
-//                    setTimeout(() => {
-//                        if (typeof loadPropertyList === 'function') {
-//                            loadPropertyList();
-//                        }
-//                    }, 100);
-//                }
-//            }
-//        } else {
-//            alert('❌ Senha incorreta!');
-//        }
-//    };
-    
-//    console.log('✅ Função emergencial criada');
-//}
-
-// Configurar botão admin manualmente
-//setTimeout(() => {
-//    console.log('🔧 Configurando botão admin manualmente...');
-    
-//    const adminBtn = document.querySelector('.admin-toggle');
-//    if (adminBtn) {
-//        // Remover onclick inline
-//        adminBtn.removeAttribute('onclick');
-        
-//        // Adicionar event listener
-//        adminBtn.addEventListener('click', function(e) {
-//            e.preventDefault();
-//            e.stopPropagation();
-//            console.log('🖱️ Botão admin clicado (manual)');
-            
-//            if (typeof toggleAdminPanel === 'function') {
-//                toggleAdminPanel();
-//            } else {
-//                alert('⚠️ Sistema admin não carregado. Recarregue a página.');
-//            }
-//        });
-        
-//        console.log('✅ Botão admin configurado manualmente');
-//    }
-//}, 1000);
-    
+    console.log('📊 Sistema funcionando:');
+    console.log('- Imóveis:', window.properties?.length || 0);
+    console.log('- Admin disponível:', typeof toggleAdminPanel === 'function');
+}, 1000);
 </script>
 </body>
 </html>
