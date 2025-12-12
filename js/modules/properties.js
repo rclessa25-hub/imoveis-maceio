@@ -244,23 +244,22 @@ window.setupFilters = function() {
         return;
     }
     
-    // ATUALIZAÇÃO: FORÇAR "Todos" como ativo inicial
-    const defaultActive = document.querySelector('.filter-btn.active') || 
-                         document.querySelector('.filter-btn');
+    // ✅ CORREÇÃO: Ativar "Todos" automaticamente na inicialização
+    const todosBtn = Array.from(filterButtons).find(btn => 
+        btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
+    );
     
-    if (defaultActive) {
-        defaultActive.classList.add('active');
-        console.log('✅ Botão padrão ativado:', defaultActive.textContent);
+    if (todosBtn && !todosBtn.classList.contains('active')) {
+        todosBtn.classList.add('active');
+        console.log('✅ Botão "Todos" ativado automaticamente');
         
-        // Se for "Todos", renderizar imediatamente
-        if (defaultActive.textContent.trim() === 'Todos') {
-            setTimeout(() => {
-                console.log('🎯 Renderizando imóveis com filtro "todos" inicial...');
-                if (typeof window.renderProperties === 'function') {
-                    window.renderProperties('todos');
-                }
-            }, 100);
-        }
+        // Forçar renderização imediata
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos');
+                console.log('🎨 Imóveis renderizados com filtro "todos"');
+            }
+        }, 100);
     }
     
     filterButtons.forEach(button => {
@@ -280,8 +279,6 @@ window.setupFilters = function() {
             // Renderizar com filtro
             if (typeof window.renderProperties === 'function') {
                 window.renderProperties(filter);
-            } else {
-                console.error('❌ renderProperties() não disponível');
             }
         });
     });
