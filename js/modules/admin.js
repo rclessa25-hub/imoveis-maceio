@@ -382,17 +382,3 @@ if (document.readyState === 'loading') {
 console.log('✅ admin.js pronto com 3 funções principais');
 
 console.log('✅ Sistema admin carregado');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
