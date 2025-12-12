@@ -48,7 +48,7 @@ window.toggleAdminPanel = function() {
             }
         }
     } else {
-        alert('❌ Senha incorreta!\n\nUse: ' + ADMIN_CONFIG.password);
+        alert('❌ Senha incorreta!\n\nUse: ' );
     }
 };
 
