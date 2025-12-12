@@ -75,58 +75,6 @@ function getInitialProperties() {
 // Exportar para window
 window.getInitialProperties = getInitialProperties;
 
-// ========== FUNÇÃO 9: syncWithSupabase() ==========
-window.syncWithSupabase = async function() {
-    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-        console.log('⚠️ Credenciais Supabase não configuradas');
-        return false;
-    }
-    
-    console.log('🔄 Sincronizando com Supabase...');
-    
-    try {
-        // 1. Buscar dados atuais do Supabase
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const response = await fetch(proxyUrl + `${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`
-            }
-        });
-        
-        if (response.ok) {
-            const supabaseData = await response.json();
-            
-            if (Array.isArray(supabaseData) && supabaseData.length > 0) {
-                // Combinar dados: manter locais, adicionar novos do Supabase
-                const localIds = window.properties.map(p => p.id);
-                const newFromSupabase = supabaseData.filter(item => !localIds.includes(item.id));
-                
-                if (newFromSupabase.length > 0) {
-                    window.properties = [...window.properties, ...newFromSupabase];
-                    savePropertiesToStorage();
-                    console.log(`✅ ${newFromSupabase.length} novos imóveis sincronizados do Supabase`);
-                    
-                    // Renderizar novamente
-                    if (typeof window.renderProperties === 'function') {
-                        window.renderProperties('todos');
-                    }
-                    
-                    return true;
-                } else {
-                    console.log('✅ Já sincronizado com Supabase');
-                }
-            }
-        }
-        
-        return false;
-        
-    } catch (error) {
-        console.error('❌ Erro na sincronização:', error);
-        return false;
-    }
-};
-
 // ========== FUNÇÃO 2: savePropertiesToStorage() ==========
 window.savePropertiesToStorage = function() {
     try {
