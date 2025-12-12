@@ -199,6 +199,23 @@ window.syncWithSupabase = async function() {
 // ========== FUNÇÃO 2: savePropertiesToStorage() ==========
 window.savePropertiesToStorage = function() {
     try {
+    // Filtrar apenas dados necessários para evitar problemas
+        const dataToSave = window.properties.map(property => ({
+            id: property.id,
+            title: property.title,
+            price: property.price,
+            location: property.location,
+            description: property.description,
+            features: property.features,
+            type: property.type,
+            has_video: property.has_video || false,
+            badge: property.badge,
+            rural: property.rural || false,
+            images: property.images,
+            pdfs: property.pdfs || '',
+            created_at: property.created_at || new Date().toISOString()
+        }));
+        
         localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
         console.log('💾 Imóveis salvos no localStorage:', window.properties.length);
         return true;
