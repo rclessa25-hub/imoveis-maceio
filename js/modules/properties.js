@@ -145,54 +145,66 @@ function getInitialProperties() {
 window.getInitialProperties = getInitialProperties;
 
 // ========== FUNÇÃO 9: syncWithSupabase() ==========
+// ========== FUNÇÃO 9: syncWithSupabase() CORRIGIDA ==========
 window.syncWithSupabase = async function() {
-    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-        console.log('⚠️ Credenciais Supabase não configuradas');
-        return false;
-    }
+    console.log('🔄 Iniciando sincronização...');
     
-    console.log('🔄 Sincronizando com Supabase...');
-    
-    try {
-        // 1. Buscar dados atuais do Supabase
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const response = await fetch(proxyUrl + `${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`
-            }
-        });
+    // Usar a função de conexão segura
+    if (typeof window.supabaseFetch === 'function') {
+        const result = await window.supabaseFetch('/properties?select=*&order=created_at.desc');
         
-        if (response.ok) {
-            const supabaseData = await response.json();
+        if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
+            // Verificar se já temos esses imóveis
+            const newProperties = result.data.filter(supabaseItem => {
+                return !window.properties.some(localItem => 
+                    localItem.id === supabaseItem.id || 
+                    (localItem.title === supabaseItem.title && localItem.location === supabaseItem.location)
+                );
+            });
             
-            if (Array.isArray(supabaseData) && supabaseData.length > 0) {
-                // Combinar dados: manter locais, adicionar novos do Supabase
-                const localIds = window.properties.map(p => p.id);
-                const newFromSupabase = supabaseData.filter(item => !localIds.includes(item.id));
+            if (newProperties.length > 0) {
+                // Formatar os dados
+                const formattedProperties = newProperties.map(item => ({
+                    id: item.id || Date.now() + Math.random(),
+                    title: item.title || 'Sem título',
+                    price: item.price || 'R$ 0,00',
+                    location: item.location || 'Local não informado',
+                    description: item.description || '',
+                    features: item.features || '',
+                    type: item.type || 'residencial',
+                    has_video: item.has_video || false,
+                    badge: item.badge || 'Novo',
+                    rural: item.rural || false,
+                    images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                    pdfs: item.pdfs || '',
+                    created_at: item.created_at || new Date().toISOString()
+                }));
                 
-                if (newFromSupabase.length > 0) {
-                    window.properties = [...window.properties, ...newFromSupabase];
-                    savePropertiesToStorage();
-                    console.log(`✅ ${newFromSupabase.length} novos imóveis sincronizados do Supabase`);
-                    
-                    // Renderizar novamente
-                    if (typeof window.renderProperties === 'function') {
-                        window.renderProperties('todos');
-                    }
-                    
-                    return true;
-                } else {
-                    console.log('✅ Já sincronizado com Supabase');
+                // Adicionar ao array existente
+                window.properties = [...window.properties, ...formattedProperties];
+                
+                // Salvar no localStorage
+                window.savePropertiesToStorage();
+                
+                console.log(`✅ ${formattedProperties.length} novos imóveis sincronizados`);
+                
+                // Renderizar
+                if (typeof window.renderProperties === 'function') {
+                    window.renderProperties('todos');
                 }
+                
+                return { success: true, count: formattedProperties.length };
+            } else {
+                console.log('✅ Já sincronizado - nenhum imóvel novo');
+                return { success: true, count: 0 };
             }
+        } else {
+            console.log('⚠️ Nenhum dado retornado do Supabase');
+            return { success: false, error: 'Sem dados' };
         }
-        
-        return false;
-        
-    } catch (error) {
-        console.error('❌ Erro na sincronização:', error);
-        return false;
+    } else {
+        console.log('⚠️ Função supabaseFetch não disponível');
+        return { success: false, error: 'API não disponível' };
     }
 };
 
