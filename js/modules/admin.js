@@ -309,36 +309,56 @@ if (document.readyState === 'loading') {
     setTimeout(initializeAdminSystem, 300);
 }
 
-window.syncWithSupabase = function() {
-    if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá carregar os 25 imóveis do banco de dados online.')) {
+// ✅ CORREÇÃO: Função de sincronização sem loop
+window.syncWithSupabaseManual = async function() {
+    if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
         console.log('🔄 Iniciando sincronização manual...');
         
-        if (typeof window.syncWithSupabase === 'function') {
-            window.syncWithSupabase().then(success => {
-                if (success) {
-                    alert('✅ Sincronização completa! Imóveis do Supabase carregados.');
-                    
-                    // Atualizar lista no admin
-                    if (typeof window.loadPropertyList === 'function') {
-                        window.loadPropertyList();
-                    }
-                } else {
-                    alert('⚠️ Não foi possível sincronizar. Verifique a conexão.');
+        // Desabilitar botão temporariamente
+        const syncBtn = document.getElementById('syncButton');
+        if (syncBtn) {
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
+        }
+        
+        try {
+            // Chamar a função do properties.js
+            const result = await window.syncWithSupabase();
+            
+            if (result && result.success) {
+                alert(`✅ Sincronização completa!\n\n${result.count} novos imóveis carregados.`);
+                
+                // Atualizar lista no admin
+                if (typeof window.loadPropertyList === 'function') {
+                    window.loadPropertyList();
                 }
-            });
-        } else {
-            alert('❌ Função de sincronização não disponível.');
+            } else {
+                alert('⚠️ Não foi possível sincronizar. Verifique a conexão.');
+            }
+        } catch (error) {
+            console.error('❌ Erro na sincronização:', error);
+            alert('❌ Erro ao sincronizar: ' + error.message);
+        } finally {
+            // Reabilitar botão
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+            }
         }
     }
 };
 
-// Adicionar botão de sincronização no painel admin
+// ✅ CORREÇÃO: Atualizar o botão para usar a nova função
 function addSyncButton() {
     const adminPanel = document.getElementById('adminPanel');
     if (!adminPanel) return;
     
     // Verificar se já existe
-    if (document.getElementById('syncButton')) return;
+    if (document.getElementById('syncButton')) {
+        const existingBtn = document.getElementById('syncButton');
+        existingBtn.onclick = window.syncWithSupabaseManual;
+        return;
+    }
     
     // Criar botão
     const syncButton = document.createElement('button');
@@ -358,7 +378,7 @@ function addSyncButton() {
         font-weight: 600;
     `;
     
-    syncButton.onclick = window.syncWithSupabase;
+    syncButton.onclick = window.syncWithSupabaseManual;
     
     // Adicionar após o título do painel
     const panelTitle = adminPanel.querySelector('h3');
@@ -366,7 +386,7 @@ function addSyncButton() {
         panelTitle.parentNode.insertBefore(syncButton, panelTitle.nextSibling);
     }
     
-    console.log('✅ Botão de sincronização adicionado');
+    console.log('✅ Botão de sincronização corrigido');
 }
 
 // ========== FUNÇÕES PDF ==========
