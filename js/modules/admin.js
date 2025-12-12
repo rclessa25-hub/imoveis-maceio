@@ -110,6 +110,7 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados`);
 };
 
+// No admin.js - ATUALIZAR FUNÇÃO editProperty
 window.editProperty = function(id) {
     console.log(`📝 Editando imóvel ${id}`);
     
@@ -124,7 +125,8 @@ window.editProperty = function(id) {
     document.getElementById('propPrice').value = property.price || '';
     document.getElementById('propLocation').value = property.location || '';
     document.getElementById('propDescription').value = property.description || '';
-    document.getElementById('propFeatures').value = property.features || '';
+    document.getElementById('propFeatures').value = Array.isArray(property.features) ? 
+        property.features.join(', ') : (property.features || '');
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
     
@@ -144,8 +146,6 @@ window.editProperty = function(id) {
     setTimeout(() => {
         document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
     }, 100);
-    
-    alert(`✏️ Editando "${property.title}"\n\nModifique os campos e clique em "Salvar Alterações"`);
 };
 
 window.deleteProperty = function(id) {
@@ -208,43 +208,55 @@ window.setupForm = function() {
     const form = document.getElementById('propertyForm');
     if (!form) return;
     
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const propertyData = {
-            title: document.getElementById('propTitle').value,
-            price: document.getElementById('propPrice').value,
-            location: document.getElementById('propLocation').value,
-            description: document.getElementById('propDescription').value,
-            features: document.getElementById('propFeatures').value,
-            type: document.getElementById('propType').value,
-            badge: document.getElementById('propBadge').value
-        };
-        
-        if (!propertyData.title || !propertyData.price || !propertyData.location) {
-            alert('❌ Preencha Título, Preço e Localização!');
-            return;
+// No admin.js - ATUALIZAR FORMULÁRIO (submit event)
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const propertyData = {
+        title: document.getElementById('propTitle').value,
+        price: document.getElementById('propPrice').value,
+        location: document.getElementById('propLocation').value,
+        description: document.getElementById('propDescription').value,
+        features: document.getElementById('propFeatures').value,
+        type: document.getElementById('propType').value,
+        badge: document.getElementById('propBadge').value
+    };
+    
+    if (!propertyData.title || !propertyData.price || !propertyData.location) {
+        alert('❌ Preencha Título, Preço e Localização!');
+        return;
+    }
+    
+    console.log('💾 Processando imóvel...');
+    
+    if (window.editingPropertyId) {
+        // ✅ CORREÇÃO: Usar função updateProperty do properties.js
+        if (typeof window.updateProperty === 'function') {
+            const success = window.updateProperty(window.editingPropertyId, propertyData);
+            if (success) {
+                alert('✅ Imóvel atualizado com sucesso!');
+            } else {
+                alert('❌ Erro ao atualizar imóvel');
+            }
+        } else {
+            // Fallback
+            alert('✅ Alterações salvas (simulação)');
         }
-        
-        // Simular salvamento
-        console.log('💾 Salvando imóvel:', propertyData);
-        
-        // Adicionar ao array (simulação)
-        if (!window.properties) window.properties = [];
-        const newId = window.properties.length + 1;
-        window.properties.push({
-            id: newId,
-            ...propertyData,
-            images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"
-        });
-        
-        alert('✅ Imóvel salvo com sucesso!');
-        
-        // Atualizar
-        cancelEdit();
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') window.renderProperties();
-    });
+    } else {
+        // ✅ CORREÇÃO: Usar função addNewProperty do properties.js
+        if (typeof window.addNewProperty === 'function') {
+            const newProperty = window.addNewProperty(propertyData);
+            alert(`✅ Imóvel "${newProperty.title}" cadastrado com sucesso!\n\nAgora é permanente.`);
+        } else {
+            // Fallback
+            alert('✅ Imóvel cadastrado (simulação)');
+        }
+    }
+    
+    // Limpar e atualizar
+    cancelEdit();
+    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+});
 };
 
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
