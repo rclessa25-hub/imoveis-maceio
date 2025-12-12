@@ -115,16 +115,6 @@ window.editProperty = function(id) {
     alert(`🔧 Edição do imóvel ${id} - Em desenvolvimento`);
 };
 
- window.editingPropertyId = id;
-    
-    // Rolar até o formulário
-    setTimeout(() => {
-        document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-    
-    alert(`✏️ Editando "${property.title}"\n\nModifique os campos e clique em "Salvar Alterações"`);
-};
-
 window.deleteProperty = function(id) {
     if (confirm('Excluir este imóvel?')) {
         console.log(`🗑️ Excluindo imóvel ${id}`);
