@@ -258,16 +258,7 @@ form.addEventListener('submit', function(e) {
     if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
 });
 };
-
- // Adicionar após o título do painel
-    const panelTitle = adminPanel.querySelector('h3');
-    if (panelTitle) {
-        panelTitle.parentNode.insertBefore(syncButton, panelTitle.nextSibling);
-    }
-    
-    console.log('✅ Botão de sincronização adicionado');
-}
-
+ 
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 function initializeAdminSystem() {
     console.log('🚀 Inicializando sistema admin...');
