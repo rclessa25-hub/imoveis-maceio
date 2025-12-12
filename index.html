@@ -429,33 +429,22 @@
 <script src="js/modules/gallery.js"></script>
 <script src="js/modules/admin.js"></script>
 
-<!-- ========== INICIALIZAÇÃO BÁSICA DO SITE ========== -->
+<!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
 <script>
-// APENAS INICIALIZAÇÃO BÁSICA - ADMIN VEM DO admin.js
-console.log('🎯 Inicialização básica do site Weber Lessa');
+console.log('🎯 Inicialização do site Weber Lessa');
 
+// Apenas aguardar tudo carregar
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🏠 DOM carregado');
+    console.log('🏠 Site completamente carregado!');
     
-    // Apenas garantir que imóveis sejam renderizados
-    if (typeof window.renderProperties === 'function') {
-        setTimeout(() => window.renderProperties('todos'), 100);
-    }
-
-    // Filtros
-    if (typeof window.setupFilters === 'function') {
-        setTimeout(window.setupFilters, 200);
-    }
-    
-    console.log('✅ Site inicializado - Admin será carregado pelo admin.js');
+    // Teste rápido
+    setTimeout(() => {
+        console.log('📊 Status final:');
+        console.log('- Imóveis:', window.properties?.length || 0);
+        console.log('- Admin funcionando:', typeof toggleAdminPanel === 'function');
+        console.log('- Filtros prontos:', document.querySelectorAll('.filter-btn').length > 0);
+    }, 1000);
 });
-
-// Teste simples
-setTimeout(() => {
-    console.log('📊 Sistema funcionando:');
-    console.log('- Imóveis:', window.properties?.length || 0);
-    console.log('- Admin disponível:', typeof toggleAdminPanel === 'function');
-}, 1000);
 </script>
 </body>
 </html>
