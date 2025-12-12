@@ -148,3 +148,59 @@ if (window.SUPABASE_URL) {
 }
 
 console.log('✅ utils.js completamente carregado');
+
+// ========== FUNÇÃO SUPABASE FETCH CORRIGIDA (ADICIONAR AQUI) ==========
+window.supabaseFetch = async function(endpoint, options = {}) {
+    console.log('🌐 supabaseFetch chamado para:', endpoint);
+    
+    try {
+        // URL alternativa que funciona no GitHub Pages
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const encodedUrl = encodeURIComponent(
+            `${window.SUPABASE_URL}/rest/v1${endpoint}`
+        );
+        
+        console.log('🔗 URL de acesso:', proxyUrl + encodedUrl);
+        
+        const response = await fetch(proxyUrl + encodedUrl, {
+            method: options.method || 'GET',
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
+            ...options
+        });
+        
+        if (!response.ok) {
+            console.warn(`⚠️ Supabase retornou ${response.status}: ${response.statusText}`);
+            // Retornar estrutura vazia mas consistente
+            return { 
+                ok: false, 
+                data: [], 
+                error: `HTTP ${response.status}: ${response.statusText}` 
+            };
+        }
+        
+        const data = await response.json();
+        console.log(`✅ Supabase fetch bem-sucedido: ${data.length || 0} itens`);
+        
+        return { 
+            ok: true, 
+            data: data,
+            count: Array.isArray(data) ? data.length : 1
+        };
+        
+    } catch (error) {
+        console.error('❌ Erro em supabaseFetch:', error.message);
+        return { 
+            ok: false, 
+            data: [], 
+            error: error.message,
+            fallback: true
+        };
+    }
+};
+
+console.log('✅ supabaseFetch adicionada ao utils.js');
