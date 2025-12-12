@@ -275,6 +275,9 @@ function initializeAdminSystem() {
     if (adminBtn) {
         // Remover onclick inline se existir
         adminBtn.removeAttribute('onclick');
+
+        // Adicionar botão de sincronização
+           addSyncButton();
         
         // Adicionar event listener
         adminBtn.addEventListener('click', function(e) {
