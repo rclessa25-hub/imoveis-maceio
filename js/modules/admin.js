@@ -229,4 +229,28 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(initializeAdminSystem, 300);
 }
+
+// ========== FUNÇÕES PDF ==========
+window.showPdfModal = function(propertyId) {
+    console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
+    alert('📄 Sistema de PDFs em desenvolvimento');
+};
+
+window.accessPdfDocuments = function() {
+    const password = document.getElementById('pdfPassword')?.value;
+    if (password === "doc123") {
+        alert('✅ Documentos PDF acessados com sucesso!');
+        closePdfModal();
+    } else {
+        alert('❌ Senha incorreta para documentos PDF!');
+    }
+};
+
+window.closePdfModal = function() {
+    const modal = document.getElementById('pdfModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
 console.log('✅ admin.js pronto e aguardando inicialização');
