@@ -30,7 +30,16 @@ window.toggleAdminPanel = function() {
             console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
             if (!isVisible) {
-                // Quando abrir, carregar lista
+                // ✅ CORREÇÃO: Rolar suavemente até o painel
+                setTimeout(() => {
+                    panel.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                    console.log('📜 Rolando até o painel admin');
+                }, 300);
+                
+                // Carregar lista quando abrir
                 setTimeout(() => {
                     if (typeof window.loadPropertyList === 'function') {
                         window.loadPropertyList();
