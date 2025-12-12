@@ -1,12 +1,6 @@
 // js/modules/admin.js - SISTEMA ADMIN FUNCIONAL
 console.log('🔧 admin.js carregado - Sistema Administrativo');
 
-// No início do admin.js, após o console.log inicial
-console.log('🔑 VERIFICAÇÃO DE SEGURANÇA ADMIN:');
-console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD);
-console.log('- SUPABASE_URL:', window.SUPABASE_URL ? '✅ Definido' : '❌ Não definido');
-console.log('- Local atual:', window.location.href);
-
 // ========== CONFIGURAÇÕES ==========
 const ADMIN_CONFIG = {
     password: "wl654",
