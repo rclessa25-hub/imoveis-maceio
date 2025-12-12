@@ -259,6 +259,15 @@ form.addEventListener('submit', function(e) {
 });
 };
 
+ // Adicionar após o título do painel
+    const panelTitle = adminPanel.querySelector('h3');
+    if (panelTitle) {
+        panelTitle.parentNode.insertBefore(syncButton, panelTitle.nextSibling);
+    }
+    
+    console.log('✅ Botão de sincronização adicionado');
+}
+
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 function initializeAdminSystem() {
     console.log('🚀 Inicializando sistema admin...');
@@ -286,6 +295,9 @@ function initializeAdminSystem() {
         
         console.log('✅ Botão admin configurado');
     }
+
+    // Adicionar botão de sincronização
+        addSyncButton();
     
     // 3. Configurar formulário
     if (typeof window.setupForm === 'function') {
@@ -305,6 +317,58 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(initializeAdminSystem, 300);
 }
+
+// Função para sincronizar com Supabase
+window.syncWithSupabase = function() {
+    if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá carregar os 25 imóveis do banco de dados online.')) {
+        console.log('🔄 Iniciando sincronização manual...');
+        
+        if (typeof window.syncWithSupabase === 'function') {
+            window.syncWithSupabase().then(success => {
+                if (success) {
+                    alert('✅ Sincronização completa! Imóveis do Supabase carregados.');
+                    
+                    // Atualizar lista no admin
+                    if (typeof window.loadPropertyList === 'function') {
+                        window.loadPropertyList();
+                    }
+                } else {
+                    alert('⚠️ Não foi possível sincronizar. Verifique a conexão.');
+                }
+            });
+        } else {
+            alert('❌ Função de sincronização não disponível.');
+        }
+    }
+};
+
+// Adicionar botão de sincronização no painel admin
+function addSyncButton() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (!adminPanel) return;
+    
+    // Verificar se já existe
+    if (document.getElementById('syncButton')) return;
+    
+    // Criar botão
+    const syncButton = document.createElement('button');
+    syncButton.id = 'syncButton';
+    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+    syncButton.style.cssText = `
+        background: var(--gold);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+    `;
+    
+    syncButton.onclick = window.syncWithSupabase;
 
 // ========== FUNÇÕES PDF ==========
 window.showPdfModal = function(propertyId) {
