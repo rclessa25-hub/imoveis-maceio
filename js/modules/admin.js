@@ -175,7 +175,7 @@ window.deleteProperty = function(id) {
             alert(`✅ Imóvel "${property.title}" excluído com sucesso!`);
         }
     }
-};
+}
 };
 
 // ========== FUNÇÕES PDF ==========
