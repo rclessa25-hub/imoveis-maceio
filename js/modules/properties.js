@@ -1,43 +1,45 @@
-// js/modules/properties.js - SISTEMA PRINCIPAL DE IMÓVEIS (VERSÃO CORRIGIDA)
-console.log('🚀 properties.js carregado - SISTEMA PRINCIPAL');
-console.log('🚀 properties.js carregado - MODO OFFLINE');
+// js/modules/properties.js - SISTEMA DE IMÓVEIS COMPLETO E FUNCIONAL
+console.log('🚀 properties.js carregado - Sistema Completo');
 
 // ========== VARIÁVEIS GLOBAIS ==========
-window.properties = window.properties || [];
+window.properties = [];
 window.editingPropertyId = null;
 window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
-// FORÇAR DADOS INICIAIS IMEDIATAMENTE
-console.log('🔄 Forçando inicialização de dados...');
-window.properties = window.getInitialProperties ? window.getInitialProperties() : [];
-console.log(`✅ ${window.properties.length} imóveis carregados localmente`);
-
-// ========== VERIFICAÇÃO DE CARREGAMENTO ==========
-console.log('🔍 VERIFICAÇÃO DE CARREGAMENTO:');
-console.log('- window.properties definido?', !!window.properties);
-console.log('- É array?', Array.isArray(window.properties));
-console.log('- SUPABASE_URL:', window.SUPABASE_URL);
-
-// Forçar inicialização se não foi chamada
-setTimeout(() => {
-    if (!window.properties || window.properties.length === 0) {
-        console.log('⚠️ properties vazio - verificando se precisa inicializar...');
-        
-        // Verificar se o DOM já carregou
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            console.log('🔄 DOM já carregado - chamando initializeProperties...');
-            if (typeof window.initializeProperties === 'function') {
-                window.initializeProperties().then(() => {
-                    console.log('✅ Properties inicializados via timeout');
-                });
+// ========== CARREGAMENTO AUTOMÁTICO ==========
+(function autoInitialize() {
+    console.log('🔄 Inicialização automática do sistema de imóveis...');
+    
+    // Verificar se já temos dados no localStorage
+    try {
+        const stored = localStorage.getItem('weberlessa_properties');
+        if (stored) {
+            window.properties = JSON.parse(stored);
+            console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
+            
+            // Renderizar imediatamente se o DOM estiver pronto
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(() => {
+                    if (typeof window.renderProperties === 'function') {
+                        window.renderProperties('todos');
+                        console.log('🎨 Imóveis renderizados automaticamente');
+                    }
+                }, 300);
             }
+            return;
         }
+    } catch (error) {
+        console.log('⚠️ Erro no localStorage, usando dados iniciais:', error);
     }
-}, 1000);
+    
+    // Se não tem dados, usar iniciais
+    window.properties = getInitialProperties();
+    console.log(`🎯 ${window.properties.length} imóveis iniciais carregados`);
+})();
 
 // ========== FUNÇÃO 1: getInitialProperties() ==========
-window.getInitialProperties = function() {
+function getInitialProperties() {
     return [
         {
             id: 1,
@@ -68,82 +70,26 @@ window.getInitialProperties = function() {
             created_at: new Date().toISOString()
         }
     ];
-};
+}
 
-// ========== FUNÇÃO 2: initializeProperties() ==========
-window.initializeProperties = async function() {
-    console.log('🏠 Inicializando sistema de imóveis...');
-    
-    // DEBUG: Mostrar estado atual
-    console.log('🔍 Estado antes de carregar:');
-    console.log('- SUPABASE_URL:', window.SUPABASE_URL ? '✅ Definido' : '❌ Não definido');
-    console.log('- properties array:', Array.isArray(window.properties));
-    console.log('- properties length:', window.properties.length);
-    
-    // Se já tem imóveis, apenas retornar
-    if (window.properties && window.properties.length > 0) {
-        console.log(`✅ ${window.properties.length} imóveis já carregados`);
-        return window.properties;
+// Exportar para window
+window.getInitialProperties = getInitialProperties;
+
+// ========== FUNÇÃO 2: savePropertiesToStorage() ==========
+window.savePropertiesToStorage = function() {
+    try {
+        localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
+        console.log('💾 Imóveis salvos no localStorage:', window.properties.length);
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao salvar no localStorage:', error);
+        return false;
     }
-    
-    // 1. Tentar carregar do Supabase
-    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-        try {
-            console.log('📡 Tentando carregar do Supabase...');
-            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*&order=created_at.desc`, {
-                headers: {
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`✅ ${data.length} imóveis carregados do Supabase`);
-                window.properties = Array.isArray(data) ? data : [];
-                
-                // Salvar backup no localStorage
-                localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
-                
-            } else {
-                console.log('⚠️ Supabase não disponível, tentando localStorage...');
-                throw new Error('Supabase falhou');
-            }
-            
-        } catch (error) {
-            console.log('⚠️ Erro no Supabase:', error.message);
-            // Continuar para fallback
-        }
-    }
-    
-    // 2. Se não carregou do Supabase, tentar localStorage
-    if (window.properties.length === 0) {
-        const localData = localStorage.getItem('weberlessa_properties');
-        if (localData) {
-            try {
-                window.properties = JSON.parse(localData);
-                console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
-            } catch (error) {
-                console.log('⚠️ Erro no localStorage:', error);
-                window.properties = window.getInitialProperties();
-            }
-        } else {
-            // 3. Usar dados de exemplo
-            window.properties = window.getInitialProperties();
-            console.log(`🎯 ${window.properties.length} imóveis de exemplo carregados`);
-            
-            // Salvar no localStorage
-            localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
-        }
-    }
-    
-    console.log(`📊 Total final: ${window.properties.length} imóveis carregados`);
-    return window.properties;
 };
 
 // ========== FUNÇÃO 3: renderProperties() ==========
 window.renderProperties = function(filter = 'todos') {
-    console.log('🎨 renderProperties() chamada com filtro:', filter);
+    console.log('🎨 renderProperties() com filtro:', filter);
     
     const container = document.getElementById('properties-container');
     if (!container) {
@@ -151,15 +97,17 @@ window.renderProperties = function(filter = 'todos') {
         return;
     }
     
+    // Limpar container
     container.innerHTML = '';
     
+    // Verificar se temos dados
     if (!window.properties || window.properties.length === 0) {
         container.innerHTML = '<p style="text-align: center; padding: 3rem; color: #666;">Nenhum imóvel disponível.</p>';
         console.log('⚠️ Nenhum imóvel para renderizar');
         return;
     }
     
-    // Filtrar imóveis
+    // Filtrar
     let filteredProperties = window.properties;
     if (filter !== 'todos') {
         filteredProperties = window.properties.filter(p => {
@@ -172,7 +120,7 @@ window.renderProperties = function(filter = 'todos') {
     }
     
     if (filteredProperties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel encontrado para este filtro.</p>';
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel para este filtro.</p>';
         return;
     }
     
@@ -180,19 +128,18 @@ window.renderProperties = function(filter = 'todos') {
     
     // Verificar se gallery.js está disponível
     const useGallery = typeof window.createPropertyGallery === 'function';
-    console.log('🖼️ Usando galeria?', useGallery);
     
+    // Renderizar cada imóvel
     filteredProperties.forEach(property => {
         const features = Array.isArray(property.features) ? property.features : 
                         (property.features ? property.features.split(',') : []);
         
-        // Gerar HTML da imagem/galeria
+        // Gerar HTML da imagem
         let propertyImageHTML = '';
         
         if (useGallery) {
             propertyImageHTML = window.createPropertyGallery(property);
         } else {
-            // Fallback simples
             const imageUrl = property.images ? 
                 property.images.split(',')[0] : 
                 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
@@ -215,7 +162,7 @@ window.renderProperties = function(filter = 'todos') {
                     <div class="property-price">${property.price || 'R$ 0,00'}</div>
                     <h3 class="property-title">${property.title || 'Sem título'}</h3>
                     <div class="property-location">
-                        <i class="fas fa-map-marker-alt"></i> ${property.location || 'Localização não informada'}
+                        <i class="fas fa-map-marker-alt"></i> ${property.location || 'Local não informado'}
                     </div>
                     <p>${property.description || 'Descrição não disponível.'}</p>
                     <div class="property-features">
@@ -234,7 +181,7 @@ window.renderProperties = function(filter = 'todos') {
     console.log('✅ Imóveis renderizados com sucesso');
 };
 
-// ========== FUNÇÃO 4: setupFilters() ==========
+// ========== FUNÇÃO 4: setupFilters() CORRIGIDA ==========
 window.setupFilters = function() {
     console.log('🎛️ Configurando filtros...');
     
@@ -244,24 +191,24 @@ window.setupFilters = function() {
         return;
     }
     
-    // ✅ CORREÇÃO: Ativar "Todos" automaticamente na inicialização
-    const todosBtn = Array.from(filterButtons).find(btn => 
-        btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
-    );
+    // ✅ CORREÇÃO: Ativar "Todos" automaticamente se nenhum estiver ativo
+    let hasActive = false;
+    filterButtons.forEach(btn => {
+        if (btn.classList.contains('active')) hasActive = true;
+    });
     
-    if (todosBtn && !todosBtn.classList.contains('active')) {
-        todosBtn.classList.add('active');
-        console.log('✅ Botão "Todos" ativado automaticamente');
+    if (!hasActive) {
+        const todosBtn = Array.from(filterButtons).find(btn => 
+            btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
+        );
         
-        // Forçar renderização imediata
-        setTimeout(() => {
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties('todos');
-                console.log('🎨 Imóveis renderizados com filtro "todos"');
-            }
-        }, 100);
+        if (todosBtn) {
+            todosBtn.classList.add('active');
+            console.log('✅ Botão "Todos" ativado automaticamente');
+        }
     }
     
+    // Configurar eventos
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
             // Remover active de todos
@@ -276,7 +223,7 @@ window.setupFilters = function() {
             
             console.log(`🎯 Filtrando por: ${filter}`);
             
-            // Renderizar com filtro
+            // Renderizar
             if (typeof window.renderProperties === 'function') {
                 window.renderProperties(filter);
             }
@@ -299,279 +246,119 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== FUNÇÃO 6: loadPropertyList() ==========
-window.loadPropertyList = function() {
-    console.log('📋 Carregando lista de imóveis no admin...');
+// ========== FUNÇÃO 6: addNewProperty() ==========
+window.addNewProperty = function(propertyData) {
+    console.log('➕ Adicionando novo imóvel:', propertyData);
     
-    const container = document.getElementById('propertyList');
-    const countElement = document.getElementById('propertyCount');
+    // Gerar ID
+    const newId = window.properties.length > 0 
+        ? Math.max(...window.properties.map(p => p.id)) + 1 
+        : 1;
     
-    if (!container) {
-        console.error('❌ Container propertyList não encontrado');
-        return;
+    const newProperty = {
+        id: newId,
+        title: propertyData.title,
+        price: propertyData.price,
+        location: propertyData.location,
+        description: propertyData.description,
+        features: propertyData.features,
+        type: propertyData.type,
+        has_video: false,
+        badge: propertyData.badge,
+        rural: propertyData.type === 'rural',
+        images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
+        created_at: new Date().toISOString()
+    };
+    
+    // Adicionar
+    window.properties.push(newProperty);
+    
+    // Salvar
+    window.savePropertiesToStorage();
+    
+    // Atualizar
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties('todos');
     }
     
-    container.innerHTML = '';
-    
-    if (countElement) {
-        countElement.textContent = window.properties ? window.properties.length : 0;
-    }
-    
-    if (!window.properties || window.properties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Nenhum imóvel cadastrado.</p>';
-        return;
-    }
-    
-    window.properties.forEach(property => {
-        const features = Array.isArray(property.features) ? property.features : 
-                        (property.features ? property.features.split(',') : []);
-        
-        const item = document.createElement('div');
-        item.className = 'property-item';
-        item.innerHTML = `
-            <div style="flex: 1;">
-                <strong style="color: var(--primary);">${property.title}</strong><br>
-                <small>${property.price} - ${property.location}</small>
-                <div style="margin-top: 0.5rem;">
-                    ${features.map(f => 
-                        `<span style="background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.8rem; margin-right: 0.3rem; display: inline-block; margin-bottom: 0.3rem;">${f.trim()}</span>`
-                    ).join('')}
-                </div>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button onclick="editProperty(${property.id})" 
-                        style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-                <button onclick="deleteProperty(${property.id})" 
-                        style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
-                    <i class="fas fa-trash"></i> Excluir
-                </button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-    
-    console.log(`✅ ${window.properties.length} imóveis listados no admin`);
+    console.log('✅ Novo imóvel adicionado:', newProperty);
+    return newProperty;
 };
 
-// ========== FUNÇÃO 7: editProperty() ==========
-window.editProperty = function(id) {
-    console.log(`📝 Editando imóvel ID: ${id}`);
+// ========== FUNÇÃO 7: updateProperty() ==========
+window.updateProperty = function(id, propertyData) {
+    const index = window.properties.findIndex(p => p.id === id);
+    if (index === -1) return false;
     
-    const property = window.properties.find(p => p.id === id);
-    if (!property) {
-        alert('❌ Imóvel não encontrado!');
-        return;
+    window.properties[index] = {
+        ...window.properties[index],
+        ...propertyData
+    };
+    
+    window.savePropertiesToStorage();
+    
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties('todos');
     }
     
-    // Preencher formulário
-    document.getElementById('propTitle').value = property.title || '';
-    document.getElementById('propPrice').value = property.price || '';
-    document.getElementById('propLocation').value = property.location || '';
-    document.getElementById('propDescription').value = property.description || '';
-    document.getElementById('propFeatures').value = Array.isArray(property.features) ? 
-        property.features.join(', ') : (property.features || '');
-    document.getElementById('propType').value = property.type || 'residencial';
-    document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.has_video || false;
-    
-    // Atualizar título do formulário
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) formTitle.textContent = 'Editar Imóvel';
-    
-    // Atualizar botão submit
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Atualizar Imóvel';
-    
-    // Mostrar botão cancelar
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) cancelBtn.style.display = 'block';
-    
-    window.editingPropertyId = id;
-    
-    alert("✅ Imóvel carregado para edição! Modifique os campos e clique em 'Atualizar Imóvel' para salvar.");
+    console.log('✏️ Imóvel atualizado:', id);
+    return true;
 };
 
 // ========== FUNÇÃO 8: deleteProperty() ==========
 window.deleteProperty = function(id) {
-    if (!confirm('⚠️ Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita.')) {
-        return;
+    // ✅ CORREÇÃO: Confirmação dupla
+    if (!confirm('⚠️ TEM CERTEZA que deseja excluir este imóvel?\n\nEsta ação NÃO pode ser desfeita.')) {
+        return false;
+    }
+    
+    // Segunda confirmação
+    if (!confirm('❌ CONFIRMAÇÃO FINAL:\n\nClique em OK APENAS se tiver absoluta certeza.\nO imóvel será PERMANENTEMENTE excluído.')) {
+        return false;
     }
     
     const index = window.properties.findIndex(p => p.id === id);
-    if (index !== -1) {
-        window.properties.splice(index, 1);
-        
-        // Atualizar localStorage
-        localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
-        
-        // Recarregar tudo
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') window.renderProperties();
-        
-        alert('✅ Imóvel excluído com sucesso!');
-    }
-};
-
-// ========== FUNÇÃO 9: saveToLocalStorage() ==========
-window.saveToLocalStorage = function(propertyData) {
-    try {
-        console.log('💾 Salvando imóvel...', propertyData);
-        
-        // Criar objeto completo
-        const fullProperty = {
-            id: window.editingPropertyId || (window.properties.length > 0 ? 
-                Math.max(...window.properties.map(p => p.id)) + 1 : 1),
-            title: propertyData.title,
-            price: propertyData.price,
-            location: propertyData.location,
-            description: propertyData.description,
-            features: propertyData.features,
-            type: propertyData.type,
-            has_video: propertyData.has_video,
-            badge: propertyData.badge,
-            rural: propertyData.rural,
-            images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-            created_at: new Date().toISOString()
-        };
-        
-        // Adicionar ou atualizar
-        if (window.editingPropertyId) {
-            const index = window.properties.findIndex(p => p.id === window.editingPropertyId);
-            if (index !== -1) {
-                window.properties[index] = fullProperty;
-            }
-        } else {
-            window.properties.push(fullProperty);
-        }
-        
-        // Salvar no localStorage
-        localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
-        
-        // Atualizar interfaces
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') window.renderProperties();
-        
-        // Limpar edição
-        window.editingPropertyId = null;
-        
-        console.log('✅ Imóvel salvo com sucesso!');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro ao salvar:', error);
-        return false;
-    }
-};
-
-// ========== FUNÇÃO 10: setupForm() ==========
-window.setupForm = function() {
-    console.log('📝 Configurando formulário admin...');
+    if (index === -1) return false;
     
-    const form = document.getElementById('propertyForm');
-    if (!form) {
-        console.error('❌ Formulário não encontrado!');
-        return;
+    const propertyTitle = window.properties[index].title;
+    window.properties.splice(index, 1);
+    
+    window.savePropertiesToStorage();
+    
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties('todos');
     }
     
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
+    alert(`✅ Imóvel "${propertyTitle}" excluído permanentemente!`);
+    console.log('🗑️ Imóvel excluído:', id);
+    return true;
+};
+
+// ========== INICIALIZAÇÃO FINAL ==========
+console.log('✅ properties.js carregado com 8 funções principais');
+
+// Garantir renderização quando DOM estiver pronto
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🏠 DOM carregado - properties.js pronto');
         
-        const propertyData = {
-            title: document.getElementById('propTitle').value,
-            price: document.getElementById('propPrice').value,
-            location: document.getElementById('propLocation').value,
-            description: document.getElementById('propDescription').value,
-            features: document.getElementById('propFeatures').value.split(',').map(f => f.trim()).filter(f => f !== ''),
-            type: document.getElementById('propType').value,
-            has_video: document.getElementById('propHasVideo').checked,
-            badge: document.getElementById('propBadge').value,
-            rural: document.getElementById('propType').value === 'rural'
-        };
-        
-        // Validação básica
-        if (!propertyData.title || !propertyData.price || !propertyData.location) {
-            alert('❌ Preencha Título, Preço e Localização!');
-            return;
-        }
-        
-        // Botão loading
-        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-        submitBtn.disabled = true;
-        
-        try {
-            const success = await window.saveToLocalStorage(propertyData);
-            
-            if (success) {
-                alert('✅ Imóvel salvo com sucesso!');
-                form.reset();
-                
-                // Resetar formulário
-                const formTitle = document.getElementById('formTitle');
-                if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
-                
-                const cancelBtn = document.getElementById('cancelEditBtn');
-                if (cancelBtn) cancelBtn.style.display = 'none';
-                
-                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-            } else {
-                alert('❌ Erro ao salvar o imóvel!');
+        // Renderizar após breve delay
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function' && window.properties.length > 0) {
+                window.renderProperties('todos');
             }
             
-        } catch (error) {
-            alert('❌ Erro: ' + error.message);
-        } finally {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
+            // Configurar filtros
+            if (typeof window.setupFilters === 'function') {
+                setTimeout(window.setupFilters, 500);
+            }
+        }, 300);
+    });
+} else {
+    console.log('🏠 DOM já carregado - renderizando agora...');
+    setTimeout(() => {
+        if (typeof window.renderProperties === 'function' && window.properties.length > 0) {
+            window.renderProperties('todos');
         }
-    });
-    
-    console.log('✅ Formulário admin configurado');
-};
-
-// ========== FUNÇÃO loadPropertyList() PARA O ADMIN ==========
-window.loadPropertyList = function() {
-    console.log('📋 Carregando lista para admin...');
-    
-    const container = document.getElementById('propertyList');
-    if (!container) {
-        console.log('⚠️ propertyList não encontrado (admin fechado?)');
-        return;
-    }
-    
-    if (!window.properties || window.properties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666;">Nenhum imóvel cadastrado</p>';
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    window.properties.forEach(property => {
-        const item = document.createElement('div');
-        item.className = 'property-item';
-        item.innerHTML = `
-            <div style="flex: 1;">
-                <strong>${property.title}</strong><br>
-                <small>${property.price} - ${property.location}</small>
-            </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button onclick="alert('Editar: ${property.title}')" 
-                        style="background: var(--accent); color: white; padding: 0.5rem 1rem; border: none; border-radius: 3px; cursor: pointer;">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
-                <button onclick="if(confirm('Excluir ${property.title}?')) alert('Excluído!')" 
-                        style="background: #e74c3c; color: white; padding: 0.5rem 1rem; border: none; border-radius: 3px; cursor: pointer;">
-                    <i class="fas fa-trash"></i> Excluir
-                </button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-    
-    console.log(`✅ ${window.properties.length} imóveis listados no admin`);
-};
-
-console.log('✅ properties.js completamente carregado - 11 funções disponíveis');
+    }, 300);
+}
