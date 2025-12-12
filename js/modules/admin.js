@@ -148,10 +148,42 @@ window.editProperty = function(id) {
     alert(`✏️ Editando "${property.title}"\n\nModifique os campos e clique em "Salvar Alterações"`);
 };
 
+ window.editingPropertyId = id;
+    
+    // Rolar até o formulário
+    setTimeout(() => {
+        document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    
+    alert(`✏️ Editando "${property.title}"\n\nModifique os campos e clique em "Salvar Alterações"`);
+};
+
 window.deleteProperty = function(id) {
-    if (confirm('Excluir este imóvel?')) {
-        console.log(`🗑️ Excluindo imóvel ${id}`);
-        alert(`✅ Imóvel ${id} excluído (simulação)`);
+    const property = window.properties.find(p => p.id === id);
+    if (!property) return;
+    
+    if (confirm(`🗑️ Excluir imóvel "${property.title}"?\n\nEsta ação não pode ser desfeita.`)) {
+        console.log(`🗑️ Excluindo imóvel ${id}: ${property.title}`);
+        
+        // Remover do array
+        const index = window.properties.findIndex(p => p.id === id);
+        if (index !== -1) {
+            window.properties.splice(index, 1);
+            
+            // ✅ CORREÇÃO: Atualizar localStorage
+            try {
+                localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
+                console.log('🗑️ Imóvel removido do localStorage');
+            } catch (error) {
+                console.error('❌ Erro ao atualizar localStorage:', error);
+            }
+            
+            // Atualizar tudo
+            if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+            if (typeof window.renderProperties === 'function') window.renderProperties('todos');
+            
+            alert(`✅ Imóvel "${property.title}" excluído com sucesso!`);
+        }
     }
 };
 
