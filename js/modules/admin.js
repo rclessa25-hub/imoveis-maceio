@@ -112,7 +112,40 @@ window.loadPropertyList = function() {
 
 window.editProperty = function(id) {
     console.log(`📝 Editando imóvel ${id}`);
-    alert(`🔧 Edição do imóvel ${id} - Em desenvolvimento`);
+    
+    const property = window.properties.find(p => p.id === id);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        return;
+    }
+    
+    // Preencher formulário
+    document.getElementById('propTitle').value = property.title || '';
+    document.getElementById('propPrice').value = property.price || '';
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+    document.getElementById('propFeatures').value = property.features || '';
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+    
+    // Atualizar interface
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.textContent = `Editando: ${property.title}`;
+    
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+    
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    
+    window.editingPropertyId = id;
+    
+    // Rolar até o formulário
+    setTimeout(() => {
+        document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+    
+    alert(`✏️ Editando "${property.title}"\n\nModifique os campos e clique em "Salvar Alterações"`);
 };
 
 window.deleteProperty = function(id) {
