@@ -1,5 +1,5 @@
-// js/modules/properties.js - SISTEMA DE IMÓVEIS COMPLETO E FUNCIONAL
-console.log('🚀 properties.js carregado - Sistema Completo');
+// js/modules/properties.js - SISTEMA COMPLETO COM SUPABASE
+console.log('🚀 properties.js carregado - Sistema Completo com Supabase');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -7,36 +7,105 @@ window.editingPropertyId = null;
 window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
-// ========== CARREGAMENTO AUTOMÁTICO ==========
-(function autoInitialize() {
-    console.log('🔄 Inicialização automática do sistema de imóveis...');
+// ========== CARREGAMENTO HIERÁRQUICO ==========
+(async function autoInitialize() {
+    console.log('🔄 Inicialização hierárquica do sistema...');
     
-    // Verificar se já temos dados no localStorage
+    // 1. PRIMEIRO: Tentar carregar do Supabase
+    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+        console.log('🌐 Tentando carregar do Supabase...');
+        
+        try {
+            // Usar CORS proxy para GitHub Pages
+            const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+            const supabaseUrl = `${window.SUPABASE_URL}/rest/v1/properties?select=*&order=created_at.desc`;
+            
+            const response = await fetch(proxyUrl + supabaseUrl, {
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    window.properties = data;
+                    
+                    // Garantir que todos os campos existam
+                    window.properties = window.properties.map(property => ({
+                        id: property.id,
+                        title: property.title || 'Sem título',
+                        price: property.price || 'R$ 0,00',
+                        location: property.location || 'Local não informado',
+                        description: property.description || '',
+                        features: property.features || '',
+                        type: property.type || 'residencial',
+                        has_video: property.has_video || false,
+                        badge: property.badge || 'Novo',
+                        rural: property.rural || false,
+                        images: property.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                        pdfs: property.pdfs || '',
+                        created_at: property.created_at || new Date().toISOString()
+                    }));
+                    
+                    console.log(`✅ ${window.properties.length} imóveis carregados do Supabase`);
+                    
+                    // Salvar backup no localStorage
+                    savePropertiesToStorage();
+                    
+                    // Renderizar imediatamente
+                    renderIfReady();
+                    return;
+                }
+            }
+            
+            console.log('⚠️ Supabase não retornou dados válidos');
+            
+        } catch (error) {
+            console.log('⚠️ Erro ao acessar Supabase:', error.message);
+            console.log('📡 Continuando com fallback...');
+        }
+    }
+    
+    // 2. SEGUNDO: Tentar localStorage
     try {
         const stored = localStorage.getItem('weberlessa_properties');
         if (stored) {
-            window.properties = JSON.parse(stored);
-            console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
-            
-            // Renderizar imediatamente se o DOM estiver pronto
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                setTimeout(() => {
-                    if (typeof window.renderProperties === 'function') {
-                        window.renderProperties('todos');
-                        console.log('🎨 Imóveis renderizados automaticamente');
-                    }
-                }, 300);
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                window.properties = parsed;
+                console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
+                renderIfReady();
+                return;
             }
-            return;
         }
     } catch (error) {
-        console.log('⚠️ Erro no localStorage, usando dados iniciais:', error);
+        console.log('⚠️ Erro no localStorage:', error);
     }
     
-    // Se não tem dados, usar iniciais
+    // 3. TERCEIRO: Usar dados de exemplo
     window.properties = getInitialProperties();
-    console.log(`🎯 ${window.properties.length} imóveis iniciais carregados`);
+    console.log(`🎯 ${window.properties.length} imóveis de exemplo carregados`);
+    
+    // Salvar no localStorage para próxima vez
+    savePropertiesToStorage();
+    
+    renderIfReady();
+    
 })();
+
+// Função auxiliar para renderizar quando pronto
+function renderIfReady() {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function' && window.properties.length > 0) {
+                window.renderProperties('todos');
+                console.log('🎨 Imóveis renderizados automaticamente do Supabase');
+            }
+        }, 500);
+    }
+}
 
 // ========== FUNÇÃO 1: getInitialProperties() ==========
 function getInitialProperties() {
@@ -74,6 +143,58 @@ function getInitialProperties() {
 
 // Exportar para window
 window.getInitialProperties = getInitialProperties;
+
+// ========== FUNÇÃO 9: syncWithSupabase() ==========
+window.syncWithSupabase = async function() {
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.log('⚠️ Credenciais Supabase não configuradas');
+        return false;
+    }
+    
+    console.log('🔄 Sincronizando com Supabase...');
+    
+    try {
+        // 1. Buscar dados atuais do Supabase
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const response = await fetch(proxyUrl + `${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            }
+        });
+        
+        if (response.ok) {
+            const supabaseData = await response.json();
+            
+            if (Array.isArray(supabaseData) && supabaseData.length > 0) {
+                // Combinar dados: manter locais, adicionar novos do Supabase
+                const localIds = window.properties.map(p => p.id);
+                const newFromSupabase = supabaseData.filter(item => !localIds.includes(item.id));
+                
+                if (newFromSupabase.length > 0) {
+                    window.properties = [...window.properties, ...newFromSupabase];
+                    savePropertiesToStorage();
+                    console.log(`✅ ${newFromSupabase.length} novos imóveis sincronizados do Supabase`);
+                    
+                    // Renderizar novamente
+                    if (typeof window.renderProperties === 'function') {
+                        window.renderProperties('todos');
+                    }
+                    
+                    return true;
+                } else {
+                    console.log('✅ Já sincronizado com Supabase');
+                }
+            }
+        }
+        
+        return false;
+        
+    } catch (error) {
+        console.error('❌ Erro na sincronização:', error);
+        return false;
+    }
+};
 
 // ========== FUNÇÃO 2: savePropertiesToStorage() ==========
 window.savePropertiesToStorage = function() {
