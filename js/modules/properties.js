@@ -622,85 +622,63 @@ window.savePropertyToSupabase = async function(propertyData) {
     }
 };
 
-// ========== FUNÇÃO 9: updateProperty() REVISADA COMPLETAMENTE ==========
+// ========== FUNÇÃO 9: updateProperty() CORRIGIDA ==========
 window.updateProperty = async function(id, propertyData) {
-    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} (SISTEMA COMPLETO)...`);
-    console.log('📋 Dados recebidos:', propertyData);
+    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} (SEM updated_at)...`);
     
-    // Encontrar imóvel localmente
     const index = window.properties.findIndex(p => p.id === id);
     if (index === -1) {
-        console.log('❌ Imóvel não encontrado localmente para atualização');
+        console.log('❌ Imóvel não encontrado localmente');
         alert('❌ Erro: Imóvel não encontrado!');
         return false;
     }
     
     const originalProperty = window.properties[index];
-    console.log('📄 Imóvel original:', originalProperty);
     
-    // ✅ 1. PRIMEIRO: Atualizar no Supabase (PRIORIDADE)
+    // ✅ 1. PRIMEIRO: Atualizar no Supabase
     let supabaseSuccess = false;
     
     if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-        console.log(`🌐 Tentando atualizar imóvel ${id} no Supabase...`);
-        
-        // Combinar dados originais com novos
+        // Combinar dados originais com novos (SEM updated_at)
         const combinedData = {
             ...originalProperty,
-            ...propertyData,
-            updated_at: new Date().toISOString()
+            ...propertyData
+            // REMOVIDO: updated_at
         };
         
         supabaseSuccess = await window.updatePropertyInSupabase(id, combinedData);
-        
-        if (supabaseSuccess) {
-            console.log(`✅ Supabase: Imóvel ${id} atualizado com sucesso online`);
-        } else {
-            console.log(`⚠️ Supabase: Falha ao atualizar online, continuando localmente`);
-        }
-    } else {
-        console.log('⚠️ Credenciais Supabase não disponíveis, apenas salvamento local');
     }
     
-    // ✅ 2. ATUALIZAR LOCALMENTE (sempre)
-    console.log(`💾 Atualizando imóvel ${id} localmente...`);
-    
-    // Preservar dados importantes que podem não vir no propertyData
+    // ✅ 2. ATUALIZAR LOCALMENTE
     window.properties[index] = {
         ...originalProperty,
         ...propertyData,
-        // Garantir que campos essenciais existam
-        id: originalProperty.id, // Sempre preservar ID original
+        id: originalProperty.id,
         images: propertyData.images || originalProperty.images || '',
         pdfs: propertyData.pdfs || originalProperty.pdfs || '',
-        created_at: originalProperty.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        created_at: originalProperty.created_at || new Date().toISOString()
+        // REMOVIDO: updated_at
     };
     
-    // ✅ 3. SALVAR NO LOCALSTORAGE
-    const saveSuccess = window.savePropertiesToStorage();
-    console.log('💾 localStorage atualizado?', saveSuccess);
+    // ✅ 3. SALVAR LOCALMENTE
+    window.savePropertiesToStorage();
     
     // ✅ 4. ATUALIZAR INTERFACE
     if (typeof window.renderProperties === 'function') {
-        console.log('🎨 Renderizando imóveis atualizados...');
         window.renderProperties('todos');
     }
     
-    // ✅ 5. ATUALIZAR LISTA DO ADMIN (se estiver aberta)
+    // ✅ 5. ATUALIZAR LISTA DO ADMIN
     if (typeof window.loadPropertyList === 'function') {
-        setTimeout(() => {
-            window.loadPropertyList();
-            console.log('📋 Lista do admin atualizada');
-        }, 300);
+        setTimeout(() => window.loadPropertyList(), 300);
     }
     
-    // ✅ 6. FEEDBACK AO USUÁRIO
+    // ✅ 6. FEEDBACK
     if (supabaseSuccess) {
-        alert(`✅ Imóvel "${propertyData.title || originalProperty.title}" atualizado PERMANENTEMENTE no sistema!`);
-        console.log(`🎯 Imóvel ${id} atualizado COMPLETAMENTE (online + local)`);
+        alert(`✅ Imóvel "${propertyData.title || originalProperty.title}" atualizado PERMANENTEMENTE!`);
+        console.log(`🎯 Imóvel ${id} atualizado ONLINE + localmente`);
     } else {
-        alert(`⚠️ Imóvel "${propertyData.title || originalProperty.title}" atualizado apenas LOCALMENTE (sem conexão com servidor).`);
+        alert(`⚠️ Imóvel atualizado apenas LOCALMENTE (erro no servidor).`);
         console.log(`🎯 Imóvel ${id} atualizado apenas localmente`);
     }
     
