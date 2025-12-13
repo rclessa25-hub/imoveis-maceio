@@ -343,6 +343,7 @@ window.clearAllPdfs = function() {
 // ========== 2. SISTEMA DE VISUALIZAÇÃO NOS CARDS ==========
 
 // 2.1 Abrir modal de PDFs do imóvel
+// 2.1 Abrir modal de PDFs do imóvel (SEM SENHA)
 window.showPdfModal = function(propertyId) {
     console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
     
@@ -364,22 +365,24 @@ window.showPdfModal = function(propertyId) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             z-index: 10000;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         `;
         
         modal.innerHTML = `
             <div style="
                 background: white;
                 border-radius: 10px;
-                padding: 2rem;
-                width: 90%;
-                max-width: 800px;
-                max-height: 90vh;
+                padding: 1.5rem;
+                width: 100%;
+                max-width: 500px;
+                max-height: 80vh;
                 overflow-y: auto;
                 position: relative;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.3);
             ">
                 <button onclick="closePdfViewer()" style="
                     position: absolute;
@@ -393,28 +396,14 @@ window.showPdfModal = function(propertyId) {
                     height: 30px;
                     cursor: pointer;
                     font-size: 1.2rem;
+                    z-index: 10;
                 ">
                     ×
                 </button>
-                <h3 id="pdfModalTitle" style="color: var(--primary); margin-bottom: 1.5rem;">
+                <h3 style="color: var(--primary); margin: 0 0 1rem 0; padding-right: 30px;">
                     <i class="fas fa-file-pdf"></i> Documentos do Imóvel
                 </h3>
-                <div id="pdfListContainer" style="margin-bottom: 1.5rem;"></div>
-                <div id="pdfAccessSection" style="display: none;">
-                    <input type="password" id="pdfPasswordInput" placeholder="Digite a senha para acesso" 
-                           style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; width: 100%; margin-bottom: 1rem;">
-                    <button onclick="accessPdfDocuments()" style="
-                        background: var(--primary);
-                        color: white;
-                        padding: 0.8rem 1.5rem;
-                        border: none;
-                        border-radius: 5px;
-                        cursor: pointer;
-                        width: 100%;
-                    ">
-                        <i class="fas fa-lock-open"></i> Acessar Documentos
-                    </button>
-                </div>
+                <div id="pdfListContainer" style="margin: 0;"></div>
             </div>
         `;
         
@@ -430,54 +419,72 @@ window.showPdfModal = function(propertyId) {
         
         pdfUrls.forEach((url, index) => {
             const fileName = url.split('/').pop() || `Documento ${index + 1}`;
+            // Nome compacto para exibição
+            const displayName = fileName.length > 40 
+                ? fileName.substring(0, 37) + '...' 
+                : fileName;
             
             const pdfItem = document.createElement('div');
             pdfItem.style.cssText = `
-                padding: 1rem;
+                padding: 0.8rem;
                 border: 1px solid #e0e0e0;
-                border-radius: 5px;
+                border-radius: 6px;
                 margin-bottom: 0.5rem;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 background: #f9f9f9;
+                transition: all 0.2s ease;
             `;
             
+            pdfItem.onmouseover = function() {
+                this.style.background = '#f0f0f0';
+                this.style.borderColor = '#3498db';
+            };
+            
+            pdfItem.onmouseout = function() {
+                this.style.background = '#f9f9f9';
+                this.style.borderColor = '#e0e0e0';
+            };
+            
             pdfItem.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <i class="fas fa-file-pdf" style="font-size: 1.5rem; color: #e74c3c;"></i>
-                    <div>
-                        <strong>${fileName}</strong>
-                        <br>
-                        <small style="color: #666;">Documento ${index + 1} de ${pdfUrls.length}</small>
+                <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1; min-width: 0;">
+                    <i class="fas fa-file-pdf" style="font-size: 1.3rem; color: #e74c3c; flex-shrink: 0;"></i>
+                    <div style="min-width: 0;">
+                        <strong style="display: block; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${displayName}
+                        </strong>
+                        <small style="color: #666; font-size: 0.8rem;">
+                            PDF ${index + 1} de ${pdfUrls.length}
+                        </small>
                     </div>
                 </div>
                 <button onclick="viewPdfDocument('${url}', '${fileName}')" style="
-                    background: var(--success);
+                    background: var(--primary);
                     color: white;
                     border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 3px;
+                    padding: 0.4rem 0.8rem;
+                    border-radius: 4px;
                     cursor: pointer;
+                    font-size: 0.8rem;
+                    flex-shrink: 0;
+                    white-space: nowrap;
                 ">
-                    <i class="fas fa-eye"></i> Visualizar
+                    <i class="fas fa-external-link-alt"></i> Abrir
                 </button>
             `;
             
             pdfListContainer.appendChild(pdfItem);
         });
         
-        // Mostrar seção de senha (se necessário)
-        document.getElementById('pdfAccessSection').style.display = 'block';
-        
     } else {
         pdfListContainer.innerHTML = `
             <div style="text-align: center; padding: 2rem; color: #666;">
-                <i class="fas fa-file-pdf" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                <p>Nenhum documento PDF disponível para este imóvel.</p>
+                <i class="fas fa-file-pdf" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p style="margin: 0; font-size: 0.95rem;">Nenhum documento PDF disponível.</p>
+                <small style="font-size: 0.85rem; color: #999;">Este imóvel não possui documentos anexados.</small>
             </div>
         `;
-        document.getElementById('pdfAccessSection').style.display = 'none';
     }
     
     modal.style.display = 'flex';
