@@ -195,12 +195,11 @@ window.deleteProperty = function(id) {
             
             alert(`✅ Imóvel "${property.title}" excluído com sucesso!`);
         }
-    }
 
-          if (typeof window.deleteProperty === 'function') {
-        return window.deleteProperty(id);
+        if (typeof window.deleteProperty === 'function') {
+              return window.deleteProperty(id);
+          }
     }
-        
 };
 
 // ========== FUNÇÕES PDF ==========
