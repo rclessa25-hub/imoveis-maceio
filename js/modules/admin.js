@@ -404,4 +404,28 @@ window.closePdfModal = function() {
     }
 };
 
+// ========== FUNÇÕES DE INTEGRAÇÃO COM PDF ==========
+
+// Carregar PDFs ao editar imóvel
+window.loadPdfsForEdit = function(property) {
+    if (typeof window.loadExistingPdfsForEdit === 'function') {
+        window.loadExistingPdfsForEdit(property);
+    }
+};
+
+// Obter PDFs para salvar
+window.getPdfsForSave = function() {
+    if (typeof window.getPdfUrlsToSave === 'function') {
+        return window.getPdfUrlsToSave();
+    }
+    return '';
+};
+
+// Limpar PDFs ao cancelar
+window.clearPdfsOnCancel = function() {
+    if (typeof window.clearAllPdfs === 'function') {
+        window.clearAllPdfs();
+    }
+};
+
 console.log('✅ admin.js pronto e aguardando inicialização');
