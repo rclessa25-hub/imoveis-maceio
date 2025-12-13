@@ -67,6 +67,11 @@ window.toggleAdminPanel = function() {
 window.cancelEdit = function() {
     console.log('❌ Cancelando edição...');
     window.editingPropertyId = null;
+
+    // ✅ NOVA LINHA: Limpar PDFs
+    if (typeof window.clearPdfsOnCancel === 'function') {
+        window.clearPdfsOnCancel();
+    }
     
     const form = document.getElementById('propertyForm');
     if (form) form.reset();
@@ -140,6 +145,11 @@ window.editProperty = function(id) {
         property.features.join(', ') : (property.features || '');
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
+
+     // ✅ NOVA LINHA: Carregar PDFs existentes
+    if (typeof window.loadPdfsForEdit === 'function') {
+        window.loadPdfsForEdit(property);
+    }
     
     // Atualizar interface
     const formTitle = document.getElementById('formTitle');
