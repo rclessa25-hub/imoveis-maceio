@@ -282,6 +282,33 @@ window.clearAllPdfs = function() {
     console.log('🧹 Todos os PDFs removidos');
 };
 
+// 1.7 Função de DEBUG para verificar PDFs
+window.debugPdfs = function(propertyId) {
+    const property = window.properties.find(p => p.id === propertyId);
+    if (!property) {
+        console.error('❌ Imóvel não encontrado');
+        return;
+    }
+    
+    console.log('🔍 DEBUG DE PDFs - Imóvel:', propertyId);
+    console.log('📋 Título:', property.title);
+    console.log('📄 Campo pdfs:', property.pdfs);
+    console.log('📏 Comprimento:', property.pdfs?.length || 0);
+    
+    if (property.pdfs) {
+        console.log('📊 Separando por vírgulas:');
+        const parts = property.pdfs.split(',');
+        console.log(`- Total de partes: ${parts.length}`);
+        
+        parts.forEach((part, index) => {
+            console.log(`  ${index + 1}. "${part.trim()}" (${part.trim().length} chars)`);
+        });
+        
+        console.log('📁 PDFs carregados no sistema:');
+        console.log(window.existingPdfFiles);
+    }
+};
+
 // ========== 2. SISTEMA DE VISUALIZAÇÃO NOS CARDS ==========
 
 // 2.1 Função que será chamada pelos cards
