@@ -481,7 +481,73 @@ window.addNewProperty = function(propertyData) {
     return newProperty;
 };
 
-// ========== FUNÇÃO 7: updateProperty() ==========
+// ========== FUNÇÃO 7: SALVAR IMÓVEL NO SUPABASE ==========
+window.savePropertyToSupabase = async function(propertyData) {
+    console.log('🌐 Salvando imóvel no Supabase:', propertyData);
+    
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.log('❌ Credenciais Supabase não configuradas');
+        return false;
+    }
+    
+    try {
+        // Preparar dados para Supabase
+        const supabaseData = {
+            title: propertyData.title,
+            price: propertyData.price,
+            location: propertyData.location,
+            description: propertyData.description || '',
+            features: typeof propertyData.features === 'string' ? propertyData.features : 
+                     Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
+            type: propertyData.type || 'residencial',
+            has_video: propertyData.has_video || false,
+            badge: propertyData.badge || 'Novo',
+            rural: propertyData.rural || false,
+            images: propertyData.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+            pdfs: propertyData.pdfs || '',
+            created_at: new Date().toISOString()
+        };
+        
+        console.log('📤 Dados para Supabase:', supabaseData);
+        
+        // Enviar para Supabase
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(supabaseData)
+        });
+        
+        console.log('📊 Resposta do Supabase - Status:', response.status);
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Imóvel salvo no Supabase com sucesso!', result);
+            
+            // Atualizar ID com o ID gerado pelo Supabase
+            if (result && result[0] && result[0].id) {
+                propertyData.id = result[0].id;
+                console.log('🆔 ID atribuído pelo Supabase:', propertyData.id);
+            }
+            
+            return true;
+        } else {
+            const errorText = await response.text();
+            console.error('❌ Erro ao salvar no Supabase:', errorText);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro de conexão com Supabase:', error);
+        return false;
+    }
+};
+
+// ========== FUNÇÃO 8: updateProperty() ==========
 window.updateProperty = function(id, propertyData) {
     const index = window.properties.findIndex(p => p.id === id);
     if (index === -1) return false;
@@ -501,7 +567,7 @@ window.updateProperty = function(id, propertyData) {
     return true;
 };
 
-// ========== FUNÇÃO 8: deleteProperty() ==========
+// ========== FUNÇÃO 9: deleteProperty() ==========
 window.deleteProperty = function(id) {
     // ✅ CORREÇÃO: Confirmação dupla
     if (!confirm('⚠️ TEM CERTEZA que deseja excluir este imóvel?\n\nEsta ação NÃO pode ser desfeita.')) {
