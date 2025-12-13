@@ -170,11 +170,6 @@ window.editProperty = function(id) {
 };
 
 window.deleteProperty = function(id) {
-
-      if (typeof window.deleteProperty === 'function') {
-        return window.deleteProperty(id);
-    }
-    
     const property = window.properties.find(p => p.id === id);
     if (!property) return;
     
@@ -201,6 +196,11 @@ window.deleteProperty = function(id) {
             alert(`✅ Imóvel "${property.title}" excluído com sucesso!`);
         }
     }
+
+          if (typeof window.deleteProperty === 'function') {
+        return window.deleteProperty(id);
+    }
+        
 };
 
 // ========== FUNÇÕES PDF ==========
