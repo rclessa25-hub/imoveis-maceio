@@ -384,31 +384,230 @@ function formatFileSize(bytes) {
 
 // ========== 4. SISTEMA DE SALVAMENTO SIMPLIFICADO ==========
 
-// 4.1 Obter PDFs para salvar (versão simples)
-window.getPdfsToSave = function() {
-    const allUrls = [];
+// ========== 4. SISTEMA DE SALVAMENTO NO SUPABASE (REAL) ==========
+
+// 4.1 Upload REAL para Supabase Storage
+window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
+    try {
+        console.log(`⬆️ Iniciando upload REAL para Supabase: ${file.name}`);
+        
+        // Preparar nome do arquivo seguro
+        const safeName = file.name
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9._-]/g, '_')
+            .toLowerCase();
+        
+        const fileName = `pdf_${propertyId}_${Date.now()}_${safeName}`;
+        const uploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/public/pdfs/${fileName}`;
+        
+        console.log(`📤 Upload para: ${uploadUrl}`);
+        
+        // Criar FormData para upload
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // IMPORTANTE: URL CORRETA para upload
+        const storageUploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/pdfs/${fileName}`;
+        
+        const response = await fetch(storageUploadUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'apikey': window.SUPABASE_KEY,
+                'x-upsert': 'true' // Substitui se já existir
+            },
+            body: formData
+        });
+        
+        console.log('📊 Status do upload:', response.status);
+        
+        if (response.ok) {
+            console.log(`✅ PDF enviado COM SUCESSO para Supabase: ${uploadUrl}`);
+            return uploadUrl;
+        } else {
+            const errorText = await response.text();
+            console.error('❌ Erro no upload REAL:', errorText);
+            return null;
+        }
+    } catch (error) {
+        console.error('❌ Erro no upload REAL do PDF:', error);
+        return null;
+    }
+};
+
+// 4.2 Processar e salvar PDFs NO SUPABASE
+window.savePdfsToSupabase = async function(propertyId) {
+    console.log(`💾 SALVANDO PDFs no Supabase para imóvel ${propertyId}...`);
     
-    // PDFs existentes que não foram excluídos
+    const allPdfUrls = [];
+    
+    // 1. Manter PDFs existentes que não foram excluídos
     window.existingPdfFiles.forEach(pdf => {
         if (pdf.url && pdf.url.trim() !== '' && pdf.url !== 'EMPTY') {
-            allUrls.push(pdf.url);
+            // Verificar se é URL válida do Supabase
+            if (pdf.url.includes('supabase.co/storage')) {
+                allPdfUrls.push(pdf.url);
+                console.log(`📎 Mantendo PDF existente: ${pdf.name}`);
+            }
         }
     });
     
-    // Novos PDFs (ainda não enviados)
-    // Nota: Em produção, você faria upload aqui
-    window.selectedPdfFiles.forEach(pdf => {
-        const simulatedUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/public/pdfs/temp_${pdf.id}_${pdf.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-        allUrls.push(simulatedUrl);
-        console.log(`📄 PDF a ser enviado: ${pdf.name} → ${simulatedUrl}`);
-    });
+    // 2. Fazer upload REAL dos NOVOS PDFs
+    if (window.selectedPdfFiles.length > 0) {
+        console.log(`📤 Enviando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para Supabase Storage...`);
+        
+        for (const pdf of window.selectedPdfFiles) {
+            if (pdf.file) {
+                console.log(`⬆️ Enviando PDF REAL: ${pdf.name}`);
+                const uploadedUrl = await window.uploadPdfToSupabaseStorage(pdf.file, propertyId);
+                
+                if (uploadedUrl) {
+                    allPdfUrls.push(uploadedUrl);
+                    console.log(`✅ PDF REAL salvo no Supabase: ${uploadedUrl}`);
+                } else {
+                    console.warn(`⚠️ PDF não enviado: ${pdf.name}`);
+                }
+            }
+        }
+    }
     
-    const result = allUrls.length > 0 ? allUrls.join(',') : '';
-    console.log(`📦 Total de PDFs para salvar: ${allUrls.length}`);
-    return result;
+    // 3. Preparar string final para campo 'pdfs'
+    const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
+    
+    console.log('📊 RESUMO FINAL do salvamento:');
+    console.log(`- PDFs existentes mantidos: ${window.existingPdfFiles.length}`);
+    console.log(`- Novos PDFs enviados: ${window.selectedPdfFiles.length}`);
+    console.log(`- Total de URLs: ${allPdfUrls.length}`);
+    console.log(`- String para campo 'pdfs': ${pdfsString.substring(0, 80)}...`);
+    
+    // 4. ATUALIZAR SUPABASE com os novos PDFs
+    if (pdfsString && window.SUPABASE_URL && window.SUPABASE_KEY) {
+        try {
+            console.log(`🔄 Atualizando campo 'pdfs' no Supabase para imóvel ${propertyId}...`);
+            
+            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({
+                    pdfs: pdfsString,
+                    updated_at: new Date().toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                console.log(`✅ Campo 'pdfs' ATUALIZADO no Supabase!`);
+                
+                // Atualizar localmente também
+                const property = window.properties.find(p => p.id === propertyId);
+                if (property) {
+                    property.pdfs = pdfsString;
+                    window.savePropertiesToStorage();
+                }
+                
+                return pdfsString;
+            } else {
+                console.error('❌ Erro ao atualizar Supabase:', await response.text());
+            }
+        } catch (error) {
+            console.error('❌ Erro ao atualizar campo pdfs:', error);
+        }
+    }
+    
+    return pdfsString;
 };
 
-// 4.2 Integrar com sistema existente
+// 4.3 Obter PDFs para salvar (versão simples)
+// 4.3 Substituir função antiga por nova
+window.getPdfsToSave = async function(propertyId) {
+    if (!propertyId) {
+        console.error('❌ propertyId não fornecido para salvar PDFs');
+        return '';
+    }
+    
+    return await window.savePdfsToSupabase(propertyId);
+};
+
+// 4.4 Integração automática com sistema existente
+window.setupPdfSupabaseIntegration = function() {
+    console.log('🔗 Configurando integração REAL com Supabase...');
+    
+    // Interceptar função updateProperty do properties.js
+    if (typeof window.updateProperty !== 'undefined') {
+        const originalUpdateProperty = window.updateProperty;
+        
+        window.updateProperty = async function(id, propertyData) {
+            console.log(`✏️ Atualizando imóvel ${id} com PDFs REAIS...`);
+            
+            // Se houver PDFs para processar
+            if (window.selectedPdfFiles.length > 0 || window.existingPdfFiles.length > 0) {
+                try {
+                    const pdfsString = await window.savePdfsToSupabase(id);
+                    
+                    if (pdfsString) {
+                        propertyData.pdfs = pdfsString;
+                        console.log(`📄 PDFs REAIS incluídos na atualização`);
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao salvar PDFs REAIS:', error);
+                }
+            }
+            
+            // Limpar PDFs após processar
+            setTimeout(() => {
+                window.selectedPdfFiles = [];
+                window.updatePdfPreview();
+            }, 100);
+            
+            // Chamar função original do properties.js
+            return originalUpdateProperty.call(this, id, propertyData);
+        };
+        
+        console.log('✅ updateProperty integrado com PDFs REAIS no Supabase');
+    }
+    
+    // Interceptar função addNewProperty
+    if (typeof window.addNewProperty !== 'undefined') {
+        const originalAddNewProperty = window.addNewProperty;
+        
+        window.addNewProperty = async function(propertyData) {
+            console.log('➕ Adicionando novo imóvel com PDFs REAIS...');
+            
+            // Primeiro criar o imóvel
+            const newProperty = originalAddNewProperty.call(this, propertyData);
+            
+            // Depois salvar PDFs REAIS
+            if (window.selectedPdfFiles.length > 0) {
+                try {
+                    const pdfsString = await window.savePdfsToSupabase(newProperty.id);
+                    
+                    if (pdfsString) {
+                        // Atualizar localmente
+                        newProperty.pdfs = pdfsString;
+                        const index = window.properties.findIndex(p => p.id === newProperty.id);
+                        if (index !== -1) {
+                            window.properties[index].pdfs = pdfsString;
+                            window.savePropertiesToStorage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao salvar PDFs REAIS no novo imóvel:', error);
+                }
+            }
+            
+            return newProperty;
+        };
+        
+        console.log('✅ addNewProperty integrado com PDFs REAIS no Supabase');
+    }
+};
+
+// 4.4 Integrar com sistema existente
 window.setupPdfIntegration = function() {
     console.log('🔗 Configurando integração de PDFs...');
     
