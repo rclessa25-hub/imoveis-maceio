@@ -181,10 +181,6 @@ window.deleteProperty = function(id) {
         if (index !== -1) {
             window.properties.splice(index, 1);
 
-           if (typeof window.deleteProperty === 'function') {
-                      return window.deleteProperty(id);
-                  }
-            
             // ✅ CORREÇÃO: Atualizar localStorage
             try {
                 localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
@@ -199,6 +195,10 @@ window.deleteProperty = function(id) {
             
             alert(`✅ Imóvel "${property.title}" excluído com sucesso!`);
         }
+
+            if (typeof window.deleteProperty === 'function') {
+                      return window.deleteProperty(id);
+            }
     }
 };
 
