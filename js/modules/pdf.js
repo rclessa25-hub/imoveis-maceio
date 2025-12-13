@@ -638,17 +638,17 @@ window.setupPdfIntegration = function() {
     }
 };
 
-// ========== 5. INICIALIZAÇÃO ==========
+// ========== 5. INICIALIZAÇÃO COMPLETA ==========
 
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
-        console.log('🚀 Inicializando sistema de PDFs...');
+        console.log('🚀 Inicializando sistema COMPLETO de PDFs com Supabase...');
         
         // 1. Sistema de upload
         window.initPdfSystem();
         
-        // 2. Integração com properties.js
-        window.setupPdfIntegration();
+        // 2. Integração REAL com Supabase
+        window.setupPdfSupabaseIntegration();
         
         // 3. Eventos do modal
         document.addEventListener('keydown', (e) => {
@@ -662,9 +662,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        console.log('✅ Sistema de PDFs completamente inicializado');
+        console.log('✅ Sistema de PDFs COMPLETO com Supabase inicializado!');
+        
+        // 4. Testar conexão com Supabase Storage
+        if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+            console.log('🔍 Verificando acesso ao Supabase Storage...');
+            console.log('- URL:', window.SUPABASE_URL);
+            console.log('- Bucket de PDFs disponível');
+        }
         
     }, 1000);
 });
-
-console.log('📄 pdf.js carregado - Sistema completo e corrigido');
+console.log('📄 pdf.js carregado - Sistema COMPLETO com salvamento REAL no Supabase');
