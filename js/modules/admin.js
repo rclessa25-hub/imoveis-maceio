@@ -189,30 +189,11 @@ window.deleteProperty = function(id) {
 };
 
 // ========== FUNÇÕES PDF ==========
-window.showPdfModal = function(propertyId) {
-    console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
-    const modal = document.getElementById('pdfModal');
-    if (modal) {
-        modal.style.display = 'flex';
-    }
-};
+//REMOVIDO
 
-window.accessPdfDocuments = function() {
-    const password = document.getElementById('pdfPassword')?.value;
-    if (password === ADMIN_CONFIG.pdfPassword) {
-        alert('✅ Documentos PDF acessados com sucesso!');
-        closePdfModal();
-    } else {
-        alert('❌ Senha incorreta! Use: ' + ADMIN_CONFIG.pdfPassword);
-    }
-};
+//REMOVIDO
 
-window.closePdfModal = function() {
-    const modal = document.getElementById('pdfModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-};
+//REMOVIDO
 
 // ========== CONFIGURAÇÃO DO FORMULÁRIO ==========
 window.setupForm = function() {
