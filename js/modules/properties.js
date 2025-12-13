@@ -548,13 +548,56 @@ window.savePropertyToSupabase = async function(propertyData) {
 };
 
 // ========== FUNÇÃO 8: updateProperty() ==========
-window.updateProperty = function(id, propertyData) {
-    const index = window.properties.findIndex(p => p.id === id);
-    if (index === -1) return false;
+window.updateProperty = async function(id, propertyData) {
+    console.log(`✏️ Atualizando imóvel ${id} no Supabase...`);
     
+    const index = window.properties.findIndex(p => p.id === id);
+    if (index === -1) {
+        console.log('❌ Imóvel não encontrado localmente');
+        return false;
+    }
+    
+    // ✅ PRIMEIRO: Atualizar no Supabase
+    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+        try {
+            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({
+                    title: propertyData.title,
+                    price: propertyData.price,
+                    location: propertyData.location,
+                    description: propertyData.description,
+                    features: typeof propertyData.features === 'string' ? propertyData.features : 
+                             Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
+                    type: propertyData.type,
+                    badge: propertyData.badge,
+                    rural: propertyData.rural || false,
+                    pdfs: propertyData.pdfs || '',
+                    updated_at: new Date().toISOString()
+                })
+            });
+            
+            if (response.ok) {
+                console.log(`✅ Imóvel ${id} atualizado no Supabase`);
+            } else {
+                console.log(`⚠️ Não foi possível atualizar no Supabase: ${response.status}`);
+            }
+        } catch (error) {
+            console.log('⚠️ Erro ao atualizar no Supabase:', error.message);
+        }
+    }
+    
+    // ✅ DEPOIS: Atualizar localmente
     window.properties[index] = {
         ...window.properties[index],
-        ...propertyData
+        ...propertyData,
+        updated_at: new Date().toISOString()
     };
     
     window.savePropertiesToStorage();
@@ -563,36 +606,7 @@ window.updateProperty = function(id, propertyData) {
         window.renderProperties('todos');
     }
     
-    console.log('✏️ Imóvel atualizado:', id);
-    return true;
-};
-
-// ========== FUNÇÃO 9: deleteProperty() ==========
-window.deleteProperty = function(id) {
-    // ✅ CORREÇÃO: Confirmação dupla
-    if (!confirm('⚠️ TEM CERTEZA que deseja excluir este imóvel?\n\nEsta ação NÃO pode ser desfeita.')) {
-        return false;
-    }
-    
-    // Segunda confirmação
-    if (!confirm('❌ CONFIRMAÇÃO FINAL:\n\nClique em OK APENAS se tiver absoluta certeza.\nO imóvel será PERMANENTEMENTE excluído.')) {
-        return false;
-    }
-    
-    const index = window.properties.findIndex(p => p.id === id);
-    if (index === -1) return false;
-    
-    const propertyTitle = window.properties[index].title;
-    window.properties.splice(index, 1);
-    
-    window.savePropertiesToStorage();
-    
-    if (typeof window.renderProperties === 'function') {
-        window.renderProperties('todos');
-    }
-    
-    alert(`✅ Imóvel "${propertyTitle}" excluído permanentemente!`);
-    console.log('🗑️ Imóvel excluído:', id);
+    console.log('✏️ Imóvel atualizado localmente:', id);
     return true;
 };
 
