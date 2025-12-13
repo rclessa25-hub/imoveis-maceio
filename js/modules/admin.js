@@ -185,14 +185,15 @@ window.deleteProperty = function(id) {
             try {
                 localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
                 console.log('🗑️ Imóvel removido do localStorage');
+
+                if (typeof window.deleteProperty === 'function') {
+                      return window.deleteProperty(id);
+                  }
+                
             } catch (error) {
                 console.error('❌ Erro ao atualizar localStorage:', error);
             }
 
-            if (typeof window.deleteProperty === 'function') {
-                  return window.deleteProperty(id);
-              }
-            
             // Atualizar tudo
             if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
             if (typeof window.renderProperties === 'function') window.renderProperties('todos');
