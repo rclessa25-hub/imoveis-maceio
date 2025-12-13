@@ -257,7 +257,66 @@ window.savePropertiesToStorage = function() {
     }
 };
 
-// ========== FUNÇÃO 3: renderProperties() ==========
+// ========== FUNÇÃO 3: ATUALIZAR IMÓVEL NO SUPABASE ==========
+window.updatePropertyInSupabase = async function(id, propertyData) {
+    console.log(`🌐 Atualizando imóvel ${id} no Supabase:`, propertyData);
+    
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.log('❌ Credenciais Supabase não configuradas');
+        return false;
+    }
+    
+    try {
+        // Preparar dados para atualização
+        const updateData = {
+            title: propertyData.title || '',
+            price: propertyData.price || '',
+            location: propertyData.location || '',
+            description: propertyData.description || '',
+            features: typeof propertyData.features === 'string' ? propertyData.features : 
+                     Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
+            type: propertyData.type || 'residencial',
+            has_video: propertyData.has_video || false,
+            badge: propertyData.badge || 'Novo',
+            rural: propertyData.rural || false,
+            images: propertyData.images || '',
+            pdfs: propertyData.pdfs || '',
+            updated_at: new Date().toISOString()
+        };
+        
+        console.log('📤 Dados para atualização no Supabase:', updateData);
+        
+        // Enviar atualização para Supabase
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(updateData)
+        });
+        
+        console.log('📊 Resposta do Supabase - Status:', response.status);
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log(`✅ Imóvel ${id} ATUALIZADO no Supabase com sucesso!`, result);
+            return true;
+        } else {
+            const errorText = await response.text();
+            console.error(`❌ Erro ao atualizar imóvel ${id} no Supabase:`, errorText);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error(`❌ Erro de conexão ao atualizar imóvel ${id}:`, error);
+        return false;
+    }
+};
+
+// ========== FUNÇÃO 4: renderProperties() ==========
 window.renderProperties = function(filter = 'todos') {
     console.log('🎨 renderProperties() com filtro:', filter);
     
@@ -351,7 +410,7 @@ window.renderProperties = function(filter = 'todos') {
     console.log('✅ Imóveis renderizados com sucesso');
 };
 
-// ========== FUNÇÃO 4: setupFilters() CORRIGIDA ==========
+// ========== FUNÇÃO 5: setupFilters() CORRIGIDA ==========
 window.setupFilters = function() {
     console.log('🎛️ Configurando filtros...');
     
@@ -403,7 +462,7 @@ window.setupFilters = function() {
     console.log('✅ Filtros configurados');
 };
 
-// ========== FUNÇÃO 5: contactAgent() ==========
+// ========== FUNÇÃO 6: contactAgent() ==========
 window.contactAgent = function(id) {
     const property = window.properties.find(p => p.id === id);
     if (!property) {
@@ -416,7 +475,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== FUNÇÃO 6: addNewProperty() ==========
+// ========== FUNÇÃO 7: addNewProperty() ==========
 window.addNewProperty = function(propertyData) {
     console.log('➕ Adicionando novo imóvel:', propertyData);
     
@@ -474,7 +533,7 @@ window.addNewProperty = function(propertyData) {
     return newProperty;
 };
 
-// ========== FUNÇÃO 7: SALVAR IMÓVEL NO SUPABASE ==========
+// ========== FUNÇÃO 8: SALVAR IMÓVEL NO SUPABASE ==========
 window.savePropertyToSupabase = async function(propertyData) {
     console.log('🌐 Salvando imóvel no Supabase:', propertyData);
     
@@ -540,7 +599,7 @@ window.savePropertyToSupabase = async function(propertyData) {
     }
 };
 
-// ========== FUNÇÃO 8: updateProperty() ==========
+// ========== FUNÇÃO 9: updateProperty() ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ Atualizando imóvel ${id} no Supabase...`);
     
