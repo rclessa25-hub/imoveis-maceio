@@ -313,23 +313,37 @@
                 <small style="color: #666;">Separe por vírgulas</small>
             </div>
 
-            <!-- ========== SEÇÃO UPLOAD DE PDFs ATUALIZADA ========== -->
+                        <!-- ========== SEÇÃO UPLOAD DE PDFs OTIMIZADA ========== -->
             <div style="margin-bottom: 1.5rem;">
-                <label><strong>Documentos PDF do Imóvel</strong></label>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333;">
+                    <i class="fas fa-file-pdf"></i> Documentos PDF
+                </label>
                 
-                <div id="pdfUploadArea" style="border: 2px dashed #95a5a6; border-radius: 10px; padding: 1.5rem; text-align: center; margin: 1rem 0; cursor: pointer; transition: all 0.3s ease; background: #fafafa;">
-                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #95a5a6; margin-bottom: 1rem;"></i>
-                    <p style="margin: 0.5rem 0; font-size: 1rem; color: #555;">Clique ou arraste documentos PDF aqui</p>
-                    <p style="margin: 0; font-size: 0.8rem; color: #888;">
-                        <i class="fas fa-file-pdf"></i> Documentos técnicos e legais
+                <div id="pdfUploadArea" style="
+                    border: 2px dashed #95a5a6; 
+                    border-radius: 8px; 
+                    padding: 1.2rem; 
+                    text-align: center; 
+                    margin: 0.5rem 0; 
+                    cursor: pointer; 
+                    transition: all 0.3s ease; 
+                    background: #fafafa;
+                ">
+                    <div style="font-size: 2.5rem; color: #95a5a6; margin-bottom: 0.5rem; opacity: 0.7;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <p style="margin: 0.3rem 0; font-size: 0.9rem; color: #555; font-weight: 500;">
+                        Arraste ou clique para adicionar PDFs
                     </p>
-                    <p style="margin: 0.5rem 0 0; font-size: 0.7rem; color: #999;">Máximo: 5 arquivos • 10MB cada</p>
+                    <p style="margin: 0; font-size: 0.75rem; color: #888;">
+                        Máximo: 5 arquivos • 10MB cada
+                    </p>
                 </div>
                 
                 <input type="file" id="pdfFileInput" multiple accept=".pdf,application/pdf" style="display: none;">
                 
-                <!-- ✅ ÁREA DE PREVIEW ATUALIZADA -->
-                <div id="pdfUploadPreview" style="margin: 1rem 0; min-height: 60px;">
+                <!-- ÁREA DE PREVIEW COMPACTA -->
+                <div id="pdfUploadPreview" style="margin: 0.8rem 0; min-height: 40px;">
                     <!-- PDFs serão renderizados aqui automaticamente -->
                 </div>
             </div>
