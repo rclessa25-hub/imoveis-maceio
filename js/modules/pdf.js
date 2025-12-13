@@ -587,22 +587,49 @@ window.getPdfUrlsToSave = function() {
 };
 
 // ========== 4. INICIALIZAÇÃO ==========
+// ========== 4. INICIALIZAÇÃO COMPLETA ==========
 
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
-        // Inicializar sistemas
+        console.log('🚀 Inicializando sistema completo de PDFs...');
+        
+        // 1. Inicializar sistema de upload
         window.initPdfSystem();
-        window.initPdfSaveSystem();
+        console.log('✅ Sistema de upload inicializado');
         
-        console.log('✅ Módulo PDF completamente inicializado');
-        console.log('📁 Sistema inclui:');
-        console.log('- Upload com preview compacto');
-        console.log('- Visualização direta (sem senha)');
-        console.log('- Salvamento automático no Supabase');
-        console.log('- Integração com properties.js');
+        // 2. Integrar com properties.js
+        window.integrateWithProperties();
+        console.log('✅ Integração com properties.js completa');
         
-    }, 1500);
+        // 3. Configurar eventos do modal
+        setupModalEvents();
+        
+        console.log('🎯 Sistema de PDFs completamente inicializado e integrado');
+        
+    }, 1000);
 });
+
+// Configurar eventos do modal
+function setupModalEvents() {
+    // Fechar modal com ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.closePdfViewer();
+        }
+    });
+    
+    // Fechar modal ao clicar fora
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('pdfViewerModal');
+        if (modal && modal.style.display === 'flex') {
+            if (e.target === modal) {
+                window.closePdfViewer();
+            }
+        }
+    });
+}
+
+console.log('📄 pdf.js carregado - Sistema completo com senha e salvamento');
 
 // ========== 5. SISTEMA DE SALVAMENTO NO SUPABASE ==========
 / ========== 5. SISTEMA DE SALVAMENTO INTEGRADO ==========
