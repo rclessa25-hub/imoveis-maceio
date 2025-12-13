@@ -599,8 +599,7 @@ window.savePropertyToSupabase = async function(propertyData) {
     }
 };
 
-// ========== FUNÇÃO 9: updateProperty() ==========
-// ========== FUNÇÃO 7: updateProperty() REVISADA COMPLETAMENTE ==========
+// ========== FUNÇÃO 9: updateProperty() REVISADA COMPLETAMENTE ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ ATUALIZANDO IMÓVEL ${id} (SISTEMA COMPLETO)...`);
     console.log('📋 Dados recebidos:', propertyData);
