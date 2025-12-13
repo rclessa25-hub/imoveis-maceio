@@ -21,6 +21,17 @@ window.toggleAdminPanel = function() {
     
     const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha de administrador:");
     
+    // ✅ CORREÇÃO: Verificar se usuário cancelou (null) ou deixou vazio
+    if (password === null) {
+        console.log('❌ Usuário cancelou o acesso');
+        return; // Sai silenciosamente
+    }
+    
+    if (password === "") {
+        alert('⚠️ Campo de senha vazio!');
+        return;
+    }
+    
     if (password === ADMIN_CONFIG.password) {
         const panel = document.getElementById(ADMIN_CONFIG.panelId);
         if (panel) {
@@ -30,7 +41,7 @@ window.toggleAdminPanel = function() {
             console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
             if (!isVisible) {
-                // ✅ CORREÇÃO: Rolar suavemente até o painel
+                // Rolar suavemente até o painel
                 setTimeout(() => {
                     panel.scrollIntoView({ 
                         behavior: 'smooth', 
@@ -48,7 +59,7 @@ window.toggleAdminPanel = function() {
             }
         }
     } else {
-        alert('❌ Senha incorreta!\n\nUse: ' );
+        alert('❌ Senha incorreta!');
     }
 };
 
