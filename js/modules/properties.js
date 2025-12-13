@@ -46,111 +46,66 @@ window.editingPropertyId = null;
 window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
-// ========== CARREGAMENTO HIERÁRQUICO (VERSÃO FUNCIONAL) ==========
-(function autoInitialize() {
-    console.log('🔄 Inicialização automática do sistema de imóveis...');
+// ========== CARREGAMENTO HIERÁRQUICO (ATUALIZADO) ==========
+(async function autoInitialize() {
+    console.log('🔄 Inicialização hierárquica do sistema...');
     
-    // 1. PRIMEIRO: Tentar Supabase com timeout rápido
-    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-        console.log('🌐 Tentando conexão Supabase...');
-        
-        // Usar approach direto sem proxy complexo
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
-        fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
-            method: 'GET',
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            mode: 'cors',
-            signal: controller.signal
-        })
-        .then(response => {
-            clearTimeout(timeoutId);
-            if (response.ok) {
-                return response.json();
-            }
-            throw new Error(`HTTP ${response.status}`);
-        })
-        .then(data => {
-            if (Array.isArray(data) && data.length > 0) {
-                window.properties = data;
-                console.log(`✅ ${data.length} imóveis carregados do Supabase`);
-                
-                // Garantir estrutura correta
-                window.properties = window.properties.map(property => ({
-                    id: property.id || Date.now(),
-                    title: property.title || 'Sem título',
-                    price: property.price || 'R$ 0,00',
-                    location: property.location || 'Local não informado',
-                    description: property.description || '',
-                    features: property.features || '',
-                    type: property.type || 'residencial',
-                    has_video: property.has_video || false,
-                    badge: property.badge || 'Novo',
-                    rural: property.rural || false,
-                    images: property.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                    pdfs: property.pdfs || '',
-                    created_at: property.created_at || new Date().toISOString()
-                }));
-                
-                // Salvar backup no localStorage
-                savePropertiesToStorage();
-                
-                // Renderizar
-                renderIfReady();
-                return;
-            }
-            throw new Error('Dados vazios do Supabase');
-        })
-        .catch(error => {
-            clearTimeout(timeoutId);
-            console.log('📡 Supabase offline, tentando localStorage:', error.message);
-            loadFromLocalStorage();
-        });
-        
-    } else {
-        // Sem credenciais, ir direto para localStorage
-        console.log('🔑 Sem credenciais Supabase, indo para localStorage');
-        loadFromLocalStorage();
-    }
+    // 0. Testar conexão
+    const isConnected = await window.testSupabaseConnection();
     
-    function loadFromLocalStorage() {
+    if (isConnected) {
+        console.log('🌐 Conexão Supabase OK - usando dados online');
+        
+        // 1. PRIMEIRO: Tentar Supabase
         try {
-            const stored = localStorage.getItem('weberlessa_properties');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    window.properties = parsed;
-                    console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
+            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*&order=created_at.desc`, {
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    window.properties = data;
+                    console.log(`✅ ${data.length} imóveis carregados DIRETAMENTE do Supabase`);
+                    
+                    // Salvar backup local
+                    window.savePropertiesToStorage();
+                    
+                    // Renderizar
                     renderIfReady();
                     return;
                 }
             }
         } catch (error) {
-            console.log('⚠️ Erro no localStorage:', error);
+            console.log('⚠️ Erro ao carregar do Supabase:', error.message);
         }
-        
-        // Último recurso: dados iniciais
-        window.properties = getInitialProperties();
-        console.log(`🎯 ${window.properties.length} imóveis iniciais carregados`);
-        savePropertiesToStorage();
-        renderIfReady();
     }
     
-    function renderIfReady() {
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(() => {
-                if (typeof window.renderProperties === 'function' && window.properties.length > 0) {
-                    window.renderProperties('todos');
-                    console.log('🎨 Imóveis renderizados automaticamente');
-                }
-            }, 500);
+    // 2. SEGUNDO: LocalStorage (fallback)
+    try {
+        const stored = localStorage.getItem('weberlessa_properties');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                window.properties = parsed;
+                console.log(`📁 ${window.properties.length} imóveis carregados do localStorage`);
+                renderIfReady();
+                return;
+            }
         }
+    } catch (error) {
+        console.log('⚠️ Erro no localStorage:', error);
     }
+    
+    // 3. TERCEIRO: Dados de exemplo
+    window.properties = getInitialProperties();
+    console.log(`🎯 ${window.properties.length} imóveis de exemplo carregados`);
+    window.savePropertiesToStorage();
+    renderIfReady();
+    
 })();
 
 // Função auxiliar para renderizar quando pronto
