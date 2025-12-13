@@ -167,14 +167,26 @@ window.updatePdfPreview = function() {
     }
 };
 
-// 1.4 Remover PDFs
+// 1.4 Remover PDF EXISTENTE (VERSÃO MELHORADA)
 window.removeExistingPdf = function(index) {
     if (index >= 0 && index < window.existingPdfFiles.length) {
         const removedFile = window.existingPdfFiles[index];
-        window.existingPdfFiles.splice(index, 1);
-        window.updatePdfPreview();
-        console.log(`🗑️ PDF existente removido: ${removedFile.name}`);
-        alert(`PDF "${removedFile.name}" será excluído ao salvar.`);
+        
+        // Confirmar exclusão
+        if (confirm(`🗑️ Excluir PDF "${removedFile.name}"?\n\nEsta ação removerá permanentemente este documento do imóvel.`)) {
+            window.existingPdfFiles.splice(index, 1);
+            window.updatePdfPreview();
+            console.log(`🗑️ PDF existente removido da lista: ${removedFile.name}`);
+            
+            // Tentar excluir do Supabase Storage (opcional)
+            if (removedFile.url && removedFile.url.includes('supabase.co')) {
+                console.log(`🔄 Marcando PDF para exclusão do storage: ${removedFile.url}`);
+                // Aqui você pode adicionar lógica para deletar do Supabase Storage
+                // Nota: Precisa de permissões especiais no Supabase
+            }
+            
+            alert(`✅ PDF "${removedFile.name}" será removido ao salvar as alterações.`);
+        }
     }
 };
 
