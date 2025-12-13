@@ -685,6 +685,95 @@ window.updateProperty = async function(id, propertyData) {
     return true;
 };
 
+// ========== FUNÇÃO 10: deleteProperty() ATUALIZADA ==========
+window.deleteProperty = async function(id) {
+    console.log(`🗑️ Iniciando exclusão do imóvel ${id}...`);
+    
+    // Encontrar imóvel
+    const property = window.properties.find(p => p.id === id);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        return false;
+    }
+    
+    // Confirmação DUPLA
+    if (!confirm(`⚠️ TEM CERTEZA que deseja excluir o imóvel?\n\n"${property.title}"\n\nEsta ação NÃO pode ser desfeita.`)) {
+        return false;
+    }
+    
+    if (!confirm(`❌ CONFIRMAÇÃO FINAL:\n\nClique em OK APENAS se tiver absoluta certeza.\nO imóvel "${property.title}" será PERMANENTEMENTE excluído.`)) {
+        return false;
+    }
+    
+    console.log(`🗑️ Excluindo imóvel ${id}: "${property.title}"`);
+    
+    // ✅ 1. PRIMEIRO: Excluir do Supabase
+    let supabaseSuccess = false;
+    
+    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+        try {
+            console.log(`🌐 Tentando excluir imóvel ${id} do Supabase...`);
+            
+            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                }
+            });
+            
+            console.log('📊 Status da exclusão no Supabase:', response.status);
+            
+            if (response.ok) {
+                supabaseSuccess = true;
+                console.log(`✅ Imóvel ${id} excluído do Supabase com sucesso!`);
+            } else {
+                const errorText = await response.text();
+                console.error(`❌ Erro ao excluir do Supabase:`, errorText);
+            }
+            
+        } catch (error) {
+            console.error(`❌ Erro de conexão ao excluir do Supabase:`, error);
+        }
+    }
+    
+    // ✅ 2. Excluir localmente (sempre)
+    const index = window.properties.findIndex(p => p.id === id);
+    if (index !== -1) {
+        window.properties.splice(index, 1);
+        
+        // Salvar no localStorage
+        window.savePropertiesToStorage();
+        
+        console.log(`💾 Imóvel ${id} excluído localmente`);
+    }
+    
+    // ✅ 3. Atualizar interface
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties('todos');
+    }
+    
+    // ✅ 4. Atualizar lista do admin
+    if (typeof window.loadPropertyList === 'function') {
+        setTimeout(() => {
+            window.loadPropertyList();
+            console.log('📋 Lista do admin atualizada após exclusão');
+        }, 300);
+    }
+    
+    // ✅ 5. Feedback ao usuário
+    if (supabaseSuccess) {
+        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!`);
+        console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
+    } else {
+        alert(`⚠️ Imóvel "${property.title}" excluído apenas LOCALMENTE.\n\nO imóvel ainda existe no servidor e reaparecerá ao sincronizar.`);
+        console.log(`🎯 Imóvel ${id} excluído apenas localmente`);
+    }
+    
+    return true;
+};
+
 // ========== INICIALIZAÇÃO FINAL ==========
 console.log('✅ properties.js carregado com 8 funções principais');
 
