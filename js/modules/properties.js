@@ -1,13 +1,51 @@
 // js/modules/properties.js - SISTEMA COMPLETO COM SUPABASE
 console.log('🚀 properties.js carregado - Sistema Completo com Supabase');
 
+// ========== TESTE DE CONEXÃO SUPABASE ==========
+window.testSupabaseConnection = async function() {
+    console.log('🔍 Testando conexão com Supabase...');
+    
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.log('❌ Credenciais Supabase não configuradas');
+        return false;
+    }
+    
+    try {
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            }
+        });
+        
+        const isConnected = response.ok;
+        console.log('🌐 Supabase conectado?', isConnected);
+        
+        if (isConnected) {
+            console.log('✅ Conexão com Supabase estabelecida com sucesso!');
+        } else {
+            console.log('❌ Não foi possível conectar ao Supabase');
+        }
+        
+        return isConnected;
+        
+    } catch (error) {
+        console.log('❌ Erro na conexão Supabase:', error.message);
+        return false;
+    }
+};
+
+// Testar conexão ao carregar
+setTimeout(() => {
+    window.testSupabaseConnection();
+}, 2000);
+
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
 window.editingPropertyId = null;
 window.selectedFiles = [];
 window.selectedPdfFiles = [];
 
-// ========== CARREGAMENTO HIERÁRQUICO ==========
 // ========== CARREGAMENTO HIERÁRQUICO (VERSÃO FUNCIONAL) ==========
 (function autoInitialize() {
     console.log('🔄 Inicialização automática do sistema de imóveis...');
