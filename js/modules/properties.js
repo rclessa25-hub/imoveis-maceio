@@ -447,18 +447,37 @@ window.addNewProperty = function(propertyData) {
         created_at: new Date().toISOString()
     };
     
-    // Adicionar
-    window.properties.push(newProperty);
+    // ✅ CORREÇÃO: PRIMEIRO salvar no Supabase
+    savePropertyToSupabase(newProperty).then(supabaseSuccess => {
+        if (supabaseSuccess) {
+            console.log('✅ Imóvel salvo no Supabase com sucesso!');
+            
+            // Depois adicionar localmente
+            window.properties.push(newProperty);
+            window.savePropertiesToStorage();
+            
+            // Renderizar
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos');
+            }
+            
+            alert(`✅ Imóvel "${newProperty.title}" cadastrado PERMANENTEMENTE no sistema!`);
+            
+        } else {
+            console.log('⚠️ Salvando apenas localmente (Supabase falhou)');
+            
+            // Fallback: salvar localmente
+            window.properties.push(newProperty);
+            window.savePropertiesToStorage();
+            
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos');
+            }
+            
+            alert(`⚠️ Imóvel "${newProperty.title}" salvo apenas LOCALMENTE (sem conexão com servidor).`);
+        }
+    });
     
-    // Salvar
-    window.savePropertiesToStorage();
-    
-    // Atualizar
-    if (typeof window.renderProperties === 'function') {
-        window.renderProperties('todos');
-    }
-    
-    console.log('✅ Novo imóvel adicionado:', newProperty);
     return newProperty;
 };
 
