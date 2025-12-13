@@ -188,6 +188,10 @@ window.deleteProperty = function(id) {
             } catch (error) {
                 console.error('❌ Erro ao atualizar localStorage:', error);
             }
+
+            if (typeof window.deleteProperty === 'function') {
+                  return window.deleteProperty(id);
+              }
             
             // Atualizar tudo
             if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
@@ -195,10 +199,6 @@ window.deleteProperty = function(id) {
             
             alert(`✅ Imóvel "${property.title}" excluído com sucesso!`);
         }
-
-        if (typeof window.deleteProperty === 'function') {
-              return window.deleteProperty(id);
-          }
     }
 };
 
