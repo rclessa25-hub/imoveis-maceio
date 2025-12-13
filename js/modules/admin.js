@@ -180,16 +180,15 @@ window.deleteProperty = function(id) {
         const index = window.properties.findIndex(p => p.id === id);
         if (index !== -1) {
             window.properties.splice(index, 1);
+
+           if (typeof window.deleteProperty === 'function') {
+                      return window.deleteProperty(id);
+                  }
             
             // ✅ CORREÇÃO: Atualizar localStorage
             try {
                 localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
                 console.log('🗑️ Imóvel removido do localStorage');
-
-                if (typeof window.deleteProperty === 'function') {
-                      return window.deleteProperty(id);
-                  }
-                
             } catch (error) {
                 console.error('❌ Erro ao atualizar localStorage:', error);
             }
