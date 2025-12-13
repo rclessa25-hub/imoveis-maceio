@@ -109,114 +109,79 @@ window.handleNewPdfFiles = function(files) {
 };
 
 // 1.3 Atualizar preview dos PDFs (EXISTENTES e NOVOS)
+// 1.3 Atualizar preview dos PDFs (compacto e ordenado)
 window.updatePdfPreview = function() {
     const pdfPreview = document.getElementById('pdfUploadPreview');
     if (!pdfPreview) return;
     
     pdfPreview.innerHTML = '';
     
-    // 🔵 SEÇÃO 1: PDFs EXISTENTES (se houver)
-    if (window.existingPdfFiles.length > 0) {
-        const existingSection = document.createElement('div');
-        existingSection.id = 'existingPdfsSection';
-        existingSection.innerHTML = `
-            <p style="color: var(--success); margin: 0 0 1rem 0; font-weight: 600;">
-                📄 Documentos atuais do imóvel:
-            </p>
-            <div style="
-                display: grid; 
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-                gap: 1rem;
-                margin-bottom: 2rem;
-            ">
-        `;
-        
-        window.existingPdfFiles.forEach((pdf, index) => {
-            existingSection.innerHTML += `
-                <div style="
-                    background: white;
-                    border: 2px solid var(--success);
-                    border-radius: 8px;
-                    padding: 1rem;
-                    text-align: center;
-                    position: relative;
-                    transition: all 0.3s ease;
-                ">
-                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c; margin-bottom: 0.5rem;"></i>
-                    <p style="font-size: 0.8rem; margin: 0.3rem 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${pdf.name}
-                    </p>
-                    <small style="color: #7f8c8d;">${pdf.size}</small>
-                    <button onclick="removeExistingPdf(${index})" style="
-                        position: absolute;
-                        top: -8px;
-                        right: -8px;
-                        background: #e74c3c;
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        width: 25px;
-                        height: 25px;
-                        cursor: pointer;
-                        font-size: 1rem;
-                        font-weight: bold;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-                    ">
-                        ×
-                    </button>
-                </div>
-            `;
-        });
-        
-        existingSection.innerHTML += '</div>';
-        pdfPreview.appendChild(existingSection);
-    }
-    
-    // 🔵 SEÇÃO 2: NOVOS PDFs (se houver)
+    // 🔵 SEÇÃO 1: NOVOS PDFs (próximo ao upload)
     if (window.selectedPdfFiles.length > 0) {
         const newSection = document.createElement('div');
         newSection.id = 'newPdfsSection';
         newSection.innerHTML = `
-            <p style="color: #3498db; margin: ${window.existingPdfFiles.length > 0 ? '0' : '0 0 1rem 0'}; font-weight: 600;">
-                📄 Novos documentos a serem adicionados:
+            <p style="color: #3498db; margin: 0 0 0.5rem 0; font-weight: 600; font-size: 0.9rem;">
+                <i class="fas fa-plus-circle"></i> NOVO PDF
             </p>
             <div style="
-                display: grid; 
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-                gap: 1rem;
+                display: flex; 
+                flex-wrap: wrap; 
+                gap: 0.5rem;
+                margin-bottom: 1.5rem;
             ">
         `;
         
         window.selectedPdfFiles.forEach((pdf, index) => {
+            // Nome compacto (máximo 15 caracteres)
+            const shortName = pdf.name.length > 15 
+                ? pdf.name.substring(0, 12) + '...' 
+                : pdf.name;
+            
             newSection.innerHTML += `
                 <div style="
-                    background: white;
-                    border: 2px dashed #3498db;
-                    border-radius: 8px;
-                    padding: 1rem;
+                    background: #e8f4fc;
+                    border: 1px solid #3498db;
+                    border-radius: 6px;
+                    padding: 0.5rem;
+                    width: 90px;
+                    height: 90px;
                     text-align: center;
                     position: relative;
-                    transition: all 0.3s ease;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    overflow: hidden;
                 ">
-                    <i class="fas fa-file-pdf" style="font-size: 2rem; color: #3498db; margin-bottom: 0.5rem;"></i>
-                    <p style="font-size: 0.8rem; margin: 0.3rem 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                        ${pdf.name}
+                    <i class="fas fa-file-pdf" style="font-size: 1.2rem; color: #3498db; margin-bottom: 0.3rem;"></i>
+                    <p style="
+                        font-size: 0.7rem; 
+                        margin: 0; 
+                        width: 100%;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                        font-weight: 500;
+                    ">
+                        ${shortName}
                     </p>
-                    <small style="color: #7f8c8d;">${pdf.size}</small>
+                    <small style="color: #7f8c8d; font-size: 0.6rem;">${pdf.size}</small>
                     <button onclick="removeNewPdf(${index})" style="
                         position: absolute;
-                        top: -8px;
-                        right: -8px;
+                        top: -5px;
+                        right: -5px;
                         background: #3498db;
                         color: white;
                         border: none;
                         border-radius: 50%;
-                        width: 25px;
-                        height: 25px;
+                        width: 18px;
+                        height: 18px;
                         cursor: pointer;
-                        font-size: 1rem;
+                        font-size: 0.7rem;
                         font-weight: bold;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                        line-height: 1;
+                        padding: 0;
                     ">
                         ×
                     </button>
@@ -228,13 +193,88 @@ window.updatePdfPreview = function() {
         pdfPreview.appendChild(newSection);
     }
     
+    // 🔵 SEÇÃO 2: PDFs EXISTENTES (abaixo dos novos)
+    if (window.existingPdfFiles.length > 0) {
+        const existingSection = document.createElement('div');
+        existingSection.id = 'existingPdfsSection';
+        existingSection.innerHTML = `
+            <p style="color: #27ae60; margin: ${window.selectedPdfFiles.length > 0 ? '0' : '0 0 0.5rem 0'}; font-weight: 600; font-size: 0.9rem;">
+                <i class="fas fa-archive"></i> PDF ARQUIVADO
+            </p>
+            <div style="
+                display: flex; 
+                flex-wrap: wrap; 
+                gap: 0.5rem;
+            ">
+        `;
+        
+        window.existingPdfFiles.forEach((pdf, index) => {
+            // Nome compacto (máximo 15 caracteres)
+            const shortName = pdf.name.length > 15 
+                ? pdf.name.substring(0, 12) + '...' 
+                : pdf.name;
+            
+            existingSection.innerHTML += `
+                <div style="
+                    background: #e8f8ef;
+                    border: 1px solid #27ae60;
+                    border-radius: 6px;
+                    padding: 0.5rem;
+                    width: 90px;
+                    height: 90px;
+                    text-align: center;
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    overflow: hidden;
+                ">
+                    <i class="fas fa-file-pdf" style="font-size: 1.2rem; color: #27ae60; margin-bottom: 0.3rem;"></i>
+                    <p style="
+                        font-size: 0.7rem; 
+                        margin: 0; 
+                        width: 100%;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                        font-weight: 500;
+                    ">
+                        ${shortName}
+                    </p>
+                    <small style="color: #7f8c8d; font-size: 0.6rem;">PDF</small>
+                    <button onclick="removeExistingPdf(${index})" style="
+                        position: absolute;
+                        top: -5px;
+                        right: -5px;
+                        background: #27ae60;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 18px;
+                        height: 18px;
+                        cursor: pointer;
+                        font-size: 0.7rem;
+                        font-weight: bold;
+                        line-height: 1;
+                        padding: 0;
+                    ">
+                        ×
+                    </button>
+                </div>
+            `;
+        });
+        
+        existingSection.innerHTML += '</div>';
+        pdfPreview.appendChild(existingSection);
+    }
+    
     // 🔵 SEÇÃO 3: Mensagem se não houver PDFs
     if (window.existingPdfFiles.length === 0 && window.selectedPdfFiles.length === 0) {
         pdfPreview.innerHTML = `
-            <div style="text-align: center; color: #95a5a6; padding: 2rem;">
-                <i class="fas fa-file-pdf" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                <p style="margin: 0;">Nenhum documento PDF selecionado</p>
-                <small>Arraste ou clique para adicionar documentos PDF</small>
+            <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
             </div>
         `;
     }
