@@ -712,3 +712,45 @@ if (document.readyState === 'loading') {
         }
     }, 300);
 }
+
+// ========== DEBUG: TESTAR EDIÇÃO MANUALMENTE ==========
+window.debugEditProperty = function(id) {
+    console.log('🔍 DEBUG: Testando edição do imóvel', id);
+    
+    const property = window.properties.find(p => p.id === id);
+    if (!property) {
+        console.log('❌ Imóvel não encontrado');
+        return;
+    }
+    
+    console.log('📄 Imóvel atual:', property);
+    
+    // Simular uma edição
+    const testUpdate = {
+        title: property.title + ' (EDITADO)',
+        price: property.price,
+        location: property.location,
+        description: property.description + ' [Editado em teste]',
+        features: property.features,
+        type: property.type,
+        badge: property.badge
+    };
+    
+    console.log('📝 Dados de teste para edição:', testUpdate);
+    
+    // Testar a função updateProperty
+    window.updateProperty(id, testUpdate).then(success => {
+        console.log('✅ Resultado do teste de edição:', success ? 'SUCESSO' : 'FALHA');
+    });
+};
+
+// Testar automaticamente após carregar
+setTimeout(() => {
+    console.log('🔍 Sistema de propriedades completamente carregado');
+    console.log(`📊 Total de imóveis: ${window.properties.length}`);
+    
+    // Mostrar IDs disponíveis para teste
+    if (window.properties.length > 0) {
+        console.log('🆔 IDs disponíveis para teste de edição:', window.properties.map(p => p.id));
+    }
+}, 3000);
