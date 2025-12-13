@@ -187,31 +187,90 @@ window.removeNewPdf = function(index) {
     }
 };
 
-// 1.5 Carregar PDFs para edição
+// 1.5 Carregar PDFs para edição (VERSÃO CORRIGIDA)
 window.loadExistingPdfsForEdit = function(property) {
-    console.log('📄 Carregando PDFs existentes para edição:', property);
+    console.log('📄 Carregando TODOS os PDFs existentes para edição:', property);
+    console.log('📋 Campo pdfs do imóvel:', property.pdfs);
     
+    // Limpar arrays
     window.existingPdfFiles = [];
     window.selectedPdfFiles = [];
     
+    // Verificar se há PDFs
     if (property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '') {
-        const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-        
-        pdfUrls.forEach((url, index) => {
-            const fileName = url.split('/').pop() || `Documento ${index + 1}`;
-            window.existingPdfFiles.push({
-                url: url,
-                id: `existing_${index}`,
-                name: fileName,
-                size: 'PDF',
-                date: 'Existente',
-                isExisting: true
+        try {
+            // Separar por vírgula e filtrar URLs válidas
+            const pdfUrls = property.pdfs.split(',')
+                .map(url => url.trim())
+                .filter(url => {
+                    // Filtrar apenas URLs válidas
+                    const isValid = url !== '' && 
+                                  url !== 'EMPTY' && 
+                                  url !== 'undefined' && 
+                                  url !== 'null' &&
+                                  (url.startsWith('http') || url.includes('supabase.co'));
+                    if (!isValid) {
+                        console.log(`⚠️ URL ignorada: ${url}`);
+                    }
+                    return isValid;
+                });
+            
+            console.log(`📊 ${pdfUrls.length} URLs de PDF encontradas após filtro`);
+            
+            // Processar CADA URL
+            pdfUrls.forEach((url, index) => {
+                try {
+                    // Extrair nome do arquivo da URL
+                    let fileName = 'Documento';
+                    
+                    if (url.includes('/')) {
+                        const parts = url.split('/');
+                        fileName = parts[parts.length - 1] || `Documento ${index + 1}`;
+                        
+                        // Decodificar URL se necessário
+                        try {
+                            fileName = decodeURIComponent(fileName);
+                        } catch (e) {
+                            // Se falhar, usar como está
+                        }
+                        
+                        // Limitar nome muito longo
+                        if (fileName.length > 50) {
+                            fileName = fileName.substring(0, 47) + '...';
+                        }
+                    } else {
+                        fileName = `Documento ${index + 1}`;
+                    }
+                    
+                    // Adicionar à lista
+                    window.existingPdfFiles.push({
+                        url: url,
+                        id: `existing_${Date.now()}_${index}`,
+                        name: fileName,
+                        size: 'PDF',
+                        date: 'Arquivado',
+                        isExisting: true,
+                        originalUrl: url // Manter URL original
+                    });
+                    
+                    console.log(`✅ PDF ${index + 1} carregado: ${fileName}`);
+                    
+                } catch (error) {
+                    console.error(`❌ Erro ao processar URL ${index}:`, error);
+                }
             });
-        });
-        
-        console.log(`✅ ${window.existingPdfFiles.length} PDFs existentes carregados`);
+            
+            console.log(`✅ TOTAL: ${window.existingPdfFiles.length} PDFs existentes carregados`);
+            
+        } catch (error) {
+            console.error('❌ Erro ao processar campo pdfs:', error);
+            console.log('📋 Valor bruto do campo pdfs:', property.pdfs);
+        }
+    } else {
+        console.log('ℹ️ Nenhum PDF encontrado no campo pdfs');
     }
     
+    // Atualizar preview
     window.updatePdfPreview();
 };
 
