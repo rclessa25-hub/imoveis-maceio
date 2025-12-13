@@ -410,7 +410,7 @@ window.showPdfModal = function(propertyId) {
         document.body.appendChild(modal);
     }
     
-    // Carregar lista de PDFs
+   // Carregar lista de PDFs
     const pdfListContainer = document.getElementById('pdfListContainer');
     pdfListContainer.innerHTML = '';
     
@@ -559,9 +559,156 @@ window.getPdfUrlsToSave = function() {
 
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
+        // Inicializar sistemas
         window.initPdfSystem();
+        window.initPdfSaveSystem();
+        
         console.log('✅ Módulo PDF completamente inicializado');
-    }, 1000);
+        console.log('📁 Sistema inclui:');
+        console.log('- Upload com preview compacto');
+        console.log('- Visualização direta (sem senha)');
+        console.log('- Salvamento automático no Supabase');
+        console.log('- Integração com properties.js');
+        
+    }, 1500);
 });
+
+// ========== 5. SISTEMA DE SALVAMENTO NO SUPABASE ==========
+
+// 5.1 Upload de PDF para Supabase Storage
+window.uploadPdfToSupabase = async function(file, propertyId) {
+    try {
+        console.log(`⬆️ Enviando PDF para Supabase: ${file.name}`);
+        
+        const formData = new FormData();
+        const fileName = `pdf_${propertyId}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        
+        formData.append('file', file, fileName);
+        
+        const response = await fetch(`${PDF_CONFIG.supabaseUrl}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'apikey': window.SUPABASE_KEY
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const fileUrl = `${PDF_CONFIG.supabaseUrl}${fileName}`;
+            console.log(`✅ PDF enviado com sucesso: ${fileUrl}`);
+            return fileUrl;
+        } else {
+            console.error('❌ Erro ao enviar PDF:', await response.text());
+            return null;
+        }
+    } catch (error) {
+        console.error('❌ Erro no upload do PDF:', error);
+        return null;
+    }
+};
+
+// 5.2 Salvar todos os PDFs de um imóvel
+window.saveAllPdfsForProperty = async function(propertyId, propertyTitle) {
+    console.log(`💾 Salvando PDFs para imóvel ${propertyId}: "${propertyTitle}"`);
+    
+    const allPdfUrls = [];
+    
+    // 1. Manter PDFs existentes que não foram excluídos
+    window.existingPdfFiles.forEach(pdf => {
+        if (pdf.url && pdf.url.trim() !== '') {
+            allPdfUrls.push(pdf.url);
+        }
+    });
+    
+    // 2. Fazer upload dos NOVOS PDFs
+    if (window.selectedPdfFiles.length > 0) {
+        console.log(`📤 Fazendo upload de ${window.selectedPdfFiles.length} NOVO(s) PDF(s)...`);
+        
+        for (const pdf of window.selectedPdfFiles) {
+            if (pdf.file) {
+                const uploadedUrl = await window.uploadPdfToSupabase(pdf.file, propertyId);
+                if (uploadedUrl) {
+                    allPdfUrls.push(uploadedUrl);
+                    console.log(`✅ PDF "${pdf.name}" salvo no Supabase`);
+                }
+            }
+        }
+    }
+    
+    // 3. Retornar string combinada para salvar no campo 'pdfs'
+    const pdfsString = allPdfUrls.join(',');
+    console.log(`📄 Total de PDFs para salvar: ${allPdfUrls.length}`);
+    console.log(`🔗 String final: ${pdfsString.substring(0, 100)}...`);
+    
+    return pdfsString;
+};
+
+// 5.3 Obter PDFs para salvar (versão simplificada)
+window.getPdfsForSave = async function(propertyId, propertyTitle) {
+    if (!propertyId) {
+        console.error('❌ propertyId não fornecido para salvar PDFs');
+        return '';
+    }
+    
+    return await window.saveAllPdfsForProperty(propertyId, propertyTitle);
+};
+
+// 5.4 Inicializar sistema de salvamento
+window.initPdfSaveSystem = function() {
+    console.log('💾 Sistema de salvamento de PDFs inicializado');
+    
+    // Integrar com o sistema existente
+    if (typeof window.addNewProperty !== 'undefined') {
+        // Sobrescrever função addNewProperty para incluir PDFs
+        const originalAddNewProperty = window.addNewProperty;
+        window.addNewProperty = async function(propertyData) {
+            console.log('➕ Adicionando novo imóvel com PDFs...');
+            
+            // Primeiro criar o imóvel
+            const newProperty = originalAddNewProperty.call(this, propertyData);
+            
+            // Depois salvar os PDFs
+            if (window.selectedPdfFiles.length > 0 && typeof window.getPdfsForSave === 'function') {
+                try {
+                    const pdfsString = await window.getPdfsForSave(newProperty.id, newProperty.title);
+                    if (pdfsString) {
+                        // Atualizar o imóvel com os PDFs
+                        newProperty.pdfs = pdfsString;
+                        window.updateProperty(newProperty.id, { pdfs: pdfsString });
+                        console.log('✅ PDFs salvos para o novo imóvel');
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao salvar PDFs:', error);
+                }
+            }
+            
+            return newProperty;
+        };
+    }
+    
+    // Sobrescrever função updateProperty para incluir PDFs
+    if (typeof window.updateProperty !== 'undefined') {
+        const originalUpdateProperty = window.updateProperty;
+        window.updateProperty = async function(id, propertyData) {
+            console.log(`✏️ Atualizando imóvel ${id} com PDFs...`);
+            
+            // Se houver PDFs novos para salvar
+            if (window.selectedPdfFiles.length > 0 && typeof window.getPdfsForSave === 'function') {
+                try {
+                    const property = window.properties.find(p => p.id === id);
+                    const pdfsString = await window.getPdfsForSave(id, property?.title || '');
+                    if (pdfsString) {
+                        propertyData.pdfs = pdfsString;
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao salvar PDFs na atualização:', error);
+                }
+            }
+            
+            return originalUpdateProperty.call(this, id, propertyData);
+        };
+    }
+};
 
 console.log('📄 pdf.js carregado com sistema completo');
