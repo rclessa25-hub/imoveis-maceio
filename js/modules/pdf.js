@@ -344,6 +344,7 @@ window.clearAllPdfs = function() {
 
 // 2.1 Abrir modal de PDFs do imóvel
 // 2.1 Abrir modal de PDFs do imóvel (SEM SENHA)
+// 2.1 Abrir modal de PDFs do imóvel (COM SENHA)
 window.showPdfModal = function(propertyId) {
     console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
     
@@ -403,14 +404,88 @@ window.showPdfModal = function(propertyId) {
                 <h3 style="color: var(--primary); margin: 0 0 1rem 0; padding-right: 30px;">
                     <i class="fas fa-file-pdf"></i> Documentos do Imóvel
                 </h3>
-                <div id="pdfListContainer" style="margin: 0;"></div>
+                
+                <!-- SEÇÃO DE PDFS (inicialmente oculta) -->
+                <div id="pdfListContainer" style="margin: 0; display: none;"></div>
+                
+                <!-- SEÇÃO DE SENHA (sempre visível primeiro) -->
+                <div id="pdfAccessSection" style="margin-top: 1rem;">
+                    <div style="
+                        background: #f8f9fa;
+                        border: 1px solid #e9ecef;
+                        border-radius: 8px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                    ">
+                        <p style="margin: 0 0 0.8rem 0; color: #333; font-size: 0.9rem;">
+                            <i class="fas fa-lock"></i> Documentos protegidos por senha
+                        </p>
+                        <input type="password" id="pdfPasswordInput" 
+                               placeholder="Digite a senha para visualizar" 
+                               style="
+                                    padding: 0.8rem;
+                                    border: 1px solid #ddd;
+                                    border-radius: 5px;
+                                    width: 100%;
+                                    margin-bottom: 1rem;
+                                    font-size: 0.9rem;
+                               ">
+                        <button onclick="validatePdfPassword(${propertyId})" style="
+                            background: var(--primary);
+                            color: white;
+                            padding: 0.8rem 1.5rem;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            width: 100%;
+                            font-weight: 600;
+                        ">
+                            <i class="fas fa-key"></i> Validar Senha
+                        </button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: #666; text-align: center; margin: 0;">
+                        <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
+                    </p>
+                </div>
             </div>
         `;
         
         document.body.appendChild(modal);
     }
     
-   // Carregar lista de PDFs
+    modal.style.display = 'flex';
+    document.getElementById('pdfPasswordInput').value = '';
+    document.getElementById('pdfListContainer').style.display = 'none';
+    document.getElementById('pdfAccessSection').style.display = 'block';
+};
+
+// 2.2 Validar senha do PDF
+window.validatePdfPassword = function(propertyId) {
+    const password = document.getElementById('pdfPasswordInput')?.value;
+    const property = window.properties.find(p => p.id === propertyId);
+    
+    if (!password) {
+        alert('⚠️ Digite a senha para acessar os documentos!');
+        return;
+    }
+    
+    if (password === PDF_CONFIG.password) {
+        // Senha correta - mostrar documentos
+        document.getElementById('pdfAccessSection').style.display = 'none';
+        document.getElementById('pdfListContainer').style.display = 'block';
+        
+        // Carregar lista de PDFs
+        loadPdfList(property);
+        
+    } else {
+        alert('❌ Senha incorreta para documentos PDF!');
+        document.getElementById('pdfPasswordInput').value = '';
+        document.getElementById('pdfPasswordInput').focus();
+    }
+};
+
+// 2.3 Carregar lista de PDFs após validação
+function loadPdfList(property) {
     const pdfListContainer = document.getElementById('pdfListContainer');
     pdfListContainer.innerHTML = '';
     
@@ -419,7 +494,6 @@ window.showPdfModal = function(propertyId) {
         
         pdfUrls.forEach((url, index) => {
             const fileName = url.split('/').pop() || `Documento ${index + 1}`;
-            // Nome compacto para exibição
             const displayName = fileName.length > 40 
                 ? fileName.substring(0, 37) + '...' 
                 : fileName;
@@ -437,16 +511,6 @@ window.showPdfModal = function(propertyId) {
                 transition: all 0.2s ease;
             `;
             
-            pdfItem.onmouseover = function() {
-                this.style.background = '#f0f0f0';
-                this.style.borderColor = '#3498db';
-            };
-            
-            pdfItem.onmouseout = function() {
-                this.style.background = '#f9f9f9';
-                this.style.borderColor = '#e0e0e0';
-            };
-            
             pdfItem.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 0.8rem; flex: 1; min-width: 0;">
                     <i class="fas fa-file-pdf" style="font-size: 1.3rem; color: #e74c3c; flex-shrink: 0;"></i>
@@ -460,7 +524,7 @@ window.showPdfModal = function(propertyId) {
                     </div>
                 </div>
                 <button onclick="viewPdfDocument('${url}', '${fileName}')" style="
-                    background: var(--primary);
+                    background: var(--success);
                     color: white;
                     border: none;
                     padding: 0.4rem 0.8rem;
@@ -470,7 +534,7 @@ window.showPdfModal = function(propertyId) {
                     flex-shrink: 0;
                     white-space: nowrap;
                 ">
-                    <i class="fas fa-external-link-alt"></i> Abrir
+                    <i class="fas fa-eye"></i> Visualizar
                 </button>
             `;
             
@@ -482,43 +546,10 @@ window.showPdfModal = function(propertyId) {
             <div style="text-align: center; padding: 2rem; color: #666;">
                 <i class="fas fa-file-pdf" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.5;"></i>
                 <p style="margin: 0; font-size: 0.95rem;">Nenhum documento PDF disponível.</p>
-                <small style="font-size: 0.85rem; color: #999;">Este imóvel não possui documentos anexados.</small>
             </div>
         `;
     }
-    
-    modal.style.display = 'flex';
-};
-
-// 2.2 Visualizar documento PDF
-window.viewPdfDocument = function(url, fileName) {
-    // Abrir em nova aba
-    window.open(url, '_blank');
-    console.log(`📄 Abrindo PDF: ${fileName}`);
-};
-
-// 2.3 Acessar documentos (com senha)
-window.accessPdfDocuments = function() {
-    const password = document.getElementById('pdfPasswordInput')?.value;
-    
-    if (!password) {
-        alert('⚠️ Digite a senha para acessar os documentos!');
-        return;
-    }
-    
-    if (password === PDF_CONFIG.password) {
-        // Mostrar todos os links para download
-        const pdfLinks = document.querySelectorAll('#pdfListContainer button');
-        pdfLinks.forEach(btn => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-eye"></i> Visualizar';
-        });
-        
-        alert('✅ Documentos desbloqueados! Clique em "Visualizar" para abrir.');
-    } else {
-        alert('❌ Senha incorreta para documentos PDF!');
-    }
-};
+}
 
 // 2.4 Fechar visualizador
 window.closePdfViewer = function() {
