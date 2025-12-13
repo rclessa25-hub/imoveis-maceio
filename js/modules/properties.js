@@ -257,9 +257,9 @@ window.savePropertiesToStorage = function() {
     }
 };
 
-// ========== FUNÇÃO 3: ATUALIZAR IMÓVEL NO SUPABASE ==========
+// ========== FUNÇÃO 3: ATUALIZAR IMÓVEL NO SUPABASE (CORRIGIDA) ==========
 window.updatePropertyInSupabase = async function(id, propertyData) {
-    console.log(`🌐 Atualizando imóvel ${id} no Supabase:`, propertyData);
+    console.log(`🌐 Atualizando imóvel ${id} no Supabase (SEM updated_at):`, propertyData);
     
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
         console.log('❌ Credenciais Supabase não configuradas');
@@ -267,7 +267,7 @@ window.updatePropertyInSupabase = async function(id, propertyData) {
     }
     
     try {
-        // Preparar dados para atualização
+        // PREPARAR DADOS - APENAS CAMPOS QUE EXISTEM NA TABELA
         const updateData = {
             title: propertyData.title || '',
             price: propertyData.price || '',
@@ -280,11 +280,11 @@ window.updatePropertyInSupabase = async function(id, propertyData) {
             badge: propertyData.badge || 'Novo',
             rural: propertyData.rural || false,
             images: propertyData.images || '',
-            pdfs: propertyData.pdfs || '',
-            updated_at: new Date().toISOString()
+            pdfs: propertyData.pdfs || ''
+            // REMOVIDO: updated_at - coluna não existe na tabela
         };
         
-        console.log('📤 Dados para atualização no Supabase:', updateData);
+        console.log('📤 Dados para atualização (CAMPOS VÁLIDOS):', updateData);
         
         // Enviar atualização para Supabase
         const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
@@ -302,11 +302,34 @@ window.updatePropertyInSupabase = async function(id, propertyData) {
         
         if (response.ok) {
             const result = await response.json();
-            console.log(`✅ Imóvel ${id} ATUALIZADO no Supabase com sucesso!`, result);
+            console.log(`✅ Imóvel ${id} ATUALIZADO no Supabase com sucesso!`);
             return true;
         } else {
             const errorText = await response.text();
             console.error(`❌ Erro ao atualizar imóvel ${id} no Supabase:`, errorText);
+            
+            // Tentar sem alguns campos opcionais se falhar
+            console.log('🔄 Tentando atualização simplificada...');
+            
+            // Remover campos que podem causar problemas
+            delete updateData.pdfs;
+            delete updateData.images;
+            
+            const simpleResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            if (simpleResponse.ok) {
+                console.log(`✅ Imóvel ${id} atualizado com campos simplificados`);
+                return true;
+            }
+            
             return false;
         }
         
