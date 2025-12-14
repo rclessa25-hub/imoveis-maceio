@@ -407,6 +407,157 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados no admin`);
 };
 
+// ========== FUNÇÃO 11: Sincronização com Supabase (NOVA) ==========
+window.syncWithSupabase = async function() {
+    console.log('🔄 Iniciando sincronização com Supabase...');
+    
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.error('❌ Credenciais Supabase não configuradas');
+        return { success: false, error: 'Credenciais não configuradas' };
+    }
+    
+    try {
+        // Testar conexão primeiro
+        console.log('🔍 Testando conexão com Supabase...');
+        const testResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            }
+        });
+        
+        if (!testResponse.ok) {
+            console.error('❌ Supabase não acessível:', testResponse.status);
+            return { 
+                success: false, 
+                error: `Erro HTTP ${testResponse.status}: ${testResponse.statusText}` 
+            };
+        }
+        
+        console.log('✅ Conexão Supabase OK. Buscando dados...');
+        
+        // Buscar todos os imóveis do Supabase
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*&order=id.desc`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const supabaseData = await response.json();
+            
+            if (Array.isArray(supabaseData) && supabaseData.length > 0) {
+                console.log(`📥 ${supabaseData.length} imóveis recebidos do Supabase`);
+                
+                // Converter dados do Supabase para formato local
+                const formattedData = supabaseData.map(item => ({
+                    id: item.id,
+                    title: item.title || 'Sem título',
+                    price: item.price || 'R$ 0,00',
+                    location: item.location || 'Local não informado',
+                    description: item.description || '',
+                    features: item.features || '',
+                    type: item.type || 'residencial',
+                    has_video: item.has_video || false,
+                    badge: item.badge || 'Novo',
+                    rural: item.rural || false,
+                    images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+                    pdfs: item.pdfs || '',
+                    created_at: item.created_at || new Date().toISOString()
+                }));
+                
+                // Mesclar com dados existentes (evitar duplicatas)
+                const existingIds = window.properties.map(p => p.id);
+                const newProperties = formattedData.filter(item => !existingIds.includes(item.id));
+                
+                if (newProperties.length > 0) {
+                    // Adicionar novos imóveis ao início
+                    window.properties = [...newProperties, ...window.properties];
+                    
+                    // Salvar localmente
+                    window.savePropertiesToStorage();
+                    
+                    // Renderizar
+                    if (typeof window.renderProperties === 'function') {
+                        window.renderProperties('todos');
+                    }
+                    
+                    console.log(`✅ ${newProperties.length} novos imóveis sincronizados`);
+                    return { 
+                        success: true, 
+                        count: newProperties.length,
+                        message: `${newProperties.length} novos imóveis carregados` 
+                    };
+                } else {
+                    console.log('✅ Já sincronizado - sem novos imóveis');
+                    return { 
+                        success: true, 
+                        count: 0,
+                        message: 'Já está sincronizado com o servidor' 
+                    };
+                }
+            } else {
+                console.log('ℹ️ Nenhum imóvel no Supabase');
+                return { success: true, count: 0, message: 'Nenhum imóvel no servidor' };
+            }
+        } else {
+            const errorText = await response.text();
+            console.error('❌ Erro ao buscar dados:', response.status, errorText);
+            return { 
+                success: false, 
+                error: `HTTP ${response.status}: ${errorText.substring(0, 100)}` 
+            };
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na sincronização:', error);
+        return { 
+            success: false, 
+            error: error.message,
+            isCorsError: error.message.includes('Failed to fetch') || error.message.includes('CORS')
+        };
+    }
+};
+
+// ========== FUNÇÃO 12: Teste Simples de Conexão ==========
+window.testSupabaseConnectionSimple = async function() {
+    console.log('🌐 Teste simples de conexão Supabase...');
+    
+    try {
+        // Usar endpoint mais simples
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            },
+            mode: 'cors' // Explicitamente pedir modo CORS
+        });
+        
+        console.log('📊 Status do teste:', response.status, response.statusText);
+        
+        if (response.ok) {
+            console.log('✅ CONEXÃO SUPABASE FUNCIONANDO!');
+            return { connected: true, status: response.status };
+        } else {
+            console.log('❌ Supabase respondeu com erro:', response.status);
+            return { connected: false, status: response.status };
+        }
+    } catch (error) {
+        console.log('❌ Erro de conexão:', error.message);
+        
+        // Verificar se é CORS
+        if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+            console.log('⚠️ PROVÁVEL ERRO CORS - Verifique configurações do Supabase');
+            console.log('🔗 URL do projeto:', window.SUPABASE_URL);
+            console.log('🌍 Seu domínio:', window.location.origin);
+        }
+        
+        return { connected: false, error: error.message };
+    }
+};
+
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js carregado com 10 funções principais');
 
