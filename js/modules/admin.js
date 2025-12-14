@@ -401,16 +401,52 @@ function initializeAdminSystem() {
     // 4. Adicionar botão sincronização
     addSyncButton();
     
-    // 5. Corrigir filtros
-    setTimeout(() => {
-        if (typeof window.fixFilterVisuals === 'function') {
-            window.fixFilterVisuals();
-            console.log('✅ Filtros corrigidos');
-        }
-    }, 1000);
+// Na função initializeAdminSystem, procure esta parte:
+// 5. Corrigir filtros
+setTimeout(() => {
+    if (typeof window.fixFilterVisuals === 'function') {
+        window.fixFilterVisuals();
+        console.log('✅ Filtros corrigidos');
+    }
+}, 1000);
+
+// ✅ SUBSTITUA por esta versão MELHORADA:
+// 5. CORREÇÃO GARANTIDA DOS FILTROS (com múltiplas tentativas)
+console.log('🎯 Iniciando correção garantida dos filtros...');
+
+// Tentativa 1: Imediata
+setTimeout(() => {
+    if (typeof window.fixFilterVisuals === 'function') {
+        window.fixFilterVisuals();
+        console.log('✅ Tentativa 1: Filtros corrigidos');
+    }
+}, 800);
+
+// Tentativa 2: Após 2 segundos (garantia)
+setTimeout(() => {
+    console.log('🔍 Verificando se filtros estão funcionando...');
     
-    console.log('✅ Sistema admin inicializado');
-}
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    let hasActiveListeners = false;
+    
+    filterButtons.forEach(btn => {
+        // Verificar se tem event listener
+        if (btn.onclick || btn._hasListener) {
+            hasActiveListeners = true;
+        }
+    });
+    
+    if (!hasActiveListeners && typeof window.fixFilterVisuals === 'function') {
+        console.log('⚠️ Filtros sem listeners - reaplicando correção...');
+        window.fixFilterVisuals();
+    }
+}, 2000);
+
+// Tentativa 3: Correção de emergência após 3 segundos
+setTimeout(() => {
+    console.log('🆘 Aplicando correção de emergência para filtros...');
+    applyEmergencyFilterFix();
+}, 3000);
 
 // ========== EXECUÇÃO AUTOMÁTICA ==========
 if (document.readyState === 'loading') {
