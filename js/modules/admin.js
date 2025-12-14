@@ -332,41 +332,75 @@ if (document.readyState === 'loading') {
     setTimeout(initializeAdminSystem, 300);
 }
 
-// ✅ CORREÇÃO: Função de sincronização sem loop
+// ✅ CORREÇÃO: Função de sincronização com tratamento melhorado
 window.syncWithSupabaseManual = async function() {
-    if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
-        console.log('🔄 Iniciando sincronização manual...');
+    console.log('🔄 Sincronização manual iniciada...');
+    
+    // Desabilitar botão temporariamente
+    const syncBtn = document.getElementById('syncButton');
+    const originalText = syncBtn ? syncBtn.innerHTML : '';
+    
+    if (syncBtn) {
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testando conexão...';
+    }
+    
+    try {
+        // 1. Primeiro testar a conexão
+        console.log('🔍 Testando conexão antes de sincronizar...');
         
-        // Desabilitar botão temporariamente
-        const syncBtn = document.getElementById('syncButton');
+        if (typeof window.testSupabaseConnectionSimple === 'function') {
+            const testResult = await window.testSupabaseConnectionSimple();
+            
+            if (!testResult.connected) {
+                alert(`❌ Não foi possível conectar ao Supabase!\n\nErro: ${testResult.error || 'Desconhecido'}\n\nVerifique:\n1. Configurações CORS no Supabase\n2. URL do projeto\n3. Chave de API`);
+                
+                if (syncBtn) {
+                    syncBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro de Conexão';
+                    setTimeout(() => {
+                        syncBtn.disabled = false;
+                        syncBtn.innerHTML = originalText;
+                    }, 3000);
+                }
+                return;
+            }
+        }
+        
+        // 2. Se conexão OK, prosseguir com sincronização
         if (syncBtn) {
-            syncBtn.disabled = true;
             syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
         }
         
-        try {
-            // Chamar a função do properties.js
+        if (typeof window.syncWithSupabase === 'function') {
             const result = await window.syncWithSupabase();
             
             if (result && result.success) {
-                alert(`✅ Sincronização completa!\n\n${result.count} novos imóveis carregados.`);
+                const message = result.count > 0 
+                    ? `✅ ${result.count} novos imóveis sincronizados!`
+                    : '✅ Já está sincronizado com o servidor.';
+                
+                alert(message);
                 
                 // Atualizar lista no admin
                 if (typeof window.loadPropertyList === 'function') {
                     window.loadPropertyList();
                 }
             } else {
-                alert('⚠️ Não foi possível sincronizar. Verifique a conexão.');
+                alert(`⚠️ Sincronização falhou!\n\n${result?.error || 'Erro desconhecido'}`);
             }
-        } catch (error) {
-            console.error('❌ Erro na sincronização:', error);
-            alert('❌ Erro ao sincronizar: ' + error.message);
-        } finally {
-            // Reabilitar botão
-            if (syncBtn) {
-                syncBtn.disabled = false;
-                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
-            }
+        } else {
+            alert('❌ Função de sincronização não disponível!');
+            console.error('window.syncWithSupabase não é uma função');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na sincronização:', error);
+        alert(`❌ Erro crítico: ${error.message}`);
+    } finally {
+        // Reabilitar botão
+        if (syncBtn) {
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = originalText;
         }
     }
 };
