@@ -447,53 +447,34 @@ function testAdminButtonResponse() {
 }
     
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
+// ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 function initializeAdminSystem() {
-    console.log('🚀 Inicializando sistema admin...');
+    console.log('🚀 INICIALIZAÇÃO DO SISTEMA ADMIN (VERSÃO CORRIGIDA)');
     
-    // 1. Esconder painel inicialmente
-    const panel = document.getElementById(ADMIN_CONFIG.panelId);
+    // ✅ 1. FORÇAR RESTAURAÇÃO DO BOTÃO IMEDIATAMENTE
+    console.log('🔧 ETAPA 1: Restauração forçada do botão admin...');
+    forceAdminButtonFix();
+    
+    // ✅ 2. Esconder painel inicialmente
+    const panel = document.getElementById('adminPanel');
     if (panel) {
         panel.style.display = 'none';
-        console.log('✅ Painel admin inicializado (oculto)');
+        console.log('✅ Painel admin: OCULTO');
     }
     
-    // 2. Configurar botão
-    const adminBtn = document.querySelector('.' + ADMIN_CONFIG.buttonClass);
-    if (adminBtn) {
-        // Remover onclick inline se existir
-        adminBtn.removeAttribute('onclick');
-
-        // Adicionar botão de sincronização
-           addSyncButton();
-        
-        // Adicionar event listener
-        adminBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🖱️ Botão admin clicado (do admin.js)');
-            window.toggleAdminPanel();
-        });
-        
-        console.log('✅ Botão admin configurado');
-    }
-
-    // 3. Configurar formulário
-    if (typeof window.setupForm === 'function') {
-        window.setupForm();
-        console.log('✅ Formulário configurado');
-    }
-
-    // 4. Corrigir visual dos filtros
-    setTimeout(() => {
-        if (typeof window.fixFilterVisuals === 'function') {
-            window.fixFilterVisuals();
-            console.log('✅ Filtros visuais corrigidos');
-        } else {
-            console.log('⚠️ Função fixFilterVisuals não disponível');
-        }
-    }, 1000);
+    // ✅ 3. Configurar formulário SIMPLES e FUNCIONAL
+    console.log('📝 ETAPA 2: Configurando formulário básico...');
+    setupBasicForm();
     
-    console.log('✅ Sistema admin completamente inicializado');
+    // ✅ 4. Adicionar botão de sincronização
+    console.log('🔄 ETAPA 3: Adicionando botão de sincronização...');
+    addSyncButtonSimple();
+    
+    // ✅ 5. Teste final automático
+    console.log('🧪 ETAPA 4: Teste automático do sistema...');
+    setTimeout(testAdminAccess, 1500);
+    
+    console.log('✅ SISTEMA ADMIN INICIALIZADO!');
 }
 
 // ========== EXECUTAR INICIALIZAÇÃO ==========
@@ -752,6 +733,71 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
 });
 
+// ========== FUNÇÃO 1: FORÇAR CORREÇÃO DO BOTÃO ==========
+function forceAdminButtonFix() {
+    console.log('🛠️ CORREÇÃO FORÇADA DO BOTÃO ADMIN');
+    
+    // Remover TODOS os botões existentes
+    const oldButtons = document.querySelectorAll('.admin-toggle');
+    oldButtons.forEach(btn => btn.remove());
+    
+    // Criar NOVO botão do zero
+    const newAdminBtn = document.createElement('button');
+    newAdminBtn.className = 'admin-toggle';
+    newAdminBtn.id = 'admin-button-fixed';
+    newAdminBtn.innerHTML = '<i class="fas fa-user-cog"></i>';
+    
+    // Estilo ABSOLUTO (não pode falhar)
+    newAdminBtn.style.cssText = `
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        background: #667eea !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 24px !important;
+        cursor: pointer !important;
+        z-index: 99999 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    `;
+    
+    // Adicionar ao body
+    document.body.appendChild(newAdminBtn);
+    console.log('✅ NOVO botão admin criado');
+    
+    // ✅ EVENT LISTENER DIRETO E SIMPLES
+    newAdminBtn.onclick = function(e) {
+        console.log('🖱️ CLIQUE NO BOTÃO ADMIN DETECTADO!');
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const password = prompt("🔒 ACESSO AO PAINEL DO CORRETOR\n\nDigite a senha de administrador:");
+        
+        if (password === "wl654") {
+            const panel = document.getElementById('adminPanel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+                console.log('✅ Painel admin: ' + (panel.style.display === 'block' ? 'ABERTO' : 'FECHADO'));
+                
+                if (panel.style.display === 'block') {
+                    panel.scrollIntoView({ behavior: 'smooth' });
+                    if (window.loadPropertyList) setTimeout(() => window.loadPropertyList(), 300);
+                }
+            }
+        } else if (password !== null) {
+            alert('❌ Senha incorreta!');
+        }
+    };
+    
+    console.log('✅ Event listener configurado DIRETAMENTE no onclick');
+}
+    
 // ========== CORREÇÃO DE EMERGÊNCIA - ACESSO AO ADMIN ==========
 (function emergencyAdminFix() {
     console.log('🆘 Aplicando correção de emergência para admin...');
