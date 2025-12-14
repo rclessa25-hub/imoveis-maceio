@@ -643,8 +643,21 @@ window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     return pdfsString;
 };
 
-// 4.3 Obter PDFs para salvar (versão simples)
-// 4.3 Substituir função antiga por nova
+// 4.3 Função completa de salvamento de PDFs (NOVA)
+window.savePdfsToSupabase = async function(propertyId) {
+    console.log(`💾 savePdfsToSupabase chamado para propertyId: ${propertyId}`);
+    
+    if (!propertyId || propertyId === 'undefined') {
+        console.log('⚠️ PropertyId inválido, usando temporário');
+        propertyId = `temp_${Date.now()}`;
+    }
+    
+    // Usar função existente
+    return await window.processAndSavePdfs(propertyId, 'Novo Imóvel');
+};
+
+// 4.4 Obter PDFs para salvar (versão simples)
+// 4.4 Substituir função antiga por nova
 window.getPdfsToSave = async function(propertyId) {
     if (!propertyId) {
         console.error('❌ propertyId não fornecido para salvar PDFs');
@@ -654,7 +667,7 @@ window.getPdfsToSave = async function(propertyId) {
     return await window.savePdfsToSupabase(propertyId);
 };
 
-// 4.4 Integração automática com sistema existente
+// 4.5 Integração automática com sistema existente
 window.setupPdfSupabaseIntegration = function() {
     console.log('🔗 Configurando integração REAL com Supabase...');
     
@@ -728,7 +741,7 @@ window.setupPdfSupabaseIntegration = function() {
     }
 };
 
-// 4.4 Integrar com sistema existente
+// 4.6 Integrar com sistema existente
 window.setupPdfIntegration = function() {
     console.log('🔗 Configurando integração de PDFs...');
     
@@ -759,7 +772,7 @@ window.setupPdfIntegration = function() {
     }
 };
 
-// 4.5 Vincular PDFs pendentes quando imóvel receber ID real
+// 4.7 Vincular PDFs pendentes quando imóvel receber ID real
 window.linkPendingPdfsToProperty = function(tempId, realId) {
     console.log(`🔗 Vinculando PDFs pendentes: ${tempId} → ${realId}`);
     
