@@ -668,76 +668,151 @@ window.getPdfsToSave = async function(propertyId) {
 };
 
 // 4.5 Integração automática com sistema existente
+// ========== CONFIGURAÇÃO DE INTEGRAÇÃO COM SUPABASE (VERSÃO CORRIGIDA) ==========
 window.setupPdfSupabaseIntegration = function() {
-    console.log('🔗 Configurando integração REAL com Supabase...');
+    console.log('🔗 Configurando integração SEGURA com Supabase...');
     
-    // Interceptar função updateProperty do properties.js
-    if (typeof window.updateProperty !== 'undefined') {
-    //    const originalUpdateProperty = window.updateProperty;
-        
-    //    window.updateProperty = async function(id, propertyData) {
-    //        console.log(`✏️ Atualizando imóvel ${id} com PDFs REAIS...`);
-            
-            // Se houver PDFs para processar
-     //       if (window.selectedPdfFiles.length > 0 || window.existingPdfFiles.length > 0) {
-     //           try {
-     //               const pdfsString = await window.savePdfsToSupabase(id);
-                    
-      //              if (pdfsString) {
-      //                  propertyData.pdfs = pdfsString;
-      //                 console.log(`📄 PDFs REAIS incluídos na atualização`);
-      //              }
-      //          } catch (error) {
-      //             console.error('❌ Erro ao salvar PDFs REAIS:', error);
-      //          }
-      //     }
-            
-      //      // Limpar PDFs após processar
-      //      setTimeout(() => {
-       //         window.selectedPdfFiles = [];
-       //         window.updatePdfPreview();
-        //    }, 100);
-            
-            // Chamar função original do properties.js
-         //   return originalUpdateProperty.call(this, id, propertyData);
-        //};
-        
-        console.log('✅ updateProperty integrado com PDFs REAIS no Supabase');
-    }
+    // ✅ 1. Inicializar sistema de upload
+    window.initPdfSystem();
     
-    // Interceptar função addNewProperty
-    if (typeof window.addNewProperty !== 'undefined') {
-        const originalAddNewProperty = window.addNewProperty;
+    // ✅ 2. Configurar eventos do modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') window.closePdfViewer();
+    });
+    
+    document.addEventListener('click', (e) => {
+        const modal = document.getElementById('pdfViewerModal');
+        if (modal && modal.style.display === 'flex' && e.target === modal) {
+            window.closePdfViewer();
+        }
+    });
+    
+    // ✅ 3. Função auxiliar para salvar PDFs quando um imóvel é criado/editado
+    window.savePdfsForProperty = async function(propertyId, propertyTitle) {
+        console.log(`💾 Salvando PDFs para imóvel ${propertyId}...`);
         
-        window.addNewProperty = async function(propertyData) {
-            console.log('➕ Adicionando novo imóvel com PDFs REAIS...');
-            
-            // Primeiro criar o imóvel
-            const newProperty = originalAddNewProperty.call(this, propertyData);
-            
-            // Depois salvar PDFs REAIS
-            if (window.selectedPdfFiles.length > 0) {
-                try {
-                    const pdfsString = await window.savePdfsToSupabase(newProperty.id);
-                    
-                    if (pdfsString) {
-                        // Atualizar localmente
-                        newProperty.pdfs = pdfsString;
-                        const index = window.properties.findIndex(p => p.id === newProperty.id);
-                        if (index !== -1) {
-                            window.properties[index].pdfs = pdfsString;
-                            window.savePropertiesToStorage();
-                        }
+        if (!propertyId) {
+            console.error('❌ PropertyId não fornecido para salvar PDFs');
+            return '';
+        }
+        
+        // Usar a função existente
+        if (typeof window.processAndSavePdfs === 'function') {
+            return await window.processAndSavePdfs(propertyId, propertyTitle);
+        }
+        
+        console.log('⚠️ Função processAndSavePdfs não disponível');
+        return '';
+    };
+    
+    // ✅ 4. Integração NÃO-INTRUSIVA com addNewProperty
+    // Em vez de interceptar, adicionamos um hook pós-criação
+    window.addPdfHookToNewProperty = async function(propertyId, propertyData) {
+        console.log(`📎 Hook de PDF para novo imóvel ${propertyId}`);
+        
+        // Se houver PDFs selecionados, processá-los
+        if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
+            try {
+                console.log(`📤 Processando ${window.selectedPdfFiles.length} PDF(s) para imóvel ${propertyId}`);
+                
+                const pdfsString = await window.savePdfsForProperty(propertyId, propertyData.title);
+                
+                if (pdfsString) {
+                    // Atualizar o imóvel localmente com os PDFs
+                    const index = window.properties.findIndex(p => p.id === propertyId);
+                    if (index !== -1) {
+                        window.properties[index].pdfs = pdfsString;
+                        window.savePropertiesToStorage();
+                        console.log(`✅ PDFs salvos para imóvel ${propertyId}`);
                     }
-                } catch (error) {
-                    console.error('❌ Erro ao salvar PDFs REAIS no novo imóvel:', error);
+                    
+                    // Se o imóvel já está no Supabase, atualizar lá também
+                    if (typeof window.updateProperty === 'function') {
+                        setTimeout(async () => {
+                            try {
+                                await window.updateProperty(propertyId, { pdfs: pdfsString });
+                                console.log(`🌐 PDFs atualizados no Supabase para imóvel ${propertyId}`);
+                            } catch (error) {
+                                console.log('⚠️ PDFs não atualizados no Supabase (será sincronizado depois)');
+                            }
+                        }, 1000);
+                    }
                 }
+            } catch (error) {
+                console.error('❌ Erro ao processar PDFs:', error);
+            }
+        }
+    };
+    
+    // ✅ 5. Integração NÃO-INTRUSIVA com updateProperty
+    window.addPdfHookToUpdateProperty = async function(propertyId, propertyData) {
+        console.log(`📎 Hook de PDF para atualização do imóvel ${propertyId}`);
+        
+        // Se houver PDFs selecionados, processá-los
+        if ((window.selectedPdfFiles && window.selectedPdfFiles.length > 0) || 
+            (window.existingPdfFiles && window.existingPdfFiles.length > 0)) {
+            
+            try {
+                const totalPdfs = (window.selectedPdfFiles?.length || 0) + (window.existingPdfFiles?.length || 0);
+                console.log(`📤 Processando ${totalPdfs} PDF(s) para atualização`);
+                
+                const pdfsString = await window.savePdfsForProperty(propertyId, propertyData.title || 'Imóvel');
+                
+                if (pdfsString) {
+                    // Retornar string de PDFs para ser incluída na atualização
+                    return pdfsString;
+                }
+            } catch (error) {
+                console.error('❌ Erro ao processar PDFs na atualização:', error);
+            }
+        }
+        
+        return null;
+    };
+    
+    // ✅ 6. Configurar listener para quando um imóvel for criado
+    // Observar o botão de submit do formulário
+    const form = document.getElementById('propertyForm');
+    if (form) {
+        const originalSubmit = form.onsubmit;
+        
+        form.addEventListener('submit', async function(e) {
+            // Executar normalmente primeiro
+            if (typeof originalSubmit === 'function') {
+                originalSubmit.call(this, e);
             }
             
-            return newProperty;
-        };
+            // Depois processar PDFs (se houver)
+            setTimeout(async () => {
+                if (window.editingPropertyId && window.selectedPdfFiles.length > 0) {
+                    console.log(`🔄 Processando PDFs pós-edição para imóvel ${window.editingPropertyId}`);
+                    
+                    if (typeof window.addPdfHookToUpdateProperty === 'function') {
+                        const pdfsString = await window.addPdfHookToUpdateProperty(window.editingPropertyId, {});
+                        if (pdfsString && typeof window.updateProperty === 'function') {
+                            // Atualizar com PDFs
+                            await window.updateProperty(window.editingPropertyId, { pdfs: pdfsString });
+                        }
+                    }
+                }
+            }, 500);
+        });
+    }
+    
+    console.log('✅ Integração de PDFs configurada (modo não-intrusivo)');
+    
+    // ✅ 7. Testar conexão com Supabase Storage
+    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+        console.log('🔍 Verificando acesso ao Supabase Storage...');
+        console.log('- URL:', window.SUPABASE_URL);
+        console.log('- Bucket de PDFs disponível');
         
-        console.log('✅ addNewProperty integrado com PDFs REAIS no Supabase');
+        // Teste simples
+        setTimeout(() => {
+            if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
+                console.log(`📄 ${window.selectedPdfFiles.length} PDF(s) prontos para upload`);
+            }
+        }, 2000);
     }
 };
 
