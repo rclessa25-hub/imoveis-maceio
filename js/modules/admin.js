@@ -298,7 +298,154 @@ form.addEventListener('submit', async function(e) {
         alert('❌ Erro ao processar formulário: ' + error.message);
     }
 });
- 
+
+// ========== FUNÇÃO PARA RESTAURAR BOTÃO ADMIN ==========
+function restoreAdminButton() {
+    console.log('🔧 Restaurando botão admin...');
+    
+    // 1. Procurar TODOS os botões admin
+    const adminBtns = document.querySelectorAll('.admin-toggle');
+    
+    if (!adminBtns || adminBtns.length === 0) {
+        console.error('❌ Nenhum botão admin encontrado no DOM');
+        
+        // Tentar criar um botão de emergência
+        createAdminButtonIfMissing();
+        return;
+    }
+    
+    console.log(`✅ Encontrado(s) ${adminBtns.length} botão(es) admin`);
+    
+    // 2. Para CADA botão encontrado
+    adminBtns.forEach((btn, index) => {
+        console.log(`   ${index + 1}. Botão encontrado:`, btn);
+        
+        // Verificar se já tem evento
+        const hasClickEvent = btn.onclick || 
+                             btn.getAttribute('onclick') || 
+                             btn._hasAdminListener;
+        
+        if (hasClickEvent) {
+            console.log(`   ⚠️ Botão ${index + 1} já tem evento - limpando...`);
+            
+            // Remover todos os event listeners antigos
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            // Atualizar referência
+            const currentBtn = newBtn;
+            setupAdminButton(currentBtn, index);
+            
+        } else {
+            console.log(`   ✅ Botão ${index + 1} sem evento - configurando...`);
+            setupAdminButton(btn, index);
+        }
+    });
+    
+    // 3. Verificar se botão responde
+    setTimeout(() => {
+        console.log('🧪 Testando resposta do botão...');
+        testAdminButtonResponse();
+    }, 1000);
+}
+
+// Função auxiliar: Configurar um botão específico
+function setupAdminButton(button, index) {
+    // Marcar que este botão já foi configurado
+    button._hasAdminListener = true;
+    
+    // REMOVER todos os event listeners existentes
+    const cleanButton = button.cloneNode(true);
+    button.parentNode.replaceChild(cleanButton, button);
+    
+    // ADICIONAR novo event listener DIRETO
+    cleanButton.addEventListener('click', function adminButtonHandler(e) {
+        console.log(`🖱️ Botão admin ${index + 1} clicado (handler direto)`);
+        
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        // Chamar a função principal
+        if (typeof window.toggleAdminPanel === 'function') {
+            window.toggleAdminPanel();
+        } else {
+            console.error('❌ toggleAdminPanel não encontrado!');
+            emergencyAdminAccess();
+        }
+    }, true); // true = captura phase (executa primeiro)
+    
+    // Também adicionar onclick como fallback
+    cleanButton.onclick = function(e) {
+        console.log(`🖱️ Botão admin ${index + 1} (onclick fallback)`);
+        e.preventDefault();
+        if (window.toggleAdminPanel) window.toggleAdminPanel();
+    };
+    
+    console.log(`   ✅ Botão ${index + 1} configurado com 2 listeners`);
+}
+
+// Criar botão se não existir
+function createAdminButtonIfMissing() {
+    console.log('🛠️ Criando botão admin...');
+    
+    const adminBtn = document.createElement('button');
+    adminBtn.className = 'admin-toggle';
+    adminBtn.innerHTML = '<i class="fas fa-user-cog"></i> Acesso Admin';
+    adminBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        z-index: 10000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    `;
+    
+    document.body.appendChild(adminBtn);
+    console.log('✅ Botão admin criado');
+    
+    // Configurar o novo botão
+    setupAdminButton(adminBtn, 0);
+}
+
+// Testar se botão responde
+function testAdminButtonResponse() {
+    const adminBtn = document.querySelector('.admin-toggle');
+    if (!adminBtn) {
+        console.error('❌ Botão não encontrado para teste');
+        return;
+    }
+    
+    console.log('🧪 Simulando clique no botão...');
+    
+    // Disparar evento de clique programaticamente
+    try {
+        adminBtn.dispatchEvent(new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+        }));
+        console.log('✅ Evento de clique disparado com sucesso');
+    } catch (error) {
+        console.error('❌ Erro ao disparar clique:', error);
+    }
+    
+    // Verificar se prompt aparece
+    setTimeout(() => {
+        console.log('🔍 Verificando se prompt de senha apareceu...');
+    }, 500);
+}
+    
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 function initializeAdminSystem() {
     console.log('🚀 Inicializando sistema admin...');
