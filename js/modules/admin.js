@@ -312,6 +312,40 @@ function initializeAdminSystem() {
     console.log('✅ Sistema admin completamente inicializado');
 }
 
+window.fixFilterVisuals = function() {
+    console.log('🎨 Corrigindo indicador visual dos filtros...');
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (!filterButtons) return;
+    
+    filterButtons.forEach(button => {
+        // Remove qualquer event listener antigo e adiciona um novo
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        newButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Remove a classe 'active' de TODOS os botões
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Adiciona 'active' apenas ao botão clicado
+            this.classList.add('active');
+            
+            // Executa o filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties(filter);
+            }
+        });
+    });
+    
+    console.log('✅ Indicador visual dos filtros corrigido');
+};
+
 // ========== EXECUTAR INICIALIZAÇÃO ==========
 // Aguardar DOM carregar
 if (document.readyState === 'loading') {
@@ -321,6 +355,8 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(initializeAdminSystem, 300);
 }
+
+if (typeof window.fixFilterVisuals === 'function') { window.fixFilterVisuals(); }
 
 // ✅ CORREÇÃO: Função de sincronização sem loop
 window.syncWithSupabaseManual = async function() {
@@ -359,6 +395,40 @@ window.syncWithSupabaseManual = async function() {
             }
         }
     }
+};
+
+window.fixFilterVisuals = function() {
+    console.log('🎨 Corrigindo indicador visual dos filtros...');
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (!filterButtons) return;
+    
+    filterButtons.forEach(button => {
+        // Remove qualquer event listener antigo e adiciona um novo
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        newButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Remove a classe 'active' de TODOS os botões
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Adiciona 'active' apenas ao botão clicado
+            this.classList.add('active');
+            
+            // Executa o filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties(filter);
+            }
+        });
+    });
+    
+    console.log('✅ Indicador visual dos filtros corrigido');
 };
 
 // ✅ CORREÇÃO: Atualizar o botão para usar a nova função
