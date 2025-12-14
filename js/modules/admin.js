@@ -403,17 +403,15 @@ function initializeAdminSystem() {
     addSyncButton();
     
 // Na função initializeAdminSystem, procure esta parte:
+// Na função initializeAdminSystem, procure esta parte:
 // 5. Corrigir filtros
-// 5. Corrigir visual dos filtros
-//setTimeout(() => {
-//    if (typeof window.fixFilterVisuals === 'function') {
-//        window.fixFilterVisuals();
-//        console.log('✅ Filtros visuais corrigidos');
-//    } else {
-//        console.log('⚠️ Função fixFilterVisuals não disponível');
-//    }
-//}, 1000);
-    
+setTimeout(() => {
+    if (typeof window.fixFilterVisuals === 'function') {
+        window.fixFilterVisuals();
+        console.log('✅ Filtros corrigidos');
+    }
+}, 1000);
+
 // ✅ SUBSTITUA por esta versão MELHORADA:
 // 5. CORREÇÃO GARANTIDA DOS FILTROS (com múltiplas tentativas)
 console.log('🎯 Iniciando correção garantida dos filtros...');
