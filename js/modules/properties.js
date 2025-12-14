@@ -157,11 +157,22 @@ function getInitialProperties() {
 // Exportar para window
 window.getInitialProperties = getInitialProperties;
 
-// ========== FUNÇÃO 9: syncWithSupabase() ==========
-// ========== FUNÇÃO 9: syncWithSupabase() CORRIGIDA ==========
-// ========== FUNÇÃO DE SINCRONIZAÇÃO SIMPLIFICADA ==========
+// ========== FUNÇÃO 9: syncWithSupabase() ATUALIZADA ==========
 window.syncWithSupabase = async function() {
-    console.log('🔄 Tentando sincronização direta com Supabase...');
+    console.log('🔄 Sincronizando com Supabase (com limpeza de temporários)...');
+    
+    // ✅ LIMPAR IMÓVEIS TEMPORÁRIOS DUPLICADOS
+    console.log('🧹 Verificando imóveis temporários...');
+    const temporaryProperties = window.properties.filter(p => p.isTemporary);
+    if (temporaryProperties.length > 0) {
+        console.log(`📋 ${temporaryProperties.length} imóveis temporários encontrados`);
+        
+        // Tentar salvar cada temporário no Supabase
+        for (const tempProp of temporaryProperties) {
+            console.log(`🔄 Processando temporário: ${tempProp.title}`);
+            await window.savePropertyToSupabase(tempProp);
+        }
+    }
     
     try {
         // Tentar fetch direto (simples e direto)
