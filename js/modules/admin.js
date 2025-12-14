@@ -126,17 +126,39 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados`);
 };
 
-// No admin.js - ATUALIZAR FUNÇÃO editProperty
+// ========== FUNÇÃO editProperty CORRIGIDA ==========
 window.editProperty = function(id) {
-    console.log(`📝 Editando imóvel ${id}`);
+    console.log(`📝 EDITANDO IMÓVEL (procurando ID: ${id})`);
+    console.log('📋 Todos os IDs disponíveis:', window.properties.map(p => p.id));
     
-    const property = window.properties.find(p => p.id === id);
+    // ✅ CORREÇÃO: Procurar pelo ID exato primeiro
+    let property = window.properties.find(p => p.id === id);
+    
+    // ✅ CORREÇÃO 2: Se não encontrar, procurar por ID temporário
     if (!property) {
-        alert('❌ Imóvel não encontrado!');
+        console.log(`⚠️ ID ${id} não encontrado, procurando por ID temporário...`);
+        
+        // Verificar se é um ID numérico válido
+        if (typeof id === 'number' || !isNaN(id)) {
+            property = window.properties.find(p => {
+                // Verificar se tem ID temporário ou ID real
+                return p.id === id || 
+                       (p.isTemporary && p.originalTempId === id) ||
+                       String(p.id) === String(id);
+            });
+        }
+    }
+    
+    if (!property) {
+        alert('❌ Imóvel não encontrado!\n\nRecarregue a página e tente novamente.');
+        console.error('❌ Imóvel não encontrado com ID:', id);
+        console.log('📋 Propriedades disponíveis:', window.properties);
         return;
     }
     
-    // Preencher formulário
+    console.log(`✅ Imóvel encontrado: "${property.title}" (ID: ${property.id})`);
+    
+    // Preencher formulário normalmente...
     document.getElementById('propTitle').value = property.title || '';
     document.getElementById('propPrice').value = property.price || '';
     document.getElementById('propLocation').value = property.location || '';
@@ -145,11 +167,6 @@ window.editProperty = function(id) {
         property.features.join(', ') : (property.features || '');
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
-
-     // ✅ NOVA LINHA: Carregar PDFs existentes
-    if (typeof window.loadPdfsForEdit === 'function') {
-        window.loadPdfsForEdit(property);
-    }
     
     // Atualizar interface
     const formTitle = document.getElementById('formTitle');
@@ -161,11 +178,30 @@ window.editProperty = function(id) {
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) cancelBtn.style.display = 'block';
     
-    window.editingPropertyId = id;
+    // ✅ CORREÇÃO IMPORTANTE: Usar o ID CORRETO
+    // Se for temporário, usar o ID temporário para edição
+    if (property.isTemporary) {
+        console.log(`⚠️ Editando imóvel TEMPORÁRIO: ${property.id}`);
+        window.editingPropertyId = property.id; // Usar ID temporário
+    } else {
+        window.editingPropertyId = property.id; // Usar ID real
+    }
+    
+    console.log(`🎯 ID configurado para edição: ${window.editingPropertyId}`);
+    
+    // ✅ Carregar PDFs existentes
+    if (typeof window.loadExistingPdfsForEdit === 'function') {
+        window.loadExistingPdfsForEdit(property);
+    } else {
+        console.log('⚠️ Função loadExistingPdfsForEdit não disponível');
+    }
     
     // Rolar até o formulário
     setTimeout(() => {
-        document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth' });
+        const adminPanel = document.getElementById('adminPanel');
+        if (adminPanel) {
+            adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }, 100);
 };
 
