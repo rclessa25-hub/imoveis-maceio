@@ -365,6 +365,22 @@ window.renderProperties = function(filter = 'todos') {
     
     // Limpar container
     container.innerHTML = '';
+
+    if (!window.properties || window.properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 3rem; color: #666;">Nenhum imóvel disponível.</p>';
+        return;
+    }
+    
+    // ✅ ORDENAR: Mais recentes primeiro (incluindo temporários)
+    let propertiesToRender = [...window.properties];
+    
+    // Ordenar por data (mais recentes primeiro)
+    propertiesToRender.sort((a, b) => {
+        const dateA = new Date(a.created_at || 0);
+        const dateB = new Date(b.created_at || 0);
+        return dateB - dateA; // Decrescente
+    });
+
     
     // Verificar se temos dados
     if (!window.properties || window.properties.length === 0) {
