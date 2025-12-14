@@ -577,8 +577,9 @@ window.addNewProperty = async function(propertyData) {
 };
 
 // ========== FUNÇÃO 8: SALVAR IMÓVEL NO SUPABASE ==========
+// ========== FUNÇÃO 8: savePropertyToSupabase() ATUALIZADA ==========
 window.savePropertyToSupabase = async function(propertyData) {
-    console.log('🌐 Salvando imóvel no Supabase:', propertyData);
+    console.log('🌐 Salvando/Atualizando imóvel no Supabase:', propertyData);
     
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
         console.log('❌ Credenciais Supabase não configuradas');
@@ -586,7 +587,7 @@ window.savePropertyToSupabase = async function(propertyData) {
     }
     
     try {
-        // Preparar dados para Supabase
+        // Preparar dados para Supabase (remover ID temporário se existir)
         const supabaseData = {
             title: propertyData.title,
             price: propertyData.price,
@@ -605,34 +606,65 @@ window.savePropertyToSupabase = async function(propertyData) {
         
         console.log('📤 Dados para Supabase:', supabaseData);
         
-        // Enviar para Supabase
-        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(supabaseData)
-        });
+        let response;
+        
+        // Se já tem ID (não é temporário), fazer UPDATE
+        if (propertyData.id && !propertyData.isTemporary) {
+            console.log(`🔄 Atualizando imóvel existente ${propertyData.id}...`);
+            response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyData.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(supabaseData)
+            });
+        } else {
+            // Se é novo, fazer INSERT
+            console.log('🆕 Inserindo novo imóvel no Supabase...');
+            response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(supabaseData)
+            });
+        }
         
         console.log('📊 Resposta do Supabase - Status:', response.status);
         
         if (response.ok) {
             const result = await response.json();
-            console.log('✅ Imóvel salvo no Supabase com sucesso!', result);
+            console.log('✅ Operação Supabase bem-sucedida!', result);
             
-            // Atualizar ID com o ID gerado pelo Supabase
-            if (result && result[0] && result[0].id) {
-                propertyData.id = result[0].id;
-                console.log('🆔 ID atribuído pelo Supabase:', propertyData.id);
+            // Se foi INSERT, atualizar ID local com ID do Supabase
+            if (result && result[0] && result[0].id && propertyData.isTemporary) {
+                const supabaseId = result[0].id;
+                console.log(`🆔 ID do Supabase atribuído: ${supabaseId}`);
+                
+                // Atualizar localmente com ID real
+                const index = window.properties.findIndex(p => p.id === propertyData.id);
+                if (index !== -1) {
+                    window.properties[index].id = supabaseId;
+                    window.properties[index].isTemporary = false; // Remover flag
+                    window.savePropertiesToStorage();
+                    
+                    // Re-renderizar com ID correto
+                    if (typeof window.renderProperties === 'function') {
+                        setTimeout(() => window.renderProperties('todos'), 500);
+                    }
+                }
             }
             
             return true;
         } else {
             const errorText = await response.text();
-            console.error('❌ Erro ao salvar no Supabase:', errorText);
+            console.error('❌ Erro no Supabase:', errorText);
             return false;
         }
         
