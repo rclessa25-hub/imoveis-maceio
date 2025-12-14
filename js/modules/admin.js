@@ -604,3 +604,76 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(forceFixFilters, 2000);
     }, 500);
 });
+
+// ========== CORREÇÃO DE EMERGÊNCIA - ACESSO AO ADMIN ==========
+(function emergencyAdminFix() {
+    console.log('🆘 Aplicando correção de emergência para admin...');
+    
+    // Esperar 3 segundos após carregar
+    setTimeout(() => {
+        // 1. Verificar se botão existe e funciona
+        const adminBtn = document.querySelector('.admin-toggle');
+        
+        if (!adminBtn) {
+            console.log('❌ Botão não encontrado - criando...');
+            createEmergencyAdminButton();
+            return;
+        }
+        
+        // 2. Testar se o clique funciona
+        console.log('🧪 Testando botão admin...');
+        try {
+            adminBtn.click();
+            console.log('✅ Botão respondendo ao clique');
+        } catch (error) {
+            console.log('❌ Botão não funciona - recriando...');
+            createEmergencyAdminButton();
+        }
+        
+    }, 3000);
+    
+    function createEmergencyAdminButton() {
+        // Criar botão de emergência
+        const emergencyBtn = document.createElement('button');
+        emergencyBtn.id = 'emergency-admin-btn';
+        emergencyBtn.innerHTML = '🔧 ADMIN (EMERGÊNCIA)';
+        emergencyBtn.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 9999;
+            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        `;
+        
+        emergencyBtn.onclick = function() {
+            const password = prompt("🔒 Acesso de Emergência ao Painel\n\nDigite a senha:");
+            if (password === "wl654") {
+                const panel = document.getElementById('adminPanel');
+                if (panel) {
+                    panel.style.display = 'block';
+                    alert('✅ Painel admin aberto via emergência');
+                    
+                    // Rolar até o painel
+                    panel.scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Carregar lista
+                    if (typeof window.loadPropertyList === 'function') {
+                        window.loadPropertyList();
+                    }
+                }
+            } else if (password !== null) {
+                alert('❌ Senha incorreta!');
+            }
+        };
+        
+        document.body.appendChild(emergencyBtn);
+        console.log('🆘 Botão de emergência criado no topo direito');
+    }
+})();    
