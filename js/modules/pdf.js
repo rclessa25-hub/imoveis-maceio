@@ -673,34 +673,34 @@ window.setupPdfSupabaseIntegration = function() {
     
     // Interceptar função updateProperty do properties.js
     if (typeof window.updateProperty !== 'undefined') {
-        const originalUpdateProperty = window.updateProperty;
+    //    const originalUpdateProperty = window.updateProperty;
         
-        window.updateProperty = async function(id, propertyData) {
-            console.log(`✏️ Atualizando imóvel ${id} com PDFs REAIS...`);
+    //    window.updateProperty = async function(id, propertyData) {
+    //        console.log(`✏️ Atualizando imóvel ${id} com PDFs REAIS...`);
             
             // Se houver PDFs para processar
-            if (window.selectedPdfFiles.length > 0 || window.existingPdfFiles.length > 0) {
-                try {
-                    const pdfsString = await window.savePdfsToSupabase(id);
+     //       if (window.selectedPdfFiles.length > 0 || window.existingPdfFiles.length > 0) {
+     //           try {
+     //               const pdfsString = await window.savePdfsToSupabase(id);
                     
-                    if (pdfsString) {
-                        propertyData.pdfs = pdfsString;
-                        console.log(`📄 PDFs REAIS incluídos na atualização`);
-                    }
-                } catch (error) {
-                    console.error('❌ Erro ao salvar PDFs REAIS:', error);
-                }
-            }
+      //              if (pdfsString) {
+      //                  propertyData.pdfs = pdfsString;
+      //                 console.log(`📄 PDFs REAIS incluídos na atualização`);
+      //              }
+      //          } catch (error) {
+      //             console.error('❌ Erro ao salvar PDFs REAIS:', error);
+      //          }
+      //     }
             
-            // Limpar PDFs após processar
-            setTimeout(() => {
-                window.selectedPdfFiles = [];
-                window.updatePdfPreview();
-            }, 100);
+      //      // Limpar PDFs após processar
+      //      setTimeout(() => {
+       //         window.selectedPdfFiles = [];
+       //         window.updatePdfPreview();
+        //    }, 100);
             
             // Chamar função original do properties.js
-            return originalUpdateProperty.call(this, id, propertyData);
-        };
+         //   return originalUpdateProperty.call(this, id, propertyData);
+        //};
         
         console.log('✅ updateProperty integrado com PDFs REAIS no Supabase');
     }
@@ -813,26 +813,20 @@ window.linkPendingPdfsToProperty = function(tempId, realId) {
 
 // ========== 5. INICIALIZAÇÃO COMPLETA ==========
 
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        console.log('🚀 Inicializando sistema COMPLETO de PDFs com Supabase...');
-        
-        // 1. Sistema de upload
-        window.initPdfSystem();
-        
-        // 2. Integração REAL com Supabase
-        window.setupPdfSupabaseIntegration();
-        
-        // 3. Eventos do modal
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') window.closePdfViewer();
-        });
-        
-        document.addEventListener('click', (e) => {
-            const modal = document.getElementById('pdfViewerModal');
-            if (modal && modal.style.display === 'flex' && e.target === modal) {
-                window.closePdfViewer();
-            }
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                console.log('🚀 Inicializando sistema de PDFs...');
+                
+                // ✅ Usar a versão SIMPLES
+                if (typeof window.setupPdfIntegrationSimple === 'function') {
+                    window.setupPdfIntegrationSimple();
+                } else {
+                    // Fallback
+                    window.initPdfSystem();
+                }
+                
+                console.log('✅ Sistema de PDFs pronto');
+            }, 1000);
         });
         
         console.log('✅ Sistema de PDFs COMPLETO com Supabase inicializado!');
