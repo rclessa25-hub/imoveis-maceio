@@ -308,42 +308,67 @@ function initializeAdminSystem() {
         window.setupForm();
         console.log('✅ Formulário configurado');
     }
+
+    // 4. Corrigir visual dos filtros
+    setTimeout(() => {
+        if (typeof window.fixFilterVisuals === 'function') {
+            window.fixFilterVisuals();
+            console.log('✅ Filtros visuais corrigidos');
+        } else {
+            console.log('⚠️ Função fixFilterVisuals não disponível');
+        }
+    }, 1000);
     
     console.log('✅ Sistema admin completamente inicializado');
 }
 
+// ========== FUNÇÃO PARA CORRIGIR FILTROS VISUAIS ==========
 window.fixFilterVisuals = function() {
     console.log('🎨 Corrigindo indicador visual dos filtros...');
     
     const filterButtons = document.querySelectorAll('.filter-btn');
-    if (!filterButtons) return;
+    if (!filterButtons || filterButtons.length === 0) {
+        console.log('⚠️ Nenhum botão de filtro encontrado');
+        return;
+    }
     
+    // Para CADA botão de filtro
     filterButtons.forEach(button => {
-        // Remove qualquer event listener antigo e adiciona um novo
+        // Remove event listeners antigos clonando o botão
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
         
+        // Adiciona NOVO event listener
         newButton.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             
-            // Remove a classe 'active' de TODOS os botões
-            filterButtons.forEach(btn => btn.classList.remove('active'));
+            console.log('🎯 Filtro clicado:', this.textContent.trim());
             
-            // Adiciona 'active' apenas ao botão clicado
+            // 1. Remove 'active' de TODOS os botões
+            filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+                console.log(`   - Removido 'active' de: ${btn.textContent.trim()}`);
+            });
+            
+            // 2. Adiciona 'active' apenas ao clicado
             this.classList.add('active');
+            console.log(`   - Adicionado 'active' em: ${this.textContent.trim()}`);
             
-            // Executa o filtro
+            // 3. Executa o filtro
             const filterText = this.textContent.trim();
             const filter = filterText === 'Todos' ? 'todos' : filterText;
             
             if (typeof window.renderProperties === 'function') {
+                console.log(`   - Executando filtro: ${filter}`);
                 window.renderProperties(filter);
+            } else {
+                console.error('❌ window.renderProperties não encontrado!');
             }
         });
     });
     
-    console.log('✅ Indicador visual dos filtros corrigido');
+    console.log(`✅ ${filterButtons.length} botões de filtro configurados`);
 };
 
 // ========== EXECUTAR INICIALIZAÇÃO ==========
@@ -355,8 +380,6 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(initializeAdminSystem, 300);
 }
-
-if (typeof window.fixFilterVisuals === 'function') { window.fixFilterVisuals(); }
 
 // ✅ CORREÇÃO: Função de sincronização sem loop
 window.syncWithSupabaseManual = async function() {
@@ -395,40 +418,6 @@ window.syncWithSupabaseManual = async function() {
             }
         }
     }
-};
-
-window.fixFilterVisuals = function() {
-    console.log('🎨 Corrigindo indicador visual dos filtros...');
-    
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    if (!filterButtons) return;
-    
-    filterButtons.forEach(button => {
-        // Remove qualquer event listener antigo e adiciona um novo
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-        
-        newButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Remove a classe 'active' de TODOS os botões
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // Adiciona 'active' apenas ao botão clicado
-            this.classList.add('active');
-            
-            // Executa o filtro
-            const filterText = this.textContent.trim();
-            const filter = filterText === 'Todos' ? 'todos' : filterText;
-            
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties(filter);
-            }
-        });
-    });
-    
-    console.log('✅ Indicador visual dos filtros corrigido');
 };
 
 // ✅ CORREÇÃO: Atualizar o botão para usar a nova função
