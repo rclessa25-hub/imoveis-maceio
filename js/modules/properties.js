@@ -529,16 +529,18 @@ window.contactAgent = function(id) {
 };
 
 // ========== FUNÇÃO 7: addNewProperty() ATUALIZADA ==========
+// ========== FUNÇÃO 7: addNewProperty() CORRIGIDA - VERSÃO FINAL ==========
 window.addNewProperty = async function(propertyData) {
-    console.log('➕ ADICIONANDO NOVO IMÓVEL (VISUALIZAÇÃO IMEDIATA):', propertyData);
+    console.log('➕ ADICIONANDO NOVO IMÓVEL COM ID ÚNICO:', propertyData);
     
-    // ✅ 1. GERAR ID TEMPORÁRIO LOCAL
-    const tempId = Date.now(); // ID temporário para visualização imediata
-    console.log('🆔 ID temporário para visualização:', tempId);
+    // ✅ 1. GERAR ID TEMPORÁRIO ÚNICO MAS SIMPLES
+    const tempId = `temp_${Date.now()}`; // ID temporário diferenciado
+    console.log('🆔 ID temporário único:', tempId);
     
     // ✅ 2. CRIAR OBJETO DO IMÓVEL (localmente primeiro)
     const newProperty = {
-        id: tempId, // ID temporário
+        id: tempId, // ID temporário diferenciado
+        originalTempId: tempId, // Guardar referência
         title: propertyData.title || 'Sem título',
         price: propertyData.price || 'R$ 0,00',
         location: propertyData.location || 'Local não informado',
@@ -555,12 +557,12 @@ window.addNewProperty = async function(propertyData) {
         isTemporary: true // Marcar como temporário
     };
     
-    console.log('📦 Novo imóvel criado (local):', newProperty);
+    console.log('📦 Novo imóvel criado (local com ID diferenciado):', newProperty);
     
-    // ✅ 3. ADICIONAR LOCALMENTE IMEDIATAMENTE (para visualização)
-    window.properties.unshift(newProperty); // unshift adiciona no INÍCIO do array
+    // ✅ 3. ADICIONAR LOCALMENTE IMEDIATAMENTE
+    window.properties.unshift(newProperty); // unshift adiciona no INÍCIO
     
-    // ✅ 4. SALVAR NO LOCALSTORAGE (para persistência local)
+    // ✅ 4. SALVAR NO LOCALSTORAGE
     window.savePropertiesToStorage();
     
     // ✅ 5. RENDERIZAR IMEDIATAMENTE
@@ -587,12 +589,10 @@ window.addNewProperty = async function(propertyData) {
                 if (supabaseSuccess) {
                     console.log('✅ Imóvel salvo no Supabase com sucesso!');
                     
-                    // Atualizar com ID real do Supabase quando disponível
-                    // (O sistema já está visualizando com ID temporário)
-                    
+                    // O sistema já vai atualizar o ID automaticamente
+                    // através da função savePropertyToSupabase
                 } else {
                     console.log('⚠️ Imóvel salvo apenas localmente (Supabase falhou)');
-                    // Manter como temporário - será sincronizado depois
                 }
             }).catch(error => {
                 console.error('❌ Erro ao salvar no Supabase:', error);
@@ -600,6 +600,12 @@ window.addNewProperty = async function(propertyData) {
             });
         }
     }
+    
+    // ✅ 8. FEEDBACK AO USUÁRIO
+    console.log(`✅ Imóvel "${newProperty.title}" adicionado com VISUALIZAÇÃO IMEDIATA!`);
+    
+    return newProperty;
+};
     
     // ✅ 8. FEEDBACK AO USUÁRIO
     console.log(`✅ Imóvel "${newProperty.title}" adicionado com VISUALIZAÇÃO IMEDIATA!`);
