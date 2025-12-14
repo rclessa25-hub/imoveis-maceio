@@ -221,9 +221,11 @@ window.setupForm = function() {
     const form = document.getElementById('propertyForm');
     if (!form) return;
     
-// No admin.js - ATUALIZAR FORMULÁRIO (submit event)
-form.addEventListener('submit', function(e) {
+// ========== ATUALIZAR FORMULÁRIO (submit event com PDFs)
+form.addEventListener('submit', async function(e) {
     e.preventDefault();
+    
+    console.log('📝 Processando formulário com PDFs...');
     
     const propertyData = {
         title: document.getElementById('propTitle').value,
@@ -232,7 +234,8 @@ form.addEventListener('submit', function(e) {
         description: document.getElementById('propDescription').value,
         features: document.getElementById('propFeatures').value,
         type: document.getElementById('propType').value,
-        badge: document.getElementById('propBadge').value
+        badge: document.getElementById('propBadge').value,
+        has_video: document.getElementById('propHasVideo')?.checked || false
     };
     
     if (!propertyData.title || !propertyData.price || !propertyData.location) {
@@ -240,37 +243,61 @@ form.addEventListener('submit', function(e) {
         return;
     }
     
-    console.log('💾 Processando imóvel...');
+    console.log('💾 Processando imóvel com possível PDF...');
     
-    if (window.editingPropertyId) {
-        // ✅ CORREÇÃO: Usar função updateProperty do properties.js
-        if (typeof window.updateProperty === 'function') {
-            const success = window.updateProperty(window.editingPropertyId, propertyData);
-            if (success) {
-                alert('✅ Imóvel atualizado com sucesso!');
-            } else {
-                alert('❌ Erro ao atualizar imóvel');
+    try {
+        if (window.editingPropertyId) {
+            // ✅ EDIÇÃO: Incluir PDFs se houver
+            let finalPropertyData = { ...propertyData };
+            
+            // Se houver PDFs para processar
+            if (typeof window.addPdfHookToUpdateProperty === 'function') {
+                const pdfsString = await window.addPdfHookToUpdateProperty(window.editingPropertyId, propertyData);
+                if (pdfsString) {
+                    finalPropertyData.pdfs = pdfsString;
+                    console.log('📄 PDFs incluídos na atualização');
+                }
             }
+            
+            // Atualizar imóvel
+            if (typeof window.updateProperty === 'function') {
+                const success = await window.updateProperty(window.editingPropertyId, finalPropertyData);
+                if (success) {
+                    alert('✅ Imóvel atualizado com sucesso!');
+                }
+            }
+            
         } else {
-            // Fallback
-            alert('✅ Alterações salvas (simulação)');
+            // ✅ NOVO IMÓVEL: Criar primeiro, depois processar PDFs
+            if (typeof window.addNewProperty === 'function') {
+                // 1. Criar imóvel no Supabase (sem PDFs ainda)
+                const newProperty = await window.addNewProperty(propertyData);
+                
+                // 2. Se criou com sucesso E tem PDFs, processá-los
+                if (newProperty && newProperty.id && 
+                    typeof window.addPdfHookToNewProperty === 'function' &&
+                    window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
+                    
+                    console.log(`📎 Processando ${window.selectedPdfFiles.length} PDF(s) para novo imóvel ${newProperty.id}`);
+                    
+                    // Processar PDFs em segundo plano
+                    setTimeout(async () => {
+                        await window.addPdfHookToNewProperty(newProperty.id, propertyData);
+                        console.log('✅ PDFs processados em segundo plano');
+                    }, 1000);
+                }
+            }
         }
-    } else {
-        // ✅ CORREÇÃO: Usar função addNewProperty do properties.js
-        if (typeof window.addNewProperty === 'function') {
-            const newProperty = window.addNewProperty(propertyData);
-            alert(`✅ Imóvel "${newProperty.title}" cadastrado com sucesso!\n\nAgora é permanente.`);
-        } else {
-            // Fallback
-            alert('✅ Imóvel cadastrado (simulação)');
-        }
+        
+        // Limpar e atualizar
+        cancelEdit();
+        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+        
+    } catch (error) {
+        console.error('❌ Erro no formulário:', error);
+        alert('❌ Erro ao processar formulário: ' + error.message);
     }
-    
-    // Limpar e atualizar
-    cancelEdit();
-    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
 });
-};
  
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 function initializeAdminSystem() {
