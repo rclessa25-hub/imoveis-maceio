@@ -498,60 +498,81 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== FUNÇÃO 7: addNewProperty() ==========
-window.addNewProperty = function(propertyData) {
-    console.log('➕ Adicionando novo imóvel:', propertyData);
+// ========== FUNÇÃO 7: addNewProperty() ATUALIZADA ==========
+window.addNewProperty = async function(propertyData) {
+    console.log('➕ ADICIONANDO NOVO IMÓVEL (VISUALIZAÇÃO IMEDIATA):', propertyData);
     
-    // Gerar ID
-    const newId = window.properties.length > 0 
-        ? Math.max(...window.properties.map(p => p.id)) + 1 
-        : 1;
+    // ✅ 1. GERAR ID TEMPORÁRIO LOCAL
+    const tempId = Date.now(); // ID temporário para visualização imediata
+    console.log('🆔 ID temporário para visualização:', tempId);
     
+    // ✅ 2. CRIAR OBJETO DO IMÓVEL (localmente primeiro)
     const newProperty = {
-        id: newId,
-        title: propertyData.title,
-        price: propertyData.price,
-        location: propertyData.location,
-        description: propertyData.description,
-        features: propertyData.features,
-        type: propertyData.type,
+        id: tempId, // ID temporário
+        title: propertyData.title || 'Sem título',
+        price: propertyData.price || 'R$ 0,00',
+        location: propertyData.location || 'Local não informado',
+        description: propertyData.description || '',
+        features: typeof propertyData.features === 'string' ? propertyData.features : 
+                 Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
+        type: propertyData.type || 'residencial',
         has_video: false,
-        badge: propertyData.badge,
+        badge: propertyData.badge || 'Novo',
         rural: propertyData.type === 'rural',
-        images: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
-        created_at: new Date().toISOString()
+        images: propertyData.images || "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80",
+        pdfs: propertyData.pdfs || '',
+        created_at: new Date().toISOString(),
+        isTemporary: true // Marcar como temporário
     };
     
-    // ✅ CORREÇÃO: PRIMEIRO salvar no Supabase
-    savePropertyToSupabase(newProperty).then(supabaseSuccess => {
-        if (supabaseSuccess) {
-            console.log('✅ Imóvel salvo no Supabase com sucesso!');
-            
-            // Depois adicionar localmente
-            window.properties.push(newProperty);
-            window.savePropertiesToStorage();
-            
-            // Renderizar
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties('todos');
-            }
-            
-            alert(`✅ Imóvel "${newProperty.title}" cadastrado PERMANENTEMENTE no sistema!`);
-            
-        } else {
-            console.log('⚠️ Salvando apenas localmente (Supabase falhou)');
-            
-            // Fallback: salvar localmente
-            window.properties.push(newProperty);
-            window.savePropertiesToStorage();
-            
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties('todos');
-            }
-            
-            alert(`⚠️ Imóvel "${newProperty.title}" salvo apenas LOCALMENTE (sem conexão com servidor).`);
+    console.log('📦 Novo imóvel criado (local):', newProperty);
+    
+    // ✅ 3. ADICIONAR LOCALMENTE IMEDIATAMENTE (para visualização)
+    window.properties.unshift(newProperty); // unshift adiciona no INÍCIO do array
+    
+    // ✅ 4. SALVAR NO LOCALSTORAGE (para persistência local)
+    window.savePropertiesToStorage();
+    
+    // ✅ 5. RENDERIZAR IMEDIATAMENTE
+    if (typeof window.renderProperties === 'function') {
+        console.log('🎨 Renderizando NOVO imóvel imediatamente...');
+        window.renderProperties('todos');
+    }
+    
+    // ✅ 6. ATUALIZAR LISTA DO ADMIN
+    if (typeof window.loadPropertyList === 'function') {
+        setTimeout(() => {
+            window.loadPropertyList();
+            console.log('📋 Lista do admin atualizada com novo imóvel');
+        }, 300);
+    }
+    
+    // ✅ 7. ENVIAR PARA SUPABASE (em background)
+    console.log('🌐 Enviando novo imóvel para Supabase (background)...');
+    
+    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+        // Usar função existente para salvar no Supabase
+        if (typeof window.savePropertyToSupabase === 'function') {
+            window.savePropertyToSupabase(newProperty).then(supabaseSuccess => {
+                if (supabaseSuccess) {
+                    console.log('✅ Imóvel salvo no Supabase com sucesso!');
+                    
+                    // Atualizar com ID real do Supabase quando disponível
+                    // (O sistema já está visualizando com ID temporário)
+                    
+                } else {
+                    console.log('⚠️ Imóvel salvo apenas localmente (Supabase falhou)');
+                    // Manter como temporário - será sincronizado depois
+                }
+            }).catch(error => {
+                console.error('❌ Erro ao salvar no Supabase:', error);
+                // Continuar mostrando localmente mesmo com erro
+            });
         }
-    });
+    }
+    
+    // ✅ 8. FEEDBACK AO USUÁRIO
+    console.log(`✅ Imóvel "${newProperty.title}" adicionado com VISUALIZAÇÃO IMEDIATA!`);
     
     return newProperty;
 };
