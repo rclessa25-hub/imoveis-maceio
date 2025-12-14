@@ -480,14 +480,19 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// ========== 4. SISTEMA DE SALVAMENTO SIMPLIFICADO ==========
-
 // ========== 4. SISTEMA DE SALVAMENTO NO SUPABASE (REAL) ==========
-
-// 4.1 Upload REAL para Supabase Storage
+// 4.1 Upload REAL para Supabase Storage (CORRIGIDA)
 window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
     try {
         console.log(`⬆️ Iniciando upload REAL para Supabase: ${file.name}`);
+        console.log(`📁 Property ID fornecido: ${propertyId}`);
+        
+        // ✅ CORREÇÃO: Se propertyId for undefined, usar um ID temporário
+        const safePropertyId = propertyId && propertyId !== 'undefined' && propertyId !== 'null' 
+            ? propertyId 
+            : `temp_${Date.now()}`;
+        
+        console.log(`🆔 Property ID seguro: ${safePropertyId}`);
         
         // Preparar nome do arquivo seguro
         const safeName = file.name
@@ -496,26 +501,27 @@ window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
             .replace(/[^a-zA-Z0-9._-]/g, '_')
             .toLowerCase();
         
-        const fileName = `pdf_${propertyId}_${Date.now()}_${safeName}`;
-        const uploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/public/pdfs/${fileName}`;
+        const fileName = `pdf_${safePropertyId}_${Date.now()}_${safeName}`;
+        
+        // ✅ CORREÇÃO: URL CORRETA para o bucket de properties (não pdfs)
+        const uploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/public/properties/${fileName}`;
         
         console.log(`📤 Upload para: ${uploadUrl}`);
         
-        // Criar FormData para upload
-        const formData = new FormData();
-        formData.append('file', file);
+        // IMPORTANTE: Usar o bucket correto "properties" (não "pdfs")
+        const storageUploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/properties/${fileName}`;
         
-        // IMPORTANTE: URL CORRETA para upload
-        const storageUploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/pdfs/${fileName}`;
+        console.log(`📦 Bucket: properties (correto)`);
+        console.log(`📄 Nome do arquivo: ${fileName}`);
         
         const response = await fetch(storageUploadUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${window.SUPABASE_KEY}`,
                 'apikey': window.SUPABASE_KEY,
-                'x-upsert': 'true' // Substitui se já existir
+                'x-upsert': 'true'
             },
-            body: formData
+            body: file // Enviar arquivo diretamente
         });
         
         console.log('📊 Status do upload:', response.status);
@@ -526,6 +532,31 @@ window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
         } else {
             const errorText = await response.text();
             console.error('❌ Erro no upload REAL:', errorText);
+            
+            // ✅ FALLBACK: Tentar URL alternativa se o bucket "properties" não existir
+            console.log('🔄 Tentando bucket alternativo "pdfs"...');
+            
+            const altUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/public/pdfs/${fileName}`;
+            const altUploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/pdfs/${fileName}`;
+            
+            try {
+                const altResponse = await fetch(altUploadUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                        'apikey': window.SUPABASE_KEY
+                    },
+                    body: file
+                });
+                
+                if (altResponse.ok) {
+                    console.log(`✅ PDF enviado para bucket alternativo: ${altUrl}`);
+                    return altUrl;
+                }
+            } catch (altError) {
+                console.error('❌ Erro no bucket alternativo:', altError);
+            }
+            
             return null;
         }
     } catch (error) {
