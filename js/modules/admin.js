@@ -445,36 +445,126 @@ function testAdminButtonResponse() {
         console.log('🔍 Verificando se prompt de senha apareceu...');
     }, 500);
 }
+
+// ========== FUNÇÃO AUXILIAR: ADICIONAR BOTÃO SINCRONIZAÇÃO ==========
+function addSyncButton() {
+    console.log('➕ Adicionando botão de sincronização...');
     
+    const adminPanel = document.getElementById('adminPanel');
+    if (!adminPanel) return;
+    
+    // Remover botão antigo se existir
+    const oldBtn = document.getElementById('syncButton');
+    if (oldBtn) oldBtn.remove();
+    
+    // Criar novo botão
+    const syncBtn = document.createElement('button');
+    syncBtn.id = 'syncButton';
+    syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+    syncBtn.style.cssText = `
+        background: var(--gold);
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+        display: block;
+        width: 100%;
+        font-weight: bold;
+    `;
+    
+    // Configurar clique
+    syncBtn.onclick = function() {
+        if (window.syncWithSupabaseManual) {
+            window.syncWithSupabaseManual();
+        } else {
+            alert('Função de sincronização não disponível');
+        }
+    };
+    
+    // Adicionar após o título do painel
+    const panelTitle = adminPanel.querySelector('h3');
+    if (panelTitle) {
+        panelTitle.parentNode.insertBefore(syncBtn, panelTitle.nextSibling);
+    }
+    
+    console.log('✅ Botão de sincronização adicionado');
+}
+    
+// ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 // ========== INICIALIZAÇÃO DO SISTEMA ADMIN ==========
 function initializeAdminSystem() {
-    console.log('🚀 INICIALIZAÇÃO DO SISTEMA ADMIN (VERSÃO CORRIGIDA)');
+    console.log('🚀 Inicializando sistema admin (REPARAÇÃO)...');
     
-    // ✅ 1. FORÇAR RESTAURAÇÃO DO BOTÃO IMEDIATAMENTE
-    console.log('🔧 ETAPA 1: Restauração forçada do botão admin...');
-    forceAdminButtonFix();
+    // 1. REPARAR BOTÃO ADMIN (CRÍTICO)
+    console.log('🔧 Reparando botão admin...');
+    const adminBtn = document.querySelector('.admin-toggle');
     
-    // ✅ 2. Esconder painel inicialmente
+    if (adminBtn) {
+        // REMOVER completamente e criar novo
+        adminBtn.remove();
+    }
+    
+    // CRIAR NOVO BOTÃO DO ZERO
+    const newAdminBtn = document.createElement('button');
+    newAdminBtn.className = 'admin-toggle';
+    newAdminBtn.innerHTML = '<i class="fas fa-user-cog"></i>';
+    newAdminBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    document.body.appendChild(newAdminBtn);
+    
+    // CONFIGURAR CLIQUE DIRETO
+    newAdminBtn.onclick = function() {
+        console.log('🖱️ Botão admin clicado (REPARADO)');
+        if (window.toggleAdminPanel) {
+            window.toggleAdminPanel();
+        } else {
+            alert('❌ Função toggleAdminPanel não encontrada!');
+        }
+    };
+    
+    console.log('✅ Botão admin REPARADO');
+    
+    // 2. Esconder painel inicialmente
     const panel = document.getElementById('adminPanel');
     if (panel) {
         panel.style.display = 'none';
-        console.log('✅ Painel admin: OCULTO');
+        console.log('✅ Painel admin oculto');
     }
     
-    // ✅ 3. Configurar formulário SIMPLES e FUNCIONAL
-    console.log('📝 ETAPA 2: Configurando formulário básico...');
-    setupBasicForm();
+    // 3. Configurar formulário (usando a função JÁ EXISTENTE)
+    console.log('📝 Configurando formulário...');
+    if (typeof window.setupForm === 'function') {
+        window.setupForm();
+        console.log('✅ Formulário configurado (via setupForm)');
+    } else {
+        console.error('❌ window.setupForm não encontrada!');
+    }
     
-    // ✅ 4. Adicionar botão de sincronização
-    console.log('🔄 ETAPA 3: Adicionando botão de sincronização...');
-    addSyncButtonSimple();
+    // 4. Adicionar botão de sincronização (usando função existente)
+    console.log('🔄 Adicionando botão sincronização...');
+    addSyncButton();
     
-    // ✅ 5. Teste final automático
-    console.log('🧪 ETAPA 4: Teste automático do sistema...');
-    setTimeout(testAdminAccess, 1500);
-    
-    console.log('✅ SISTEMA ADMIN INICIALIZADO!');
+    console.log('✅ Sistema admin REPARADO com sucesso!');
 }
 
 // ========== EXECUTAR INICIALIZAÇÃO ==========
