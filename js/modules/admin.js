@@ -135,17 +135,21 @@ window.editProperty = function(id) {
     let property = window.properties.find(p => p.id === id);
     
     // ✅ CORREÇÃO 2: Se não encontrar, procurar por ID temporário
+    // ✅ CORREÇÃO 2: Se não encontrar, procurar por qualquer referência
     if (!property) {
-        console.log(`⚠️ ID ${id} não encontrado, procurando por ID temporário...`);
+        console.log(`⚠️ ID ${id} não encontrado, procurando por referência...`);
         
-        // Verificar se é um ID numérico válido
-        if (typeof id === 'number' || !isNaN(id)) {
-            property = window.properties.find(p => {
-                // Verificar se tem ID temporário ou ID real
-                return p.id === id || 
-                       (p.isTemporary && p.originalTempId === id) ||
-                       String(p.id) === String(id);
-            });
+        // Tentar encontrar de várias formas
+        property = window.properties.find(p => {
+            return p.id === id || 
+                   (p.isTemporary && p.originalTempId === id) ||
+                   String(p.id) === String(id) ||
+                   (p.isTemporary && p.id && String(p.id).includes(String(id))) ||
+                   (p.originalTempId && p.originalTempId === String(id));
+        });
+        
+        if (property) {
+            console.log(`🔍 Encontrado via referência: "${property.title}"`);
         }
     }
     
