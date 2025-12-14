@@ -759,6 +759,45 @@ window.setupPdfIntegration = function() {
     }
 };
 
+// 4.5 Vincular PDFs pendentes quando imóvel receber ID real
+window.linkPendingPdfsToProperty = function(tempId, realId) {
+    console.log(`🔗 Vinculando PDFs pendentes: ${tempId} → ${realId}`);
+    
+    try {
+        const pendingPdfs = JSON.parse(localStorage.getItem('pending_pdfs') || '[]');
+        
+        // Encontrar PDFs pendentes para este tempId
+        const propertyPdfs = pendingPdfs.filter(item => item.propertyId === tempId);
+        
+        if (propertyPdfs.length > 0) {
+            console.log(`📄 ${propertyPdfs.length} PDF(s) pendentes encontrados para vinculação`);
+            
+            // Atualizar URLs com ID real
+            propertyPdfs.forEach(pending => {
+                const updatedUrls = pending.pdfUrls.map(url => {
+                    return url.replace(`_${tempId}_`, `_${realId}_`);
+                });
+                
+                // Atualizar no localStorage
+                const index = pendingPdfs.findIndex(item => item.propertyId === tempId);
+                if (index !== -1) {
+                    pendingPdfs[index].propertyId = realId;
+                    pendingPdfs[index].pdfUrls = updatedUrls;
+                    localStorage.setItem('pending_pdfs', JSON.stringify(pendingPdfs));
+                }
+                
+                console.log(`✅ PDFs atualizados com ID real: ${realId}`);
+            });
+            
+            // Remover do array pendente
+            const filtered = pendingPdfs.filter(item => item.propertyId !== tempId);
+            localStorage.setItem('pending_pdfs', JSON.stringify(filtered));
+        }
+    } catch (error) {
+        console.error('❌ Erro ao vincular PDFs pendentes:', error);
+    }
+};
+
 // ========== 5. INICIALIZAÇÃO COMPLETA ==========
 
 document.addEventListener('DOMContentLoaded', function() {
