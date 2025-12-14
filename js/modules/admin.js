@@ -322,55 +322,6 @@ function initializeAdminSystem() {
     console.log('✅ Sistema admin completamente inicializado');
 }
 
-// ========== FUNÇÃO PARA CORRIGIR FILTROS VISUAIS ==========
-window.fixFilterVisuals = function() {
-    console.log('🎨 Corrigindo indicador visual dos filtros...');
-    
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    if (!filterButtons || filterButtons.length === 0) {
-        console.log('⚠️ Nenhum botão de filtro encontrado');
-        return;
-    }
-    
-    // Para CADA botão de filtro
-    filterButtons.forEach(button => {
-        // Remove event listeners antigos clonando o botão
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-        
-        // Adiciona NOVO event listener
-        newButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            console.log('🎯 Filtro clicado:', this.textContent.trim());
-            
-            // 1. Remove 'active' de TODOS os botões
-            filterButtons.forEach(btn => {
-                btn.classList.remove('active');
-                console.log(`   - Removido 'active' de: ${btn.textContent.trim()}`);
-            });
-            
-            // 2. Adiciona 'active' apenas ao clicado
-            this.classList.add('active');
-            console.log(`   - Adicionado 'active' em: ${this.textContent.trim()}`);
-            
-            // 3. Executa o filtro
-            const filterText = this.textContent.trim();
-            const filter = filterText === 'Todos' ? 'todos' : filterText;
-            
-            if (typeof window.renderProperties === 'function') {
-                console.log(`   - Executando filtro: ${filter}`);
-                window.renderProperties(filter);
-            } else {
-                console.error('❌ window.renderProperties não encontrado!');
-            }
-        });
-    });
-    
-    console.log(`✅ ${filterButtons.length} botões de filtro configurados`);
-};
-
 // ========== EXECUTAR INICIALIZAÇÃO ==========
 // Aguardar DOM carregar
 if (document.readyState === 'loading') {
@@ -509,3 +460,86 @@ window.clearPdfsOnCancel = function() {
 };
 
 console.log('✅ admin.js pronto e aguardando inicialização');
+
+// ========== FUNÇÃO PARA CORRIGIR FILTROS VISUAIS ==========
+window.fixFilterVisuals = function() {
+    console.log('🎨 Corrigindo indicador visual dos filtros...');
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (!filterButtons || filterButtons.length === 0) {
+        console.log('⚠️ Nenhum botão de filtro encontrado');
+        return;
+    }
+    
+    // Para CADA botão de filtro
+    filterButtons.forEach(button => {
+        // Remove event listeners antigos clonando o botão
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        // Adiciona NOVO event listener
+        newButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('🎯 Filtro clicado:', this.textContent.trim());
+            
+            // 1. Remove 'active' de TODOS os botões
+            filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+                console.log(`   - Removido 'active' de: ${btn.textContent.trim()}`);
+            });
+            
+            // 2. Adiciona 'active' apenas ao clicado
+            this.classList.add('active');
+            console.log(`   - Adicionado 'active' em: ${this.textContent.trim()}`);
+            
+            // 3. Executa o filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            if (typeof window.renderProperties === 'function') {
+                console.log(`   - Executando filtro: ${filter}`);
+                window.renderProperties(filter);
+            } else {
+                console.error('❌ window.renderProperties não encontrado!');
+            }
+        });
+    });
+    
+    console.log(`✅ ${filterButtons.length} botões de filtro configurados`);
+};
+
+// ========== CORREÇÃO DE EMERGÊNCIA DOS FILTROS ==========
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        console.log('🆘 Aplicando correção de emergência para filtros...');
+        
+        // Forçar reconfiguração completa dos filtros
+        const forceFixFilters = function() {
+            const buttons = document.querySelectorAll('.filter-btn');
+            buttons.forEach((btn, index) => {
+                btn.style.border = '2px solid red'; // Para verificação visual
+                btn.onclick = function() {
+                    // Remove active de todos
+                    buttons.forEach(b => {
+                        b.classList.remove('active');
+                        b.style.backgroundColor = '';
+                    });
+                    
+                    // Adiciona ao clicado
+                    this.classList.add('active');
+                    this.style.backgroundColor = 'var(--primary)';
+                    
+                    // Filtra
+                    const filter = this.textContent.trim() === 'Todos' ? 'todos' : this.textContent.trim();
+                    if (window.renderProperties) window.renderProperties(filter);
+                };
+            });
+            console.log(`🆘 ${buttons.length} botões corrigidos via emergência`);
+        };
+        
+        // Executar após 2 segundos
+        setTimeout(forceFixFilters, 2000);
+    }, 500);
+});
