@@ -887,32 +887,31 @@ window.linkPendingPdfsToProperty = function(tempId, realId) {
 };
 
 // ========== 5. INICIALIZAÇÃO COMPLETA ==========
-
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                console.log('🚀 Inicializando sistema de PDFs...');
-                
-                // ✅ Usar a versão SIMPLES
-                if (typeof window.setupPdfIntegrationSimple === 'function') {
-                    window.setupPdfIntegrationSimple();
-                } else {
-                    // Fallback
-                    window.initPdfSystem();
-                }
-                
-                console.log('✅ Sistema de PDFs pronto');
-            }, 1000);
-        });
+// ========== INICIALIZAÇÃO COMPLETA E SEGURA ==========
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        console.log('🚀 Inicializando sistema de PDFs CORRETAMENTE...');
         
-        console.log('✅ Sistema de PDFs COMPLETO com Supabase inicializado!');
-        
-        // 4. Testar conexão com Supabase Storage
-        if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-            console.log('🔍 Verificando acesso ao Supabase Storage...');
-            console.log('- URL:', window.SUPABASE_URL);
-            console.log('- Bucket de PDFs disponível');
+        // ✅ Usar a versão CORRIGIDA e SEGURA
+        if (typeof window.setupPdfSupabaseIntegration === 'function') {
+            window.setupPdfSupabaseIntegration();
+        } else {
+            // Fallback seguro
+            console.log('⚠️ Usando inicialização mínima de PDFs...');
+            if (typeof window.initPdfSystem === 'function') {
+                window.initPdfSystem();
+            }
+            
+            // Configurar eventos básicos
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') window.closePdfViewer();
+            });
         }
         
-    }, 1000);
+        console.log('✅ Sistema de PDFs completamente inicializado!');
+        
+    }, 1500); // Aumentar delay para garantir que tudo esteja carregado
 });
-console.log('📄 pdf.js carregado - Sistema COMPLETO com salvamento REAL no Supabase');
+
+// ✅ Exportar funções essenciais para uso externo
+console.log('📄 pdf.js carregado - Sistema CORRETO com salvamento REAL no Supabase');
