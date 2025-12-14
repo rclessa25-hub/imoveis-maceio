@@ -291,8 +291,9 @@ function addSyncButton() {
 
 // ========== CORREÇÃO DOS FILTROS ==========
 // ========== CORREÇÃO DEFINITIVA DOS FILTROS ==========
+// ========== FUNÇÃO PARA CORRIGIR FILTROS VISUAIS ==========
 window.fixFilterVisuals = function() {
-    console.log('🎨 CORREÇÃO DEFINITIVA DOS FILTROS VISUAIS');
+    console.log('🎨 Corrigindo indicador visual dos filtros...');
     
     const filterButtons = document.querySelectorAll('.filter-btn');
     if (!filterButtons || filterButtons.length === 0) {
@@ -300,72 +301,43 @@ window.fixFilterVisuals = function() {
         return;
     }
     
-    console.log(`🔍 Encontrados ${filterButtons.length} botões de filtro`);
-    
-    // Para CADA botão, remover e recriar completamente
-    filterButtons.forEach((button, index) => {
-        console.log(`   ${index + 1}. Processando: "${button.textContent.trim()}"`);
-        
-        // Clonar botão (remove event listeners antigos)
+    // Para CADA botão de filtro
+    filterButtons.forEach(button => {
+        // Remove event listeners antigos clonando o botão
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
         
-        // Configurar NOVO event listener DIRETO
-        newButton.addEventListener('click', function handleFilterClick(e) {
+        // Adiciona NOVO event listener
+        newButton.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             
-            console.log(`🎯 Filtro clicado: "${this.textContent.trim()}"`);
+            console.log('🎯 Filtro clicado:', this.textContent.trim());
             
-            // ✅ CRÍTICO: Remover 'active' de TODOS os botões
-            const allButtons = document.querySelectorAll('.filter-btn');
-            allButtons.forEach(btn => {
+            // 1. Remove 'active' de TODOS os botões
+            filterButtons.forEach(btn => {
                 btn.classList.remove('active');
-                // Remover também style inline se existir
-                btn.style.backgroundColor = '';
-                btn.style.color = '';
-                btn.style.borderColor = '';
+                console.log(`   - Removido 'active' de: ${btn.textContent.trim()}`);
             });
             
-            // ✅ Adicionar 'active' apenas ao clicado
+            // 2. Adiciona 'active' apenas ao clicado
             this.classList.add('active');
+            console.log(`   - Adicionado 'active' em: ${this.textContent.trim()}`);
             
-            // Aplicar estilos visuais
-            this.style.backgroundColor = 'var(--primary)';
-            this.style.color = 'white';
-            this.style.borderColor = 'var(--primary)';
-            
-            console.log(`   ✅ "active" removido de ${allButtons.length - 1} botões`);
-            console.log(`   ✅ "active" adicionado a: "${this.textContent.trim()}"`);
-            
-            // Executar filtro
+            // 3. Executa o filtro
             const filterText = this.textContent.trim();
             const filter = filterText === 'Todos' ? 'todos' : filterText;
             
             if (typeof window.renderProperties === 'function') {
-                console.log(`   🚀 Executando filtro: ${filter}`);
+                console.log(`   - Executando filtro: ${filter}`);
                 window.renderProperties(filter);
+            } else {
+                console.error('❌ window.renderProperties não encontrado!');
             }
         });
     });
     
-    console.log(`✅ ${filterButtons.length} botões de filtro CORRIGIDOS`);
-    
-    // ✅ ATIVAR "Todos" por padrão se nenhum estiver ativo
-    setTimeout(() => {
-        const activeButtons = document.querySelectorAll('.filter-btn.active');
-        if (activeButtons.length === 0) {
-            const todosBtn = Array.from(filterButtons).find(btn => 
-                btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
-            );
-            if (todosBtn) {
-                todosBtn.classList.add('active');
-                todosBtn.style.backgroundColor = 'var(--primary)';
-                todosBtn.style.color = 'white';
-                console.log('✅ "Todos" ativado por padrão');
-            }
-        }
-    }, 500);
+    console.log(`✅ ${filterButtons.length} botões de filtro configurados`);
 };
 
 // ========== INICIALIZAÇÃO DO SISTEMA ==========
