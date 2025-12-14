@@ -511,4 +511,38 @@ setTimeout(() => {
     }
 }, 3000);
 
+// ========== SOLUÇÃO FINAL - OBSERVADOR DE FILTROS ==========
+(function startFilterObserver() {
+    console.log('👁️ Iniciando observador de filtros...');
+    
+    // Observar quando os filtros forem clicados
+    document.addEventListener('click', function(e) {
+        const clickedFilter = e.target.closest('.filter-btn');
+        if (clickedFilter) {
+            console.log('🎯 Filtro clicado via observer:', clickedFilter.textContent.trim());
+            
+            // Forçar remoção de 'active' de todos
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn !== clickedFilter) {
+                    btn.classList.remove('active');
+                    btn.style.backgroundColor = '';
+                }
+            });
+            
+            // Forçar adição de 'active' ao clicado
+            clickedFilter.classList.add('active');
+            clickedFilter.style.backgroundColor = '#667eea';
+            clickedFilter.style.color = 'white';
+            
+            // Executar filtro
+            const filter = clickedFilter.textContent.trim() === 'Todos' ? 'todos' : clickedFilter.textContent.trim();
+            if (window.renderProperties) {
+                window.renderProperties(filter);
+            }
+        }
+    });
+    
+    console.log('✅ Observador de filtros ativo');
+})();
+
 console.log('✅ admin.js pronto e funcional');
