@@ -566,34 +566,41 @@ window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
 };
 
 // 4.2 Processar e salvar PDFs NO SUPABASE
-window.savePdfsToSupabase = async function(propertyId) {
-    console.log(`💾 SALVANDO PDFs no Supabase para imóvel ${propertyId}...`);
+// 4.2 Processar e salvar TODOS os PDFs (CORRIGIDA)
+window.processAndSavePdfs = async function(propertyId, propertyTitle) {
+    console.log(`💾 Processando PDFs para imóvel ${propertyId}...`);
     
     const allPdfUrls = [];
     
-    // 1. Manter PDFs existentes que não foram excluídos
+    // 1. Adicionar PDFs existentes
     window.existingPdfFiles.forEach(pdf => {
         if (pdf.url && pdf.url.trim() !== '' && pdf.url !== 'EMPTY') {
-            // Verificar se é URL válida do Supabase
-            if (pdf.url.includes('supabase.co/storage')) {
-                allPdfUrls.push(pdf.url);
-                console.log(`📎 Mantendo PDF existente: ${pdf.name}`);
-            }
+            allPdfUrls.push(pdf.url);
+            console.log(`📎 Mantendo PDF existente: ${pdf.name}`);
         }
     });
     
-    // 2. Fazer upload REAL dos NOVOS PDFs
+    // 2. Fazer upload dos NOVOS PDFs
     if (window.selectedPdfFiles.length > 0) {
-        console.log(`📤 Enviando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para Supabase Storage...`);
+        console.log(`📤 Enviando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para o Supabase...`);
+        
+        // ✅ CORREÇÃO: Garantir que propertyId não seja undefined
+        const safePropertyId = propertyId && propertyId !== 'undefined' 
+            ? propertyId 
+            : `temp_${Date.now()}`;
+        
+        console.log(`🆔 Property ID seguro para upload: ${safePropertyId}`);
         
         for (const pdf of window.selectedPdfFiles) {
             if (pdf.file) {
-                console.log(`⬆️ Enviando PDF REAL: ${pdf.name}`);
-                const uploadedUrl = await window.uploadPdfToSupabaseStorage(pdf.file, propertyId);
+                console.log(`⬆️ Enviando: ${pdf.name} (${formatFileSize(pdf.file.size)})`);
+                
+                // ✅ Usar propertyId seguro
+                const uploadedUrl = await window.uploadPdfToSupabaseStorage(pdf.file, safePropertyId);
                 
                 if (uploadedUrl) {
                     allPdfUrls.push(uploadedUrl);
-                    console.log(`✅ PDF REAL salvo no Supabase: ${uploadedUrl}`);
+                    console.log(`✅ PDF salvo: ${uploadedUrl}`);
                 } else {
                     console.warn(`⚠️ PDF não enviado: ${pdf.name}`);
                 }
@@ -601,50 +608,35 @@ window.savePdfsToSupabase = async function(propertyId) {
         }
     }
     
-    // 3. Preparar string final para campo 'pdfs'
+    // 3. Preparar string final
     const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
     
-    console.log('📊 RESUMO FINAL do salvamento:');
+    console.log('📊 Resumo do salvamento de PDFs:');
     console.log(`- PDFs existentes mantidos: ${window.existingPdfFiles.length}`);
     console.log(`- Novos PDFs enviados: ${window.selectedPdfFiles.length}`);
     console.log(`- Total de URLs: ${allPdfUrls.length}`);
-    console.log(`- String para campo 'pdfs': ${pdfsString.substring(0, 80)}...`);
+    console.log(`- String final: ${pdfsString.substring(0, 80)}...`);
     
-    // 4. ATUALIZAR SUPABASE com os novos PDFs
-    if (pdfsString && window.SUPABASE_URL && window.SUPABASE_KEY) {
+    // ✅ CORREÇÃO IMPORTANTE: Se tiver PDFs e propertyId for temporário,
+    // marcar para processar depois quando tiver ID real
+    if (pdfsString && propertyId && propertyId.toString().includes('temp_')) {
+        console.log(`📝 PDFs salvos com ID temporário: ${propertyId}`);
+        console.log(`📌 Serão vinculados ao ID real quando disponível`);
+        
+        // Salvar em localStorage para processamento posterior
+        const pendingPdfs = {
+            propertyId: propertyId,
+            pdfUrls: allPdfUrls,
+            timestamp: new Date().toISOString()
+        };
+        
         try {
-            console.log(`🔄 Atualizando campo 'pdfs' no Supabase para imóvel ${propertyId}...`);
-            
-            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify({
-                    pdfs: pdfsString,
-                    updated_at: new Date().toISOString()
-                })
-            });
-            
-            if (response.ok) {
-                console.log(`✅ Campo 'pdfs' ATUALIZADO no Supabase!`);
-                
-                // Atualizar localmente também
-                const property = window.properties.find(p => p.id === propertyId);
-                if (property) {
-                    property.pdfs = pdfsString;
-                    window.savePropertiesToStorage();
-                }
-                
-                return pdfsString;
-            } else {
-                console.error('❌ Erro ao atualizar Supabase:', await response.text());
-            }
+            const existingPending = JSON.parse(localStorage.getItem('pending_pdfs') || '[]');
+            existingPending.push(pendingPdfs);
+            localStorage.setItem('pending_pdfs', JSON.stringify(existingPending));
+            console.log(`📋 PDFs pendentes salvos para processamento posterior`);
         } catch (error) {
-            console.error('❌ Erro ao atualizar campo pdfs:', error);
+            console.error('❌ Erro ao salvar PDFs pendentes:', error);
         }
     }
     
