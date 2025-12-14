@@ -674,6 +674,7 @@ window.savePropertyToSupabase = async function(propertyData) {
             console.log('✅ Operação Supabase bem-sucedida!', result);
             
             // Se foi INSERT, atualizar ID local com ID do Supabase
+            // Na função savePropertyToSupabase, após atualizar ID:
             if (result && result[0] && result[0].id && propertyData.isTemporary) {
                 const supabaseId = result[0].id;
                 console.log(`🆔 ID do Supabase atribuído: ${supabaseId}`);
@@ -682,8 +683,13 @@ window.savePropertyToSupabase = async function(propertyData) {
                 const index = window.properties.findIndex(p => p.id === propertyData.id);
                 if (index !== -1) {
                     window.properties[index].id = supabaseId;
-                    window.properties[index].isTemporary = false; // Remover flag
+                    window.properties[index].isTemporary = false;
                     window.savePropertiesToStorage();
+                    
+                    // ✅ CORREÇÃO: Vincular PDFs pendentes
+                    if (typeof window.linkPendingPdfsToProperty === 'function') {
+                        window.linkPendingPdfsToProperty(propertyData.id, supabaseId);
+                    }
                     
                     // Re-renderizar com ID correto
                     if (typeof window.renderProperties === 'function') {
