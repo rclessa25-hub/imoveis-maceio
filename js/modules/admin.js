@@ -404,51 +404,41 @@ function initializeAdminSystem() {
     
 // Na função initializeAdminSystem, procure esta parte:
 // Na função initializeAdminSystem, procure esta parte:
-// 5. Corrigir filtros
-setTimeout(() => {
-    if (typeof window.fixFilterVisuals === 'function') {
-        window.fixFilterVisuals();
-        console.log('✅ Filtros corrigidos');
-    }
-}, 1000);
-
-// ✅ SUBSTITUA por esta versão MELHORADA:
-// 5. CORREÇÃO GARANTIDA DOS FILTROS (com múltiplas tentativas)
-console.log('🎯 Iniciando correção garantida dos filtros...');
-
-// Tentativa 1: Imediata
-setTimeout(() => {
-    if (typeof window.fixFilterVisuals === 'function') {
-        window.fixFilterVisuals();
-        console.log('✅ Tentativa 1: Filtros corrigidos');
-    }
-}, 800);
-
-// Tentativa 2: Após 2 segundos (garantia)
-setTimeout(() => {
-    console.log('🔍 Verificando se filtros estão funcionando...');
+ // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
+    console.log('🎯 Iniciando correção garantida dos filtros...');
     
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    let hasActiveListeners = false;
-    
-    filterButtons.forEach(btn => {
-        // Verificar se tem event listener
-        if (btn.onclick || btn._hasListener) {
-            hasActiveListeners = true;
+    // Tentativa 1: Imediata (800ms)
+    setTimeout(() => {
+        if (typeof window.fixFilterVisuals === 'function') {
+            console.log('🔄 Tentativa 1: Aplicando correção de filtros...');
+            window.fixFilterVisuals();
+        } else {
+            console.error('❌ window.fixFilterVisuals não encontrada!');
         }
-    });
+    }, 800);
     
-    if (!hasActiveListeners && typeof window.fixFilterVisuals === 'function') {
-        console.log('⚠️ Filtros sem listeners - reaplicando correção...');
-        window.fixFilterVisuals();
-    }
-}, 2000);
-
-// Tentativa 3: Correção de emergência após 3 segundos
-setTimeout(() => {
-    console.log('🆘 Aplicando correção de emergência para filtros...');
-    applyEmergencyFilterFix();
-}, 3000);
+    // Tentativa 2: Após 2 segundos (backup)
+    setTimeout(() => {
+        console.log('🔍 Verificando se filtros funcionam...');
+        
+        // Testar se algum filtro tem listener
+        const testBtn = document.querySelector('.filter-btn');
+        if (testBtn && !testBtn.onclick) {
+            console.log('⚠️ Filtros sem listeners - reaplicando...');
+            if (typeof window.fixFilterVisuals === 'function') {
+                window.fixFilterVisuals();
+            }
+        }
+    }, 2000);
+    
+    // Tentativa 3: Emergência após 3 segundos
+    setTimeout(() => {
+        console.log('🆘 Aplicando correção de emergência...');
+        applyEmergencyFilterFix();
+    }, 3000);
+    
+    console.log('✅ Sistema admin inicializado');
+}
 
 // ========== EXECUÇÃO AUTOMÁTICA ==========
 if (document.readyState === 'loading') {
