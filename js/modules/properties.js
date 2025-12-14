@@ -532,38 +532,114 @@ window.updateProperty = async function(id, propertyData) {
 };
 
 // ========== FUNÇÃO 9: Excluir Imóvel ==========
-window.deleteProperty = function(id) {
-    console.log(`🗑️ Excluindo imóvel ${id}...`);
+// ========== FUNÇÃO 9: EXCLUIR IMÓVEL (COM SUPABASE) ==========
+window.deleteProperty = async function(id) {
+    console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
     
+    // 1. Encontrar imóvel
     const property = window.properties.find(p => p.id === id);
     if (!property) {
         alert('❌ Imóvel não encontrado!');
         return false;
     }
     
-    // Confirmação
-    if (!confirm(`⚠️ TEM CERTEZA que deseja excluir o imóvel?\n\n"${property.title}"`)) {
+    // 2. Confirmação DUPLA (segurança)
+    if (!confirm(`⚠️ TEM CERTEZA que deseja excluir o imóvel?\n\n"${property.title}"\n\nEsta ação NÃO pode ser desfeita.`)) {
+        console.log('❌ Exclusão cancelada pelo usuário');
         return false;
     }
     
-    // Excluir
-    window.properties = window.properties.filter(p => p.id !== id);
+    if (!confirm(`❌ CONFIRMAÇÃO FINAL:\n\nClique em OK APENAS se tiver absoluta certeza.\nO imóvel "${property.title}" será PERMANENTEMENTE excluído.`)) {
+        console.log('❌ Exclusão cancelada na confirmação final');
+        return false;
+    }
     
-    // Salvar
+    console.log(`🗑️ Excluindo imóvel ${id}: "${property.title}"`);
+    
+    let supabaseSuccess = false;
+    let supabaseError = null;
+    
+    // ✅ 3. PRIMEIRO: Tentar excluir do Supabase
+    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
+        console.log(`🌐 Tentando excluir imóvel ${id} do Supabase...`);
+        
+        try {
+            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                    'Prefer': 'return=representation'
+                }
+            });
+            
+            console.log('📊 Status da exclusão no Supabase:', response.status);
+            
+            if (response.ok) {
+                supabaseSuccess = true;
+                console.log(`✅ Imóvel ${id} excluído do Supabase com sucesso!`);
+            } else {
+                const errorText = await response.text();
+                supabaseError = errorText;
+                console.error(`❌ Erro ao excluir do Supabase:`, errorText);
+            }
+            
+        } catch (error) {
+            supabaseError = error.message;
+            console.error(`❌ Erro de conexão ao excluir do Supabase:`, error);
+        }
+    } else {
+        console.log('⚠️ Credenciais Supabase não disponíveis');
+    }
+    
+    // ✅ 4. Excluir localmente (sempre, independente do Supabase)
+    const originalLength = window.properties.length;
+    window.properties = window.properties.filter(p => p.id !== id);
+    const newLength = window.properties.length;
+    
+    if (originalLength === newLength) {
+        console.log('⚠️ Imóvel não encontrado localmente após tentativa de exclusão');
+    } else {
+        console.log(`💾 Imóvel ${id} excluído localmente`);
+    }
+    
+    // ✅ 5. Salvar no localStorage
     window.savePropertiesToStorage();
     
-    // Renderizar
+    // ✅ 6. Atualizar interface
     if (typeof window.renderProperties === 'function') {
         window.renderProperties('todos');
     }
     
-    // Atualizar lista admin
+    // ✅ 7. Atualizar lista do admin
     if (typeof window.loadPropertyList === 'function') {
-        setTimeout(() => window.loadPropertyList(), 300);
+        setTimeout(() => {
+            window.loadPropertyList();
+            console.log('📋 Lista do admin atualizada após exclusão');
+        }, 300);
     }
     
-    alert(`✅ Imóvel "${property.title}" excluído!`);
-    return true;
+    // ✅ 8. Feedback ao usuário baseado no resultado
+    if (supabaseSuccess) {
+        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
+        console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
+        
+        // ✅ 9. Tentar excluir PDFs relacionados (opcional)
+        if (property.pdfs && property.pdfs !== '' && property.pdfs !== 'EMPTY') {
+            console.log('🗑️ Imóvel tinha PDFs - marcando para limpeza');
+            // Aqui poderia adicionar lógica para excluir PDFs do storage
+        }
+        
+    } else {
+        const errorMessage = supabaseError ? 
+            `\n\nErro no servidor: ${supabaseError.substring(0, 100)}...` : 
+            '\n\nMotivo: Conexão com servidor falhou.';
+            
+        alert(`⚠️ Imóvel "${property.title}" excluído apenas LOCALMENTE.${errorMessage}\n\nO imóvel ainda existe no servidor e reaparecerá ao sincronizar.`);
+        console.log(`🎯 Imóvel ${id} excluído apenas localmente (Supabase falhou)`);
+    }
+    
+    return supabaseSuccess;
 };
 
 // ========== FUNÇÃO 10: Carregar Lista para Admin ==========
