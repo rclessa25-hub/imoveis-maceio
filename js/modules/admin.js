@@ -263,6 +263,21 @@ window.setupForm = function() {
     });
 };
 
+// Limpar PDFs processados após salvamento
+window.clearProcessedPdfs = function() {
+    console.log('🧹 Limpando PDFs processados...');
+    
+    // Manter apenas PDFs NÃO processados
+    window.selectedPdfFiles = window.selectedPdfFiles.filter(pdf => !pdf.processed);
+    
+    console.log(`📊 Após limpeza: ${window.selectedPdfFiles.length} PDF(s) não processados`);
+    
+    // Atualizar preview
+    if (typeof window.updatePdfPreview === 'function') {
+        window.updatePdfPreview();
+    }
+};
+
 // ========== SINCRONIZAÇÃO MANUAL ==========
 window.syncWithSupabaseManual = async function() {
     if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
