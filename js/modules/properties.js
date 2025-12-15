@@ -333,6 +333,8 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
+// ========== FUNÇÃO 7: Adicionar Novo Imóvel (COM SUPABASE) ==========
+
 window.addNewProperty = async function(propertyData) {
     console.log('➕ ADICIONANDO NOVO IMÓVEL COM SUPABASE + PDFs CORRIGIDO:', propertyData);
     
