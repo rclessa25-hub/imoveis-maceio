@@ -515,135 +515,57 @@ window.hasPendingPdfs = function() {
 
 // ========== FUNÇÃO 8: ATUALIZAR IMÓVEL (VERSÃO ROBUSTA CORRIGIDA COM SUPABASE) ==========
 window.updateProperty = async function(id, propertyData) {
-    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} (TIPO: ${typeof id}):`, propertyData);
+    console.log(`✏️ ATUALIZANDO IMÓVEL ${id}:`, propertyData);
     
-    // ✅ CORREÇÃO CRÍTICA: Se id for null/undefined, usar editingPropertyId
+    // ✅ VALIDAÇÃO DO ID
     if (!id || id === 'null' || id === 'undefined') {
-        console.log(`🔍 ID fornecido inválido: "${id}"`);
+        console.error('❌ ID inválido fornecido:', id);
         
-        if (window.editingPropertyId && window.editingPropertyId !== 'null' && window.editingPropertyId !== 'undefined') {
-            console.log(`⚠️ Usando window.editingPropertyId: ${window.editingPropertyId}`);
+        if (window.editingPropertyId) {
+            console.log(`🔄 Usando editingPropertyId: ${window.editingPropertyId}`);
             id = window.editingPropertyId;
         } else {
-            console.log('🔍 Tentando extrair ID do formulário...');
-            
-            // Tentar extrair do título do formulário
-            const formTitle = document.getElementById('formTitle');
-            if (formTitle && formTitle.textContent.includes('Editando:')) {
-                const text = formTitle.textContent;
-                const match = text.match(/Editando:.*?ID:\s*(\d+)/i);
-                if (match && match[1]) {
-                    id = parseInt(match[1]);
-                    console.log(`✅ ID extraído do título: ${id}`);
-                }
-            }
-            
-            // Último recurso: buscar maior ID
-            if (!id || isNaN(id)) {
-                const availableIds = window.properties.map(p => p.id).filter(id => id && !isNaN(id));
-                if (availableIds.length > 0) {
-                    id = Math.max(...availableIds);
-                    console.log(`🔄 Usando maior ID disponível: ${id}`);
-                }
-            }
-            
-            if (!id || isNaN(id)) {
-                console.error('❌ ERRO CRÍTICO: Não foi possível identificar o ID do imóvel!');
-                console.log('📋 Propriedades disponíveis:', window.properties.map(p => ({id: p.id, title: p.title})));
-                alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!\n\nRecarregue a página e tente novamente.');
-                return false;
-            }
+            alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!');
+            return false;
         }
     }
     
-    console.log(`🔍 ID FINAL para atualização: ${id} (Tipo: ${typeof id})`);
+    console.log(`🔍 ID para atualização: ${id}`);
     
-    // ✅ VALIDAÇÃO CRÍTICA: Verificar se properties existe
-    if (!window.properties || !Array.isArray(window.properties)) {
-        console.error('❌ CRÍTICO: window.properties não é um array válido!');
-        console.log('window.properties atual:', window.properties);
-        alert('❌ ERRO: Sistema de imóveis não carregado. Recarregue a página.');
-        return false;
-    }
-    
-    // ✅ Buscar imóvel com múltiplas estratégias
-    let index = -1;
-    let property = null;
-    
-    // Estratégia 1: Buscar por ID exato
-    index = window.properties.findIndex(p => p.id === id);
-    
-    // Estratégia 2: Se não encontrou, buscar por conversão de string
+    // ✅ BUSCAR IMÓVEL
+    const index = window.properties.findIndex(p => p.id == id || p.id === id);
     if (index === -1) {
-        console.log(`⚠️ ID ${id} não encontrado, tentando conversão...`);
-        index = window.properties.findIndex(p => 
-            p.id == id || // Comparação flexível
-            String(p.id) === String(id) ||
-            (p.tempId && p.tempId === id)
-        );
-    }
-    
-    // Estratégia 3: Buscar por título similar (último recurso)
-    if (index === -1 && propertyData.title) {
-        console.log(`🔍 Buscando por título similar: "${propertyData.title}"`);
-        const similarTitles = window.properties.map((p, idx) => ({
-            idx,
-            similarity: stringSimilarity(p.title || '', propertyData.title),
-            title: p.title
-        }));
-        
-        const bestMatch = similarTitles.sort((a, b) => b.similarity - a.similarity)[0];
-        if (bestMatch && bestMatch.similarity > 0.7) {
-            index = bestMatch.idx;
-            console.log(`✅ Encontrado por título similar: "${bestMatch.title}" (${Math.round(bestMatch.similarity * 100)}%)`);
-        }
-    }
-    
-    // Estratégia 4: Mostrar erro detalhado
-    if (index === -1) {
-        console.error('❌ Imóvel não encontrado! IDs disponíveis:', 
-            window.properties.map(p => ({id: p.id, title: p.title, type: typeof p.id})));
+        console.error('❌ Imóvel não encontrado! IDs disponíveis:', window.properties.map(p => p.id));
         alert(`❌ Imóvel não encontrado!\n\nIDs disponíveis: ${window.properties.map(p => p.id).join(', ')}`);
         return false;
     }
     
-    property = window.properties[index];
-    console.log(`✅ Imóvel encontrado: "${property.title}" (ID: ${property.id}, índice: ${index})`);
+    const property = window.properties[index];
+    console.log(`✅ Imóvel encontrado: "${property.title}"`);
     
     try {
-        // ✅ 1. PRIMEIRO: Processar PDFs se fornecidos nos dados
-        let finalPdfsString = propertyData.pdfs || property.pdfs || '';
+        // ✅ 1. DADOS PARA SUPABASE
+        const updateData = {
+            title: propertyData.title || property.title,
+            price: propertyData.price || property.price,
+            location: propertyData.location || property.location,
+            description: propertyData.description || property.description || '',
+            features: propertyData.features || property.features || '',
+            type: propertyData.type || property.type || 'residencial',
+            has_video: propertyData.has_video || property.has_video || false,
+            badge: propertyData.badge || property.badge || 'Novo',
+            rural: propertyData.type === 'rural' || property.rural || false,
+            images: propertyData.images || property.images || '',
+            pdfs: propertyData.pdfs || property.pdfs || '' // ✅ PDFs já processados
+        };
         
-        // Se há PDFs nos dados, usar diretamente (já processados pelo formulário)
-        if (propertyData.pdfs && propertyData.pdfs !== '') {
-            console.log('📄 Usando PDFs fornecidos nos dados');
-            finalPdfsString = propertyData.pdfs;
-        }
+        console.log('📤 Dados para Supabase:', updateData);
         
-        // ✅ 2. Atualizar no Supabase (se possível)
+        // ✅ 2. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
-        let supabaseError = null;
         
         if (window.SUPABASE_URL && window.SUPABASE_KEY) {
             try {
-                // Preparar dados atualizados
-                const updateData = {
-                    title: propertyData.title || property.title,
-                    price: propertyData.price || property.price,
-                    location: propertyData.location || property.location,
-                    description: propertyData.description || property.description || '',
-                    features: propertyData.features || property.features || '',
-                    type: propertyData.type || property.type || 'residencial',
-                    has_video: propertyData.has_video || property.has_video || false,
-                    badge: propertyData.badge || property.badge || 'Novo',
-                    rural: propertyData.type === 'rural' || property.rural || false,
-                    images: propertyData.images || property.images || '',
-                    pdfs: finalPdfsString // ✅ PDFs atualizados
-                    // ⛔ NÃO incluir updated_at - a tabela não tem esta coluna
-                };
-                
-                console.log('📤 Atualizando no Supabase:', updateData);
-                
                 const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
                     method: 'PATCH',
                     headers: {
@@ -655,81 +577,58 @@ window.updateProperty = async function(id, propertyData) {
                     body: JSON.stringify(updateData)
                 });
                 
-                console.log('📊 Status da atualização:', response.status);
+                console.log('📊 Status do Supabase:', response.status);
                 
                 if (response.ok) {
                     supabaseSuccess = true;
                     console.log(`✅ Imóvel ${id} atualizado no Supabase`);
                 } else {
                     const errorText = await response.text();
-                    supabaseError = errorText;
-                    console.error('❌ Erro ao atualizar no Supabase:', errorText);
+                    console.error('❌ Erro no Supabase:', errorText);
                 }
             } catch (error) {
-                supabaseError = error.message;
                 console.error('❌ Erro de conexão com Supabase:', error);
             }
         }
         
-        // ✅ 3. Atualizar localmente (SEMPRE, mesmo se Supabase falhar)
+        // ✅ 3. ATUALIZAR LOCALMENTE
         console.log('💾 Atualizando localmente...');
         
-        // Criar cópia atualizada
-        const updatedProperty = {
+        window.properties[index] = {
             ...property,
-            title: propertyData.title || property.title,
-            price: propertyData.price || property.price,
-            location: propertyData.location || property.location,
-            description: propertyData.description || property.description || '',
-            features: propertyData.features || property.features || '',
-            type: propertyData.type || property.type || 'residencial',
-            has_video: propertyData.has_video || property.has_video || false,
-            badge: propertyData.badge || property.badge || 'Novo',
-            rural: propertyData.type === 'rural' || property.rural || false,
-            images: propertyData.images || property.images || '',
-            pdfs: finalPdfsString, // ✅ PDFs atualizados
-            id: id // Garantir que o ID não mude
+            ...updateData,
+            id: id // Garantir ID correto
         };
         
-        // Substituir no array
-        window.properties[index] = updatedProperty;
+        window.savePropertiesToStorage();
+        console.log('✅ Atualização local salva');
         
-        // ✅ 4. Salvar no localStorage
-        const saveResult = window.savePropertiesToStorage();
-        console.log('💾 Salvamento local:', saveResult ? 'SUCESSO' : 'FALHA');
-        
-        // ✅ 5. Renderizar
+        // ✅ 4. RENDERIZAR
         if (typeof window.renderProperties === 'function') {
-            console.log('🎨 Renderizando imóveis atualizados...');
             window.renderProperties('todos');
         }
         
-        // ✅ 6. Atualizar lista do admin
+        // ✅ 5. ATUALIZAR ADMIN
         if (typeof window.loadPropertyList === 'function') {
-            setTimeout(() => {
-                window.loadPropertyList();
-                console.log('📋 Lista do admin atualizada');
-            }, 300);
+            setTimeout(() => window.loadPropertyList(), 300);
         }
         
-        // ✅ 7. Feedback inteligente
+        // ✅ 6. FEEDBACK
         if (supabaseSuccess) {
-            alert(`✅ Imóvel "${propertyData.title || property.title}" atualizado PERMANENTEMENTE!\n\nAlterações salvas no servidor.`);
+            const pdfsCount = updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0;
+            const pdfMsg = pdfsCount > 0 ? ` com ${pdfsCount} PDF(s)` : '';
+            alert(`✅ Imóvel "${updateData.title}" atualizado PERMANENTEMENTE${pdfMsg}!`);
             console.log(`🎯 Imóvel ${id} atualizado ONLINE + localmente`);
         } else {
-            const errorMsg = supabaseError ? 
-                `\n\nErro no servidor: ${supabaseError.substring(0, 100)}...` : 
-                '\n\nMotivo: Conexão com servidor falhou.';
-                
-            alert(`⚠️ Imóvel "${propertyData.title || property.title}" atualizado apenas LOCALMENTE.${errorMsg}\n\nAlterações serão sincronizadas quando possível.`);
+            alert(`⚠️ Imóvel "${updateData.title}" atualizado apenas LOCALMENTE.\n\nAlterações serão sincronizadas quando possível.`);
             console.log(`🎯 Imóvel ${id} atualizado apenas localmente`);
         }
         
         return true;
         
     } catch (error) {
-        console.error('❌ ERRO CRÍTICO ao atualizar imóvel:', error);
-        alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\nDetalhes: ${error.message}`);
+        console.error('❌ ERRO ao atualizar imóvel:', error);
+        alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
         return false;
     }
 };
