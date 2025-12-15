@@ -334,7 +334,6 @@ window.contactAgent = function(id) {
 };
 
 // ========== FUNÇÃO 7: Adicionar Novo Imóvel (COM SUPABASE) ==========
-
 window.addNewProperty = async function(propertyData) {
     console.log('➕ ADICIONANDO NOVO IMÓVEL COM SUPABASE + PDFs CORRIGIDO:', propertyData);
     
@@ -498,8 +497,23 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== FUNÇÃO 8: Atualizar Imóvel (COM SUPABASE) ==========
-// ========== FUNÇÃO 8: ATUALIZAR IMÓVEL (VERSÃO ROBUSTA) ==========
+// ========== FUNÇÃO 8: limpar PDFs no cancelamento (Auxilia addNewProperty) ==========
+// Função para limpar PDFs no cancelamento
+window.clearPdfsOnCancel = function() {
+    window.selectedPdfFiles = [];
+    window.existingPdfFiles = [];
+    if (typeof window.updatePdfPreview === 'function') {
+        window.updatePdfPreview();
+    }
+    console.log('🧹 PDFs limpos no cancelamento');
+};
+
+// Função para verificar se há PDFs pendentes
+window.hasPendingPdfs = function() {
+    return window.selectedPdfFiles && window.selectedPdfFiles.length > 0;
+};
+
+// ========== FUNÇÃO 9: Atualizar Imóvel (COM SUPABASE) ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ ATUALIZANDO IMÓVEL ${id}:`, propertyData);
     
@@ -636,8 +650,7 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// ========== FUNÇÃO 9: Excluir Imóvel ==========
-// ========== FUNÇÃO 9: EXCLUIR IMÓVEL (COM SUPABASE) ==========
+// ========== FUNÇÃO 10: EXCLUIR IMÓVEL (COM SUPABASE) ==========
 window.deleteProperty = async function(id) {
     console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
     
@@ -747,7 +760,7 @@ window.deleteProperty = async function(id) {
     return supabaseSuccess;
 };
 
-// ========== FUNÇÃO 10: Carregar Lista para Admin ==========
+// ========== FUNÇÃO 11: Carregar Lista para Admin ==========
 window.loadPropertyList = function() {
     if (!window.properties || typeof window.properties.forEach !== 'function') {
         console.error('❌ window.properties não é um array válido');
@@ -795,7 +808,7 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados no admin`);
 };
 
-// ========== FUNÇÃO 11: Sincronização com Supabase (NOVA) ==========
+// ========== FUNÇÃO 12: Sincronização com Supabase (NOVA) ==========
 window.syncWithSupabase = async function() {
     console.log('🔄 Iniciando sincronização com Supabase...');
     
@@ -909,7 +922,7 @@ window.syncWithSupabase = async function() {
     }
 };
 
-// ========== FUNÇÃO 12: Teste Simples de Conexão ==========
+// ========== FUNÇÃO 13: Teste Simples de Conexão ==========
 window.testSupabaseConnectionSimple = async function() {
     console.log('🌐 Teste simples de conexão Supabase...');
     
@@ -1052,8 +1065,6 @@ function forceLoadProperties() {
 
 // Executar imediatamente também
 setTimeout(forceLoadProperties, 1000);
-
-// ========== fallback se o cliente oficial falhar ==========
 
 // Função de fallback se o cliente oficial falhar
 async function saveWithFetchDirect(propertyData) {
