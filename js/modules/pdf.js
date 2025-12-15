@@ -565,7 +565,6 @@ window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
     }
 };
 
-// 4.2 Processar e salvar PDFs NO SUPABASE
 // 4.2 Processar e salvar TODOS os PDFs (CORRIGIDA)
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     console.log(`💾 Processando PDFs para imóvel ${propertyId}...`);
@@ -584,19 +583,12 @@ window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     if (window.selectedPdfFiles.length > 0) {
         console.log(`📤 Enviando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para o Supabase...`);
         
-        // ✅ CORREÇÃO: Garantir que propertyId não seja undefined
-        const safePropertyId = propertyId && propertyId !== 'undefined' 
-            ? propertyId 
-            : `temp_${Date.now()}`;
-        
-        console.log(`🆔 Property ID seguro para upload: ${safePropertyId}`);
-        
+        // Processar CADA PDF
         for (const pdf of window.selectedPdfFiles) {
             if (pdf.file) {
                 console.log(`⬆️ Enviando: ${pdf.name} (${formatFileSize(pdf.file.size)})`);
                 
-                // ✅ Usar propertyId seguro
-                const uploadedUrl = await window.uploadPdfToSupabaseStorage(pdf.file, safePropertyId);
+                const uploadedUrl = await window.uploadPdfToSupabaseStorage(pdf.file, propertyId);
                 
                 if (uploadedUrl) {
                     allPdfUrls.push(uploadedUrl);
@@ -607,6 +599,17 @@ window.processAndSavePdfs = async function(propertyId, propertyTitle) {
             }
         }
     }
+    
+     const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
+    
+    console.log('📊 Resumo do salvamento de PDFs:');
+    console.log(`- PDFs existentes mantidos: ${window.existingPdfFiles.length}`);
+    console.log(`- Novos PDFs enviados: ${window.selectedPdfFiles.length}`);
+    console.log(`- Total de URLs: ${allPdfUrls.length}`);
+    console.log(`- String final: ${pdfsString.substring(0, 80)}...`);
+    
+    return pdfsString;
+};
     
     // 3. Preparar string final
     const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
