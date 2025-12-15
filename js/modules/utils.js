@@ -154,15 +154,14 @@ window.supabaseFetch = async function(endpoint, options = {}) {
     console.log('🌐 supabaseFetch chamado para:', endpoint);
     
     try {
-        // URL alternativa que funciona no GitHub Pages
-        const proxyUrl = 'https://api.allorigins.win/raw?url=';
-        const encodedUrl = encodeURIComponent(
-            `${window.SUPABASE_URL}/rest/v1${endpoint}`
-        );
+        // Usar proxy CORS para GitHub Pages
+        const proxyUrl = 'https://corsproxy.io/?';
+        const targetUrl = `${window.SUPABASE_URL}/rest/v1${endpoint}`;
+        const finalUrl = proxyUrl + encodeURIComponent(targetUrl);
         
-        console.log('🔗 URL de acesso:', proxyUrl + encodedUrl);
+        console.log('🔗 URL de acesso via proxy:', finalUrl);
         
-        const response = await fetch(proxyUrl + encodedUrl, {
+        const response = await fetch(finalUrl, {
             method: options.method || 'GET',
             headers: {
                 'apikey': window.SUPABASE_KEY,
