@@ -921,6 +921,73 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
+// ========== RECUPERAÇÃO DE EMERGÊNCIA ==========
+(function emergencyPropertiesRecovery() {
+    console.log('🚨 VERIFICAÇÃO DE EMERGÊNCIA: window.properties...');
+    
+    // Verificar a cada 2 segundos se properties está vazio
+    const checkInterval = setInterval(() => {
+        if (!window.properties || window.properties.length === 0) {
+            console.log('🚨 DETECTADO: window.properties está vazio!');
+            console.log('🔄 Executando recuperação automática...');
+            
+            // Parar o intervalo
+            clearInterval(checkInterval);
+            
+            // Forçar carregamento de dados
+            forceLoadProperties();
+        } else {
+            console.log(`✅ Verificação OK: ${window.properties.length} imóveis carregados`);
+            clearInterval(checkInterval);
+        }
+    }, 2000);
+})();
+
+function forceLoadProperties() {
+    console.log('⚡ FORÇANDO CARREGAMENTO DE IMÓVEIS...');
+    
+    // Estratégia 1: localStorage
+    const stored = localStorage.getItem('weberlessa_properties');
+    if (stored) {
+        try {
+            window.properties = JSON.parse(stored);
+            console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóveis`);
+            
+            // Atualizar interface
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos');
+            }
+            
+            if (typeof window.loadPropertyList === 'function') {
+                setTimeout(() => window.loadPropertyList(), 300);
+            }
+            
+            return;
+        } catch (e) {
+            console.error('❌ Erro ao parsear localStorage:', e);
+        }
+    }
+    
+    // Estratégia 2: Dados iniciais
+    console.log('📦 Carregando dados iniciais...');
+    window.properties = getInitialProperties();
+    window.savePropertiesToStorage();
+    
+    console.log(`✅ Dados iniciais carregados: ${window.properties.length} imóveis`);
+    
+    // Atualizar interface
+    if (typeof window.renderProperties === 'function') {
+        setTimeout(() => window.renderProperties('todos'), 500);
+    }
+    
+    if (typeof window.loadPropertyList === 'function') {
+        setTimeout(() => window.loadPropertyList(), 700);
+    }
+}
+
+// Executar imediatamente também
+setTimeout(forceLoadProperties, 1000);
+
 // ========== FUNÇÃO DE DEBUG: VERIFICAR CARREGAMENTO ==========
 window.debugPropertiesLoad = function() {
     console.log('🔍 DEBUG: Verificando carregamento de propriedades...');
