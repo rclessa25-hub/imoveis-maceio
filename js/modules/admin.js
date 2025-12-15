@@ -63,6 +63,11 @@ window.cancelEdit = function() {
     console.log('❌ Cancelando edição...');
     window.editingPropertyId = null;
 
+     // Limpar PDFs
+    if (typeof window.clearProcessedPdfs === 'function') {
+        window.clearProcessedPdfs();
+    }
+    
     if (typeof window.clearPdfsOnCancel === 'function') {
         window.clearPdfsOnCancel();
     }
@@ -599,7 +604,6 @@ window.closePdfModal = function() {
     
     console.log('✅ Observador de filtros ativo');
 })();
-
 
 // Limpar PDFs processados após salvamento
 window.clearProcessedPdfs = function() {
