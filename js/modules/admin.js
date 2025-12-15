@@ -498,43 +498,43 @@ window.closePdfModal = function() {
 };
 
 // ========== BOTÃO DE EMERGÊNCIA ==========
-setTimeout(() => {
-    if (!document.getElementById('emergency-admin-btn')) {
-        const emergencyBtn = document.createElement('button');
-        emergencyBtn.id = 'emergency-admin-btn';
-        emergencyBtn.innerHTML = '🔧 ADMIN';
-        emergencyBtn.style.cssText = `
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 9999;
-            font-weight: bold;
-        `;
+//setTimeout(() => {
+//    if (!document.getElementById('emergency-admin-btn')) {
+//        const emergencyBtn = document.createElement('button');
+//        emergencyBtn.id = 'emergency-admin-btn';
+//        emergencyBtn.innerHTML = '🔧 ADMIN';
+//        emergencyBtn.style.cssText = `
+//            position: fixed;
+//            top: 10px;
+//            right: 10px;
+//            background: #e74c3c;
+//            color: white;
+//            border: none;
+//            padding: 10px 15px;
+//            border-radius: 5px;
+//            cursor: pointer;
+//            z-index: 9999;
+//            font-weight: bold;
+//        `;
         
-        emergencyBtn.onclick = function() {
-            const password = prompt("🔒 Acesso de Emergência\n\nDigite a senha:");
-            if (password === "wl654") {
-                const panel = document.getElementById('adminPanel');
-                if (panel) {
-                    panel.style.display = 'block';
-                    panel.scrollIntoView({ behavior: 'smooth' });
-                    if (typeof window.loadPropertyList === 'function') {
-                        window.loadPropertyList();
-                    }
-                }
-            }
-        };
+//        emergencyBtn.onclick = function() {
+//            const password = prompt("🔒 Acesso de Emergência\n\nDigite a senha:");
+//            if (password === "wl654") {
+//                const panel = document.getElementById('adminPanel');
+//                if (panel) {
+//                    panel.style.display = 'block';
+//                    panel.scrollIntoView({ behavior: 'smooth' });
+//                    if (typeof window.loadPropertyList === 'function') {
+//                        window.loadPropertyList();
+//                    }
+//                }
+//            }
+//        };
         
-        document.body.appendChild(emergencyBtn);
-        console.log('🆘 Botão de emergência criado');
-    }
-}, 3000);
+//        document.body.appendChild(emergencyBtn);
+//        console.log('🆘 Botão de emergência criado');
+//    }
+//}, 3000);
 
 // ========== SOLUÇÃO FINAL - OBSERVADOR DE FILTROS ==========
 (function startFilterObserver() {
