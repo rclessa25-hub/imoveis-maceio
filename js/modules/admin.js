@@ -197,37 +197,46 @@ window.setupForm = function() {
                 const updateData = { ...propertyData };
                 
                 // ✅ 2. Processar PDFs APENAS se houver novos
-            // ✅ 2. Processar PDFs APENAS se houver novos
-            if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
-                console.log(`📤 Processando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para edição...`);
-                
-                try {
-                    // Coletar PDFs existentes
-                    const existingPdfUrls = window.existingPdfFiles
-                        .map(p => p.url)
-                        .filter(url => url && url.trim() !== '');
+                if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
+                    console.log(`📤 Processando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para edição...`);
                     
-                    // ✅ Processar NOVOS PDFs (APENAS UMA VEZ)
-                    console.log(`📝 Iniciando processamento de ${window.selectedPdfFiles.length} PDF(s)...`);
-                    const newPdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
-                    
-                    // ✅ CONTAGEM CORRETA
-                    const newPdfUrls = newPdfsString ? 
-                        newPdfsString.split(',')
-                            .filter(url => url.trim() !== '')
-                            .filter(url => !existingPdfUrls.includes(url)) // ✅ EXCLUIR EXISTENTES
-                        : [];
-                    
-                    // Combinar todos os PDFs
-                    const allPdfUrls = [...existingPdfUrls, ...newPdfUrls];
-                    updateData.pdfs = allPdfUrls.join(',');
-                    
-                    console.log(`✅ PDFs combinados: ${existingPdfUrls.length} existentes + ${newPdfUrls.length} novos = ${allPdfUrls.length} total`);
-                    
-                } catch (pdfError) {
-                    console.error('❌ Erro ao processar PDFs:', pdfError);
-                }
-            }
+                    try {
+                        // Coletar PDFs existentes
+                        const existingPdfUrls = window.existingPdfFiles
+                            .map(p => p.url)
+                            .filter(url => url && url.trim() !== '');
+                        
+                        console.log(`📄 PDFs existentes encontrados: ${existingPdfUrls.length}`);
+                        
+                        // Processar NOVOS PDFs (APENAS UMA VEZ)
+                        console.log(`📝 Iniciando processamento de ${window.selectedPdfFiles.length} PDF(s)...`);
+                        const newPdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
+                        
+                        console.log(`📄 String retornada do processamento: "${newPdfsString}"`);
+                        
+                        // ✅ CONTAGEM CORRETA - Separar apenas URLs NOVAS
+                        let newPdfUrls = [];
+                        if (newPdfsString && newPdfsString.trim() !== '') {
+                            newPdfUrls = newPdfsString.split(',')
+                                .map(url => url.trim())
+                                .filter(url => url !== '')
+                                .filter(url => !existingPdfUrls.includes(url)); // ✅ EXCLUIR URLs já existentes
+                        }
+                        
+                        console.log(`📊 Resultado: ${newPdfUrls.length} URL(s) NOVA(s) encontrada(s)`);
+                        
+                        // ✅ Verificar se há duplicação
+                        const allUrls = new Set([...existingPdfUrls, ...newPdfUrls]);
+                        const allPdfUrls = Array.from(allUrls);
+                        
+                        updateData.pdfs = allPdfUrls.join(',');
+                        
+                        console.log(`✅ PDFs FINAIS: ${existingPdfUrls.length} existentes + ${newPdfUrls.length} novos = ${allPdfUrls.length} total`);
+                        
+                    } catch (pdfError) {
+                        console.error('❌ Erro ao processar PDFs:', pdfError);
+                        // Continuar sem PDFs se houver erro
+                    }
                 } else {
                     console.log('ℹ️ Nenhum novo PDF para processar na edição');
                 }
