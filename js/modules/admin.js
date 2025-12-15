@@ -224,12 +224,20 @@ window.setupForm = function() {
                     console.log('ℹ️ Nenhum novo PDF para processar na edição');
                 }
                 
-                       // ✅ 3. Atualizar imóvel
+                // ✅ 3. Atualizar imóvel
                 if (typeof window.updateProperty === 'function') {
                     console.log('💾 Enviando atualização para o imóvel...');
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
                     if (success) {
                         alert('✅ Imóvel atualizado com sucesso!');
+                    }
+                }
+            } else {
+                // ✅ CRIAR NOVO IMÓVEL
+                if (typeof window.addNewProperty === 'function') {
+                    const newProperty = await window.addNewProperty(propertyData);
+                    if (newProperty) {
+                        alert(`✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`);
                     }
                 }
             }
