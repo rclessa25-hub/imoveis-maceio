@@ -638,8 +638,8 @@ window.updateProperty = async function(id, propertyData) {
                     badge: propertyData.badge || property.badge || 'Novo',
                     rural: propertyData.type === 'rural' || property.rural || false,
                     images: propertyData.images || property.images || '',
-                    pdfs: finalPdfsString, // ✅ PDFs atualizados
-                    updated_at: new Date().toISOString()
+                    pdfs: finalPdfsString // ✅ PDFs atualizados
+                    // ⛔ NÃO incluir updated_at - a tabela não tem esta coluna
                 };
                 
                 console.log('📤 Atualizando no Supabase:', updateData);
