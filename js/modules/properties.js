@@ -294,42 +294,43 @@ window.addNewProperty = async function(propertyData) {
   
   try {
     // ✅ 1. PRIMEIRO: Salvar no Supabase com cliente oficial
+    // ✅ 1. PRIMEIRO: Salvar no Supabase com cliente oficial
     let supabaseResult = null;
     let supabaseSuccess = false;
     
     if (window.supabaseSaveProperty) {
-      try {
-        // Preparar dados para Supabase
-        const supabaseData = {
-          title: propertyData.title,
-          price: propertyData.price,
-          location: propertyData.location,
-          description: propertyData.description || '',
-          features: typeof propertyData.features === 'string' ? propertyData.features : 
-                   Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
-          type: propertyData.type || 'residencial',
-          has_video: propertyData.has_video || false,
-          badge: propertyData.badge || 'Novo',
-          rural: propertyData.type === 'rural',
-          images: propertyData.images || "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
-          pdfs: propertyData.pdfs || '',
-          created_at: new Date().toISOString()
-        };
-        
-        console.log('📤 Enviando para Supabase via cliente oficial:', supabaseData);
-        
-        // Usar o cliente oficial
-        supabaseResult = await window.supabaseSaveProperty(supabaseData);
-        
-        if (supabaseResult && supabaseResult.success) {
-          supabaseSuccess = true;
-          console.log(`✅ Imóvel salvo no Supabase com ID: ${supabaseResult.data.id}`);
-        } else {
-          console.error('❌ Erro no Supabase:', supabaseResult?.error);
+        try {
+            // Preparar dados para Supabase
+            const supabaseData = {
+                title: propertyData.title,
+                price: propertyData.price,
+                location: propertyData.location,
+                description: propertyData.description || '',
+                features: typeof propertyData.features === 'string' ? propertyData.features : 
+                         Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
+                type: propertyData.type || 'residencial',
+                has_video: propertyData.has_video || false,
+                badge: propertyData.badge || 'Novo',
+                rural: propertyData.type === 'rural',
+                images: propertyData.images || "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
+                pdfs: propertyData.pdfs || '',
+                created_at: new Date().toISOString()
+            };
+            
+            console.log('📤 Enviando para Supabase via cliente oficial:', supabaseData);
+            
+            // Usar o cliente oficial
+            supabaseResult = await window.supabaseSaveProperty(supabaseData);
+            
+            if (supabaseResult && supabaseResult.success) {
+                supabaseSuccess = true;
+                console.log(`✅ Imóvel salvo no Supabase com ID: ${supabaseResult.data.id}`);
+            } else {
+                console.error('❌ Erro no Supabase:', supabaseResult?.error);
+            }
+        } catch (supabaseError) {
+            console.error('❌ Erro ao conectar com Supabase:', supabaseError);
         }
-      } catch (supabaseError) {
-        console.error('❌ Erro ao conectar com Supabase:', supabaseError);
-      }
     }
     
     // ✅ 2. Criar objeto do imóvel
