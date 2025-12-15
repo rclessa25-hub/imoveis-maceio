@@ -518,6 +518,51 @@ document.addEventListener('DOMContentLoaded', async function() {
         
     }, 1000);
 });
+
+    <!-- ========== TESTE DO CLIENTE SUPABASE ========== -->
+<script>
+// Teste do cliente Supabase
+setTimeout(() => {
+    console.log('🧪 TESTE DO CLIENTE SUPABASE:');
+    console.log('1. supabase global:', typeof supabase);
+    console.log('2. supabaseClient:', window.supabaseClient);
+    console.log('3. supabaseSaveProperty:', typeof window.supabaseSaveProperty);
+    console.log('4. SUPABASE_CONFIG:', window.SUPABASE_CONFIG);
+    
+    // Função de teste manual
+    window.testSupabaseManually = async function() {
+        console.log('🧪 TESTE MANUAL DO SUPABASE...');
+        
+        if (window.supabaseClient) {
+            console.log('✅ supabaseClient disponível');
+            
+            // Testar conexão
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('properties')
+                    .select('id')
+                    .limit(1);
+                    
+                if (error) {
+                    console.error('❌ Erro no teste:', error.message);
+                } else {
+                    console.log('✅ Teste bem-sucedido!', data?.length || 0, 'registros');
+                }
+            } catch (e) {
+                console.error('❌ Exceção no teste:', e.message);
+            }
+        } else {
+            console.error('❌ supabaseClient NÃO disponível');
+        }
+    };
+    
+    // Executar teste após 3 segundos
+    setTimeout(() => {
+        console.log('🕒 Executando teste automático em 3 segundos...');
+        window.testSupabaseManually();
+    }, 3000);
+    
+}, 2000);
 </script>
 </body>
 </html>
