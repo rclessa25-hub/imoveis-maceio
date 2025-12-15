@@ -520,49 +520,95 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 
     <!-- ========== TESTE DO CLIENTE SUPABASE ========== -->
+<!-- ========== TESTE E SINCRONIZAÇÃO SUPABASE ========== -->
 <script>
 // Teste do cliente Supabase
 setTimeout(() => {
     console.log('🧪 TESTE DO CLIENTE SUPABASE:');
     console.log('1. supabase global:', typeof supabase);
     console.log('2. supabaseClient:', window.supabaseClient);
-    console.log('3. supabaseSaveProperty:', typeof window.supabaseSaveProperty);
-    console.log('4. SUPABASE_CONFIG:', window.SUPABASE_CONFIG);
+    console.log('3. supabaseLoadProperties:', typeof window.supabaseLoadProperties);
+    console.log('4. supabaseSaveProperty:', typeof window.supabaseSaveProperty);
+    console.log('5. forceSyncProperties:', typeof window.forceSyncProperties);
     
-    // Função de teste manual
-    window.testSupabaseManually = async function() {
-        console.log('🧪 TESTE MANUAL DO SUPABASE...');
+    // Função de teste manual aprimorada
+    window.testSupabaseFull = async function() {
+        console.log('🧪 TESTE COMPLETO DO SUPABASE...');
         
         if (window.supabaseClient) {
             console.log('✅ supabaseClient disponível');
             
-            // Testar conexão
+            // Teste 1: Consulta geral
             try {
-                const { data, error } = await window.supabaseClient
+                const { data: allData, error: allError } = await window.supabaseClient
                     .from('properties')
-                    .select('id')
-                    .limit(1);
+                    .select('id, title')
+                    .order('id', { ascending: false });
                     
-                if (error) {
-                    console.error('❌ Erro no teste:', error.message);
+                if (allError) {
+                    console.error('❌ Erro na consulta geral:', allError.message);
                 } else {
-                    console.log('✅ Teste bem-sucedido!', data?.length || 0, 'registros');
+                    console.log(`✅ Consulta geral: ${allData?.length || 0} imóveis`);
+                    console.log('📋 IDs encontrados:', allData?.map(p => p.id).join(', '));
                 }
             } catch (e) {
-                console.error('❌ Exceção no teste:', e.message);
+                console.error('❌ Exceção na consulta geral:', e.message);
+            }
+            
+            // Teste 2: Consulta específica do ID 71
+            try {
+                const { data: specificData, error: specificError } = await window.supabaseClient
+                    .from('properties')
+                    .select('*')
+                    .eq('id', 71)
+                    .single();
+                    
+                if (specificError) {
+                    console.error('❌ Erro na consulta do ID 71:', specificError.message);
+                } else if (specificData) {
+                    console.log('✅ ✅ ✅ IMÓVEL ID 71 ENCONTRADO NO BANCO!');
+                    console.log('📊 Dados:', specificData);
+                } else {
+                    console.log('⚠️ Nenhum dado retornado para ID 71');
+                }
+            } catch (e) {
+                console.error('❌ Exceção na consulta específica:', e.message);
             }
         } else {
             console.error('❌ supabaseClient NÃO disponível');
         }
     };
     
-    // Executar teste após 3 segundos
+    // Executar teste completo após 5 segundos
     setTimeout(() => {
-        console.log('🕒 Executando teste automático em 3 segundos...');
-        window.testSupabaseManually();
-    }, 3000);
+        console.log('🕒 Executando teste completo em 5 segundos...');
+        window.testSupabaseFull();
+        
+        // Após 8 segundos, mostrar opção de sincronização forçada
+        setTimeout(() => {
+            console.log('🔄 Pronto para sincronização forçada');
+            console.log('💡 Digite no console: window.forceSyncProperties()');
+            console.log('💡 Ou teste o ID 71: window.testProperty71()');
+        }, 8000);
+    }, 5000);
     
 }, 2000);
+
+// Função auxiliar para verificar se o imóvel foi realmente salvo
+window.verifyProperty71 = function() {
+    console.log('🔍 VERIFICANDO IMÓVEL 71 LOCALMENTE...');
+    console.log('window.properties:', window.properties);
+    
+    const property71 = window.properties.find(p => p.id === 71);
+    if (property71) {
+        console.log('✅ Imóvel 71 encontrado LOCALMENTE:', property71);
+        return true;
+    } else {
+        console.log('❌ Imóvel 71 NÃO encontrado localmente');
+        console.log('📋 IDs locais:', window.properties.map(p => p.id).join(', '));
+        return false;
+    }
+};
 </script>
 </body>
 </html>
