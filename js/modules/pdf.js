@@ -783,19 +783,19 @@ window.setupPdfSupabaseIntegration = function() {
             }
             
             // Depois processar PDFs (se houver)
-            setTimeout(async () => {
-                if (window.editingPropertyId && window.selectedPdfFiles.length > 0) {
-                    console.log(`🔄 Processando PDFs pós-edição para imóvel ${window.editingPropertyId}`);
-                    
-                    if (typeof window.addPdfHookToUpdateProperty === 'function') {
-                        const pdfsString = await window.addPdfHookToUpdateProperty(window.editingPropertyId, {});
-                        if (pdfsString && typeof window.updateProperty === 'function') {
-                            // Atualizar com PDFs
-                            await window.updateProperty(window.editingPropertyId, { pdfs: pdfsString });
-                        }
-                    }
-                }
-            }, 500);
+//            setTimeout(async () => {
+//                if (window.editingPropertyId && window.selectedPdfFiles.length > 0) {
+//                    console.log(`🔄 Processando PDFs pós-edição para imóvel ${window.editingPropertyId}`);
+//                    
+//                    if (typeof window.addPdfHookToUpdateProperty === 'function') {
+//                        const pdfsString = await window.addPdfHookToUpdateProperty(window.editingPropertyId, {});
+//                        if (pdfsString && typeof window.updateProperty === 'function') {
+//                            // Atualizar com PDFs
+//                            await window.updateProperty(window.editingPropertyId, { pdfs: pdfsString });
+//                        }
+//                    }
+//                }
+//            }, 500);
         });
     }
     
