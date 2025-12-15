@@ -569,81 +569,68 @@ window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     console.log(`💾 Processando PDFs para imóvel ${propertyId}...`);
     
-    const allPdfUrls = [];
+    // ✅ CONTROLE PARA EVITAR EXECUÇÃO DUPLA
+    if (window.isProcessingPdfs) {
+        console.log('⚠️ PDFs já sendo processados, ignorando chamada duplicada');
+        return '';
+    }
     
-    // 1. Adicionar PDFs existentes
-    window.existingPdfFiles.forEach(pdf => {
-        if (pdf.url && pdf.url.trim() !== '' && pdf.url !== 'EMPTY') {
-            allPdfUrls.push(pdf.url);
-            console.log(`📎 Mantendo PDF existente: ${pdf.name}`);
-        }
-    });
+    window.isProcessingPdfs = true;
     
-    // 2. Fazer upload dos NOVOS PDFs
-    if (window.selectedPdfFiles.length > 0) {
-        console.log(`📤 Enviando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para o Supabase...`);
+    try {
+        const allPdfUrls = [];
         
-        // Processar CADA PDF
-        for (const pdf of window.selectedPdfFiles) {
-            if (pdf.file) {
-                console.log(`⬆️ Enviando: ${pdf.name} (${formatFileSize(pdf.file.size)})`);
+        // 1. Adicionar PDFs existentes (UNICAMENTE)
+        const existingUrls = new Set(); // Para evitar duplicatas
+        
+        window.existingPdfFiles.forEach(pdf => {
+            if (pdf.url && pdf.url.trim() !== '' && pdf.url !== 'EMPTY' && !existingUrls.has(pdf.url)) {
+                existingUrls.add(pdf.url);
+                allPdfUrls.push(pdf.url);
+                console.log(`📎 Mantendo PDF existente: ${pdf.name}`);
+            }
+        });
+        
+        // 2. Fazer upload dos NOVOS PDFs (APENAS OS QUE AINDA NÃO FORAM PROCESSADOS)
+        if (window.selectedPdfFiles.length > 0) {
+            console.log(`📤 Enviando ${window.selectedPdfFiles.length} NOVO(s) PDF(s)...`);
+            
+            for (const pdf of window.selectedPdfFiles) {
+                // ✅ VERIFICAR SE JÁ FOI PROCESSADO
+                if (pdf.processed) {
+                    console.log(`⏭️ PDF já processado: ${pdf.name}`);
+                    continue;
+                }
                 
-                const uploadedUrl = await window.uploadPdfToSupabaseStorage(pdf.file, propertyId);
-                
-                if (uploadedUrl) {
-                    allPdfUrls.push(uploadedUrl);
-                    console.log(`✅ PDF salvo: ${uploadedUrl}`);
-                } else {
-                    console.warn(`⚠️ PDF não enviado: ${pdf.name}`);
+                if (pdf.file) {
+                    console.log(`⬆️ Enviando: ${pdf.name}`);
+                    
+                    const uploadedUrl = await window.uploadPdfToSupabaseStorage(pdf.file, propertyId);
+                    
+                    if (uploadedUrl) {
+                        // ✅ MARCAR COMO PROCESSADO
+                        pdf.processed = true;
+                        pdf.url = uploadedUrl; // Guardar URL gerada
+                        
+                        allPdfUrls.push(uploadedUrl);
+                        console.log(`✅ PDF salvo: ${pdf.name}`);
+                    }
                 }
             }
         }
-    }
-    
-     const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
-    
-    console.log('📊 Resumo do salvamento de PDFs:');
-    console.log(`- PDFs existentes mantidos: ${window.existingPdfFiles.length}`);
-    console.log(`- Novos PDFs enviados: ${window.selectedPdfFiles.length}`);
-    console.log(`- Total de URLs: ${allPdfUrls.length}`);
-    console.log(`- String final: ${pdfsString.substring(0, 80)}...`);
-    
-    return pdfsString;
-};
-    
-    // 3. Preparar string final
-    const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
-    
-    console.log('📊 Resumo do salvamento de PDFs:');
-    console.log(`- PDFs existentes mantidos: ${window.existingPdfFiles.length}`);
-    console.log(`- Novos PDFs enviados: ${window.selectedPdfFiles.length}`);
-    console.log(`- Total de URLs: ${allPdfUrls.length}`);
-    console.log(`- String final: ${pdfsString.substring(0, 80)}...`);
-    
-    // ✅ CORREÇÃO IMPORTANTE: Se tiver PDFs e propertyId for temporário,
-    // marcar para processar depois quando tiver ID real
-    if (pdfsString && propertyId && propertyId.toString().includes('temp_')) {
-        console.log(`📝 PDFs salvos com ID temporário: ${propertyId}`);
-        console.log(`📌 Serão vinculados ao ID real quando disponível`);
         
-        // Salvar em localStorage para processamento posterior
-        const pendingPdfs = {
-            propertyId: propertyId,
-            pdfUrls: allPdfUrls,
-            timestamp: new Date().toISOString()
-        };
+        const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
         
-        try {
-            const existingPending = JSON.parse(localStorage.getItem('pending_pdfs') || '[]');
-            existingPending.push(pendingPdfs);
-            localStorage.setItem('pending_pdfs', JSON.stringify(existingPending));
-            console.log(`📋 PDFs pendentes salvos para processamento posterior`);
-        } catch (error) {
-            console.error('❌ Erro ao salvar PDFs pendentes:', error);
-        }
+        console.log('📊 RESULTADO FINAL:');
+        console.log(`- PDFs existentes: ${existingUrls.size}`);
+        console.log(`- Novos PDFs enviados: ${window.selectedPdfFiles.filter(p => p.processed).length}`);
+        console.log(`- Total URLs: ${allPdfUrls.length}`);
+        
+        return pdfsString;
+        
+    } finally {
+        window.isProcessingPdfs = false;
     }
-    
-    return pdfsString;
 };
 
 // 4.3 Função completa de salvamento de PDFs (NOVA)
