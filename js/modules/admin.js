@@ -193,36 +193,44 @@ window.setupForm = function() {
             if (window.editingPropertyId) {
                 console.log(`🔄 Editando imóvel ID: ${window.editingPropertyId}`);
                 
-                // ✅ PRIMEIRO: Processar PDFs se houver
+                // ✅ 1. Preparar dados básicos SEM PDFs inicialmente
+                const updateData = { ...propertyData };
+                
+                // ✅ 2. Processar PDFs APENAS se houver novos
                 if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
-                    console.log(`📤 Processando ${window.selectedPdfFiles.length} PDF(s) para edição...`);
+                    console.log(`📤 Processando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para edição...`);
                     
                     try {
-                        const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
-                        if (pdfsString) {
-                            // Combinar PDFs existentes + novos
-                            const existingPdfs = window.existingPdfFiles.map(p => p.url).filter(url => url);
-                            const allPdfs = [...existingPdfs, ...pdfsString.split(',')].filter(url => url);
-                            propertyData.pdfs = allPdfs.join(',');
-                            console.log(`✅ ${allPdfs.length} PDF(s) incluídos na atualização`);
-                        }
+                        // Coletar PDFs existentes
+                        const existingPdfUrls = window.existingPdfFiles
+                            .map(p => p.url)
+                            .filter(url => url && url.trim() !== '');
+                        
+                        // Processar NOVOS PDFs
+                        const newPdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
+                        const newPdfUrls = newPdfsString ? newPdfsString.split(',').filter(url => url.trim() !== '') : [];
+                        
+                        // Combinar todos os PDFs
+                        const allPdfUrls = [...existingPdfUrls, ...newPdfUrls];
+                        updateData.pdfs = allPdfUrls.join(',');
+                        
+                        console.log(`✅ PDFs combinados: ${existingPdfUrls.length} existentes + ${newPdfUrls.length} novos = ${allPdfUrls.length} total`);
+                        
                     } catch (pdfError) {
                         console.error('❌ Erro ao processar PDFs:', pdfError);
+                        // Continuar sem PDFs se houver erro
                     }
+                } else {
+                    console.log('ℹ️ Nenhum novo PDF para processar na edição');
                 }
                 
-                // ✅ SEGUNDO: Atualizar imóvel
+                       // ✅ 3. Atualizar imóvel
                 if (typeof window.updateProperty === 'function') {
-                    const success = await window.updateProperty(window.editingPropertyId, propertyData);
+                    console.log('💾 Enviando atualização para o imóvel...');
+                    const success = await window.updateProperty(window.editingPropertyId, updateData);
                     if (success) {
                         alert('✅ Imóvel atualizado com sucesso!');
                     }
-                }
-            } else {
-                // Código para novo imóvel (já corrigido)
-                if (typeof window.addNewProperty === 'function') {
-                    const newProperty = await window.addNewProperty(propertyData);
-                    alert(`✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`);
                 }
             }
             
@@ -314,8 +322,6 @@ function addSyncButton() {
     console.log('✅ Botão de sincronização adicionado');
 }
 
-// ========== CORREÇÃO DOS FILTROS ==========
-// ========== CORREÇÃO DEFINITIVA DOS FILTROS ==========
 // ========== CORREÇÃO DEFINITIVA DOS FILTROS ==========
 window.fixFilterVisuals = function() {
     console.log('🎨 CORREÇÃO DEFINITIVA DOS FILTROS VISUAIS');
@@ -427,7 +433,6 @@ function initializeAdminSystem() {
     // 4. Adicionar botão sincronização
     addSyncButton();
     
-// Na função initializeAdminSystem, procure esta parte:
 // Na função initializeAdminSystem, procure esta parte:
  // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
     console.log('🎯 Iniciando correção garantida dos filtros...');
