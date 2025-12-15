@@ -259,6 +259,116 @@ window.syncLocalWithSupabase = async function() {
     return { success: false, error: 'Nenhum dado para sincronizar' };
 };
 
+// ========== Função para forçar sincronização ==========
+
+// Função para forçar sincronização e mostrar todos os imóveis
+window.forceSyncProperties = async function() {
+    console.log('🔄 FORÇANDO SINCRONIZAÇÃO COMPLETA...');
+    
+    // 1. Limpar localStorage para forçar recarregamento
+    localStorage.removeItem('weberlessa_properties');
+    console.log('🧹 localStorage limpo');
+    
+    // 2. Usar cliente oficial para carregar
+    if (window.supabaseLoadProperties) {
+        try {
+            console.log('📥 Carregando diretamente do Supabase...');
+            const result = await window.supabaseLoadProperties();
+            
+            if (result.data && result.data.length > 0) {
+                window.properties = result.data;
+                window.savePropertiesToStorage();
+                
+                console.log(`✅ ${result.data.length} imóveis carregados DIRETAMENTE do Supabase`);
+                
+                // Mostrar detalhes
+                console.log('📊 DETALHES DOS IMÓVEIS:');
+                result.data.forEach((prop, index) => {
+                    console.log(`${index + 1}. ID: ${prop.id} - "${prop.title}"`);
+                });
+                
+                // Verificar se tem o imóvel ID 71
+                const hasId71 = result.data.find(p => p.id === 71);
+                console.log(`🔍 Imóvel ID 71 (teste7777) encontrado?`, hasId71 ? '✅ SIM' : '❌ NÃO');
+                
+                if (!hasId71) {
+                    console.log('⚠️ O imóvel não aparece na consulta geral!');
+                    console.log('📌 Possíveis causas:');
+                    console.log('1. Rollback no Supabase');
+                    console.log('2. Filtro RLS (Row Level Security) ativo');
+                    console.log('3. O imóvel foi deletado automaticamente');
+                }
+                
+                // Renderizar
+                if (typeof window.renderProperties === 'function') {
+                    window.renderProperties('todos');
+                }
+                
+                // Atualizar admin
+                if (typeof window.loadPropertyList === 'function') {
+                    setTimeout(() => window.loadPropertyList(), 300);
+                }
+                
+                alert(`✅ ${result.data.length} imóveis sincronizados!\n\nVerifique o console para detalhes.`);
+                return { success: true, count: result.data.length };
+            }
+        } catch (error) {
+            console.error('❌ Erro na sincronização forçada:', error);
+            alert('❌ Erro na sincronização: ' + error.message);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    return { success: false, error: 'Função não disponível' };
+};
+
+// Testar consulta direta do ID 71
+window.testProperty71 = async function() {
+    console.log('🔍 TESTANDO CONSULTA DO IMÓVEL ID 71...');
+    
+    if (!window.supabaseClient) {
+        console.error('❌ supabaseClient não disponível');
+        return;
+    }
+    
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('properties')
+            .select('*')
+            .eq('id', 71)
+            .single();
+        
+        if (error) {
+            console.error('❌ Erro na consulta específica:', error.message);
+        } else {
+            console.log('✅ IMÓVEL ID 71 ENCONTRADO:', data);
+            
+            if (data) {
+                console.log(`🎯 Título: ${data.title}`);
+                console.log(`💰 Preço: ${data.price}`);
+                console.log(`📍 Localização: ${data.location}`);
+                console.log(`📅 Criado em: ${data.created_at}`);
+                
+                // Adicionar ao array local
+                const exists = window.properties.find(p => p.id === 71);
+                if (!exists) {
+                    window.properties.unshift(data);
+                    window.savePropertiesToStorage();
+                    console.log('✅ Imóvel adicionado localmente');
+                    
+                    if (typeof window.renderProperties === 'function') {
+                        window.renderProperties('todos');
+                    }
+                }
+            } else {
+                console.log('⚠️ Nenhum resultado para ID 71');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erro fatal:', error);
+    }
+};
+
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 
 // Aguardar DOM estar pronto
