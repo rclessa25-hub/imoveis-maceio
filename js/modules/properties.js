@@ -297,6 +297,13 @@ window.addNewProperty = async function(propertyData) {
     // ✅ 1. PRIMEIRO: Salvar no Supabase com cliente oficial
     let supabaseResult = null;
     let supabaseSuccess = false;
+    let supabaseId = null;
+    
+    // VERIFICAÇÃO CRÍTICA: O cliente está disponível?
+    console.log('🔍 Verificando disponibilidade do supabaseSaveProperty...');
+    console.log('supabaseSaveProperty existe?', typeof window.supabaseSaveProperty);
+    console.log('supabaseClient existe?', typeof window.supabaseClient);
+    console.log('supabase global existe?', typeof supabase);
     
     if (window.supabaseSaveProperty) {
         try {
@@ -317,20 +324,40 @@ window.addNewProperty = async function(propertyData) {
                 created_at: new Date().toISOString()
             };
             
-            console.log('📤 Enviando para Supabase via cliente oficial:', supabaseData);
+            console.log('📤 ENVIANDO PARA SUPABASE via supabaseSaveProperty:', supabaseData);
             
             // Usar o cliente oficial
             supabaseResult = await window.supabaseSaveProperty(supabaseData);
             
+            console.log('📊 RESULTADO DO SUPABASE:', supabaseResult);
+            
             if (supabaseResult && supabaseResult.success) {
                 supabaseSuccess = true;
-                console.log(`✅ Imóvel salvo no Supabase com ID: ${supabaseResult.data.id}`);
+                supabaseId = supabaseResult.data?.id || supabaseResult.id;
+                console.log(`✅ ✅ ✅ IMÓVEL SALVO NO SUPABASE COM ID: ${supabaseId}`);
+                
+                // LOG DE SUCESSO DETALHADO
+                console.log('🎉 DADOS COMPLETOS RETORNADOS:', supabaseResult.data);
             } else {
-                console.error('❌ Erro no Supabase:', supabaseResult?.error);
+                console.error('❌ ❌ ❌ FALHA NO SUPABASE:', supabaseResult?.error || 'Erro desconhecido');
+                
+                // Tentar fallback com fetch direto
+                console.log('🔄 Tentando fallback com fetch direto...');
+                const fallbackResult = await saveWithFetchDirect(supabaseData);
+                if (fallbackResult.success) {
+                    supabaseSuccess = true;
+                    supabaseId = fallbackResult.id;
+                    console.log(`✅ Imóvel salvo via fallback: ${supabaseId}`);
+                }
             }
         } catch (supabaseError) {
-            console.error('❌ Erro ao conectar com Supabase:', supabaseError);
+            console.error('❌ ERRO AO CONECTAR COM SUPABASE:', supabaseError);
+            console.error('Stack trace:', supabaseError.stack);
         }
+    } else {
+        console.error('⚠️ window.supabaseSaveProperty NÃO DISPONÍVEL!');
+        console.log('Verificando supabaseClient global:', window.supabaseClient);
+        console.log('Verificando supabase global:', supabase);
     }
     
     // ✅ 2. Criar objeto do imóvel
