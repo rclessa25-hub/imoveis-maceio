@@ -5,67 +5,117 @@ console.log('🚀 properties.js carregado - Versão Corrigida');
 window.properties = [];
 window.editingPropertyId = null;
 
-// ========== FUNÇÃO 1: Carregamento Hierárquico ATUALIZADA ==========
 window.initializeProperties = async function() {
-    console.log('🔄 Inicializando sistema de propriedades (COM SUPABASE CORRIGIDO)...');
+    console.log('🔄 Inicializando sistema de propriedades (USANDO CLIENTE OFICIAL)...');
     
     try {
-        // ✅ 1. PRIMEIRO: Tentar Supabase com supabaseFetch
-        console.log('🌐 Tentando conexão com Supabase via proxy CORS...');
+        // ✅ 1. PRIMEIRO: Tentar com cliente Supabase oficial
+        console.log('🌐 Tentando conexão com Supabase via cliente oficial...');
         
-        if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-            const result = await window.supabaseFetch('/properties?select=*&order=id.desc');
-            
-            if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
-                // Converter formato Supabase para local
-                const formattedData = result.data.map(item => ({
-                    id: item.id,
-                    title: item.title || 'Sem título',
-                    price: item.price || 'R$ 0,00',
-                    location: item.location || 'Local não informado',
-                    description: item.description || '',
-                    features: item.features || '',
-                    type: item.type || 'residencial',
-                    has_video: item.has_video || false,
-                    badge: item.badge || 'Novo',
-                    rural: item.rural || false,
-                    images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
-                    pdfs: item.pdfs || '',
-                    created_at: item.created_at || new Date().toISOString()
-                }));
+        if (window.supabaseLoadProperties) {
+            try {
+                console.log('📥 Chamando supabaseLoadProperties()...');
+                const supabaseResult = await window.supabaseLoadProperties();
                 
-                window.properties = formattedData;
-                window.savePropertiesToStorage();
+                console.log('📊 Resultado do supabaseLoadProperties:', supabaseResult);
                 
-                console.log(`✅ ${formattedData.length} imóveis carregados do Supabase`);
-                
-                // Renderizar imediatamente
-                if (typeof window.renderProperties === 'function') {
-                    setTimeout(() => window.renderProperties('todos'), 100);
+                if (supabaseResult.data && Array.isArray(supabaseResult.data) && supabaseResult.data.length > 0) {
+                    // Converter formato Supabase para local
+                    const formattedData = supabaseResult.data.map(item => ({
+                        id: item.id,
+                        title: item.title || 'Sem título',
+                        price: item.price || 'R$ 0,00',
+                        location: item.location || 'Local não informado',
+                        description: item.description || '',
+                        features: item.features || '',
+                        type: item.type || 'residencial',
+                        has_video: item.has_video || false,
+                        badge: item.badge || 'Novo',
+                        rural: item.rural || false,
+                        images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
+                        pdfs: item.pdfs || '',
+                        created_at: item.created_at || new Date().toISOString()
+                    }));
+                    
+                    window.properties = formattedData;
+                    window.savePropertiesToStorage();
+                    
+                    console.log(`✅ ${formattedData.length} imóveis carregados do Supabase (via cliente oficial)`);
+                    
+                    // Renderizar imediatamente
+                    if (typeof window.renderProperties === 'function') {
+                        setTimeout(() => window.renderProperties('todos'), 100);
+                    }
+                    return; // SAI DA FUNÇÃO - SUPABASE BEM SUCEDIDO
+                } else {
+                    console.log('⚠️ Cliente oficial não retornou dados:', supabaseResult.error);
                 }
-                return; // SAI DA FUNÇÃO - SUPABASE BEM SUCEDIDO
-            } else {
-                console.log('⚠️ Supabase falhou ou não tem dados:', result.error);
+            } catch (supabaseError) {
+                console.error('❌ Erro no cliente oficial:', supabaseError);
+            }
+        } else {
+            console.log('⚠️ window.supabaseLoadProperties não disponível');
+        }
+        
+        // ✅ 2. SEGUNDO: Tentar com supabaseFetch (fallback)
+        console.log('🔄 Tentando com supabaseFetch (fallback)...');
+        if (window.supabaseFetch) {
+            try {
+                const result = await window.supabaseFetch('/properties?select=*&order=id.desc');
+                
+                if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
+                    const formattedData = result.data.map(item => ({
+                        id: item.id,
+                        title: item.title || 'Sem título',
+                        price: item.price || 'R$ 0,00',
+                        location: item.location || 'Local não informado',
+                        description: item.description || '',
+                        features: item.features || '',
+                        type: item.type || 'residencial',
+                        has_video: item.has_video || false,
+                        badge: item.badge || 'Novo',
+                        rural: item.rural || false,
+                        images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
+                        pdfs: item.pdfs || '',
+                        created_at: item.created_at || new Date().toISOString()
+                    }));
+                    
+                    window.properties = formattedData;
+                    window.savePropertiesToStorage();
+                    
+                    console.log(`✅ ${formattedData.length} imóveis carregados do Supabase (via supabaseFetch)`);
+                    
+                    if (typeof window.renderProperties === 'function') {
+                        setTimeout(() => window.renderProperties('todos'), 100);
+                    }
+                    return;
+                }
+            } catch (error) {
+                console.error('❌ Erro no supabaseFetch:', error);
             }
         }
         
-        // ✅ 2. SEGUNDO: localStorage (fallback)
+        // ✅ 3. TERCEIRO: localStorage (fallback)
         console.log('📁 Usando fallback: localStorage...');
         const stored = localStorage.getItem('weberlessa_properties');
         if (stored) {
-            const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-                window.properties = parsed;
-                console.log(`📁 ${parsed.length} imóveis carregados do localStorage`);
-                
-                if (typeof window.renderProperties === 'function') {
-                    setTimeout(() => window.renderProperties('todos'), 100);
+            try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    window.properties = parsed;
+                    console.log(`📁 ${parsed.length} imóveis carregados do localStorage`);
+                    
+                    if (typeof window.renderProperties === 'function') {
+                        setTimeout(() => window.renderProperties('todos'), 100);
+                    }
+                    return;
                 }
-                return;
+            } catch (e) {
+                console.error('❌ Erro ao parsear localStorage:', e);
             }
         }
         
-        // ✅ 3. TERCEIRO: Dados iniciais (último fallback)
+        // ✅ 4. QUARTO: Dados iniciais (último fallback)
         console.log('📦 Usando fallback: dados iniciais...');
         window.properties = getInitialProperties();
         window.savePropertiesToStorage();
