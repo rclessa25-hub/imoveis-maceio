@@ -447,19 +447,69 @@
 <script src="js/modules/admin.js"></script>
 <script src="js/modules/pdf.js"></script>
 <!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
+<!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
 <script>
 console.log('🎯 Inicialização do site Weber Lessa');
 
-// Apenas aguardar tudo carregar
-document.addEventListener('DOMContentLoaded', function() {
+// Inicialização robusta com fallback
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🏠 Site completamente carregado!');
     
-    // Teste rápido
-    setTimeout(() => {
+    // Forçar carregamento de imóveis após 1 segundo
+    setTimeout(async () => {
+        console.log('⚡ Executando carregamento de imóveis...');
+        
+        // 1. Carregar imóveis
+        if (typeof window.initializeProperties === 'function') {
+            await window.initializeProperties();
+        }
+        
+        // 2. Se ainda estiver vazio, forçar carregamento
+        if (!window.properties || window.properties.length === 0) {
+            console.log('🚨 window.properties vazio após inicialização!');
+            
+            // Verificar localStorage
+            const stored = localStorage.getItem('weberlessa_properties');
+            if (stored) {
+                try {
+                    window.properties = JSON.parse(stored);
+                    console.log(`✅ Carregado do localStorage: ${window.properties.length} imóveis`);
+                } catch (e) {
+                    console.error('❌ Erro ao parsear localStorage:', e);
+                }
+            }
+            
+            // Se ainda vazio, carregar dados iniciais
+            if (!window.properties || window.properties.length === 0) {
+                console.log('📦 Carregando dados iniciais...');
+                if (typeof window.getInitialProperties === 'function') {
+                    window.properties = window.getInitialProperties();
+                    console.log(`✅ Dados iniciais: ${window.properties.length} imóveis`);
+                }
+            }
+        }
+        
+        // 3. Renderizar
+        if (typeof window.renderProperties === 'function' && window.properties && window.properties.length > 0) {
+            setTimeout(() => {
+                window.renderProperties('todos');
+                console.log('🎨 Imóveis renderizados');
+            }, 300);
+        }
+        
+        // 4. Configurar filtros
+        if (typeof window.setupFilters === 'function') {
+            setTimeout(() => {
+                window.setupFilters();
+                console.log('🎛️ Filtros configurados');
+            }, 500);
+        }
+        
         console.log('📊 Status final:');
         console.log('- Imóveis:', window.properties?.length || 0);
         console.log('- Admin funcionando:', typeof toggleAdminPanel === 'function');
         console.log('- Filtros prontos:', document.querySelectorAll('.filter-btn').length > 0);
+        
     }, 1000);
 });
 </script>
