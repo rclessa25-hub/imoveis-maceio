@@ -1143,3 +1143,24 @@ window.debugPropertiesLoad = function() {
     
     return checks;
 };
+
+// ========== FUNÇÃO DE DEBUG: DIAGNOSTICO UODATE ==========
+// Função de diagnóstico para debug
+window.diagnoseUpdateError = function() {
+    console.log('🔍 DIAGNÓSTICO DE UPDATE:');
+    console.log('- window.editingPropertyId:', window.editingPropertyId);
+    console.log('- window.properties length:', window.properties.length);
+    console.log('- IDs disponíveis:', window.properties.map(p => p.id).join(', '));
+    console.log('- Formulário visível:', document.getElementById('propertyForm') ? 'SIM' : 'NÃO');
+    
+    // Verificar se há PDFs pendentes
+    if (window.selectedPdfFiles) {
+        console.log('- PDFs selecionados:', window.selectedPdfFiles.length);
+    }
+    
+    // Verificar título do formulário
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        console.log('- Título do formulário:', formTitle.textContent);
+    }
+};
