@@ -920,3 +920,51 @@ if (document.readyState === 'loading') {
 
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
+
+// ========== FUNÇÃO DE DEBUG: VERIFICAR CARREGAMENTO ==========
+window.debugPropertiesLoad = function() {
+    console.log('🔍 DEBUG: Verificando carregamento de propriedades...');
+    
+    const checks = {
+        'window.properties existe': !!window.properties,
+        'É array': Array.isArray(window.properties),
+        'Quantidade': window.properties ? window.properties.length : 0,
+        'localStorage tem dados': !!localStorage.getItem('weberlessa_properties'),
+        'SUPABASE_URL configurado': !!window.SUPABASE_URL,
+        'SUPABASE_KEY configurado': !!window.SUPABASE_KEY
+    };
+    
+    console.table(checks);
+    
+    // Forçar recarregamento se estiver vazio
+    if (!window.properties || window.properties.length === 0) {
+        console.log('🔄 Forçando recarregamento...');
+        
+        // Tentar localStorage primeiro
+        const stored = localStorage.getItem('weberlessa_properties');
+        if (stored) {
+            try {
+                window.properties = JSON.parse(stored);
+                console.log(`✅ Carregado do localStorage: ${window.properties.length} imóveis`);
+                
+                if (typeof window.renderProperties === 'function') {
+                    window.renderProperties('todos');
+                }
+                return;
+            } catch (e) {
+                console.error('❌ Erro ao parsear localStorage:', e);
+            }
+        }
+        
+        // Usar dados iniciais
+        window.properties = getInitialProperties();
+        window.savePropertiesToStorage();
+        console.log(`✅ Usando dados iniciais: ${window.properties.length} imóveis`);
+        
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties('todos');
+        }
+    }
+    
+    return checks;
+};
