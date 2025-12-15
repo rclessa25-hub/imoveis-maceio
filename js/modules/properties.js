@@ -7,72 +7,45 @@ window.editingPropertyId = null;
 
 // ========== FUNÇÃO 1: Carregamento Hierárquico ATUALIZADA ==========
 window.initializeProperties = async function() {
-    console.log('🔄 Inicializando sistema de propriedades (COM SUPABASE)...');
+    console.log('🔄 Inicializando sistema de propriedades (COM SUPABASE CORRIGIDO)...');
     
     try {
-        // ✅ 1. PRIMEIRO: Tentar Supabase (com fallback silencioso)
-        console.log('🌐 Tentando conexão com Supabase...');
+        // ✅ 1. PRIMEIRO: Tentar Supabase com supabaseFetch
+        console.log('🌐 Tentando conexão com Supabase via proxy CORS...');
         
         if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-            try {
-                // Teste rápido de conexão
-                const testResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
-                    headers: {
-                        'apikey': window.SUPABASE_KEY,
-                        'Authorization': `Bearer ${window.SUPABASE_KEY}`
-                    },
-                    // Timeout curto para não travar o carregamento
-                    signal: AbortSignal.timeout(3000)
-                });
+            const result = await window.supabaseFetch('/properties?select=*&order=id.desc');
+            
+            if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
+                // Converter formato Supabase para local
+                const formattedData = result.data.map(item => ({
+                    id: item.id,
+                    title: item.title || 'Sem título',
+                    price: item.price || 'R$ 0,00',
+                    location: item.location || 'Local não informado',
+                    description: item.description || '',
+                    features: item.features || '',
+                    type: item.type || 'residencial',
+                    has_video: item.has_video || false,
+                    badge: item.badge || 'Novo',
+                    rural: item.rural || false,
+                    images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+                    pdfs: item.pdfs || '',
+                    created_at: item.created_at || new Date().toISOString()
+                }));
                 
-                if (testResponse.ok) {
-                    console.log('✅ Supabase acessível. Carregando dados...');
-                    
-                    // Carregar todos os dados
-                    const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*&order=id.desc`, {
-                        headers: {
-                            'apikey': window.SUPABASE_KEY,
-                            'Authorization': `Bearer ${window.SUPABASE_KEY}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const supabaseData = await response.json();
-                        
-                        if (Array.isArray(supabaseData) && supabaseData.length > 0) {
-                            // Converter formato Supabase para local
-                            const formattedData = supabaseData.map(item => ({
-                                id: item.id,
-                                title: item.title || 'Sem título',
-                                price: item.price || 'R$ 0,00',
-                                location: item.location || 'Local não informado',
-                                description: item.description || '',
-                                features: item.features || '',
-                                type: item.type || 'residencial',
-                                has_video: item.has_video || false,
-                                badge: item.badge || 'Novo',
-                                rural: item.rural || false,
-                                images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
-                                pdfs: item.pdfs || '',
-                                created_at: item.created_at || new Date().toISOString()
-                            }));
-                            
-                            window.properties = formattedData;
-                            window.savePropertiesToStorage();
-                            
-                            console.log(`✅ ${formattedData.length} imóveis carregados do Supabase`);
-                            
-                            // Renderizar imediatamente
-                            if (typeof window.renderProperties === 'function') {
-                                setTimeout(() => window.renderProperties('todos'), 100);
-                            }
-                            return; // SAI DA FUNÇÃO - SUPABASE BEM SUCEDIDO
-                        }
-                    }
+                window.properties = formattedData;
+                window.savePropertiesToStorage();
+                
+                console.log(`✅ ${formattedData.length} imóveis carregados do Supabase`);
+                
+                // Renderizar imediatamente
+                if (typeof window.renderProperties === 'function') {
+                    setTimeout(() => window.renderProperties('todos'), 100);
                 }
-            } catch (supabaseError) {
-                console.log('⚠️ Supabase falhou, usando fallback:', supabaseError.message);
-                // Continua para os fallbacks abaixo
+                return; // SAI DA FUNÇÃO - SUPABASE BEM SUCEDIDO
+            } else {
+                console.log('⚠️ Supabase falhou ou não tem dados:', result.error);
             }
         }
         
