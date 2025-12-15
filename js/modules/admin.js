@@ -191,6 +191,27 @@ window.setupForm = function() {
         
         try {
             if (window.editingPropertyId) {
+                console.log(`🔄 Editando imóvel ID: ${window.editingPropertyId}`);
+                
+                // ✅ PRIMEIRO: Processar PDFs se houver
+                if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
+                    console.log(`📤 Processando ${window.selectedPdfFiles.length} PDF(s) para edição...`);
+                    
+                    try {
+                        const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
+                        if (pdfsString) {
+                            // Combinar PDFs existentes + novos
+                            const existingPdfs = window.existingPdfFiles.map(p => p.url).filter(url => url);
+                            const allPdfs = [...existingPdfs, ...pdfsString.split(',')].filter(url => url);
+                            propertyData.pdfs = allPdfs.join(',');
+                            console.log(`✅ ${allPdfs.length} PDF(s) incluídos na atualização`);
+                        }
+                    } catch (pdfError) {
+                        console.error('❌ Erro ao processar PDFs:', pdfError);
+                    }
+                }
+                
+                // ✅ SEGUNDO: Atualizar imóvel
                 if (typeof window.updateProperty === 'function') {
                     const success = await window.updateProperty(window.editingPropertyId, propertyData);
                     if (success) {
@@ -198,14 +219,18 @@ window.setupForm = function() {
                     }
                 }
             } else {
+                // Código para novo imóvel (já corrigido)
                 if (typeof window.addNewProperty === 'function') {
                     const newProperty = await window.addNewProperty(propertyData);
                     alert(`✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`);
                 }
             }
             
-            cancelEdit();
-            if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+            // ✅ Limpar apenas após SUCESSO
+            setTimeout(() => {
+                cancelEdit();
+                if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+            }, 500);
             
         } catch (error) {
             console.error('❌ Erro no formulário:', error);
