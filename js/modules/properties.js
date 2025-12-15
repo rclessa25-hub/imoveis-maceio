@@ -970,6 +970,38 @@ function forceLoadProperties() {
 // Executar imediatamente também
 setTimeout(forceLoadProperties, 1000);
 
+// ========== fallback se o cliente oficial falhar ==========
+
+// Função de fallback se o cliente oficial falhar
+async function saveWithFetchDirect(propertyData) {
+    console.log('🔄 Usando fallback fetch direto para Supabase...');
+    
+    try {
+        const response = await fetch('https://syztbxvpdaplpetmixmt.supabase.co/rest/v1/properties', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(propertyData)
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            return { success: true, id: data[0]?.id };
+        } else {
+            const errorText = await response.text();
+            console.error('❌ Fallback fetch falhou:', errorText);
+            return { success: false, error: errorText };
+        }
+    } catch (error) {
+        console.error('❌ Erro no fallback fetch:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 // ========== FUNÇÃO DE DEBUG: VERIFICAR CARREGAMENTO ==========
 window.debugPropertiesLoad = function() {
     console.log('🔍 DEBUG: Verificando carregamento de propriedades...');
