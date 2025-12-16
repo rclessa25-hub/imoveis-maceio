@@ -1,3 +1,11 @@
+// js/modules/reader/pdf-core.js  
+console.log('📄 pdf-core.js carregado - VERIFICANDO VARIÁVEIS GLOBAIS');
+
+// GARANTIR compatibilidade com outros módulos
+if (typeof window.selectedPdfFiles === 'undefined') window.selectedPdfFiles = [];
+if (typeof window.existingPdfFiles === 'undefined') window.existingPdfFiles = [];
+if (typeof window.isProcessingPdfs === 'undefined') window.isProcessingPdfs = false;
+
 // ========== 2. SISTEMA DE VISUALIZAÇÃO NOS CARDS ==========
 
 // 2.1 Mostrar PDFs do imóvel
