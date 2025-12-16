@@ -59,6 +59,15 @@ window.initPdfSystem = function() {
     }
 };
 
+// TESTE: Verificar se a função está sendo definida
+console.log('📝 Definindo handleNewPdfFiles...');
+
+// TESTE: Verificar se PDF_CONFIG existe
+console.log('⚙️ PDF_CONFIG existe?', typeof PDF_CONFIG !== 'undefined');
+if (typeof PDF_CONFIG !== 'undefined') {
+    console.log('📊 PDF_CONFIG:', PDF_CONFIG);
+}
+
 // 1.2 Manipular NOVOS arquivos PDF
 window.handleNewPdfFiles = function(files) {
     console.log('🔄 handleNewPdfFiles CHAMADO!');
@@ -70,34 +79,44 @@ window.handleNewPdfFiles = function(files) {
         existingLength: window.existingPdfFiles ? window.existingPdfFiles.length : 'undefined'
     });
     
+    // ==== VERIFIQUE SE TEM ESTE CÓDIGO A PARTIR DAQUI ====
     if (files.length > PDF_CONFIG.maxFiles) {
         alert(`Máximo de ${PDF_CONFIG.maxFiles} arquivos permitido!`);
         return;
     }
     
     Array.from(files).forEach(file => {
+        // Validação do tipo
         if (!PDF_CONFIG.allowedTypes.includes(file.type)) {
             alert(`"${file.name}" não é um PDF válido!`);
             return;
         }
         
+        // Validação do tamanho
         if (file.size > PDF_CONFIG.maxSize) {
             alert(`"${file.name}" excede 10MB!`);
             return;
         }
         
+        // ==== ESTA É A PARTE CRÍTICA QUE ADICIONA AO ARRAY ====
         window.selectedPdfFiles.push({
             file: file,
             id: Date.now() + Math.random(),
             name: file.name,
-            size: formatFileSize(file.size),
+            size: window.pdfFormatFileSize ? window.pdfFormatFileSize(file.size) : 'Calculando...',
             date: new Date().toLocaleDateString(),
             isNew: true
         });
+        // ======================================================
     });
     
     window.updatePdfPreview();
     document.getElementById('pdfFileInput').value = '';
+    
+    console.log('✅ Arquivos adicionados. Novo estado:', {
+        selectedLength: window.selectedPdfFiles.length,
+        selectedPdfFiles: window.selectedPdfFiles
+    });
 };
 
 // 1.3 Atualizar preview dos PDFs
