@@ -613,7 +613,7 @@ window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
     }
 };
 
-// 4.2 Processar e salvar TODOS os PDFs (CORRIGIDA)
+// 4.2 Processar e salvar TODOS os PDFs (VERSÃO COM EXCLUSÃO CORRIGIDA)
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     console.log(`💾 Processando PDFs para imóvel ${propertyId}...`);
     
@@ -626,20 +626,49 @@ window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     window.isProcessingPdfs = true;
     
     try {
-        const allPdfUrls = [];
-        
-        // 1. Adicionar PDFs existentes (UNICAMENTE)
-        const existingUrls = new Set(); // Para evitar duplicatas
+        // ✅ 1. IDENTIFICAR PDFs que devem ser MANTIDOS (baseado no array existente ATUAL)
+        const pdfsToKeep = new Set();
+        const keptPdfUrls = [];
         
         window.existingPdfFiles.forEach(pdf => {
-            if (pdf.url && pdf.url.trim() !== '' && pdf.url !== 'EMPTY' && !existingUrls.has(pdf.url)) {
-                existingUrls.add(pdf.url);
-                allPdfUrls.push(pdf.url);
-                console.log(`📎 Mantendo PDF existente: ${pdf.name}`);
+            if (pdf.url && pdf.url.trim() !== '' && pdf.url !== 'EMPTY' && !pdfsToKeep.has(pdf.url)) {
+                pdfsToKeep.add(pdf.url);
+                keptPdfUrls.push(pdf.url);
+                console.log(`📎 Mantendo PDF: ${pdf.name} (${pdf.url})`);
             }
         });
         
-        // 2. Fazer upload dos NOVOS PDFs (APENAS OS QUE AINDA NÃO FORAM PROCESSADOS)
+        // ✅ 2. IDENTIFICAR PDFs que foram REMOVIDOS (comparando com o estado original)
+        // Para isso, precisamos saber quais PDFs estavam originalmente no imóvel
+        const property = window.properties.find(p => p.id == propertyId);
+        const originalPdfs = property && property.pdfs ? 
+            property.pdfs.split(',').filter(url => url.trim() !== '') : 
+            [];
+        
+        console.log(`📊 PDFs originais do imóvel: ${originalPdfs.length}`);
+        console.log(`📊 PDFs que serão mantidos: ${keptPdfUrls.length}`);
+        
+        // ✅ 3. IDENTIFICAR PDFs para EXCLUIR (estavam no original mas NÃO estão na lista para manter)
+        const pdfsToDelete = originalPdfs.filter(url => !pdfsToKeep.has(url));
+        
+        if (pdfsToDelete.length > 0) {
+            console.log(`🗑️ PDFs marcados para exclusão: ${pdfsToDelete.length}`);
+            pdfsToDelete.forEach(url => {
+                console.log(`   - ${url.split('/').pop() || url}`);
+            });
+            
+            // ✅ 4. EXCLUIR PDFs do Supabase Storage
+            for (const pdfUrl of pdfsToDelete) {
+                try {
+                    await window.deletePdfFromSupabaseStorage(pdfUrl);
+                } catch (error) {
+                    console.error(`❌ Erro ao excluir PDF: ${error.message}`);
+                    // Continuar mesmo se uma exclusão falhar
+                }
+            }
+        }
+        
+        // ✅ 5. Fazer upload dos NOVOS PDFs (APENAS OS QUE AINDA NÃO FORAM PROCESSADOS)
         if (window.selectedPdfFiles.length > 0) {
             console.log(`📤 Enviando ${window.selectedPdfFiles.length} NOVO(s) PDF(s)...`);
             
@@ -660,19 +689,20 @@ window.processAndSavePdfs = async function(propertyId, propertyTitle) {
                         pdf.processed = true;
                         pdf.url = uploadedUrl; // Guardar URL gerada
                         
-                        allPdfUrls.push(uploadedUrl);
+                        keptPdfUrls.push(uploadedUrl);
                         console.log(`✅ PDF salvo: ${pdf.name}`);
                     }
                 }
             }
         }
         
-        const pdfsString = allPdfUrls.length > 0 ? allPdfUrls.join(',') : '';
+        const pdfsString = keptPdfUrls.length > 0 ? keptPdfUrls.join(',') : '';
         
         console.log('📊 RESULTADO FINAL:');
-        console.log(`- PDFs existentes: ${existingUrls.size}`);
+        console.log(`- PDFs mantidos: ${keptPdfUrls.length}`);
+        console.log(`- PDFs excluídos: ${pdfsToDelete.length}`);
         console.log(`- Novos PDFs enviados: ${window.selectedPdfFiles.filter(p => p.processed).length}`);
-        console.log(`- Total URLs: ${allPdfUrls.length}`);
+        console.log(`- String final: ${pdfsString.substring(0, 50)}...`);
         
         return pdfsString;
         
