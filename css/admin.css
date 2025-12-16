@@ -114,6 +114,78 @@
     font-size: 1rem;
 }
 
+/* ========== BOTÃO "X" DE EXCLUSÃO DE PDF ========== */
+
+/* Botão "X" para PDFs existentes */
+#existingPdfsSection .delete-pdf-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c !important;
+    color: white !important;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+/* Botão "X" para novos PDFs */
+#newPdfsSection .delete-pdf-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #3498db !important;
+    color: white !important;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+}
+
+/* Efeito hover */
+#existingPdfsSection .delete-pdf-btn:hover {
+    background: #c0392b !important;
+    transform: scale(1.2);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+
+#newPdfsSection .delete-pdf-btn:hover {
+    background: #2980b9 !important;
+    transform: scale(1.2);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+}
+
+/* Container do PDF para posicionamento relativo */
+.pdf-preview-container {
+    position: relative;
+    display: inline-block;
+    margin: 5px;
+}
+
 /* ========== EXCLUSÃO DE FOTOS ========== */
 .image-preview-container {
     position: relative;
