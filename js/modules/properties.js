@@ -757,7 +757,7 @@ window.deleteProperty = async function(id) {
                     });
                 });
             }
-        
+        }
     } else {
         const errorMessage = supabaseError ? 
             `\n\nErro no servidor: ${supabaseError.substring(0, 100)}...` : 
