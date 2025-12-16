@@ -419,7 +419,7 @@ window.addNewProperty = async function(propertyData) {
             has_video: propertyData.has_video || false,
             badge: propertyData.badge || 'Novo',
             rural: propertyData.type === 'rural',
-            images: propertyData.images || "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
+            images: propertyData.images || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
             pdfs: pdfsString || '', // ✅ PDFs incluídos
             created_at: new Date().toISOString(),
             savedToSupabase: supabaseSuccess
@@ -865,7 +865,7 @@ window.syncWithSupabase = async function() {
                     has_video: item.has_video || false,
                     badge: item.badge || 'Novo',
                     rural: item.rural || false,
-                    images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+                    images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                     pdfs: item.pdfs || '',
                     created_at: item.created_at || new Date().toISOString()
                 }));
