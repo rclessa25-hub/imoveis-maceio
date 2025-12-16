@@ -96,6 +96,7 @@ window.handleNewPdfFiles = function(files) {
 };
 
 // 1.3 Atualizar preview dos PDFs
+// 1.3 Atualizar preview dos PDFs (VERSÃO COM BOTÕES "X" CORRIGIDOS)
 window.updatePdfPreview = function() {
     const pdfPreview = document.getElementById('pdfUploadPreview');
     if (!pdfPreview) return;
@@ -116,11 +117,13 @@ window.updatePdfPreview = function() {
         window.selectedPdfFiles.forEach((pdf, index) => {
             const shortName = pdf.name.length > 15 ? pdf.name.substring(0, 12) + '...' : pdf.name;
             newSection.innerHTML += `
-                <div style="background: #e8f4fc; border: 1px solid #3498db; border-radius: 6px; padding: 0.5rem; width: 90px; height: 90px; text-align: center; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;">
-                    <i class="fas fa-file-pdf" style="font-size: 1.2rem; color: #3498db; margin-bottom: 0.3rem;"></i>
-                    <p style="font-size: 0.7rem; margin: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;">${shortName}</p>
-                    <small style="color: #7f8c8d; font-size: 0.6rem;">${pdf.size}</small>
-                    <button onclick="removeNewPdf(${index})" style="position: absolute; top: -5px; right: -5px; background: #3498db; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 0.7rem; font-weight: bold; line-height: 1; padding: 0;">×</button>
+                <div class="pdf-preview-container">
+                    <div class="pdf-item-new" style="background: #e8f4fc; border: 1px solid #3498db; border-radius: 6px; padding: 0.5rem; width: 90px; height: 90px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;">
+                        <i class="fas fa-file-pdf" style="font-size: 1.2rem; color: #3498db; margin-bottom: 0.3rem;"></i>
+                        <p style="font-size: 0.7rem; margin: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;">${shortName}</p>
+                        <small style="color: #7f8c8d; font-size: 0.6rem;">${pdf.size}</small>
+                    </div>
+                    <button class="delete-pdf-btn" onclick="removeNewPdf(${index})" title="Excluir PDF">×</button>
                 </div>
             `;
         });
@@ -129,7 +132,7 @@ window.updatePdfPreview = function() {
         pdfPreview.appendChild(newSection);
     }
     
-    // 🔵 SEÇÃO 2: PDFs EXISTENTES
+    // 🟢 SEÇÃO 2: PDFs EXISTENTES
     if (window.existingPdfFiles.length > 0) {
         const existingSection = document.createElement('div');
         existingSection.id = 'existingPdfsSection';
@@ -143,11 +146,13 @@ window.updatePdfPreview = function() {
         window.existingPdfFiles.forEach((pdf, index) => {
             const shortName = pdf.name.length > 15 ? pdf.name.substring(0, 12) + '...' : pdf.name;
             existingSection.innerHTML += `
-                <div style="background: #e8f8ef; border: 1px solid #27ae60; border-radius: 6px; padding: 0.5rem; width: 90px; height: 90px; text-align: center; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;">
-                    <i class="fas fa-file-pdf" style="font-size: 1.2rem; color: #27ae60; margin-bottom: 0.3rem;"></i>
-                    <p style="font-size: 0.7rem; margin: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;">${shortName}</p>
-                    <small style="color: #7f8c8d; font-size: 0.6rem;">PDF</small>
-                    <button onclick="removeExistingPdf(${index})" style="position: absolute; top: -5px; right: -5px; background: #27ae60; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 0.7rem; font-weight: bold; line-height: 1; padding: 0;">×</button>
+                <div class="pdf-preview-container">
+                    <div class="pdf-item-existing" style="background: #e8f8ef; border: 1px solid #27ae60; border-radius: 6px; padding: 0.5rem; width: 90px; height: 90px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;">
+                        <i class="fas fa-file-pdf" style="font-size: 1.2rem; color: #27ae60; margin-bottom: 0.3rem;"></i>
+                        <p style="font-size: 0.7rem; margin: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500;">${shortName}</p>
+                        <small style="color: #7f8c8d; font-size: 0.6rem;">PDF</small>
+                    </div>
+                    <button class="delete-pdf-btn" onclick="removeExistingPdf(${index})" title="Excluir PDF">×</button>
                 </div>
             `;
         });
@@ -156,7 +161,7 @@ window.updatePdfPreview = function() {
         pdfPreview.appendChild(existingSection);
     }
     
-    // 🔵 SEÇÃO 3: Mensagem vazia
+    // ⚪ SEÇÃO 3: Mensagem vazia
     if (window.existingPdfFiles.length === 0 && window.selectedPdfFiles.length === 0) {
         pdfPreview.innerHTML = `
             <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
@@ -167,7 +172,6 @@ window.updatePdfPreview = function() {
     }
 };
 
-// 1.4 Remover PDF EXISTENTE (VERSÃO MELHORADA)
 // 1.4 Remover PDF EXISTENTE (VERSÃO DEFINITIVAMENTE CORRIGIDA)
 window.removeExistingPdf = function(index) {
     console.log(`🗑️ Tentando remover PDF existente no índice ${index}`);
