@@ -1,78 +1,57 @@
+// js/modules/reader/pdf-integration.js
+// SISTEMA DE INTEGRAÇÃO DO PDF COM OUTROS MÓDULOS
+
+console.log('🔗 pdf-integration.js carregado - Integração entre módulos');
+
+// ========== CONFIGURAÇÃO DE INTEGRAÇÃO ==========
+const PDF_INTEGRATION_CONFIG = {
+    autoInit: true,
+    connectToAdmin: true,
+    connectToProperties: true
+};
+
+// ========== INICIALIZAÇÃO DO SISTEMA ==========
+
 // 4.6 Integração automática
 window.setupPdfSupabaseIntegration = function() {
-    window.initPdfSystem();
+    console.log('🔗 Configurando integração do sistema PDF...');
     
+    // Inicializar sistema básico de PDF
+    if (typeof window.initPdfSystem === 'function') {
+        window.initPdfSystem();
+    }
+    
+    // Configurar teclas de atalho
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') window.closePdfViewer();
-    });
-    
-    document.addEventListener('click', (e) => {
-        const modal = document.getElementById('pdfViewerModal');
-        if (modal && modal.style.display === 'flex' && e.target === modal) {
+        if (e.key === 'Escape' && typeof window.closePdfViewer === 'function') {
             window.closePdfViewer();
         }
     });
     
-    window.savePdfsForProperty = async function(propertyId, propertyTitle) {
-        if (!propertyId) {
-            return '';
-        }
-        
-        if (typeof window.processAndSavePdfs === 'function') {
-            return await window.processAndSavePdfs(propertyId, propertyTitle);
-        }
-        
-        return '';
-    };
-    
-    window.addPdfHookToNewProperty = async function(propertyId, propertyData) {
-        if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
-            try {
-                const pdfsString = await window.savePdfsForProperty(propertyId, propertyData.title);
-                
-                if (pdfsString) {
-                    const index = window.properties.findIndex(p => p.id === propertyId);
-                    if (index !== -1) {
-                        window.properties[index].pdfs = pdfsString;
-                        window.savePropertiesToStorage();
-                    }
-                    
-                    if (typeof window.updateProperty === 'function') {
-                        setTimeout(async () => {
-                            try {
-                                await window.updateProperty(propertyId, { pdfs: pdfsString });
-                            } catch (error) {}
-                        }, 1000);
-                    }
-                }
-            } catch (error) {}
-        }
-    };
-    
-    window.addPdfHookToUpdateProperty = async function(propertyId, propertyData) {
-        if ((window.selectedPdfFiles && window.selectedPdfFiles.length > 0) || 
-            (window.existingPdfFiles && window.existingPdfFiles.length > 0)) {
-            
-            try {
-                const pdfsString = await window.savePdfsForProperty(propertyId, propertyData.title || 'Imóvel');
-                
-                if (pdfsString) {
-                    return pdfsString;
-                }
-            } catch (error) {}
-        }
-        
-        return null;
-    };
-    
-    const form = document.getElementById('propertyForm');
-    if (form) {
-        const originalSubmit = form.onsubmit;
-        
-        form.addEventListener('submit', async function(e) {
-            if (typeof originalSubmit === 'function') {
-                originalSubmit.call(this, e);
+    // Fechar modal ao clicar fora
+    document.addEventListener('click', (e) => {
+        const modal = document.getElementById('pdfViewerModal');
+        if (modal && modal.style.display === 'flex' && e.target === modal) {
+            if (typeof window.closePdfViewer === 'function') {
+                window.closePdfViewer();
             }
-        });
-    }
+        }
+    });
+    
+    // ... RESTANTE DO CÓDIGO QUE VOCÊ JÁ TEM ...
+    // (todo o código a partir da linha "window.savePdfsForProperty")
 };
+
+// ========== INICIALIZAÇÃO AUTOMÁTICA ==========
+if (PDF_INTEGRATION_CONFIG.autoInit) {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            if (typeof window.setupPdfSupabaseIntegration === 'function') {
+                window.setupPdfSupabaseIntegration();
+                console.log('✅ Sistema de PDF integrado com outros módulos');
+            }
+        }, 1000);
+    });
+}
+
+console.log('✅ pdf-integration.js pronto para integração');
