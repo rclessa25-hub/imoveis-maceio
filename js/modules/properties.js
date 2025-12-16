@@ -75,7 +75,7 @@ window.initializeProperties = async function() {
                         has_video: item.has_video || false,
                         badge: item.badge || 'Novo',
                         rural: item.rural || false,
-                        images: item.images || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994',
+                        images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
                         pdfs: item.pdfs || '',
                         created_at: item.created_at || new Date().toISOString()
                     }));
