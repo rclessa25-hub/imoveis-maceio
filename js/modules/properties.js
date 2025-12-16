@@ -744,19 +744,19 @@ window.deleteProperty = async function(id) {
         console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
         
         // ✅ 9. Tentar excluir PDFs relacionados (opcional)
-    // SUBSTITUA por:
-    if (property.pdfs && property.pdfs !== '' && property.pdfs !== 'EMPTY') {
-        console.log(`🗑️ Excluindo ${property.pdfs.split(',').length} PDF(s) do storage...`);
-        
-        // Chamar função para excluir PDFs
-        if (typeof window.deletePdfFromSupabaseStorage === 'function') {
-            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-            pdfUrls.forEach(url => {
-                window.deletePdfFromSupabaseStorage(url).then(success => {
-                    console.log(success ? `✅ PDF excluído: ${url}` : `❌ Falha ao excluir: ${url}`);
+        // SUBSTITUA por:
+        if (property.pdfs && property.pdfs !== '' && property.pdfs !== 'EMPTY') {
+            console.log(`🗑️ Excluindo ${property.pdfs.split(',').length} PDF(s) do storage...`);
+            
+            // Chamar função para excluir PDFs
+            if (typeof window.deletePdfFromSupabaseStorage === 'function') {
+                const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+                pdfUrls.forEach(url => {
+                    window.deletePdfFromSupabaseStorage(url).then(success => {
+                        console.log(success ? `✅ PDF excluído: ${url}` : `❌ Falha ao excluir: ${url}`);
+                    });
                 });
-            });
-        }
+            }
         
     } else {
         const errorMessage = supabaseError ? 
