@@ -168,25 +168,46 @@ window.updatePdfPreview = function() {
 };
 
 // 1.4 Remover PDF EXISTENTE (VERSÃO MELHORADA)
+// 1.4 Remover PDF EXISTENTE (VERSÃO DEFINITIVAMENTE CORRIGIDA)
 window.removeExistingPdf = function(index) {
+    console.log(`🗑️ Tentando remover PDF existente no índice ${index}`);
+    
     if (index >= 0 && index < window.existingPdfFiles.length) {
         const removedFile = window.existingPdfFiles[index];
         
         // Confirmar exclusão
         if (confirm(`🗑️ Excluir PDF "${removedFile.name}"?\n\nEsta ação removerá permanentemente este documento do imóvel.`)) {
-            window.existingPdfFiles.splice(index, 1);
-            window.updatePdfPreview();
-            console.log(`🗑️ PDF existente removido da lista: ${removedFile.name}`);
             
-            // Tentar excluir do Supabase Storage (opcional)
+            // ✅ CRÍTICO: Criar NOVO array para garantir que a referência seja atualizada
+            const newExistingFiles = [...window.existingPdfFiles];
+            newExistingFiles.splice(index, 1);
+            window.existingPdfFiles = newExistingFiles;
+            
+            console.log(`✅ PDF removido da lista: ${removedFile.name}`);
+            console.log(`📊 Agora temos ${window.existingPdfFiles.length} PDF(s) existente(s)`);
+            
+            // ✅ Forçar atualização imediata do preview
+            window.updatePdfPreview();
+            
+            // ✅ Marcar para exclusão do storage apenas como informação
             if (removedFile.url && removedFile.url.includes('supabase.co')) {
-                console.log(`🔄 Marcando PDF para exclusão do storage: ${removedFile.url}`);
-                // Aqui você pode adicionar lógica para deletar do Supabase Storage
-                // Nota: Precisa de permissões especiais no Supabase
+                console.log(`📝 PDF marcado para exclusão: ${removedFile.name}`);
+                // NOTA: A exclusão real do storage será feita ao salvar o imóvel
+                // pois o array updatedPdfFiles já não contém este arquivo
             }
             
-            alert(`✅ PDF "${removedFile.name}" será removido ao salvar as alterações.`);
+            // ✅ Feedback visual imediato
+            alert(`✅ PDF "${removedFile.name}" removido.\n\nClique em "Salvar Alterações" para confirmar a exclusão permanente.`);
+            
+            // ✅ Verificação de debug (opcional)
+            console.log('🔍 Verificação pós-exclusão:');
+            console.log('- existingPdfFiles:', window.existingPdfFiles);
+            console.log('- Índice removido:', index);
+            console.log('- Arquivo removido:', removedFile);
         }
+    } else {
+        console.error(`❌ Índice inválido para exclusão: ${index}`);
+        console.log(`📊 existingPdfFiles tem ${window.existingPdfFiles.length} itens`);
     }
 };
 
