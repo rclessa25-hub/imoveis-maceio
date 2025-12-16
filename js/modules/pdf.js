@@ -369,6 +369,44 @@ window.debugPdfs = function(propertyId) {
     }
 };
 
+// 1.9 Obter PDFs originais de um imóvel
+window.getOriginalPropertyPdfs = function(propertyId) {
+    const property = window.properties.find(p => p.id == propertyId);
+    if (!property || !property.pdfs) {
+        return [];
+    }
+    
+    return property.pdfs
+        .split(',')
+        .map(url => url.trim())
+        .filter(url => url !== '' && url !== 'EMPTY');
+};
+
+// 1.10 Função de debug para verificar exclusão
+window.debugPdfDeletion = function(propertyId) {
+    console.log('🔍 DEBUG DE EXCLUSÃO DE PDFs - Imóvel:', propertyId);
+    
+    const property = window.properties.find(p => p.id == propertyId);
+    if (!property) {
+        console.error('❌ Imóvel não encontrado');
+        return;
+    }
+    
+    const originalPdfs = window.getOriginalPropertyPdfs(propertyId);
+    const currentPdfs = window.existingPdfFiles.map(p => p.url).filter(url => url);
+    
+    console.log('📊 ESTADO ATUAL:');
+    console.log('- PDFs originais:', originalPdfs.length);
+    console.log('- PDFs atuais (existingPdfFiles):', currentPdfs.length);
+    
+    const pdfsToDelete = originalPdfs.filter(url => !currentPdfs.includes(url));
+    
+    console.log('🗑️ PDFs que SERÃO excluídos:', pdfsToDelete.length);
+    pdfsToDelete.forEach((url, i) => {
+        console.log(`  ${i + 1}. ${url.split('/').pop() || url}`);
+    });
+};
+
 // ========== 2. SISTEMA DE VISUALIZAÇÃO NOS CARDS ==========
 
 // 2.1 Função que será chamada pelos cards
