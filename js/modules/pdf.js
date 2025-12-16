@@ -613,6 +613,65 @@ window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
     }
 };
 
+// 4.1.1 Excluir PDF do Supabase Storage
+window.deletePdfFromSupabaseStorage = async function(pdfUrl) {
+    try {
+        console.log(`🗑️ Iniciando exclusão de PDF: ${pdfUrl}`);
+        
+        // Extrair nome do arquivo da URL
+        const fileName = pdfUrl.split('/').pop();
+        
+        if (!fileName) {
+            console.error('❌ Não foi possível extrair nome do arquivo da URL');
+            return false;
+        }
+        
+        console.log(`📁 Nome do arquivo para exclusão: ${fileName}`);
+        
+        // Verificar qual bucket está sendo usado
+        let bucket = 'properties';
+        if (pdfUrl.includes('/pdfs/')) {
+            bucket = 'pdfs';
+        }
+        
+        console.log(`📦 Bucket identificado: ${bucket}`);
+        
+        // URL para exclusão
+        const deleteUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/${bucket}/${fileName}`;
+        
+        console.log(`🔗 URL de exclusão: ${deleteUrl}`);
+        
+        // Verificar se temos a chave do Supabase
+        if (!window.SUPABASE_KEY) {
+            console.error('❌ Chave do Supabase não disponível');
+            return false;
+        }
+        
+        const response = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'apikey': window.SUPABASE_KEY
+            }
+        });
+        
+        console.log(`📊 Status da exclusão: ${response.status}`);
+        
+        if (response.ok) {
+            console.log(`✅ PDF excluído com sucesso: ${fileName}`);
+            return true;
+        } else {
+            const errorText = await response.text();
+            console.error(`❌ Erro ao excluir PDF: ${errorText}`);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro na exclusão do PDF:', error);
+        return false;
+    }
+};
+
 // 4.2 Processar e salvar TODOS os PDFs (VERSÃO COM EXCLUSÃO CORRIGIDA)
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     console.log(`💾 Processando PDFs para imóvel ${propertyId}...`);
