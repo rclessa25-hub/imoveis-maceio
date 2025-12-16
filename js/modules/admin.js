@@ -195,65 +195,45 @@ window.setupForm = function() {
         console.log('💾 Processando imóvel...');
         
         try {
-            if (window.editingPropertyId) {
-                console.log(`🔄 Editando imóvel ID: ${window.editingPropertyId}`);
+// ✅ CORREÇÃO: Processar PDFs SEMPRE na edição, mesmo se não houver novos PDFs
+        if (window.editingPropertyId) {
+            console.log(`🔄 Editando imóvel ID: ${window.editingPropertyId}`);
+            
+            // ✅ 1. Preparar dados básicos
+            const updateData = { ...propertyData };
+            
+            // ✅ 2. Processar PDFs SEMPRE (para tratar exclusões de PDFs existentes)
+            console.log(`📝 Processando PDFs para edição...`);
+            console.log(`- PDFs existentes: ${window.existingPdfFiles.length}`);
+            console.log(`- Novos PDFs: ${window.selectedPdfFiles ? window.selectedPdfFiles.length : 0}`);
+            
+            try {
+                // ✅ CHAMAR processAndSavePdfs SEMPRE, mesmo sem novos PDFs
+                const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
                 
-                // ✅ 1. Preparar dados básicos SEM PDFs inicialmente
-                const updateData = { ...propertyData };
-                
-                // ✅ 2. Processar PDFs APENAS se houver novos
-                if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
-                    console.log(`📤 Processando ${window.selectedPdfFiles.length} NOVO(s) PDF(s) para edição...`);
-                    
-                    try {
-                        // Coletar PDFs existentes
-                        const existingPdfUrls = window.existingPdfFiles
-                            .map(p => p.url)
-                            .filter(url => url && url.trim() !== '');
-                        
-                        console.log(`📄 PDFs existentes encontrados: ${existingPdfUrls.length}`);
-                        
-                        // Processar NOVOS PDFs (APENAS UMA VEZ)
-                        console.log(`📝 Iniciando processamento de ${window.selectedPdfFiles.length} PDF(s)...`);
-                        const newPdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
-                        
-                        console.log(`📄 String retornada do processamento: "${newPdfsString}"`);
-                        
-                        // ✅ CONTAGEM CORRETA - Separar apenas URLs NOVAS
-                        let newPdfUrls = [];
-                        if (newPdfsString && newPdfsString.trim() !== '') {
-                            newPdfUrls = newPdfsString.split(',')
-                                .map(url => url.trim())
-                                .filter(url => url !== '')
-                                .filter(url => !existingPdfUrls.includes(url)); // ✅ EXCLUIR URLs já existentes
-                        }
-                        
-                        console.log(`📊 Resultado: ${newPdfUrls.length} URL(s) NOVA(s) encontrada(s)`);
-                        
-                        // ✅ Verificar se há duplicação
-                        const allUrls = new Set([...existingPdfUrls, ...newPdfUrls]);
-                        const allPdfUrls = Array.from(allUrls);
-                        
-                        updateData.pdfs = allPdfUrls.join(',');
-                        
-                        console.log(`✅ PDFs FINAIS: ${existingPdfUrls.length} existentes + ${newPdfUrls.length} novos = ${allPdfUrls.length} total`);
-                        
-                    } catch (pdfError) {
-                        console.error('❌ Erro ao processar PDFs:', pdfError);
-                        // Continuar sem PDFs se houver erro
-                    }
+                if (pdfsString) {
+                    updateData.pdfs = pdfsString;
+                    console.log(`✅ PDFs processados: ${pdfsString.substring(0, 50)}...`);
                 } else {
-                    console.log('ℹ️ Nenhum novo PDF para processar na edição');
+                    // Se não há PDFs, definir como string vazia
+                    updateData.pdfs = '';
+                    console.log('ℹ️ Nenhum PDF para o imóvel');
                 }
                 
-                // ✅ 3. Atualizar imóvel
-                if (typeof window.updateProperty === 'function') {
-                    console.log('💾 Enviando atualização para o imóvel...');
-                    const success = await window.updateProperty(window.editingPropertyId, updateData);
-                    if (success) {
-                        alert('✅ Imóvel atualizado com sucesso!');
-                    }
+            } catch (pdfError) {
+                console.error('❌ Erro ao processar PDFs:', pdfError);
+                // Continuar sem PDFs se houver erro
+            }
+            
+            // ✅ 3. Atualizar imóvel
+            if (typeof window.updateProperty === 'function') {
+                console.log('💾 Enviando atualização para o imóvel...');
+                const success = await window.updateProperty(window.editingPropertyId, updateData);
+                if (success) {
+                    alert('✅ Imóvel atualizado com sucesso!');
                 }
+            }
+        }
             } else {
                 // ✅ CRIAR NOVO IMÓVEL
                 if (typeof window.addNewProperty === 'function') {
