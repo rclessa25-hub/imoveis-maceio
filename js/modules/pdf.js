@@ -211,6 +211,33 @@ window.removeExistingPdf = function(index) {
     }
 };
 
+// 1.5 Função de verificação para garantir integridade dos PDFs
+window.verifyPdfIntegrity = function() {
+    console.log('🔍 VERIFICAÇÃO DE INTEGRIDADE DOS PDFs:');
+    console.log('- selectedPdfFiles:', window.selectedPdfFiles.length);
+    console.log('- existingPdfFiles:', window.existingPdfFiles.length);
+    
+    // Verificar se há IDs duplicados
+    const allIds = [
+        ...window.selectedPdfFiles.map(p => p.id),
+        ...window.existingPdfFiles.map(p => p.id)
+    ];
+    const uniqueIds = [...new Set(allIds)];
+    
+    console.log(`- IDs únicos: ${uniqueIds.length} de ${allIds.length} total`);
+    
+    if (allIds.length !== uniqueIds.length) {
+        console.warn('⚠️ POSSÍVEL DUPLICAÇÃO DE IDs DETECTADA!');
+    }
+    
+    return {
+        selected: window.selectedPdfFiles.length,
+        existing: window.existingPdfFiles.length,
+        hasDuplicates: allIds.length !== uniqueIds.length
+    };
+};
+
+// 1.6 Carregar PDFs para edição (VERSÃO CORRIGIDA)
 window.removeNewPdf = function(index) {
     if (index >= 0 && index < window.selectedPdfFiles.length) {
         const removedFile = window.selectedPdfFiles[index];
@@ -220,7 +247,7 @@ window.removeNewPdf = function(index) {
     }
 };
 
-// 1.5 Carregar PDFs para edição (VERSÃO CORRIGIDA)
+// 1.7 Carregar PDFs para edição (VERSÃO CORRIGIDA)
 window.loadExistingPdfsForEdit = function(property) {
     console.log('📄 Carregando TODOS os PDFs existentes para edição:', property);
     console.log('📋 Campo pdfs do imóvel:', property.pdfs);
@@ -307,7 +334,7 @@ window.loadExistingPdfsForEdit = function(property) {
     window.updatePdfPreview();
 };
 
-// 1.6 Limpar PDFs
+// 1.8 Limpar PDFs
 window.clearAllPdfs = function() {
     window.existingPdfFiles = [];
     window.selectedPdfFiles = [];
@@ -315,7 +342,7 @@ window.clearAllPdfs = function() {
     console.log('🧹 Todos os PDFs removidos');
 };
 
-// 1.7 Função de DEBUG para verificar PDFs
+// 1.9 Função de DEBUG para verificar PDFs
 window.debugPdfs = function(propertyId) {
     const property = window.properties.find(p => p.id === propertyId);
     if (!property) {
