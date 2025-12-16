@@ -20,17 +20,41 @@ const PDF_CONFIG = {
 window.selectedPdfFiles = [];
 window.existingPdfFiles = [];
 window.isProcessingPdfs = false;
+window.pdfSystemInitialized = false;
 
 // ========== 1. SISTEMA DE UPLOAD NO ADMIN ==========
 
 // 1.1 Inicializar sistema de PDF no admin
 window.initPdfSystem = function() {
+    // VERIFICAÇÃO CRÍTICA: Evitar inicialização duplicada
+    if (window.pdfSystemInitialized) {
+        console.log('⚠️ Sistema PDF já inicializado - ignorando...');
+        return;
+    }
+
+    console.log('🔧 Inicializando sistema de PDF (primeira vez)...');
+    
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     const pdfFileInput = document.getElementById('pdfFileInput');
     
     if (pdfUploadArea && pdfFileInput) {
-        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+        // REMOVER event listeners antigos primeiro (se houver)
+        pdfUploadArea.replaceWith(pdfUploadArea.cloneNode(true));
+        pdfFileInput.replaceWith(pdfFileInput.cloneNode(true));
+      
+          // Recuperar elementos frescos
+        const freshUploadArea = document.getElementById('pdfUploadArea');
+        const freshFileInput = document.getElementById('pdfFileInput');
         
+        / ADICIONAR listeners apenas uma vez
+        freshUploadArea.addEventListener('click', () => freshFileInput.click());
+        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+
+        freshUploadArea.addEventListener('dragleave', () => {
+            freshUploadArea.style.borderColor = '#95a5a6';
+            freshUploadArea.style.background = '#fafafa';
+        });
+                      
         pdfUploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             pdfUploadArea.style.borderColor = '#3498db';
@@ -41,7 +65,7 @@ window.initPdfSystem = function() {
             pdfUploadArea.style.borderColor = '#95a5a6';
             pdfUploadArea.style.background = '#fafafa';
         });
-        
+
         pdfUploadArea.addEventListener('drop', (e) => {
             e.preventDefault();
             pdfUploadArea.style.borderColor = '#95a5a6';
@@ -50,12 +74,16 @@ window.initPdfSystem = function() {
                 window.handleNewPdfFiles(e.dataTransfer.files);
             }
         });
-        
+
         pdfFileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 window.handleNewPdfFiles(e.target.files);
             }
         });
+
+        // MARCAR como inicializado
+        window.pdfSystemInitialized = true;
+        console.log('✅ Sistema PDF inicializado com sucesso');
     }
 };
 
@@ -103,7 +131,7 @@ window.handleNewPdfFiles = function(files) {
             file: file,
             id: Date.now() + Math.random(),
             name: file.name,
-            size: formatFileSize(file.size), //size: window.pdfFormatFileSize ? window.pdfFormatFileSize(file.size) : 'Calculando...',
+            size: window.pdfFormatFileSize ? window.pdfFormatFileSize(file.size) : 'Calculando...',
             date: new Date().toLocaleDateString(),
             isNew: true
         });
@@ -278,4 +306,14 @@ window.clearAllPdfs = function() {
     window.existingPdfFiles = [];
     window.selectedPdfFiles = [];
     window.updatePdfPreview();
+};
+
+// NO FINAL do pdf-ui.js, adicione:
+console.log('🔍 Rastreamento de chamadas para initPdfSystem:');
+
+// Sobrescrever a função temporariamente para rastrear
+const originalInitPdfSystem = window.initPdfSystem;
+window.initPdfSystem = function() {
+    console.trace('📞 initPdfSystem chamado de:');
+    return originalInitPdfSystem.apply(this, arguments);
 };
