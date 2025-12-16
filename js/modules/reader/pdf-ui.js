@@ -1,4 +1,10 @@
-// js/modules/reader/pdf.js
+// js/modules/reader/pdf-ui.js
+console.log('🎨 pdf-ui.js carregado - INICIALIZANDO VARIÁVEIS GLOBAIS');
+
+// INICIALIZAÇÃO CRÍTICA - garantir que as variáveis existam
+if (typeof window.selectedPdfFiles === 'undefined') window.selectedPdfFiles = [];
+if (typeof window.existingPdfFiles === 'undefined') window.existingPdfFiles = [];
+
 // SISTEMA DE PDFs CORRETO E FUNCIONAL - VERSÃO LIMPA
 
 // ========== CONFIGURAÇÕES ==========
