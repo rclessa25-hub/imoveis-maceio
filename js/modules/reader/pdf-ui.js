@@ -24,67 +24,106 @@ window.pdfSystemInitialized = false;
 
 // ========== 1. SISTEMA DE UPLOAD NO ADMIN ==========
 
-// 1.1 Inicializar sistema de PDF no admin
+// 1.1 Inicializar sistema de PDF no admin - VERSÃO CORRIGIDA
 window.initPdfSystem = function() {
     // VERIFICAÇÃO CRÍTICA: Evitar inicialização duplicada
     if (window.pdfSystemInitialized) {
-        console.log('⚠️ Sistema PDF já inicializado - ignorando...');
+        console.log('⚠️ Sistema PDF já inicializado - ignorando nova chamada');
         return;
     }
-
+    
     console.log('🔧 Inicializando sistema de PDF (primeira vez)...');
     
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     const pdfFileInput = document.getElementById('pdfFileInput');
     
-    if (pdfUploadArea && pdfFileInput) {
-        // REMOVER event listeners antigos primeiro (se houver)
-        pdfUploadArea.replaceWith(pdfUploadArea.cloneNode(true));
-        pdfFileInput.replaceWith(pdfFileInput.cloneNode(true));
-      
-          // Recuperar elementos frescos
-        const freshUploadArea = document.getElementById('pdfUploadArea');
-        const freshFileInput = document.getElementById('pdfFileInput');
-        
-        / ADICIONAR listeners apenas uma vez
-        freshUploadArea.addEventListener('click', () => freshFileInput.click());
-        pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
-
-        freshUploadArea.addEventListener('dragleave', () => {
-            freshUploadArea.style.borderColor = '#95a5a6';
-            freshUploadArea.style.background = '#fafafa';
-        });
-                      
-        pdfUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            pdfUploadArea.style.borderColor = '#3498db';
-            pdfUploadArea.style.background = '#e8f4fc';
-        });
-        
-        pdfUploadArea.addEventListener('dragleave', () => {
-            pdfUploadArea.style.borderColor = '#95a5a6';
-            pdfUploadArea.style.background = '#fafafa';
-        });
-
-        pdfUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            pdfUploadArea.style.borderColor = '#95a5a6';
-            pdfUploadArea.style.background = '#fafafa';
-            if (e.dataTransfer.files.length > 0) {
-                window.handleNewPdfFiles(e.dataTransfer.files);
-            }
-        });
-
-        pdfFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                window.handleNewPdfFiles(e.target.files);
-            }
-        });
-
-        // MARCAR como inicializado
-        window.pdfSystemInitialized = true;
-        console.log('✅ Sistema PDF inicializado com sucesso');
+    if (!pdfUploadArea || !pdfFileInput) {
+        console.log('❌ Elementos de upload não encontrados');
+        return;
     }
+    
+    console.log('✅ Elementos encontrados, configurando event listeners...');
+    
+    // 1. CLONE os elementos para remover event listeners antigos
+    const newUploadArea = pdfUploadArea.cloneNode(true);
+    const newFileInput = pdfFileInput.cloneNode(true);
+    
+    pdfUploadArea.parentNode.replaceChild(newUploadArea, pdfUploadArea);
+    pdfFileInput.parentNode.replaceChild(newFileInput, pdfFileInput);
+    
+    // 2. Recuperar os NOVOS elementos (clones)
+    const freshUploadArea = document.getElementById('pdfUploadArea');
+    const freshFileInput = document.getElementById('pdfFileInput');
+    
+    if (!freshUploadArea || !freshFileInput) {
+        console.log('❌ Não foi possível recuperar elementos após clone');
+        return;
+    }
+    
+    // 3. Configurar eventos APENAS UMA VEZ
+    
+    // Clique na área de upload
+    freshUploadArea.addEventListener('click', function handleUploadClick(e) {
+        console.log('🎯 Área de upload clicada (evento único)');
+        e.stopPropagation();
+        freshFileInput.click();
+    }, { once: false }); // NÃO usar {once: true} - precisa funcionar múltiplas vezes
+    
+    // Drag over
+    freshUploadArea.addEventListener('dragover', function handleDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        freshUploadArea.style.borderColor = '#3498db';
+        freshUploadArea.style.background = '#e8f4fc';
+    });
+    
+    // Drag leave
+    freshUploadArea.addEventListener('dragleave', function handleDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        freshUploadArea.style.borderColor = '#95a5a6';
+        freshUploadArea.style.background = '#fafafa';
+    });
+    
+    // Drop
+    freshUploadArea.addEventListener('drop', function handleDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        freshUploadArea.style.borderColor = '#95a5a6';
+        freshUploadArea.style.background = '#fafafa';
+        
+        if (e.dataTransfer.files.length > 0) {
+            console.log('📁 Arquivo solto via drag & drop');
+            window.handleNewPdfFiles(e.dataTransfer.files);
+        }
+    });
+    
+    // Change no input de arquivo
+    freshFileInput.addEventListener('change', function handleFileChange(e) {
+        console.log('📄 Input de arquivo alterado');
+        if (e.target.files && e.target.files.length > 0) {
+            window.handleNewPdfFiles(e.target.files);
+        }
+    });
+    
+    // 4. Marcar como inicializado
+    window.pdfSystemInitialized = true;
+    
+    console.log('✅ Sistema PDF inicializado com sucesso!');
+    console.log('- Event listeners configurados');
+    console.log('- Flag pdfSystemInitialized:', window.pdfSystemInitialized);
+    
+    // 5. DEBUG: Verificar se há listeners duplicados
+    setTimeout(() => {
+        console.log('🔍 DEBUG: Verificando event listeners...');
+        const uploadEvents = getEventListeners(freshUploadArea);
+        const inputEvents = getEventListeners(freshFileInput);
+        
+        console.log('📊 Listeners na área de upload:', 
+            uploadEvents ? Object.keys(uploadEvents).length : 'Não disponível');
+        console.log('📊 Listeners no input de arquivo:', 
+            inputEvents ? Object.keys(inputEvents).length : 'Não disponível');
+    }, 1000);
 };
 
 // TESTE: Verificar se a função está sendo definida
