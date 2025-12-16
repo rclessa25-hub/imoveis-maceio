@@ -61,6 +61,15 @@ window.initPdfSystem = function() {
 
 // 1.2 Manipular NOVOS arquivos PDF
 window.handleNewPdfFiles = function(files) {
+    console.log('🔄 handleNewPdfFiles CHAMADO!');
+    console.log('📁 Arquivos recebidos:', files);
+    console.log('🔍 Estado atual das variáveis:', {
+        selectedPdfFiles: window.selectedPdfFiles,
+        selectedLength: window.selectedPdfFiles ? window.selectedPdfFiles.length : 'undefined',
+        existingPdfFiles: window.existingPdfFiles,
+        existingLength: window.existingPdfFiles ? window.existingPdfFiles.length : 'undefined'
+    });
+    
     if (files.length > PDF_CONFIG.maxFiles) {
         alert(`Máximo de ${PDF_CONFIG.maxFiles} arquivos permitido!`);
         return;
