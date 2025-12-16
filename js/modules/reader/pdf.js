@@ -379,9 +379,53 @@ function loadPdfList(property) {
 }
 
 // 2.5 Visualizar documento
+// SUBSTITUA por:
 window.viewPdfDocument = function(url, fileName) {
-    window.open(url, '_blank');
+    // Primeiro verifica se o arquivo existe
+    fetch(url, { method: 'HEAD' })
+        .then(response => {
+            if (response.ok) {
+                window.open(url, '_blank');
+            } else {
+                alert('❌ Documento PDF não encontrado!\n\nO arquivo pode ter sido excluído.');
+                console.error('PDF não encontrado:', url);
+                
+                // Opcional: Remover URL inválida do imóvel
+                if (confirm('Deseja remover este link inválido do imóvel?')) {
+                    removeInvalidPdfUrl(url);
+                }
+            }
+        })
+        .catch(error => {
+            alert('❌ Erro ao acessar documento PDF.');
+            console.error('Erro ao acessar PDF:', error);
+        });
 };
+
+// 2.5.1 Função auxiliar para remover URL inválida
+function removeInvalidPdfUrl(badUrl) {
+    // Encontrar imóvel que contém esta URL
+    const propertyIndex = window.properties.findIndex(p => 
+        p.pdfs && p.pdfs.includes(badUrl)
+    );
+    
+    if (propertyIndex !== -1) {
+        const property = window.properties[propertyIndex];
+        const pdfUrls = property.pdfs.split(',')
+            .map(url => url.trim())
+            .filter(url => url !== badUrl && url !== '');
+        
+        property.pdfs = pdfUrls.join(',');
+        window.savePropertiesToStorage();
+        
+        // Atualizar no Supabase
+        if (window.updateProperty) {
+            window.updateProperty(property.id, { pdfs: property.pdfs });
+        }
+        
+        alert('✅ Link PDF inválido removido do imóvel!');
+    }
+}
 
 // 2.6 Fechar visualizador
 window.closePdfViewer = function() {
