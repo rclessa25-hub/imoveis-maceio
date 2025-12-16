@@ -712,9 +712,24 @@ window.deletePdfFromSupabaseStorage = async function(pdfUrl) {
 
 // 4.2 Processar e salvar TODOS os PDFs (VERSÃO COM EXCLUSÃO CORRIGIDA)
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    console.log(`💾 Processando PDFs para imóvel ${propertyId}...`);
+    console.log(`💾 ==========================================`);
+    console.log(`💾 PROCESSANDO PDFs para imóvel ${propertyId}`);
+    console.log(`💾 ==========================================`);
     
-    // ✅ CONTROLE PARA EVITAR EXECUÇÃO DUPLA
+    // ✅ DEBUG: Mostrar estado atual
+    console.log(`📊 ESTADO ATUAL DOS PDFs:`);
+    console.log(`- existingPdfFiles: ${window.existingPdfFiles.length}`);
+    console.log(`- selectedPdfFiles: ${window.selectedPdfFiles ? window.selectedPdfFiles.length : 0}`);
+    console.log(`- propertyId: ${propertyId}`);
+    
+    // Mostrar URLs dos PDFs existentes
+    if (window.existingPdfFiles.length > 0) {
+        console.log(`📄 PDFs EXISTENTES:`);
+        window.existingPdfFiles.forEach((pdf, i) => {
+            console.log(`  ${i + 1}. ${pdf.name} - ${pdf.url ? 'Com URL' : 'Sem URL'}`);
+        });
+    }
+  // ✅ CONTROLE PARA EVITAR EXECUÇÃO DUPLA
     if (window.isProcessingPdfs) {
         console.log('⚠️ PDFs já sendo processados, ignorando chamada duplicada');
         return '';
