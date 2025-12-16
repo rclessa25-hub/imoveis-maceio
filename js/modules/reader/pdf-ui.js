@@ -103,7 +103,7 @@ window.handleNewPdfFiles = function(files) {
             file: file,
             id: Date.now() + Math.random(),
             name: file.name,
-            size: window.pdfFormatFileSize ? window.pdfFormatFileSize(file.size) : 'Calculando...',
+            size: formatFileSize(file.size), //size: window.pdfFormatFileSize ? window.pdfFormatFileSize(file.size) : 'Calculando...',
             date: new Date().toLocaleDateString(),
             isNew: true
         });
