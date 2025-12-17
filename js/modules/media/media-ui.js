@@ -1,0 +1,199 @@
+// js/modules/media/media-ui.js - Interface de Usuário Compartilhada
+console.log('🎨 media-ui.js carregado - Sistema de UI para Mídia');
+
+/**
+ * MÓDULO DE INTERFACE DO USUÁRIO
+ * Responsabilidade: Drag & drop, preview visual, exclusão de itens da lista.
+ * Dependências: Nenhuma diretamente. Aguarda integração com media-core.js.
+ */
+
+// ========== VARIÁVEIS DO MÓDULO UI ==========
+let mediaUploadArea = null;
+let mediaFileInput = null;
+let mediaPreviewContainer = null;
+
+// ========== INICIALIZAÇÃO DA UI ==========
+window.initMediaUI = function() {
+    console.log('🔧 Inicializando UI do módulo de mídia...');
+    
+    // 1. Localizar elementos no DOM (usando IDs do sistema atual)
+    mediaUploadArea = document.getElementById('uploadArea');
+    mediaFileInput = document.getElementById('fileInput');
+    mediaPreviewContainer = document.getElementById('uploadPreview');
+    
+    if (!mediaUploadArea || !mediaFileInput) {
+        console.warn('⚠️  Elementos de upload não encontrados. UI não inicializada.');
+        return false;
+    }
+    
+    console.log('✅ Elementos de UI encontrados:', {
+        uploadArea: !!mediaUploadArea,
+        fileInput: !!mediaFileInput,
+        previewContainer: !!mediaPreviewContainer
+    });
+    
+    // 2. Configurar Event Listeners (substitui os antigos do admin.js)
+    setupEventListeners();
+    
+    // 3. Atualizar preview inicial (se houver arquivos previamente selecionados)
+    updateMediaPreview();
+    
+    console.log('✅ UI de mídia completamente inicializada e pronta.');
+    return true;
+};
+
+// ========== CONFIGURAÇÃO DE EVENTOS ==========
+function setupEventListeners() {
+    // Limpar event listeners antigos clonando os elementos
+    const newUploadArea = mediaUploadArea.cloneNode(true);
+    const newFileInput = mediaFileInput.cloneNode(true);
+    mediaUploadArea.parentNode.replaceChild(newUploadArea, mediaUploadArea);
+    mediaFileInput.parentNode.replaceChild(newFileInput, mediaFileInput);
+    
+    // Reatribuir referências aos novos elementos
+    mediaUploadArea = newUploadArea;
+    mediaFileInput = newFileInput;
+    
+    // Clique na área de upload
+    mediaUploadArea.addEventListener('click', () => {
+        console.log('🎯 Área de upload clicada');
+        mediaFileInput.click();
+    });
+    
+    // Drag & Drop
+    mediaUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        mediaUploadArea.style.borderColor = '#3498db';
+        mediaUploadArea.style.background = '#e8f4fc';
+    });
+    
+    mediaUploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        mediaUploadArea.style.borderColor = '#ddd';
+        mediaUploadArea.style.background = '#fafafa';
+    });
+    
+    mediaUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        mediaUploadArea.style.borderColor = '#ddd';
+        mediaUploadArea.style.background = '#fafafa';
+        
+        if (e.dataTransfer.files.length > 0) {
+            console.log('📁 Arquivos soltos via drag & drop:', e.dataTransfer.files.length);
+            // Esta função será conectada na Etapa 4
+            if (window.handleNewMediaFiles) {
+                window.handleNewMediaFiles(e.dataTransfer.files);
+            } else {
+                console.warn('⚠️  handleNewMediaFiles não disponível (conectar na Etapa 4)');
+            }
+        }
+    });
+    
+    // Alteração no input de arquivo
+    mediaFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            console.log('📸 Arquivos selecionados via input:', e.target.files.length);
+            if (window.handleNewMediaFiles) {
+                window.handleNewMediaFiles(e.target.files);
+            }
+        }
+    });
+    
+    console.log('✅ Event listeners configurados (cliques, drag & drop, change).');
+}
+
+// ========== ATUALIZAÇÃO DO PREVIEW ==========
+window.updateMediaPreview = function() {
+    if (!mediaPreviewContainer) return;
+    
+    console.log('🔄 Atualizando preview de mídia...');
+    
+    // Limpar container
+    mediaPreviewContainer.innerHTML = '';
+    
+    // Agrupar arquivos existentes e novos (simulação - será conectado)
+    const allFiles = [...(window.existingMediaFiles || []), ...(window.selectedMediaFiles || [])];
+    
+    if (allFiles.length === 0) {
+        // Estado vazio - mostrar mensagem amigável
+        mediaPreviewContainer.innerHTML = `
+            <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+            </div>
+        `;
+        return;
+    }
+    
+    // Renderizar previews
+    allFiles.forEach((file, index) => {
+        const isImage = file.type?.includes('image') || file.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+        const isVideo = file.type?.includes('video') || file.name?.match(/\.(mp4|mov|avi)$/i);
+        
+        const previewItem = document.createElement('div');
+        previewItem.className = 'media-preview-item';
+        previewItem.style.cssText = `
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            overflow: hidden;
+            display: inline-block;
+            margin: 5px;
+            border: 2px solid ${file.isExisting ? '#27ae60' : '#3498db'};
+            background: ${file.isExisting ? '#e8f8ef' : '#e8f4fc'};
+        `;
+        
+        let content = '';
+        if (isImage && file.url) {
+            content = `<img src="${file.url}" style="width:100%; height:100%; object-fit:cover;" alt="Preview">`;
+        } else if (isVideo && file.url) {
+            content = `
+                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#2c3e50;">
+                    <i class="fas fa-video" style="font-size:2rem; color:#ecf0f1;"></i>
+                </div>
+            `;
+        } else {
+            // Para novos arquivos (File objects) ou sem URL
+            const icon = isImage ? 'fa-image' : (isVideo ? 'fa-video' : 'fa-file');
+            content = `
+                <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                    <i class="fas ${icon}" style="font-size:1.5rem; color:#7f8c8d; margin-bottom:5px;"></i>
+                    <small style="font-size:0.7rem; color:#95a5a6; text-align:center; padding:0 3px;">${file.name || 'Arquivo'}</small>
+                </div>
+            `;
+        }
+        
+        // Botão de exclusão (será conectado na Etapa 4)
+        previewItem.innerHTML = content + `
+            <button onclick="removeMediaFile(${index})" 
+                    style="position:absolute; top:-8px; right:-8px; background:#e74c3c; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:14px;">
+                ×
+            </button>
+            ${file.isExisting ? '<div style="position:absolute; bottom:2px; left:2px; background:#27ae60; color:white; font-size:0.6rem; padding:1px 4px; border-radius:3px;">Existente</div>' : ''}
+        `;
+        
+        mediaPreviewContainer.appendChild(previewItem);
+    });
+    
+    console.log(`✅ Preview atualizado: ${allFiles.length} item(ns) visível(is).`);
+};
+
+// ========== INICIALIZAÇÃO AUTOMÁTICA ==========
+// Aguarda o DOM carregar para inicializar a UI
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            window.initMediaUI();
+            console.log('🎨 Módulo de UI de mídia integrado ao DOM.');
+        }, 500);
+    });
+} else {
+    setTimeout(() => {
+        window.initMediaUI();
+        console.log('🎨 Módulo de UI de mídia integrado ao DOM (já carregado).');
+    }, 500);
+}
+
+console.log('✅ media-ui.js carregado. UI pronta para inicialização.');
