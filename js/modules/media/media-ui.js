@@ -42,23 +42,43 @@ window.initMediaUI = function() {
     return true;
 };
 
-// ========== CONFIGURAÇÃO DE EVENTOS ==========
+// ========== CONFIGURAÇÃO DE EVENTOS (VERSÃO CORRIGIDA) ==========
 function setupEventListeners() {
-    // Limpar event listeners antigos clonando os elementos
-    const newUploadArea = mediaUploadArea.cloneNode(true);
-    const newFileInput = mediaFileInput.cloneNode(true);
-    mediaUploadArea.parentNode.replaceChild(newUploadArea, mediaUploadArea);
-    mediaFileInput.parentNode.replaceChild(newFileInput, mediaFileInput);
+    console.log('🔧 Configurando event listeners do módulo de mídia...');
     
-    // Reatribuir referências aos novos elementos
+    // 1. DESATIVAR COMPLETAMENTE OS EVENT LISTENERS ANTIGOS do admin.js
+    // Para fazer isso, vamos REMOVER os elementos antigos e criar novos
+    const originalUploadArea = document.getElementById('uploadArea');
+    const originalFileInput = document.getElementById('fileInput');
+    
+    if (!originalUploadArea || !originalFileInput) {
+        console.error('❌ Elementos de upload não encontrados para correção');
+        return;
+    }
+    
+    // 2. CRIAR NOVOS ELEMENTOS (clones sem event listeners)
+    const newUploadArea = originalUploadArea.cloneNode(true);
+    const newFileInput = originalFileInput.cloneNode(true);
+    
+    // Substituir os elementos antigos pelos novos
+    originalUploadArea.parentNode.replaceChild(newUploadArea, originalUploadArea);
+    originalFileInput.parentNode.replaceChild(newFileInput, originalFileInput);
+    
+    // 3. ATUALIZAR NOSSAS REFERÊNCIAS para os NOVOS elementos
     mediaUploadArea = newUploadArea;
     mediaFileInput = newFileInput;
     
+    console.log('✅ Elementos de UI resetados (event listeners antigos removidos)');
+    
+    // 4. ADICIONAR APENAS OS NOVOS EVENT LISTENERS (do nosso módulo)
+    
     // Clique na área de upload
-    mediaUploadArea.addEventListener('click', () => {
-        console.log('🎯 Área de upload clicada');
+    mediaUploadArea.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🎯 [MÓDULO MEDIA] Área de upload clicada');
         mediaFileInput.click();
-    });
+    }, { once: false });
     
     // Drag & Drop
     mediaUploadArea.addEventListener('dragover', (e) => {
@@ -75,16 +95,14 @@ function setupEventListeners() {
     
     mediaUploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         mediaUploadArea.style.borderColor = '#ddd';
         mediaUploadArea.style.background = '#fafafa';
         
         if (e.dataTransfer.files.length > 0) {
-            console.log('📁 Arquivos soltos via drag & drop:', e.dataTransfer.files.length);
-            // Esta função será conectada na Etapa 4
+            console.log('📁 [MÓDULO MEDIA] Arquivos soltos:', e.dataTransfer.files.length);
             if (window.handleNewMediaFiles) {
                 window.handleNewMediaFiles(e.dataTransfer.files);
-            } else {
-                console.warn('⚠️  handleNewMediaFiles não disponível (conectar na Etapa 4)');
             }
         }
     });
@@ -92,14 +110,14 @@ function setupEventListeners() {
     // Alteração no input de arquivo
     mediaFileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length > 0) {
-            console.log('📸 Arquivos selecionados via input:', e.target.files.length);
+            console.log('📸 [MÓDULO MEDIA] Arquivos selecionados:', e.target.files.length);
             if (window.handleNewMediaFiles) {
                 window.handleNewMediaFiles(e.target.files);
             }
         }
     });
     
-    console.log('✅ Event listeners configurados (cliques, drag & drop, change).');
+    console.log('✅ Event listeners do módulo de mídia configurados (sem duplicação)');
 }
 
 // ========== ATUALIZAÇÃO DO PREVIEW ==========
@@ -195,5 +213,4 @@ if (document.readyState === 'loading') {
         console.log('🎨 Módulo de UI de mídia integrado ao DOM (já carregado).');
     }, 500);
 }
-
 console.log('✅ media-ui.js carregado. UI pronta para inicialização.');
