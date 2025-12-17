@@ -474,7 +474,7 @@ function initializeAdminSystem() {
     // Tentativa 3: Emergência após 3 segundos
     setTimeout(() => {
         console.log('🆘 Aplicando correção de emergência...');
-        applyEmergencyFilterFix();
+//        applyEmergencyFilterFix();
     }, 3000);
     
     console.log('✅ Sistema admin inicializado');
