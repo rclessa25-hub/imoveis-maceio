@@ -443,29 +443,31 @@
 <!-- Adicione esta linha ANTES dos seus scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- Depois seu módulo supabase -->
-<script src="js/modules/supabase.js"></script>
-    
-<!-- ========== SCRIPTS MODULARIZADOS ========== -->
-<script src="js/modules/utils.js"></script>
-<script src="js/modules/properties/properties-core.js"></script>
-<script src="js/modules/properties.js"></script>
-<script src="js/modules/gallery.js"></script>
-<script src="js/modules/admin.js"></script>
-//<script src="js/modules/pdf.js"></script>
-<!-- DEPOIS (ATUALIZAR PARA) -->
-<script src="js/modules/reader/pdf-logger.js"></script>
-<script src="js/modules/reader/pdf-utils.js"></script>  <!-- NOVO -->
-<script src="js/modules/reader/pdf-core.js"></script>
-<script src="js/modules/reader/pdf-ui.js"></script>
-<script src="js/modules/reader/pdf-integration.js"></script>
-<!-- ========== MÓDULOS DE MÍDIA (NOVOS - TESTE) ========== -->
-<script src="js/modules/media/media-core.js"></script>
-<script src="js/modules/media/media-ui.js"></script>
- 
+<!-- ========== SUPABASE E UTILITÁRIOS (CORE) ========== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/modules/supabase.js" defer></script>
+<script src="js/modules/utils.js" defer></script>
+
+<!-- ========== MÓDULOS PRINCIPAIS (DEFER) ========== -->
+<script src="js/modules/properties/properties-core.js" defer></script>
+<script src="js/modules/properties.js" defer></script>
+<script src="js/modules/admin.js" defer></script>
+<script src="js/modules/gallery.js" defer></script>
+
+<!-- ========== MÓDULOS PDF (DEFER) ========== -->
+<script src="js/modules/reader/pdf-logger.js" defer></script>
+<script src="js/modules/reader/pdf-utils.js" defer></script>
+<script src="js/modules/reader/pdf-core.js" defer></script>
+<script src="js/modules/reader/pdf-ui.js" defer></script>
+<script src="js/modules/reader/pdf-integration.js" defer></script>
+
+<!-- ========== MÓDULOS DE MÍDIA (NOVOS - AGORA COM defer) ========== -->
+<script src="js/modules/media/media-core.js" defer></script>
+<script src="js/modules/media/media-ui.js" defer></script>
+
 <!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
 <script>
-console.log('🎯 Inicialização do site Weber Lessa');
+console.log('🎯 Inicialização do site Weber Lessa - SCRIPTS CARREGANDO EM PARALELO');
 
 // Inicialização robusta com fallback
 document.addEventListener('DOMContentLoaded', async function() {
