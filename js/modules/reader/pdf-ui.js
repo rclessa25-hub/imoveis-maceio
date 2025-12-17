@@ -114,16 +114,16 @@ window.initPdfSystem = function() {
     console.log('- Flag pdfSystemInitialized:', window.pdfSystemInitialized);
     
     // 5. DEBUG: Verificar se há listeners duplicados
-    setTimeout(() => {
-        console.log('🔍 DEBUG: Verificando event listeners...');
-        const uploadEvents = getEventListeners(freshUploadArea);
-        const inputEvents = getEventListeners(freshFileInput);
+//    setTimeout(() => {
+//        console.log('🔍 DEBUG: Verificando event listeners...');
+//        const uploadEvents = getEventListeners(freshUploadArea);
+//        const inputEvents = getEventListeners(freshFileInput);
         
-        console.log('📊 Listeners na área de upload:', 
-            uploadEvents ? Object.keys(uploadEvents).length : 'Não disponível');
-        console.log('📊 Listeners no input de arquivo:', 
-            inputEvents ? Object.keys(inputEvents).length : 'Não disponível');
-    }, 1000);
+//        console.log('📊 Listeners na área de upload:', 
+//            uploadEvents ? Object.keys(uploadEvents).length : 'Não disponível');
+//        console.log('📊 Listeners no input de arquivo:', 
+//            inputEvents ? Object.keys(inputEvents).length : 'Não disponível');
+//    }, 1000);
 };
 
 // TESTE: Verificar se a função está sendo definida
