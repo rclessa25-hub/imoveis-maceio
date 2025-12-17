@@ -260,14 +260,26 @@ window.editProperty = function(id) {
     console.log(`✅ Imóvel ${id} pronto para edição. Mídia: ${window.existingMediaFiles.length} item(s)`);
 };
 
-// ========== CONFIGURAÇÃO DO FORMULÁRIO ==========
+// ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM MÍDIA ==========
 window.setupForm = function() {
-    const form = document.getElementById('propertyForm');
-    if (!form) return;
+    console.log('📝 Configurando formulário admin com sistema de mídia integrado...');
     
-    form.addEventListener('submit', async function(e) {
+    const form = document.getElementById('propertyForm');
+    if (!form) {
+        console.error('❌ Formulário propertyForm não encontrado!');
+        return;
+    }
+    
+    // REMOVER event listeners antigos para evitar duplicação
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    const freshForm = document.getElementById('propertyForm');
+    
+    freshForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        console.group('🚀 SUBMISSÃO DO FORMULÁRIO ADMIN');
         
+        // 1. COLETAR DADOS DO FORMULÁRIO
         const propertyData = {
             title: document.getElementById('propTitle').value,
             price: document.getElementById('propPrice').value,
@@ -279,74 +291,241 @@ window.setupForm = function() {
             has_video: document.getElementById('propHasVideo')?.checked || false
         };
         
+        console.log('📋 Dados coletados:', propertyData);
+        
+        // 2. VALIDAÇÃO BÁSICA
         if (!propertyData.title || !propertyData.price || !propertyData.location) {
             alert('❌ Preencha Título, Preço e Localização!');
+            console.error('❌ Validação falhou: campos obrigatórios vazios');
+            console.groupEnd();
             return;
         }
         
-        console.log('💾 Processando imóvel...');
+        console.log('✅ Validação básica OK');
         
+        // 3. PROCESSAMENTO PRINCIPAL
         try {
-// ✅ CORREÇÃO: Processar PDFs SEMPRE na edição, mesmo se não houver novos PDFs
             if (window.editingPropertyId) {
-                console.log(`🔄 Editando imóvel ID: ${window.editingPropertyId}`);
+                // ========== EDIÇÃO DE IMÓVEL EXISTENTE ==========
+                console.log(`🔄 EDITANDO imóvel ID: ${window.editingPropertyId}`);
                 
-                // ✅ 1. Preparar dados básicos
+                // 3.1 Preparar objeto de atualização
                 const updateData = { ...propertyData };
                 
-                // ✅ 2. Processar PDFs SEMPRE (para tratar exclusões de PDFs existentes)
-                console.log(`📝 Processando PDFs para edição...`);
-                console.log(`- PDFs existentes: ${window.existingPdfFiles.length}`);
+                // 3.2 PROCESSAR PDFs (sistema existente)
+                console.log(`📄 Processando PDFs para edição...`);
+                console.log(`- PDFs existentes: ${window.existingPdfFiles ? window.existingPdfFiles.length : 0}`);
                 console.log(`- Novos PDFs: ${window.selectedPdfFiles ? window.selectedPdfFiles.length : 0}`);
                 
                 try {
-                    // ✅ CHAMAR processAndSavePdfs SEMPRE, mesmo sem novos PDFs
-                    const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
-                    
-                    if (pdfsString) {
-                        updateData.pdfs = pdfsString;
-                        console.log(`✅ PDFs processados: ${pdfsString.substring(0, 50)}...`);
+                    if (typeof window.processAndSavePdfs === 'function') {
+                        const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
+                        
+                        if (pdfsString && pdfsString.trim() !== '') {
+                            updateData.pdfs = pdfsString;
+                            console.log(`✅ PDFs processados: ${pdfsString.substring(0, 60)}...`);
+                        } else {
+                            // Se não há PDFs, definir como string vazia
+                            updateData.pdfs = '';
+                            console.log('ℹ️ Nenhum PDF para o imóvel');
+                        }
                     } else {
-                        // Se não há PDFs, definir como string vazia
+                        console.warn('⚠️  Função processAndSavePdfs não disponível');
                         updateData.pdfs = '';
-                        console.log('ℹ️ Nenhum PDF para o imóvel');
                     }
-                    
                 } catch (pdfError) {
                     console.error('❌ Erro ao processar PDFs:', pdfError);
-                    // Continuar sem PDFs se houver erro
+                    updateData.pdfs = '';
                 }
                 
-                // ✅ 3. Atualizar imóvel
+                // 3.3 PROCESSAR MÍDIA (FOTOS/VIDEOS) - NOVO SISTEMA INTEGRADO
+                console.log(`🖼️ Processando mídia (fotos/vídeos) para edição...`);
+                console.log(`📊 Estado da mídia:`);
+                console.log(`- Novos arquivos: ${window.selectedMediaFiles ? window.selectedMediaFiles.length : 0}`);
+                console.log(`- Existentes: ${window.existingMediaFiles ? window.existingMediaFiles.length : 0}`);
+                
+                try {
+                    if (typeof window.getMediaUrlsForProperty === 'function') {
+                        console.log(`🎯 Chamando getMediaUrlsForProperty para ID ${window.editingPropertyId}...`);
+                        const mediaUrls = await window.getMediaUrlsForProperty(window.editingPropertyId, propertyData.title);
+                        
+                        if (mediaUrls !== undefined && mediaUrls !== null) {
+                            if (mediaUrls.trim() !== '') {
+                                updateData.images = mediaUrls;
+                                const urlCount = mediaUrls.split(',').filter(url => url.trim() !== '').length;
+                                console.log(`✅ Mídia processada: ${urlCount} URL(s)`);
+                                console.log(`📝 Amostra: ${mediaUrls.substring(0, 80)}...`);
+                            } else {
+                                // String vazia - sem mídia
+                                updateData.images = '';
+                                console.log('ℹ️ Nenhuma mídia para salvar');
+                            }
+                        } else {
+                            console.warn('⚠️  getMediaUrlsForProperty retornou undefined/null');
+                            updateData.images = '';
+                        }
+                    } else {
+                        console.error('❌ Função getMediaUrlsForProperty não disponível!');
+                        console.log('🔍 Verificando window object:', {
+                            hasGetMediaUrls: typeof window.getMediaUrlsForProperty,
+                            mediaConfig: window.MEDIA_CONFIG,
+                            currentSystem: window.currentMediaSystem
+                        });
+                        updateData.images = '';
+                    }
+                } catch (mediaError) {
+                    console.error('❌ ERRO CRÍTICO ao processar mídia:', mediaError);
+                    console.log('🔄 Usando fallback: mantendo imagens existentes');
+                    // Tenta manter as imagens existentes do imóvel atual
+                    const currentProperty = window.properties.find(p => p.id == window.editingPropertyId);
+                    updateData.images = currentProperty ? currentProperty.images : '';
+                }
+                
+                // 3.4 LOG FINAL DOS DADOS PARA SUPABASE
+                console.log('📤 Dados completos para Supabase:', {
+                    title: updateData.title,
+                    images: updateData.images ? `${updateData.images.split(',').length} URL(s)` : 'Nenhuma',
+                    pdfs: updateData.pdfs ? `${updateData.pdfs.split(',').length} PDF(s)` : 'Nenhum'
+                });
+                
+                // 3.5 CHAMAR ATUALIZAÇÃO NO BANCO
                 if (typeof window.updateProperty === 'function') {
-                    console.log('💾 Enviando atualização para o imóvel...');
+                    console.log('💾 Enviando atualização para o sistema de propriedades...');
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
+                    
                     if (success) {
-                        alert('✅ Imóvel atualizado com sucesso!');
+                        console.log('✅ Imóvel atualizado com sucesso no banco de dados!');
+                        
+                        // Feedback visual para o usuário
+                        const imageCount = updateData.images ? updateData.images.split(',').filter(url => url.trim() !== '').length : 0;
+                        const pdfCount = updateData.pdfs ? updateData.pdfs.split(',').filter(url => url.trim() !== '').length : 0;
+                        
+                        let successMessage = `✅ Imóvel "${updateData.title}" atualizado!`;
+                        if (imageCount > 0) successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) salvo(s)`;
+                        if (pdfCount > 0) successMessage += `\n📄 ${pdfCount} documento(s) PDF salvo(s)`;
+                        
+                        alert(successMessage);
+                    } else {
+                        console.error('❌ Falha na atualização do imóvel');
+                        alert('❌ Não foi possível atualizar o imóvel. Verifique o console.');
+                    }
+                } else {
+                    console.error('❌ Função updateProperty não disponível!');
+                    alert('❌ Erro: sistema de propriedades não disponível');
+                }
+                
+            } else {
+                // ========== CRIAÇÃO DE NOVO IMÓVEL ==========
+                console.log('🆕 CRIANDO novo imóvel...');
+                
+                // 3.6 PROCESSAR MÍDIA PARA NOVO IMÓVEL
+                let mediaUrls = '';
+                if (window.selectedMediaFiles && window.selectedMediaFiles.length > 0) {
+                    console.log(`🖼️ Processando ${window.selectedMediaFiles.length} arquivo(s) de mídia para novo imóvel...`);
+                    
+                    try {
+                        if (typeof window.getMediaUrlsForProperty === 'function') {
+                            // Para novo imóvel, usar ID temporário
+                            const tempId = `new_${Date.now()}`;
+                            mediaUrls = await window.getMediaUrlsForProperty(tempId, propertyData.title);
+                            
+                            if (mediaUrls && mediaUrls.trim() !== '') {
+                                propertyData.images = mediaUrls;
+                                console.log(`✅ Mídia processada para novo imóvel: ${mediaUrls.substring(0, 80)}...`);
+                            }
+                        }
+                    } catch (mediaError) {
+                        console.error('❌ Erro ao processar mídia para novo imóvel:', mediaError);
                     }
                 }
-
-            } else {
-                // ✅ CRIAR NOVO IMÓVEL
+                
+                // 3.7 PROCESSAR PDFs PARA NOVO IMÓVEL
+                if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
+                    console.log(`📄 Processando ${window.selectedPdfFiles.length} PDF(s) para novo imóvel...`);
+                    // A lógica de PDFs para novo imóvel já está em addNewProperty
+                }
+                
+                // 3.8 CHAMAR CRIAÇÃO NO BANCO
                 if (typeof window.addNewProperty === 'function') {
+                    console.log('💾 Chamando addNewProperty com dados:', {
+                        title: propertyData.title,
+                        hasMedia: !!(propertyData.images),
+                        hasPdfs: !!(window.selectedPdfFiles && window.selectedPdfFiles.length > 0)
+                    });
+                    
                     const newProperty = await window.addNewProperty(propertyData);
+                    
                     if (newProperty) {
-                        alert(`✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`);
+                        console.log(`✅ Novo imóvel criado com ID: ${newProperty.id}`);
+                        
+                        // Feedback para o usuário
+                        let successMessage = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
+                        if (newProperty.images && newProperty.images !== 'EMPTY') {
+                            const imageCount = newProperty.images.split(',').filter(url => url.trim() !== '').length;
+                            successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) incluída(s)`;
+                        }
+                        if (newProperty.pdfs && newProperty.pdfs !== 'EMPTY') {
+                            const pdfCount = newProperty.pdfs.split(',').filter(url => url.trim() !== '').length;
+                            successMessage += `\n📄 ${pdfCount} documento(s) PDF incluído(s)`;
+                        }
+                        
+                        alert(successMessage);
+                    } else {
+                        console.error('❌ Falha na criação do novo imóvel');
+                        alert('❌ Não foi possível criar o imóvel. Verifique o console.');
                     }
+                } else {
+                    console.error('❌ Função addNewProperty não disponível!');
+                    alert('❌ Erro: sistema de criação não disponível');
                 }
             }
             
-            // ✅ Limpar apenas após SUCESSO
+            // 4. LIMPEZA E RESET APÓS SALVAMENTO (SUCESSO OU ERRO)
             setTimeout(() => {
-                cancelEdit();
-                if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-            }, 500);
+                console.log('🧹 Executando limpeza pós-salvamento...');
+                
+                // Cancelar edição (limpa formulário, reseta variáveis)
+                if (typeof window.cancelEdit === 'function') {
+                    window.cancelEdit();
+                }
+                
+                // Atualizar lista de imóveis no admin
+                if (typeof window.loadPropertyList === 'function') {
+                    window.loadPropertyList();
+                    console.log('📋 Lista de imóveis atualizada');
+                }
+                
+                // Forçar recarregamento da galeria principal
+                if (typeof window.renderProperties === 'function') {
+                    setTimeout(() => {
+                        window.renderProperties('todos');
+                        console.log('🔄 Galeria principal atualizada');
+                    }, 500);
+                }
+                
+            }, 800);
             
         } catch (error) {
-            console.error('❌ Erro no formulário:', error);
-            alert('❌ Erro ao processar: ' + error.message);
+            // 5. TRATAMENTO DE ERROS GLOBAIS
+            console.error('❌ ERRO CRÍTICO no processamento do formulário:', error);
+            console.error('🔍 Stack trace:', error.stack);
+            
+            let errorMessage = `❌ Erro ao processar: ${error.message || 'Erro desconhecido'}`;
+            
+            // Mensagens mais amigáveis para erros comuns
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                errorMessage = '❌ Erro de conexão. Verifique sua internet e tente novamente.';
+            } else if (error.message.includes('Supabase') || error.message.includes('storage')) {
+                errorMessage = '❌ Erro no servidor de armazenamento. Tente novamente em alguns instantes.';
+            }
+            
+            alert(errorMessage + '\n\nVerifique o console para detalhes técnicos.');
         }
+        
+        console.groupEnd();
     });
+    
+    console.log('✅ Formulário admin configurado com sistema de mídia integrado.');
 };
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
