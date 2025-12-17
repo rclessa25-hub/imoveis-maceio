@@ -601,3 +601,16 @@ window.clearProcessedPdfs = function() {
 };
 
 console.log('✅ admin.js pronto e funcional');
+
+// 🔧 PATCH TEMPORÁRIO: Corrigir checkbox "Tem vídeo" na edição
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const videoCheckbox = document.getElementById('propHasVideo');
+        if (videoCheckbox) {
+            // Garantir que o evento change funcione
+            videoCheckbox.addEventListener('change', function() {
+                console.log('✅ Checkbox "Tem vídeo" alterado:', this.checked);
+            });
+        }
+    }, 1000);
+});
