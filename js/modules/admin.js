@@ -142,13 +142,13 @@ window.editProperty = function(id) {
     //     window.clearMediaSystem();
     //     console.log('🧹 Estado anterior de mídia limpo antes de carregar novo');
     // }
-    
+
     const property = window.properties.find(p => p.id === id);
     if (!property) {
         alert('❌ Imóvel não encontrado!');
         return;
     }
-    
+
     // ✅ PRIMEIRO: Carregar dados do formulário
     document.getElementById('propTitle').value = property.title || '';
     document.getElementById('propPrice').value = property.price || '';
@@ -159,28 +159,28 @@ window.editProperty = function(id) {
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
     document.getElementById('propHasVideo').checked = property.has_video || false;
-    
+
     const formTitle = document.getElementById('formTitle');
     if (formTitle) formTitle.textContent = `Editando: ${property.title}`;
-    
+
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
-    
+
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) cancelBtn.style.display = 'block';
-    
+
     window.editingPropertyId = property.id;
-    
+
     // ✅ SEGUNDO: Inicializar arrays se não existirem
     if (!window.selectedMediaFiles) window.selectedMediaFiles = [];
     if (!window.existingMediaFiles) window.existingMediaFiles = [];
     if (!window.selectedPdfFiles) window.selectedPdfFiles = [];
     if (!window.existingPdfFiles) window.existingPdfFiles = [];
-    
+
     // ✅ TERCEIRO: Limpar arrays existentes (mas manter arquivos novos se houver)
     window.existingMediaFiles = [];
     window.existingPdfFiles = [];
-    
+
     // ✅ QUARTO: Carregar FOTOS/VIDEOS existentes IMEDIATAMENTE
     console.log(`🖼️ Carregando mídia existente para imóvel ${id}...`);
     if (property.images && property.images !== 'EMPTY' && property.images.trim() !== '') {
@@ -194,35 +194,35 @@ window.editProperty = function(id) {
                     url !== 'null' &&
                     (url.startsWith('http') || url.includes('supabase.co'))
                 );
-            
+
             console.log(`📸 ${imageUrls.length} URL(s) de imagem encontrada(s)`);
-            
+
             imageUrls.forEach((url, index) => {
                 try {
                     let fileName = 'Imagem';
-                    
+
                     if (url.includes('/')) {
                         const parts = url.split('/');
                         fileName = parts[parts.length - 1] || `Imagem ${index + 1}`;
-                        
+
                         try {
                             fileName = decodeURIComponent(fileName);
                         } catch (e) {}
-                        
+
                         if (fileName.length > 40) {
                             fileName = fileName.substring(0, 37) + '...';
                         }
                     } else {
                         fileName = `Imagem ${index + 1}`;
                     }
-                    
+
                     const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) ||
                                     url.includes('/storage/v1/object/public/properties/');
                     const isVideo = /\.(mp4|mov|avi)$/i.test(fileName) ||
                                     url.includes('/storage/v1/object/public/videos/');
-                    
+
                     const mediaType = isImage ? 'image' : (isVideo ? 'video' : 'file');
-                    
+
                     window.existingMediaFiles.push({
                         url,
                         id: `existing_media_${Date.now()}_${index}`,
@@ -234,7 +234,7 @@ window.editProperty = function(id) {
                         originalUrl: url,
                         markedForDeletion: false
                     });
-                    
+
                     console.log(`✅ Imagem existente carregada: ${fileName}`);
                 } catch (error) {
                     console.error(`❌ Erro ao processar URL ${url}:`, error);
@@ -246,7 +246,7 @@ window.editProperty = function(id) {
     } else {
         console.log('ℹ️ Nenhuma mídia existente para este imóvel.');
     }
-    
+
     // ✅ QUINTO: Carregar PDFs existentes IMEDIATAMENTE
     console.log(`📄 Carregando PDFs existentes para imóvel ${id}...`);
     if (typeof window.loadExistingPdfsForEdit === 'function') {
@@ -254,7 +254,7 @@ window.editProperty = function(id) {
         console.log(`📊 PDFs existentes carregados: ${window.existingPdfFiles.length}`);
     } else {
         console.error('❌ Função loadExistingPdfsForEdit não encontrada!');
-        
+
         // Fallback manual
         if (property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '') {
             try {
@@ -267,25 +267,25 @@ window.editProperty = function(id) {
                                url !== 'null' &&
                                (url.startsWith('http') || url.includes('supabase.co'));
                     });
-                
+
                 pdfUrls.forEach((url, index) => {
                     let fileName = 'Documento';
-                    
+
                     if (url.includes('/')) {
                         const parts = url.split('/');
                         fileName = parts[parts.length - 1] || `Documento ${index + 1}`;
-                        
+
                         try {
                             fileName = decodeURIComponent(fileName);
                         } catch (e) {}
-                        
+
                         if (fileName.length > 50) {
                             fileName = fileName.substring(0, 47) + '...';
                         }
                     } else {
                         fileName = `Documento ${index + 1}`;
                     }
-                    
+
                     window.existingPdfFiles.push({
                         url: url,
                         id: `existing_${Date.now()}_${index}`,
@@ -301,22 +301,26 @@ window.editProperty = function(id) {
             }
         }
     }
-    
-    // ✅ SEXTO: Atualizar previews visualmente
+
+    // ✅ SEXTO: Atualizar previews visualmente COM VERSÃO OTIMIZADA
     setTimeout(() => {
-        // Atualizar preview de mídia
-        if (typeof window.updateMediaPreview === 'function') {
-            window.updateMediaPreview();
-            console.log('🎨 Preview de mídia atualizado');
-        }
-        
-        // Atualizar preview de PDFs
-        if (typeof window.updatePdfPreview === 'function') {
-            window.updatePdfPreview();
-            console.log('🎨 Preview de PDFs atualizado');
+        // Usar versão otimizada se disponível
+        if (typeof window.updatePreviewOptimized === 'function') {
+            window.updatePreviewOptimized();
+            console.log('⚡ Preview otimizado atualizado');
+        } else {
+            // Fallback para versões originais
+            if (typeof window.updateMediaPreview === 'function') {
+                window.updateMediaPreview();
+            }
+
+            if (typeof window.updatePdfPreview === 'function') {
+                window.updatePdfPreview();
+            }
+            console.log('🎨 Preview atualizado (método tradicional)');
         }
     }, 100);
-    
+
     console.log(`✅ Imóvel ${id} carregado para edição com sucesso`);
     console.log(`📊 Status: ${window.existingMediaFiles.length} foto(s), ${window.existingPdfFiles.length} PDF(s)`);
 };
