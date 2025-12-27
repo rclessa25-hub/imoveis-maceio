@@ -1323,6 +1323,23 @@ setTimeout(() => {
     }
 }, 3000);
 
+// Em js/modules/admin.js - ADICIONAR NO FINAL DO ARQUIVO (antes do último console.log)
+// Ocultar botão de teste de mídia
+setTimeout(() => {
+    const testBtn = document.getElementById('media-test-btn');
+    if (testBtn) {
+        testBtn.style.display = 'none';
+        console.log('🚫 Botão de teste de mídia ocultado');
+    }
+    
+    // Ocultar botão de emergência (opcional - mantém funcionalidade mas esconde)
+    const emergencyBtn = document.getElementById('emergency-admin-btn');
+    if (emergencyBtn) {
+        emergencyBtn.style.display = 'none';
+        console.log('🚫 Botão de emergência ocultado');
+    }
+}, 3000);
+
 console.log('✅ admin.js pronto e funcional');
 
 // 🔧 PATCH TEMPORÁRIO: Corrigir checkbox "Tem vídeo" na edição
