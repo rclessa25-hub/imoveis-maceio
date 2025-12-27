@@ -457,6 +457,14 @@ window.setupForm = function() {
                     
                     if (newProperty) {
                         console.log(`✅ Novo imóvel criado com ID: ${newProperty.id}`);
+
+                        // 🧼 LIMPEZA DO SISTEMA DE MÍDIA APÓS SALVAMENTO COM SUCESSO
+                        if (typeof window.clearMediaSystem === 'function') {
+                            setTimeout(() => {
+                                window.clearMediaSystem();
+                                console.log('🔄 Sistema de mídia limpo após salvamento');
+                            }, 300);
+                        }
                         
                         // Feedback para o usuário
                         let successMessage = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
