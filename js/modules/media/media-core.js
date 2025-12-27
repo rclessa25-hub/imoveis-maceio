@@ -189,6 +189,56 @@ window.clearMediaSystem = function() {
     return true;
 };
 
+// Em js/modules/media/media-core.js - ADICIONAR APÓS A FUNÇÃO EXISTENTE
+
+window.clearMediaSystemComplete = function() {
+    console.group('🧹 LIMPEZA COMPLETA DO SISTEMA DE MÍDIA');
+    
+    // 1. Limpar arrays de mídia (FOTOS/VIDEOS)
+    window.selectedMediaFiles = [];
+    window.existingMediaFiles = [];
+    window.isUploadingMedia = false;
+    
+    // 2. Limpar DOM das fotos/vídeos
+    const uploadPreview = document.getElementById('uploadPreview');
+    if (uploadPreview) {
+        uploadPreview.innerHTML = `
+            <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+            </div>
+        `;
+    }
+    
+    // 3. Limpar input de arquivo de mídia
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+    
+    // 4. Limpar arrays de PDFs
+    if (window.selectedPdfFiles) window.selectedPdfFiles = [];
+    if (window.existingPdfFiles) window.existingPdfFiles = [];
+    
+    // 5. Limpar DOM dos PDFs
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        pdfPreview.innerHTML = `
+            <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+            </div>
+        `;
+    }
+    
+    // 6. Limpar input de arquivo de PDFs
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    if (pdfFileInput) pdfFileInput.value = '';
+    
+    console.log('✅ Sistema completamente limpo (mídia + PDFs)');
+    console.groupEnd();
+    return true;
+};
+
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 // Inicializa para VENDAS por padrão (compatibilidade)
 window.initMediaSystem('vendas');
