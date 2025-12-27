@@ -733,9 +733,34 @@ function initializeAdminSystem() {
     
     // 4. Adicionar botão sincronização
     addSyncButton();
+
+    // 5. FORÇAR INICIALIZAÇÃO DO SISTEMA DE MÍDIA
+    setTimeout(() => {
+        console.log('🖼️ Verificando sistema de mídia...');
+        
+        // Verificar se os elementos de upload existem
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        if (uploadArea && fileInput) {
+            console.log('✅ Elementos de upload encontrados');
+            
+            // Forçar inicialização
+            if (typeof window.forceMediaSystemInit === 'function') {
+                setTimeout(() => {
+                    window.forceMediaSystemInit();
+                    console.log('🎯 Sistema de mídia forçado a inicializar');
+                }, 1500);
+            }
+        } else {
+            console.error('❌ Elementos de upload NÃO encontrados!');
+            console.log('🔍 Procurando uploadArea:', !!uploadArea);
+            console.log('🔍 Procurando fileInput:', !!fileInput);
+        }
+    }, 2000);
     
-// Na função initializeAdminSystem, procure esta parte:
- // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
+    // Na função initializeAdminSystem, procure esta parte:
+    // 6. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
     console.log('🎯 Iniciando correção garantida dos filtros...');
     
     // Tentativa 1: Imediata (800ms)
@@ -779,6 +804,72 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(initializeAdminSystem, 300);
 }
+
+// ========== DIAGNÓSTICO DOS EVENT LISTENERS ==========
+window.debugMediaSystem = function() {
+    console.group('🔍 DIAGNÓSTICO DO SISTEMA DE MÍDIA');
+    
+    // 1. Verificar elementos existem
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    console.log('📌 Elementos encontrados:', {
+        'uploadArea': !!uploadArea,
+        'fileInput': !!fileInput
+    });
+    
+    // 2. Verificar event listeners
+    if (uploadArea) {
+        console.log('🎯 uploadArea event listeners:');
+        console.log('- onclick:', uploadArea.onclick ? 'SIM' : 'NÃO');
+        console.log('- ondragover:', uploadArea.ondragover ? 'SIM' : 'NÃO');
+        console.log('- ondrop:', uploadArea.ondrop ? 'SIM' : 'NÃO');
+    }
+    
+    // 3. Verificar funções disponíveis
+    console.log('🔧 Funções globais:', {
+        'handleNewMediaFiles': typeof window.handleNewMediaFiles,
+        'clearMediaSystem': typeof window.clearMediaSystem,
+        'selectedMediaFiles': window.selectedMediaFiles ? window.selectedMediaFiles.length : 'N/A'
+    });
+    
+    console.groupEnd();
+};
+
+// ========== FORÇAR INICIALIZAÇÃO DO SISTEMA DE MÍDIA ==========
+window.forceMediaSystemInit = function() {
+    console.log('🚀 Forçando inicialização do sistema de mídia...');
+    
+    // 1. Garantir que o módulo está carregado
+    if (typeof window.initMediaUI !== 'function') {
+        console.error('❌ media-ui.js não carregado!');
+        return false;
+    }
+    
+    // 2. Inicializar UI
+    const uiSuccess = window.initMediaUI();
+    console.log('✅ UI inicializada:', uiSuccess);
+    
+    // 3. Verificar conexão com core
+    if (typeof window.handleNewMediaFiles !== 'function') {
+        console.error('❌ media-core.js não conectado!');
+        console.log('⚠️ Verificando se media-core.js carregou...');
+        
+        // Tentar inicializar o sistema core
+        if (typeof window.initMediaSystem === 'function') {
+            window.initMediaSystem('vendas');
+            console.log('🔧 Sistema core reinicializado');
+        }
+    }
+    
+    // 4. Testar funcionalidade
+    setTimeout(() => {
+        console.log('🧪 Testando sistema de mídia...');
+        window.debugMediaSystem();
+    }, 1000);
+    
+    return true;
+};
 
 // ========== FUNÇÕES PDF BÁSICAS ==========
 window.showPdfModal = function(propertyId) {
