@@ -159,7 +159,7 @@ window.removeMediaFile = function(index) {
     }
 };
 
-/ ========== FUNÇÃO DE LIMPEZA OTIMIZADA (INLINED) ==========
+// ========== FUNÇÃO DE LIMPEZA OTIMIZADA (INLINED) ==========
 window.clearMediaSystem = function() {
     // ⚡ INLINE CANDIDATE: função pequena, chamada frequentemente
     console.log('🧹 Executando clearMediaSystem...');
