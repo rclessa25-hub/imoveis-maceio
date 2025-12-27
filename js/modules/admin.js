@@ -220,41 +220,38 @@ window.editProperty = function(id) {
                     const mediaType = isImage ? 'image' : (isVideo ? 'video' : 'file');
                     
                    // Adicionar à lista de mídia existente
-                if (window.existingMediaFiles) {
-                    window.existingMediaFiles.push({
-                        url: url,
-                        id: `existing_media_${Date.now()}_${index}`,
-                        name: fileName,
-                        type: mediaType,
-                        size: 'Arquivada',
-                        date: 'Existente',
-                        isExisting: true,
-                        originalUrl: url,
-                        markedForDeletion: false // Nova propriedade para controle
-                    });
-                    
-                    console.log(`✅ Mídia existente carregada: ${fileName} (${mediaType})`);
-                } else {
-                    console.error('❌ window.existingMediaFiles é undefined!');
-                    window.existingMediaFiles = [{
-                        url: url,
-                        id: `existing_media_${Date.now()}_${index}`,
-                        name: fileName,
-                        type: mediaType,
-                        size: 'Arquivada',
-                        date: 'Existente',
-                        isExisting: true,
-                        originalUrl: url,
-                        markedForDeletion: false
-                    }];
+                try {
+                    if (window.existingMediaFiles) {
+                        window.existingMediaFiles.push({
+                            url: url,
+                            id: `existing_media_${Date.now()}_${index}`,
+                            name: fileName,
+                            type: mediaType,
+                            size: 'Arquivada',
+                            date: 'Existente',
+                            isExisting: true,
+                            originalUrl: url,
+                            markedForDeletion: false
+                        });
+                        
+                        console.log(`✅ Mídia existente carregada: ${fileName} (${mediaType})`);
+                    } else {
+                        console.error('❌ window.existingMediaFiles é undefined!');
+                        window.existingMediaFiles = [{
+                            url: url,
+                            id: `existing_media_${Date.now()}_${index}`,
+                            name: fileName,
+                            type: mediaType,
+                            size: 'Arquivada',
+                            date: 'Existente',
+                            isExisting: true,
+                            originalUrl: url,
+                            markedForDeletion: false
+                        }];
+                    }
                 } catch (error) {
                     console.error(`❌ Erro ao processar URL ${url}:`, error);
                 }
-            });
-          
-        } catch (error) {
-            console.error('❌ Erro ao processar imagens do imóvel:', error);
-        }
     } else {
         console.log('ℹ️ Nenhuma mídia existente para este imóvel.');
     }
