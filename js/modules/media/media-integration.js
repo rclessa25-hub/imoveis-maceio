@@ -15,44 +15,85 @@ window.setupMediaIntegration = function() {
     //    para usar nosso módulo de mídia
     const originalProcessFunction = window.processAndSavePdfs;
     
+    // Em js/modules/media/media-integration.js - MODIFICAR A FUNÇÃO processAndSaveMedia
+    
     window.processAndSaveMedia = async function(propertyId, propertyTitle) {
         console.group('🖼️ PROCESSANDO MÍDIA PARA IMÓVEL');
         console.log(`ID: ${propertyId}, Título: ${propertyTitle}`);
-        console.log(`📊 Arquivos selecionados: ${window.selectedMediaFiles.length}`);
         
-        if (window.selectedMediaFiles.length === 0) {
-            console.log('ℹ️ Nenhuma mídia nova para processar.');
-            console.groupEnd();
-            return ''; // Retorna string vazia para o campo 'images'
+        // 1. IDENTIFICAR ARQUIVOS PARA EXCLUSÃO
+        const filesToDelete = [];
+        
+        if (window.existingMediaFiles && window.existingMediaFiles.length > 0) {
+            filesToDelete.push(...window.existingMediaFiles
+                .filter(item => item.markedForDeletion && item.url)
+                .map(item => item.url));
+            
+            console.log(`🗑️ ${filesToDelete.length} arquivo(s) marcado(s) para exclusão`);
         }
         
-        // 2. FAZER UPLOAD REAL PARA O SUPABASE
-        const filesToUpload = window.selectedMediaFiles.map(item => item.file);
-        console.log(`📤 Fazendo upload de ${filesToUpload.length} arquivo(s)...`);
+        // 2. EXCLUIR DO SUPABASE STORAGE (se houver)
+        if (filesToDelete.length > 0) {
+            console.log('🚮 Excluindo arquivos do Supabase Storage...');
+            
+            for (const fileUrl of filesToDelete) {
+                try {
+                    const deleted = await window.deleteMediaFromSupabaseStorage(fileUrl);
+                    if (deleted) {
+                        console.log(`✅ Excluído do storage: ${fileUrl.substring(0, 80)}...`);
+                    } else {
+                        console.log(`⚠️ Não foi possível excluir: ${fileUrl.substring(0, 80)}...`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Erro ao excluir ${fileUrl}:`, error);
+                }
+            }
+        }
         
-        const uploadedUrls = await window.uploadMediaToSupabase(filesToUpload, propertyId);
+        // 3. FILTRAR APENAS OS ARQUIVOS EXISTENTES NÃO MARCADOS PARA EXCLUSÃO
+        let keptExistingUrls = [];
         
-        console.log(`✅ Upload concluído: ${uploadedUrls.length} URL(s) gerada(s)`);
-        
-        // 3. COMBINAR COM IMAGENS EXISTENTES (se houver)
-        let allImageUrls = [...uploadedUrls];
-        
-        // Adicionar imagens existentes (que não foram marcadas para exclusão)
         if (window.existingMediaFiles && window.existingMediaFiles.length > 0) {
-            const existingUrls = window.existingMediaFiles
-                .filter(item => !item.markedForDeletion)
+            keptExistingUrls = window.existingMediaFiles
+                .filter(item => !item.markedForDeletion && item.url)
                 .map(item => item.url)
                 .filter(url => url && url.trim() !== '');
             
-            allImageUrls = [...existingUrls, ...allImageUrls];
-            console.log(`🔄 Combinado com ${existingUrls.length} imagem(ns) existente(s)`);
+            console.log(`💾 ${keptExistingUrls.length} arquivo(s) existente(s) mantido(s)`);
         }
         
-        // 4. CRIAR STRING PARA SALVAR NO BANCO (formato: url1,url2,url3)
-        const imagesString = allImageUrls.join(',');
-        console.log(`📝 String final para banco: ${imagesString.substring(0, 100)}...`);
-        console.groupEnd();
+        // 4. PROCESSAR NOVOS ARQUIVOS (se houver)
+        let newUrls = [];
         
+        if (window.selectedMediaFiles && window.selectedMediaFiles.length > 0) {
+            console.log(`📤 Fazendo upload de ${window.selectedMediaFiles.length} novo(s) arquivo(s)...`);
+            
+            const filesToUpload = window.selectedMediaFiles
+                .filter(item => item.file)
+                .map(item => item.file);
+            
+            if (filesToUpload.length > 0) {
+                newUrls = await window.uploadMediaToSupabase(filesToUpload, propertyId);
+                console.log(`✅ ${newUrls.length} novo(s) arquivo(s) enviado(s)`);
+            }
+        }
+        
+        // 5. COMBINAR TODAS AS URLs
+        const allImageUrls = [...keptExistingUrls, ...newUrls];
+        const imagesString = allImageUrls.length > 0 ? allImageUrls.join(',') : '';
+        
+        console.log(`📊 Resultado final: ${allImageUrls.length} URL(s) no total`);
+        console.log(`📝 String para banco: ${imagesString.substring(0, 100)}${imagesString.length > 100 ? '...' : ''}`);
+        
+        // 6. LIMPAR ARQUIVOS EXCLUÍDOS DO ARRAY (após processamento)
+        if (window.existingMediaFiles) {
+            const before = window.existingMediaFiles.length;
+            window.existingMediaFiles = window.existingMediaFiles.filter(item => !item.markedForDeletion);
+            const after = window.existingMediaFiles.length;
+            console.log(`🧹 Arrays limpos: ${before} → ${after} itens`);
+        }
+        
+        console.groupEnd();
         return imagesString;
     };
     
