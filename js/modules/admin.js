@@ -1249,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Em js/modules/admin.js - ADICIONAR NO FINAL DO ARQUIVO
-
+// Função de Detecção de Formulário Vazio
 window.isAdminFormEmpty = function() {
     const checks = {
         titulo: !document.getElementById('propTitle').value.trim(),
