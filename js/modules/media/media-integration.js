@@ -176,6 +176,59 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
     return uploadedUrls;
 };
 
+// ========== deleteMediaFromSupabaseStorage ==========
+// Em js/modules/media/media-integration.js - ADICIONAR APÓS A FUNÇÃO uploadMediaToSupabase
+window.deleteMediaFromSupabaseStorage = async function(fileUrl) {
+    console.log(`🗑️ Tentando excluir do storage: ${fileUrl.substring(0, 80)}...`);
+    
+    try {
+        // Extrair nome do arquivo da URL
+        const fileName = fileUrl.split('/').pop();
+        if (!fileName) {
+            console.error('❌ Não foi possível extrair nome do arquivo da URL');
+            return false;
+        }
+        
+        // Determinar o bucket baseado na URL
+        let bucket = 'properties';
+        if (fileUrl.includes('/rentals/')) {
+            bucket = 'rentals';
+        } else if (fileUrl.includes('/videos/')) {
+            bucket = 'videos';
+        }
+        
+        // URL de exclusão
+        const deleteUrl = `${window.SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`;
+        
+        console.log(`🔗 URL de exclusão: ${deleteUrl}`);
+        
+        // Fazer requisição DELETE
+        const response = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'apikey': window.SUPABASE_KEY
+            }
+        });
+        
+        if (response.ok) {
+            console.log(`✅ Arquivo excluído com sucesso: ${fileName}`);
+            return true;
+        } else if (response.status === 404) {
+            console.log(`ℹ️ Arquivo não encontrado no storage (já excluído?): ${fileName}`);
+            return true; // Considera sucesso se não existe
+        } else {
+            const errorText = await response.text();
+            console.error(`❌ Erro ao excluir (${response.status}): ${errorText}`);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error(`💥 Erro na exclusão: ${error.message}`);
+        return false;
+    }
+};
+
 // ========== INICIALIZAÇÃO ==========
 
 // Inicializar quando o DOM estiver pronto
