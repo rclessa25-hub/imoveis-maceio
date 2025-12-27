@@ -159,10 +159,42 @@ window.removeMediaFile = function(index) {
     }
 };
 
+/ ========== FUNÇÃO DE LIMPEZA OTIMIZADA (INLINED) ==========
+window.clearMediaSystem = function() {
+    // ⚡ INLINE CANDIDATE: função pequena, chamada frequentemente
+    console.log('🧹 Executando clearMediaSystem...');
+    
+    // 1. Limpar arrays (passagem por referência - mais rápido)
+    window.selectedMediaFiles.length = 0; // ⚡ MAIS RÁPIDO que = []
+    window.existingMediaFiles.length = 0;
+    window.isUploadingMedia = false;
+    
+    // 2. Limpar DOM diretamente (sem dependência de outras funções)
+    const preview = document.getElementById('uploadPreview');
+    if (preview) {
+        preview.innerHTML = `
+            <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+            </div>
+        `;
+    }
+    
+    // 3. Resetar input de arquivo
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+    
+    console.log('✅ Sistema de mídia completamente limpo');
+    return true;
+};
+
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 // Inicializa para VENDAS por padrão (compatibilidade)
 window.initMediaSystem('vendas');
 
+// NO FINAL DO ARQUIVO, ATUALIZE O LOG:
 console.log('✅ Módulo de mídia completamente carregado.');
-console.log('🔧 Funções disponíveis: handleNewMediaFiles(), removeMediaFile(), uploadMediaToSupabase()');
+console.log('🔧 Funções disponíveis: handleNewMediaFiles(), removeMediaFile(), uploadMediaToSupabase(), clearMediaSystem()');
 console.log('📌 Próximo: Testar seleção de arquivos -> preview deve aparecer.');
+console.log('📌 Estado: Pronto para limpeza automática após salvamento.');
