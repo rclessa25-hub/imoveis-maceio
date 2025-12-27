@@ -466,6 +466,66 @@
 <script src="js/modules/media/media-ui.js" defer></script>
 <script src="js/modules/media/media-integration.js" defer></script> <!-- NOVO -->
 
+<!-- ========== VERIFICAÇÃO DE CARREGAMENTO DOS MÓDULOS DE MÍDIA ========== -->
+<script>
+setTimeout(() => {
+    console.group('🔍 VERIFICAÇÃO DE CARREGAMENTO DE MÓDULOS');
+    
+    const modules = {
+        'media-core.js': {
+            loaded: typeof window.initMediaSystem !== 'undefined',
+            functions: {
+                initMediaSystem: typeof window.initMediaSystem,
+                handleNewMediaFiles: typeof window.handleNewMediaFiles,
+                clearMediaSystem: typeof window.clearMediaSystem
+            }
+        },
+        'media-ui.js': {
+            loaded: typeof window.initMediaUI !== 'undefined',
+            functions: {
+                initMediaUI: typeof window.initMediaUI,
+                updateMediaPreview: typeof window.updateMediaPreview
+            }
+        },
+        'media-integration.js': {
+            loaded: typeof window.setupMediaIntegration !== 'undefined',
+            functions: {
+                setupMediaIntegration: typeof window.setupMediaIntegration,
+                getMediaUrlsForProperty: typeof window.getMediaUrlsForProperty
+            }
+        }
+    };
+    
+    Object.entries(modules).forEach(([name, data]) => {
+        console.log(`📦 ${name}: ${data.loaded ? '✅ CARREGADO' : '❌ NÃO CARREGADO'}`);
+        if (data.loaded) {
+            Object.entries(data.functions).forEach(([func, type]) => {
+                console.log(`   ${func}: ${type === 'function' ? '✅' : '❌'} (${type})`);
+            });
+        }
+    });
+    
+    console.groupEnd();
+    
+    if (!modules['media-core.js'].loaded) {
+        console.error('🚨 media-core.js NÃO CARREGOU! Recarregando...');
+        
+        const script = document.createElement('script');
+        script.src = 'js/modules/media/media-core.js?fix=' + Date.now();
+        script.onload = function() {
+            console.log('✅ media-core.js recarregado manualmente');
+            if (typeof window.initMediaSystem === 'function') {
+                window.initMediaSystem('vendas');
+            }
+        };
+        script.onerror = function() {
+            console.error('❌ Falha ao recarregar media-core.js');
+        };
+        document.head.appendChild(script);
+    }
+}, 2000);
+</script>
+    
  ========== ADMIN (DEPENDE DA MÍDIA) ========== -->
 <script src="js/modules/admin.js" defer></script>
     
