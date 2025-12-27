@@ -231,6 +231,63 @@ window.editProperty = function(id) {
     }
 };
 
+// ========== Função de Limpeza do Formulário ==========
+
+window.resetAdminFormToInitialState = function() {
+    console.log('🔄 Resetando formulário admin para estado inicial');
+    
+    try {
+        // 1. Resetar campos do formulário
+        document.getElementById('propertyForm').reset();
+        
+        // 2. Limpar sistema de mídia (fotos/vídeos)
+        if (typeof window.clearMediaSystemComplete === 'function') {
+            window.clearMediaSystemComplete();
+        } else if (typeof window.clearMediaSystem === 'function') {
+            window.clearMediaSystem();
+        }
+        
+        // 3. Limpar sistema de PDFs
+        if (typeof window.clearAllPdfs === 'function') {
+            window.clearAllPdfs();
+        } else {
+            // Fallback manual para PDFs
+            if (window.selectedPdfFiles) window.selectedPdfFiles = [];
+            if (window.existingPdfFiles) window.existingPdfFiles = [];
+            
+            const pdfPreview = document.getElementById('pdfUploadPreview');
+            if (pdfPreview) {
+                pdfPreview.innerHTML = `
+                    <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                        <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 4. Resetar variáveis de edição
+        window.editingPropertyId = null;
+        
+        // 5. Atualizar interface
+        const formTitle = document.getElementById('formTitle');
+        if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
+        
+        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+        
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        
+        console.log('✅ Formulário resetado completamente para estado inicial');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro ao resetar formulário:', error);
+        return false;
+    }
+};
+
 // ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM MÍDIA ==========
 window.setupForm = function() {
     console.log('📝 Configurando formulário admin com sistema de mídia integrado...');
