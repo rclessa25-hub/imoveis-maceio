@@ -1,4 +1,5 @@
 // js/modules/media/media-core.js - VERSÃO COMPLETA
+
 console.log('🖼️ media-core.js carregado - Sistema de Mídia Compartilhado');
 
 /**
@@ -40,6 +41,170 @@ window.initMediaSystem = function(systemName = 'vendas') {
     console.log(`✅ Módulo de mídia pronto para ${systemName}. Bucket: ${config.supabaseBucket}`);
     return config;
 };
+
+// ⚡ FUNÇÃO OTIMIZADA: Carregar mídia existente com passagem por referência
+window.loadExistingMediaOptimized = function(property) {
+    console.group('⚡ Carregamento Otimizado de Mídia Existente');
+    
+    // Referência direta ao array (sem cópia)
+    const existingArray = window.existingMediaFiles;
+    
+    // Limpar array mantendo referência (mais rápido que nova atribuição)
+    existingArray.length = 0;
+    
+    if (property.images && property.images !== 'EMPTY' && property.images.trim() !== '') {
+        const imageUrls = property.images.split(',')
+            .map(url => url.trim())
+            .filter(url => url && url !== 'EMPTY');
+        
+        // Processamento em batch
+        const batchSize = 5;
+        for (let i = 0; i < imageUrls.length; i += batchSize) {
+            const batch = imageUrls.slice(i, i + batchSize);
+            
+            batch.forEach((url, batchIndex) => {
+                // Extrair nome do arquivo otimizado
+                let fileName = url.split('/').pop() || `Imagem ${i + batchIndex + 1}`;
+                if (fileName.length > 40) fileName = fileName.substring(0, 37) + '...';
+                
+                existingArray.push({
+                    url,
+                    id: `existing_${Date.now()}_${i + batchIndex}`,
+                    name: fileName,
+                    type: /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) ? 'image' : 'video',
+                    size: 'Existente',
+                    isExisting: true,
+                    markedForDeletion: false
+                });
+            });
+        }
+        
+        console.log(`✅ ${imageUrls.length} imagem(ns) carregada(s) em batch`);
+    }
+    
+    console.groupEnd();
+    return existingArray;
+};
+
+// ⚡ FUNÇÃO INLINE: Formatação rápida de nome de arquivo (candidata a inlining)
+window.formatFileNameFast = function(url, defaultName = 'Arquivo') {
+    // Função pequena e frequentemente chamada - BOA CANDIDATA A INLINING
+    if (!url) return defaultName;
+    
+    const parts = url.split('/');
+    let fileName = parts[parts.length - 1] || defaultName;
+    
+    // Decode URI uma vez só
+    try { fileName = decodeURIComponent(fileName); } catch (e) {}
+    
+    // Limitar tamanho
+    return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
+};
+
+// ⚡ FUNÇÃO OTIMIZADA: Atualização de preview com batch DOM updates
+window.updatePreviewOptimized = function() {
+    const startTime = Date.now();
+    
+    // Coletar todas as atualizações DOM antes de aplicar
+    const updates = [];
+    
+    // 1. Preview de mídia
+    const mediaPreview = document.getElementById('uploadPreview');
+    if (mediaPreview) {
+        const mediaHtml = generateMediaPreviewHtml(); // Função separada para clareza
+        updates.push({ element: mediaPreview, html: mediaHtml });
+    }
+    
+    // 2. Preview de PDFs
+    const pdfPreview = document.getElementById('pdfUploadPreview');
+    if (pdfPreview) {
+        const pdfHtml = generatePdfPreviewHtml(); // Função separada para clareza
+        updates.push({ element: pdfPreview, html: pdfHtml });
+    }
+    
+    // Aplicar todas as atualizações de uma vez (minimiza reflows)
+    updates.forEach(update => {
+        update.element.innerHTML = update.html;
+    });
+    
+    console.log(`⚡ Preview atualizado em ${Date.now() - startTime}ms`);
+    return true;
+};
+
+// Funções auxiliares separadas para organização
+function generateMediaPreviewHtml() {
+    const allFiles = [...(window.existingMediaFiles || []), ...(window.selectedMediaFiles || [])];
+    
+    if (allFiles.length === 0) {
+        return `
+            <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+            </div>
+        `;
+    }
+    
+    // Gerar HTML em uma string para performance
+    let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
+    
+    allFiles.forEach((file, index) => {
+        const isImage = file.type?.includes('image') || file.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+        const borderColor = file.isExisting ? '#27ae60' : '#3498db';
+        const bgColor = file.isExisting ? '#e8f8ef' : '#e8f4fc';
+        
+        html += `
+            <div class="media-preview-item" style="position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor}">
+                ${isImage && file.url ? 
+                    `<img src="${file.url}" style="width:100%;height:100%;object-fit:cover" alt="Preview">` :
+                    `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
+                        <i class="fas fa-video" style="font-size:2rem;color:#ecf0f1;"></i>
+                    </div>`
+                }
+                <button onclick="removeMediaFile(${index})" style="position:absolute;top:-8px;right:-8px;background:#e74c3c;color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;">×</button>
+                ${file.isExisting ? '<div style="position:absolute;bottom:2px;left:2px;background:#27ae60;color:white;font-size:0.6rem;padding:1px 4px;border-radius:3px;">Existente</div>' : ''}
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+function generatePdfPreviewHtml() {
+    const allPdfs = [...(window.existingPdfFiles || []), ...(window.selectedPdfFiles || [])];
+    
+    if (allPdfs.length === 0) {
+        return `
+            <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+            </div>
+        `;
+    }
+    
+    let html = '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
+    
+    allPdfs.forEach((pdf, index) => {
+        const shortName = pdf.name.length > 15 ? pdf.name.substring(0, 12) + '...' : pdf.name;
+        const bgColor = pdf.isExisting ? '#e8f8ef' : '#e8f4fc';
+        const borderColor = pdf.isExisting ? '#27ae60' : '#3498db';
+        
+        html += `
+            <div class="pdf-preview-container" style="position:relative">
+                <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:0.5rem;width:90px;height:90px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;">
+                    <i class="fas fa-file-pdf" style="font-size:1.2rem;color:${borderColor};margin-bottom:0.3rem;"></i>
+                    <p style="font-size:0.7rem;margin:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${shortName}</p>
+                    <small style="color:#7f8c8d;font-size:0.6rem;">${pdf.size || 'PDF'}</small>
+                </div>
+                <button class="delete-pdf-btn" onclick="${pdf.isExisting ? `removeExistingPdf(${index - window.selectedPdfFiles.length})` : `removeNewPdf(${index})`}" title="Excluir PDF" style="position:absolute;top:-5px;right:-5px;background:${pdf.isExisting ? '#e74c3c' : '#3498db'};color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:16px;cursor:pointer;z-index:20;">×</button>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
 
 // ========== FUNÇÃO QUE FALTAVA ==========
 window.handleNewMediaFiles = function(files) {
