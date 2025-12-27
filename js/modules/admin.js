@@ -71,6 +71,12 @@ window.cancelEdit = function() {
     if (typeof window.clearPdfsOnCancel === 'function') {
         window.clearPdfsOnCancel();
     }
+
+    // ⭐ NOVO: Limpar mídia (fotos/vídeos)
+    if (typeof window.clearMediaSystem === 'function') {
+        window.clearMediaSystem();
+        console.log('✅ Mídia limpa no cancelamento');
+    }
     
     const form = document.getElementById('propertyForm');
     if (form) form.reset();
