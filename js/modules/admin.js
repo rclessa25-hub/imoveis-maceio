@@ -176,8 +176,8 @@ window.editProperty = function(id) {
     console.log(`🖼️ Carregando mídia existente para edição...`);
     
     // Resetar arrays do sistema de mídia
-    if (window.selectedMediaFiles) window.selectedMediaFiles = [];
-    if (window.existingMediaFiles) window.existingMediaFiles = [];
+    if (!window.selectedMediaFiles) window.selectedMediaFiles = [];
+    if (!window.existingMediaFiles) window.existingMediaFiles = [];
     
     // Processar imagens existentes do imóvel
     if (property.images && property.images !== 'EMPTY' && property.images.trim() !== '') {
@@ -219,7 +219,8 @@ window.editProperty = function(id) {
                     
                     const mediaType = isImage ? 'image' : (isVideo ? 'video' : 'file');
                     
-                    // Adicionar à lista de mídia existente
+                   // Adicionar à lista de mídia existente
+                if (window.existingMediaFiles) {
                     window.existingMediaFiles.push({
                         url: url,
                         id: `existing_media_${Date.now()}_${index}`,
@@ -233,7 +234,19 @@ window.editProperty = function(id) {
                     });
                     
                     console.log(`✅ Mídia existente carregada: ${fileName} (${mediaType})`);
-                    
+                } else {
+                    console.error('❌ window.existingMediaFiles é undefined!');
+                    window.existingMediaFiles = [{
+                        url: url,
+                        id: `existing_media_${Date.now()}_${index}`,
+                        name: fileName,
+                        type: mediaType,
+                        size: 'Arquivada',
+                        date: 'Existente',
+                        isExisting: true,
+                        originalUrl: url,
+                        markedForDeletion: false
+                    }];
                 } catch (error) {
                     console.error(`❌ Erro ao processar URL ${url}:`, error);
                 }
@@ -1112,6 +1125,102 @@ window.reloadMediaModules = function() {
         alert('🔄 Módulos de mídia recarregados!\n\nTente novamente.');
     }, 2000);
 };
+
+// ========== RECUPERAÇÃO COMPLETA DO SISTEMA DE MÍDIA ==========
+window.recoverMediaSystem = function() {
+    console.log('🔄 INICIANDO RECUPERAÇÃO COMPLETA DO SISTEMA DE MÍDIA');
+    
+    // 1. Garantir que variáveis existam
+    if (typeof window.selectedMediaFiles === 'undefined') {
+        window.selectedMediaFiles = [];
+        console.log('✅ window.selectedMediaFiles criado');
+    }
+    
+    if (typeof window.existingMediaFiles === 'undefined') {
+        window.existingMediaFiles = [];
+        console.log('✅ window.existingMediaFiles criado');
+    }
+    
+    if (typeof window.isUploadingMedia === 'undefined') {
+        window.isUploadingMedia = false;
+        console.log('✅ window.isUploadingMedia criado');
+    }
+    
+    // 2. Garantir que MEDIA_CONFIG existe
+    if (typeof window.MEDIA_CONFIG === 'undefined') {
+        window.MEDIA_CONFIG = {
+            supabaseBucket: 'properties',
+            maxFiles: 10,
+            maxSize: 5 * 1024 * 1024,
+            allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+            allowedVideoTypes: ['video/mp4', 'video/quicktime'],
+            pathPrefix: 'property_media'
+        };
+        console.log('✅ window.MEDIA_CONFIG criado');
+    }
+    
+    // 3. Criar função handleNewMediaFiles se não existir
+    if (typeof window.handleNewMediaFiles !== 'function') {
+        console.log('⚠️ handleNewMediaFiles não existe. Criando versão de emergência...');
+        
+        window.handleNewMediaFiles = function(files) {
+            console.log('🆘 [EMERGÊNCIA] handleNewMediaFiles chamada com', files.length, 'arquivo(s)');
+            
+            if (!window.selectedMediaFiles) window.selectedMediaFiles = [];
+            
+            Array.from(files).forEach(file => {
+                window.selectedMediaFiles.push({
+                    file: file,
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    preview: URL.createObjectURL(file),
+                    isNew: true,
+                    isImage: file.type.includes('image'),
+                    isVideo: file.type.includes('video')
+                });
+                console.log(`✅ "${file.name}" adicionado`);
+            });
+            
+            // Atualizar preview
+            if (typeof window.updateMediaPreview === 'function') {
+                window.updateMediaPreview();
+            }
+            
+            return files.length;
+        };
+        
+        console.log('✅ handleNewMediaFiles criada (versão emergência)');
+    }
+    
+    // 4. Recriar clearMediaSystem se não existir
+    if (typeof window.clearMediaSystem !== 'function') {
+        window.clearMediaSystem = function() {
+            console.log('🧹 clearMediaSystem (emergência)');
+            if (window.selectedMediaFiles) window.selectedMediaFiles.length = 0;
+            if (window.existingMediaFiles) window.existingMediaFiles.length = 0;
+            
+            const preview = document.getElementById('uploadPreview');
+            if (preview) preview.innerHTML = 'Sistema recuperado - tente novamente';
+            
+            return true;
+        };
+    }
+    
+    console.log('✅ Sistema de mídia recuperado');
+    alert('🔄 SISTEMA DE MÍDIA RECUPERADO!\n\nTente adicionar fotos novamente.');
+    
+    return true;
+};
+
+// Executar recuperação após 3 segundos
+setTimeout(() => {
+    if (typeof window.handleNewMediaFiles !== 'function') {
+        console.log('🚨 Sistema de mídia não carregou. Iniciando recuperação...');
+        window.recoverMediaSystem();
+    }
+}, 3000);
 
 console.log('✅ admin.js pronto e funcional');
 
