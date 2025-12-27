@@ -516,30 +516,38 @@ window.setupForm = function() {
                 }
             }
             
-            // 4. LIMPEZA E RESET APÓS SALVAMENTO (SUCESSO OU ERRO)
-            setTimeout(() => {
-                console.log('🧹 Executando limpeza pós-salvamento...');
-                
-                // Cancelar edição (limpa formulário, reseta variáveis)
+        // 4. LIMPEZA E RESET APÓS SALVAMENTO (SUCESSO OU ERRO)
+        setTimeout(() => {
+            console.log('🧹 Executando limpeza automática pós-salvamento...');
+            
+            // ✅ CHAVE: Resetar formulário para estado inicial
+            if (typeof window.resetAdminFormToInitialState === 'function') {
+                window.resetAdminFormToInitialState();
+            } else {
+                // Fallback: chamar cancelEdit() que já existe
                 if (typeof window.cancelEdit === 'function') {
                     window.cancelEdit();
                 }
-                
-                // Atualizar lista de imóveis no admin
-                if (typeof window.loadPropertyList === 'function') {
-                    window.loadPropertyList();
-                    console.log('📋 Lista de imóveis atualizada');
-                }
-                
-                // Forçar recarregamento da galeria principal
-                if (typeof window.renderProperties === 'function') {
-                    setTimeout(() => {
-                        window.renderProperties('todos');
-                        console.log('🔄 Galeria principal atualizada');
-                    }, 500);
-                }
-                
-            }, 800);
+            }
+            
+            // Atualizar lista de imóveis no admin
+            if (typeof window.loadPropertyList === 'function') {
+                window.loadPropertyList();
+                console.log('📋 Lista de imóveis atualizada');
+            }
+            
+            // Forçar recarregamento da galeria principal
+            if (typeof window.renderProperties === 'function') {
+                setTimeout(() => {
+                    window.renderProperties('todos');
+                    console.log('🔄 Galeria principal atualizada');
+                }, 500);
+            }
+            
+            // Feedback visual para usuário
+            console.log('🎯 Formulário limpo e pronto para novo imóvel');
+            
+        }, 800);
             
         } catch (error) {
             // 5. TRATAMENTO DE ERROS GLOBAIS
