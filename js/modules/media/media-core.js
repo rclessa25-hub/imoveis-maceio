@@ -296,27 +296,39 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
 };
 
 // ========== FUNÇÃO PARA REMOVER ARQUIVO (chamada pelos botões X) ==========
+// Em js/modules/media/media-core.js - MODIFICAR A FUNÇÃO removeMediaFile
 window.removeMediaFile = function(index) {
-    console.log(`🗑️  removeMediaFile chamada para índice: ${index}`);
+    console.group(`🗑️ removeMediaFile chamada para índice: ${index}`);
     
     // Verificar se é um arquivo selecionado (novo) ou existente
-    if (index < window.selectedMediaFiles.length) {
-        // É um arquivo novo
+    if (window.selectedMediaFiles && index < window.selectedMediaFiles.length) {
+        // É um arquivo NOVO (ainda não salvo no Supabase)
         const removed = window.selectedMediaFiles.splice(index, 1)[0];
-        console.log(`✅ Arquivo novo removido: ${removed.name}`);
+        console.log(`✅ Arquivo NOVO removido: ${removed.name}`);
         
         // Liberar a URL do objeto para evitar vazamento de memória
         if (removed.preview && removed.preview.startsWith('blob:')) {
             URL.revokeObjectURL(removed.preview);
         }
-    } else {
-        // É um arquivo existente (ajustar índice)
-        const existingIndex = index - window.selectedMediaFiles.length;
+    } else if (window.existingMediaFiles) {
+        // É um arquivo EXISTENTE (ajustar índice)
+        const existingIndex = index - (window.selectedMediaFiles ? window.selectedMediaFiles.length : 0);
         if (existingIndex >= 0 && existingIndex < window.existingMediaFiles.length) {
-            const removed = window.existingMediaFiles.splice(existingIndex, 1)[0];
-            console.log(`✅ Arquivo existente removido: ${removed.name || removed.url}`);
+            // ❌ REMOVER ESTA LINHA:
+            // const removed = window.existingMediaFiles.splice(existingIndex, 1)[0];
+            
+            // ✅ SUBSTITUIR POR: Marcar para exclusão ao invés de remover
+            window.existingMediaFiles[existingIndex].markedForDeletion = true;
+            window.existingMediaFiles[existingIndex].isVisible = false; // Opcional: para UI
+            const removed = window.existingMediaFiles[existingIndex];
+            
+            console.log(`✅ Arquivo EXISTENTE marcado para exclusão: ${removed.name || removed.url}`);
+            console.log(`📌 URL: ${removed.url}`);
+            console.log(`📌 markedForDeletion: ${removed.markedForDeletion}`);
         }
     }
+    
+    console.groupEnd();
     
     // Atualizar o preview
     if (typeof window.updateMediaPreview === 'function') {
