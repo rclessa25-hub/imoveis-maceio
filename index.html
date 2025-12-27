@@ -466,6 +466,32 @@
 <script src="js/modules/media/media-ui.js" defer></script>
 <script src="js/modules/media/media-integration.js" defer></script> <!-- NOVO -->
 
+✅ AQUI entra o SCRIPT DE TESTE DE CONEXÃO ENTRE MÓDULOS
+<!-- ========== TESTE DE CONEXÃO ENTRE MÓDULOS (DEBUG CONTROLADO) ========== -->
+<script>
+setTimeout(() => {
+    console.group('🔗 TESTE DE CONEXÃO ENTRE MÓDULOS');
+    
+    console.log('📦 Módulos carregados:');
+    console.log('- media-core.js:', typeof window.initMediaSystem);
+    console.log('- media-ui.js:', typeof window.initMediaUI);
+    console.log('- media-integration.js:', typeof window.setupMediaIntegration);
+    
+    console.log('🔧 Funções disponíveis:');
+    console.log('- handleNewMediaFiles:', typeof window.handleNewMediaFiles);
+    console.log('- updateMediaPreview:', typeof window.updateMediaPreview);
+    console.log('- clearMediaSystem:', typeof window.clearMediaSystem);
+    
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    console.log('🎯 Elementos DOM:');
+    console.log('- uploadArea:', !!uploadArea);
+    console.log('- fileInput:', !!fileInput);
+    
+    console.groupEnd();
+}, 3000);
+</script>
+    
 <!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
 <script>
 console.log('🎯 Inicialização do site Weber Lessa - SCRIPTS CARREGANDO EM PARALELO');
