@@ -1247,3 +1247,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
 });
+
+// Em js/modules/admin.js - ADICIONAR NO FINAL DO ARQUIVO
+
+window.isAdminFormEmpty = function() {
+    const checks = {
+        titulo: !document.getElementById('propTitle').value.trim(),
+        preco: !document.getElementById('propPrice').value.trim(),
+        localizacao: !document.getElementById('propLocation').value.trim(),
+        descricao: !document.getElementById('propDescription').value.trim(),
+        temMidia: !window.selectedMediaFiles || window.selectedMediaFiles.length === 0,
+        temPdfs: !window.selectedPdfFiles || window.selectedPdfFiles.length === 0
+    };
+    
+    const isEditing = window.editingPropertyId !== null;
+    const isTrulyEmpty = checks.titulo && checks.preco && checks.localizacao && 
+                        checks.temMidia && checks.temPdfs && !isEditing;
+    
+    return {
+        isEmpty: isTrulyEmpty,
+        isEditing: isEditing,
+        checks: checks
+    };
+};
+
+// Verificação automática ao carregar formulário
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const formState = window.isAdminFormEmpty();
+        console.log('🔍 Estado inicial do formulário:', formState);
+        
+        // Se não está vazio, limpar
+        if (!formState.isEmpty && !formState.isEditing) {
+            console.log('⚠️ Formulário não estava vazio inicialmente. Limpando...');
+            window.resetAdminFormToInitialState();
+        }
+    }, 1500);
+});
