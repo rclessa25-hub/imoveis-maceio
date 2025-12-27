@@ -134,6 +134,12 @@ window.loadPropertyList = function() {
 // ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA ==========
 window.editProperty = function(id) {
     console.log(`📝 EDITANDO IMÓVEL ${id} (com sistema de mídia integrado)`);
+
+    // ⭐ NOVO: Limpar estado anterior PRIMEIRO
+    if (typeof window.clearMediaSystem === 'function') {
+        window.clearMediaSystem();
+        console.log('🧹 Estado anterior de mídia limpo antes de carregar novo');
+    }
     
     const property = window.properties.find(p => p.id === id);
     if (!property) {
