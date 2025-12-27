@@ -135,7 +135,6 @@ window.loadPropertyList = function() {
 window.editProperty = function(id) {
     console.log(`📝 EDITANDO IMÓVEL ${id} (com sistema de mídia integrado)`);
 
-    // ⭐ NOVO: Limpar estado anterior PRIMEIRO
     if (typeof window.clearMediaSystem === 'function') {
         window.clearMediaSystem();
         console.log('🧹 Estado anterior de mídia limpo antes de carregar novo');
@@ -147,7 +146,6 @@ window.editProperty = function(id) {
         return;
     }
     
-    // 1. PREENCHER CAMPOS DO FORMULÁRIO
     document.getElementById('propTitle').value = property.title || '';
     document.getElementById('propPrice').value = property.price || '';
     document.getElementById('propLocation').value = property.location || '';
@@ -158,7 +156,6 @@ window.editProperty = function(id) {
     document.getElementById('propBadge').value = property.badge || 'Novo';
     document.getElementById('propHasVideo').checked = property.has_video || false;
     
-    // 2. ATUALIZAR INTERFACE DO FORMULÁRIO
     const formTitle = document.getElementById('formTitle');
     if (formTitle) formTitle.textContent = `Editando: ${property.title}`;
     
@@ -168,29 +165,22 @@ window.editProperty = function(id) {
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) cancelBtn.style.display = 'block';
     
-    // 3. DEFINIR ID DE EDIÇÃO (CRÍTICO)
     window.editingPropertyId = property.id;
-    console.log(`🆔 editingPropertyId definido como: ${window.editingPropertyId}`);
     
-    // 4. CARREGAR MÍDIA EXISTENTE (FOTOS/VIDEOS) - NOVO SISTEMA
-    console.log(`🖼️ Carregando mídia existente para edição...`);
-    
-    // Resetar arrays do sistema de mídia
     if (!window.selectedMediaFiles) window.selectedMediaFiles = [];
     if (!window.existingMediaFiles) window.existingMediaFiles = [];
     
-    // Processar imagens existentes do imóvel
     if (property.images && property.images !== 'EMPTY' && property.images.trim() !== '') {
         try {
             const imageUrls = property.images.split(',')
                 .map(url => url.trim())
-                .filter(url => {
-                    return url !== '' && 
-                           url !== 'EMPTY' && 
-                           url !== 'undefined' && 
-                           url !== 'null' &&
-                           (url.startsWith('http') || url.includes('supabase.co'));
-                });
+                .filter(url =>
+                    url !== '' &&
+                    url !== 'EMPTY' &&
+                    url !== 'undefined' &&
+                    url !== 'null' &&
+                    (url.startsWith('http') || url.includes('supabase.co'))
+                );
             
             imageUrls.forEach((url, index) => {
                 try {
@@ -211,18 +201,15 @@ window.editProperty = function(id) {
                         fileName = `Imagem ${index + 1}`;
                     }
                     
-                    // Determinar se é imagem ou vídeo pela extensão/URL
-                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) || 
+                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName) ||
                                     url.includes('/storage/v1/object/public/properties/');
-                    const isVideo = /\.(mp4|mov|avi)$/i.test(fileName) || 
+                    const isVideo = /\.(mp4|mov|avi)$/i.test(fileName) ||
                                     url.includes('/storage/v1/object/public/videos/');
                     
                     const mediaType = isImage ? 'image' : (isVideo ? 'video' : 'file');
                     
-                   // Adicionar à lista de mídia existente
-                if (window.existingMediaFiles) {
                     window.existingMediaFiles.push({
-                        url: url,
+                        url,
                         id: `existing_media_${Date.now()}_${index}`,
                         name: fileName,
                         type: mediaType,
@@ -232,54 +219,16 @@ window.editProperty = function(id) {
                         originalUrl: url,
                         markedForDeletion: false
                     });
-                    
-                    console.log(`✅ Mídia existente carregada: ${fileName} (${mediaType})`);
-                } else {
-                    console.error('❌ window.existingMediaFiles é undefined!');
-                    window.existingMediaFiles = [{
-                        url: url,
-                        id: `existing_media_${Date.now()}_${index}`,
-                        name: fileName,
-                        type: mediaType,
-                        size: 'Arquivada',
-                        date: 'Existente',
-                        isExisting: true,
-                        originalUrl: url,
-                        markedForDeletion: false
-                    }];
+                } catch (error) {
+                    console.error(`❌ Erro ao processar URL ${url}:`, error);
                 }
-            } catch (error) {
-                console.error(`❌ Erro ao processar URL ${url}:`, error);
-            }
-        });
+            });
+        } catch (error) {
+            console.error('❌ Erro geral ao processar imagens:', error);
+        }
     } else {
         console.log('ℹ️ Nenhuma mídia existente para este imóvel.');
     }
-    
-    // 5. CARREGAR PDFs EXISTENTES (sistema antigo - mantido para compatibilidade)
-    if (typeof window.loadExistingPdfsForEdit === 'function') {
-        console.log(`📄 Carregando PDFs existentes...`);
-        window.loadExistingPdfsForEdit(property);
-    }
-    
-    // 6. ATUALIZAR PREVIEW VISUAL
-    if (typeof window.updateMediaPreview === 'function') {
-        setTimeout(() => {
-            window.updateMediaPreview();
-            console.log(`🎨 Preview de mídia atualizado: ${window.existingMediaFiles.length} item(s) existente(s)`);
-        }, 300);
-    }
-    
-    // 7. ROLAR ATÉ O PAINEL ADMIN
-    setTimeout(() => {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel) {
-            adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            console.log('📜 Rolado até o painel admin');
-        }
-    }, 100);
-    
-    console.log(`✅ Imóvel ${id} pronto para edição. Mídia: ${window.existingMediaFiles.length} item(s)`);
 };
 
 // ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM MÍDIA ==========
