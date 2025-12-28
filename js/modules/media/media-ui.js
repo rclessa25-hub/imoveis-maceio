@@ -121,6 +121,8 @@ function setupEventListeners() {
 }
 
 // ========== ATUALIZAÇÃO DO PREVIEW ==========
+// Em js/modules/media/media-ui.js - MODIFICAR A FUNÇÃO updateMediaPreview
+
 window.updateMediaPreview = function() {
     if (!mediaPreviewContainer) return;
     
@@ -129,11 +131,14 @@ window.updateMediaPreview = function() {
     // Limpar container
     mediaPreviewContainer.innerHTML = '';
     
-    // Agrupar arquivos existentes e novos (simulação - será conectado)
-    const allFiles = [...(window.existingMediaFiles || []), ...(window.selectedMediaFiles || [])];
+    // Filtrar arquivos VISÍVEIS (não marcados para exclusão visual)
+    const allFiles = [
+        ...(window.existingMediaFiles || []).filter(item => !item.isVisible === false),
+        ...(window.selectedMediaFiles || [])
+    ];
     
     if (allFiles.length === 0) {
-        // Estado vazio - mostrar mensagem amigável
+        // Estado vazio
         mediaPreviewContainer.innerHTML = `
             <div style="text-align: center; color: #95a5a6; padding: 2rem;">
                 <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
@@ -146,6 +151,16 @@ window.updateMediaPreview = function() {
     
     // Renderizar previews
     allFiles.forEach((file, index) => {
+        // ✅ ADICIONAR VERIFICAÇÃO SE ESTÁ MARCADO PARA EXCLUSÃO
+        const isMarkedForDeletion = file.markedForDeletion;
+        const isExisting = file.isExisting;
+        
+        // Se está marcado para exclusão, mostrar visual diferente
+        const borderColor = isMarkedForDeletion ? '#e74c3c' : 
+                          (isExisting ? '#27ae60' : '#3498db');
+        const bgColor = isMarkedForDeletion ? '#ffebee' : 
+                       (isExisting ? '#e8f8ef' : '#e8f4fc');
+        
         const isImage = file.type?.includes('image') || file.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
         const isVideo = file.type?.includes('video') || file.name?.match(/\.(mp4|mov|avi)$/i);
         
@@ -159,37 +174,41 @@ window.updateMediaPreview = function() {
             overflow: hidden;
             display: inline-block;
             margin: 5px;
-            border: 2px solid ${file.isExisting ? '#27ae60' : '#3498db'};
-            background: ${file.isExisting ? '#e8f8ef' : '#e8f4fc'};
+            border: 2px solid ${borderColor};
+            background: ${bgColor};
+            opacity: ${isMarkedForDeletion ? '0.6' : '1'};
         `;
         
         let content = '';
         if (isImage && file.url) {
-            content = `<img src="${file.url}" style="width:100%; height:100%; object-fit:cover;" alt="Preview">`;
+            content = `<img src="${file.url}" style="width:100%; height:100%; object-fit:cover; ${isMarkedForDeletion ? 'filter: grayscale(100%);' : ''}" alt="Preview">`;
         } else if (isVideo && file.url) {
             content = `
-                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#2c3e50;">
+                <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#2c3e50; ${isMarkedForDeletion ? 'opacity: 0.6;' : ''}">
                     <i class="fas fa-video" style="font-size:2rem; color:#ecf0f1;"></i>
                 </div>
             `;
         } else {
-            // Para novos arquivos (File objects) ou sem URL
             const icon = isImage ? 'fa-image' : (isVideo ? 'fa-video' : 'fa-file');
             content = `
-                <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; ${isMarkedForDeletion ? 'opacity: 0.6;' : ''}">
                     <i class="fas ${icon}" style="font-size:1.5rem; color:#7f8c8d; margin-bottom:5px;"></i>
                     <small style="font-size:0.7rem; color:#95a5a6; text-align:center; padding:0 3px;">${file.name || 'Arquivo'}</small>
                 </div>
             `;
         }
         
-        // Botão de exclusão (será conectado na Etapa 4)
+        // Botão de exclusão
         previewItem.innerHTML = content + `
             <button onclick="removeMediaFile(${index})" 
-                    style="position:absolute; top:-8px; right:-8px; background:#e74c3c; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:14px;">
-                ×
+                    style="position:absolute; top:-8px; right:-8px; background:${isMarkedForDeletion ? '#c0392b' : '#e74c3c'}; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:14px;">
+                ${isMarkedForDeletion ? '↺' : '×'}
             </button>
-            ${file.isExisting ? '<div style="position:absolute; bottom:2px; left:2px; background:#27ae60; color:white; font-size:0.6rem; padding:1px 4px; border-radius:3px;">Existente</div>' : ''}
+            ${isExisting ? `
+                <div style="position:absolute; bottom:2px; left:2px; background:${isMarkedForDeletion ? '#e74c3c' : '#27ae60'}; color:white; font-size:0.6rem; padding:1px 4px; border-radius:3px;">
+                    ${isMarkedForDeletion ? 'EXCLUIR' : 'Existente'}
+                </div>
+            ` : ''}
         `;
         
         mediaPreviewContainer.appendChild(previewItem);
