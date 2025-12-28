@@ -9,7 +9,9 @@ console.log('🖼️ media-core.js carregado - Sistema de Mídia Compartilhado')
 
 // Funções depreciadas (mantidas para compatibilidade)
 window.formatFileSize = window.mediaFormatFileSize || formatFileSize;
-window.formatFileNameFast = window.mediaExtractFileName || formatFileNameFast;
+// NO TOPO DO ARQUIVO (LINHA 12) - Só comentário
+// window.formatFileNameFast = window.mediaExtractFileName || function(url, defaultName = 'Arquivo') { ... }
+window.formatFileNameFast = window.mediaExtractFileName || function(url, defaultName = 'Arquivo') {
 
 window.initMediaSystem = function(systemName = 'vendas') {
     console.log(`🔧 Inicializando módulo de mídia para: ${systemName.toUpperCase()}`);
@@ -91,9 +93,8 @@ window.loadExistingMediaOptimized = function(property) {
     return existingArray;
 };
 
-// ⚡ FUNÇÃO INLINE: Formatação rápida de nome de arquivo (candidata a inlining)
-window.formatFileNameFast = function(url, defaultName = 'Arquivo') {
-    // Função pequena e frequentemente chamada - BOA CANDIDATA A INLINING
+// ⚡ FUNÇÃO INLINE: Formatação rápida de nome de arquivo
+window.formatFileNameFast = window.mediaExtractFileName || function(url, defaultName = 'Arquivo') {
     if (!url) return defaultName;
     
     const parts = url.split('/');
@@ -105,7 +106,7 @@ window.formatFileNameFast = function(url, defaultName = 'Arquivo') {
     // Limitar tamanho
     return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
 };
-
+    
 // ⚡ FUNÇÃO OTIMIZADA: Atualização de preview com batch DOM updates
 window.updatePreviewOptimized = function() {
     const startTime = Date.now();
