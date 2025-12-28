@@ -1327,6 +1327,64 @@ setTimeout(() => {
     }
 }, 3000);
 
+// Adicionar ANTES da linha 1346 (setTimeout que tenta ocultar)
+
+// CORREÇÃO DEFINITIVA: Ocultar botão de teste de upload
+function hideMediaTestButtonPermanently() {
+    console.log('🔧 Ocultando botão de teste de mídia definitivamente...');
+    
+    // Método 1: Remover completamente o elemento
+    const testBtn = document.getElementById('media-test-btn');
+    if (testBtn) {
+        testBtn.remove();
+        console.log('✅ Botão de teste REMOVIDO completamente');
+        return;
+    }
+    
+    // Método 2: Se não encontrado, criar observer para quando aparecer
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.id === 'media-test-btn' || 
+                    (node.querySelector && node.querySelector('#media-test-btn'))) {
+                    const btn = document.getElementById('media-test-btn');
+                    if (btn) {
+                        btn.remove();
+                        console.log('✅ Botão de teste detectado e removido via observer');
+                        observer.disconnect();
+                    }
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Método 3: Verificar periodicamente por 10 segundos
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
+        attempts++;
+        const btn = document.getElementById('media-test-btn');
+        if (btn) {
+            btn.style.display = 'none';
+            btn.style.visibility = 'hidden';
+            btn.style.opacity = '0';
+            btn.style.position = 'absolute';
+            btn.style.left = '-9999px';
+            console.log('✅ Botão de teste ocultado via fallback');
+            clearInterval(checkInterval);
+        }
+        if (attempts > 20) { // 10 segundos (20 * 500ms)
+            clearInterval(checkInterval);
+            console.log('⚠️  Botão de teste não encontrado após 10s');
+        }
+    }, 500);
+}
+
+// Executar imediatamente e após DOM carregado
+setTimeout(hideMediaTestButtonPermanently, 100);
+document.addEventListener('DOMContentLoaded', hideMediaTestButtonPermanently);
+
 // Em js/modules/admin.js - ADICIONAR NO FINAL DO ARQUIVO (antes do último console.log)
 // Ocultar botão de teste de mídia
 setTimeout(() => {
