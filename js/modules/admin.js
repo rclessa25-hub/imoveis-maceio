@@ -132,8 +132,6 @@ window.loadPropertyList = function() {
 };
 
 // ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA ==========
-// Em js/modules/admin.js - MODIFICAR A FUNÇÃO editProperty (linha ~136)
-
 window.editProperty = function(id) {
     console.log(`📝 EDITANDO IMÓVEL ${id} (com sistema de mídia integrado)`);
 
@@ -223,6 +221,7 @@ window.editProperty = function(id) {
 
                     const mediaType = isImage ? 'image' : (isVideo ? 'video' : 'file');
 
+                    // ✅ IMPORTANTE: Inicializar markedForDeletion como false e isVisible como true
                     window.existingMediaFiles.push({
                         url,
                         id: `existing_media_${Date.now()}_${index}`,
@@ -232,7 +231,8 @@ window.editProperty = function(id) {
                         date: 'No servidor',
                         isExisting: true,
                         originalUrl: url,
-                        markedForDeletion: false
+                        markedForDeletion: false, // ✅ INICIALIZADO COMO FALSE
+                        isVisible: true            // ✅ INICIALIZADO COMO VISÍVEL
                     });
 
                     console.log(`✅ Imagem existente carregada: ${fileName}`);
