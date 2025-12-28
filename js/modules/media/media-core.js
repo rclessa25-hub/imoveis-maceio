@@ -6,6 +6,11 @@ console.log('🖼️ media-core.js carregado - Sistema de Mídia Compartilhado')
  * MÓDULO CORE DE MÍDIA - Projetado para VENDAS e ALUGUEL
  * @param {string} systemName - 'vendas' ou 'aluguel' (define bucket e configurações)
  */
+
+// Funções depreciadas (mantidas para compatibilidade)
+window.formatFileSize = window.mediaFormatFileSize || formatFileSize;
+window.formatFileNameFast = window.mediaExtractFileName || formatFileNameFast;
+
 window.initMediaSystem = function(systemName = 'vendas') {
     console.log(`🔧 Inicializando módulo de mídia para: ${systemName.toUpperCase()}`);
 
