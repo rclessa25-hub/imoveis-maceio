@@ -1,3 +1,5 @@
+//imoveis-maceio/js/modules/debug/verify-functions.js
+
 // Verificação de duplicações nas funções relacionadas a mídia
 setTimeout(() => {
     const allFunctions = Object.keys(window).sort();
