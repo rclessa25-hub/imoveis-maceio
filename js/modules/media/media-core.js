@@ -405,3 +405,35 @@ window.initMediaSystem('vendas');
 console.log('✅ Módulo de mídia completamente carregado.');
 console.log('🔧 Funções disponíveis: initMediaSystem(), handleNewMediaFiles(), removeMediaFile(), clearMediaSystem()');
 console.log('📌 Próximo: Testar seleção de arquivos -> preview deve aparecer.');
+
+// ⚡ NO FINAL DO media-core.js, ADICIONE:
+// ========== INICIALIZAÇÃO DOS MÓDULOS DEPENDENTES ==========
+setTimeout(() => {
+    console.group('🔗 INICIALIZANDO DEPENDÊNCIAS DO MÓDULO DE MÍDIA');
+    
+    // Verificar se os módulos utilitários carregaram
+    if (typeof window.mediaFormatFileSize !== 'function') {
+        console.warn('⚠️ media-utils.js não carregou completamente');
+        // Fallback básico
+        window.mediaFormatFileSize = function(bytes) {
+            return bytes ? Math.round(bytes / 1024) + ' KB' : '0 KB';
+        };
+    }
+    
+    if (typeof window.MediaLogger !== 'object') {
+        console.warn('⚠️ media-logger.js não carregou completamente');
+        // Fallback básico
+        window.MediaLogger = {
+            info: (m, msg) => console.log(`[${m}] ${msg}`),
+            error: (m, msg) => console.error(`[${m}] ${msg}`)
+        };
+    }
+    
+    // Registrar inicialização no logger
+    if (window.MediaLogger && window.MediaLogger.system) {
+        window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
+    }
+    
+    console.log('✅ Dependências verificadas e prontas');
+    console.groupEnd();
+}, 1500);
