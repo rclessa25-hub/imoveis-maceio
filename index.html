@@ -795,6 +795,42 @@ window.verifyProperty71 = function() {
         return false;
     }
 };
+
+ <script>
+// Teste rápido após 2 segundos
+setTimeout(() => {
+    console.log('🧪 TESTE RÁPIDO DOS MÓDULOS:');
+    
+    // Testar módulos críticos
+    const criticalModules = {
+        'media-core.js': typeof window.initMediaSystem,
+        'media-ui.js': typeof window.initMediaUI,
+        'media-integration.js': typeof window.setupMediaIntegration,
+        'media-utils.js': typeof window.mediaFormatFileSize,
+        'admin.js (não duplicado)': !window.ADMIN_CONFIG || (() => {
+            const configs = Object.keys(window).filter(k => k === 'ADMIN_CONFIG');
+            return configs.length === 1;
+        })()
+    };
+    
+    let allOk = true;
+    Object.entries(criticalModules).forEach(([name, status]) => {
+        const ok = status && status !== 'undefined';
+        console.log(`${name}: ${ok ? '✅' : '❌'}`);
+        if (!ok) allOk = false;
+    });
+    
+    if (allOk) {
+        console.log('🎉 TODOS OS MÓDULOS CARREGADOS!');
+        // Remover alerta de erro
+        const errorAlert = document.querySelector('.alert-error');
+        if (errorAlert) errorAlert.remove();
+    } else {
+        console.error('⚠️  PROBLEMAS DETECTADOS!');
+    }
+}, 2000);
+</script>   
+    
 </script>
 </body>
 </html>
