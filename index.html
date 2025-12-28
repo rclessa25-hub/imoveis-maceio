@@ -530,6 +530,87 @@ setTimeout(() => {
     
  ========== ADMIN (DEPENDE DA MÍDIA) ========== -->
 <script src="js/modules/admin.js" defer></script>
+
+<!-- ========== TESTE DE VALIDAÇÃO FINAL ========== -->
+<script>
+// Aguardar 3 segundos após carregamento completo
+setTimeout(() => {
+    console.group('✅ VALIDAÇÃO FINAL DA ESTRUTURA DE MÍDIA');
+    
+    // Testar cada módulo
+    const modules = {
+        'media-core.js': {
+            loaded: typeof window.initMediaSystem === 'function',
+            functions: ['initMediaSystem', 'handleNewMediaFiles', 'clearMediaSystem']
+        },
+        'media-ui.js': {
+            loaded: typeof window.initMediaUI === 'function',
+            functions: ['initMediaUI', 'updateMediaPreview']
+        },
+        'media-integration.js': {
+            loaded: typeof window.setupMediaIntegration === 'function',
+            functions: ['setupMediaIntegration', 'getMediaUrlsForProperty']
+        },
+        'media-utils.js': {
+            loaded: typeof window.mediaFormatFileSize === 'function',
+            functions: ['mediaFormatFileSize', 'mediaExtractFileName', 'mediaValidateFile']
+        },
+        'media-logger.js': {
+            loaded: typeof window.MediaLogger !== 'undefined',
+            functions: ['MediaLogger.upload', 'MediaLogger.preview', 'MediaLogger.system']
+        }
+    };
+    
+    let allOk = true;
+    
+    Object.entries(modules).forEach(([name, data]) => {
+        console.log(`📦 ${name}: ${data.loaded ? '✅ CARREGADO' : '❌ FALTANDO'}`);
+        
+        if (data.loaded) {
+            data.functions.forEach(func => {
+                const funcExists = eval(`typeof ${func} !== 'undefined'`);
+                console.log(`   ${func}: ${funcExists ? '✅' : '❌'}`);
+                if (!funcExists) allOk = false;
+            });
+        } else {
+            allOk = false;
+        }
+    });
+    
+    // Verificar duplicações
+    console.log('\n🔍 VERIFICAÇÃO DE DUPLICAÇÕES:');
+    const functionNames = Object.keys(window).filter(k => 
+        k.includes('media') || k.includes('Media') || k.includes('format')
+    );
+    const duplicates = functionNames.reduce((acc, name) => {
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+    }, {});
+    
+    Object.entries(duplicates).forEach(([name, count]) => {
+        if (count > 1) console.warn(`⚠️  ${name} aparece ${count} vezes`);
+    });
+    
+    // Verificar botão de teste
+    const testBtn = document.getElementById('media-test-btn');
+    console.log(`\n🎯 Botão de teste: ${testBtn ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
+    if (testBtn) {
+        console.warn('❌ Botão de teste AINDA VISÍVEL!');
+        testBtn.style.display = 'none';
+        testBtn.remove();
+    }
+    
+    console.log(`\n${allOk ? '🎉 TODOS MÓDULOS CARREGADOS CORRETAMENTE!' : '⚠️  PROBLEMAS DETECTADOS'}`);
+    console.groupEnd();
+    
+    // Mostrar alerta apenas se houver erro crítico
+    if (!allOk) {
+        setTimeout(() => {
+            alert('⚠️  Sistema de mídia com problemas.\nVerifique o console (F12) para detalhes.');
+        }, 1000);
+    }
+}, 3000);
+</script>
     
 ✅ AQUI entra o SCRIPT DE TESTE DE CONEXÃO ENTRE MÓDULOS
 <!-- ========== TESTE DE CONEXÃO ENTRE MÓDULOS (DEBUG CONTROLADO) ========== -->
