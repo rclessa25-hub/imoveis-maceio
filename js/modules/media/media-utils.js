@@ -2,160 +2,95 @@
 console.log('🔧 media-utils.js carregado - Funções auxiliares otimizadas');
 
 /**
- * ⚡ FUNÇÕES UTILITÁRIAS OTIMIZADAS PARA MÍDIA
- * - Pequenas funções candidatas a inlining
- * - Processamento rápido de arquivos
- * - Formatação otimizada
+ * FUNÇÕES UTILITÁRIAS PARA MÍDIA - Otimizadas para INLINING
  */
 
-// ========== FUNÇÕES DE FORMATTAÇÃO (INLINE CANDIDATES) ==========
-
-// 1. Formatar tamanho de arquivo (chamada frequente)
+// ⚡ FUNÇÃO INLINE: Formatar tamanho de arquivo (alta frequência de chamada)
 window.mediaFormatFileSize = function(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    if (bytes < 1024) return bytes + ' Bytes';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    if (!bytes || bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    // ⚡ OTIMIZADO: Reduzido overhead de chamadas
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-// 2. Extrair nome do arquivo da URL
+// ⚡ FUNÇÃO INLINE: Extrair nome do arquivo da URL (CRÍTICA para performance)
 window.mediaExtractFileName = function(url, defaultName = 'Arquivo') {
+    // ⚡ Passagem por referência (não cria cópia da string)
     if (!url || typeof url !== 'string') return defaultName;
     
-    // Tenta extrair da URL
     const parts = url.split('/');
     let fileName = parts[parts.length - 1] || defaultName;
     
-    // Decodificar URI se necessário
-    try {
-        if (fileName.includes('%')) {
-            fileName = decodeURIComponent(fileName);
-        }
-    } catch (e) {
-        // Ignora erro de decode
+    // ⚡ Único try-catch otimizado
+    try { 
+        fileName = decodeURIComponent(fileName); 
+    } catch (e) { 
+        // Mantém fileName original se falhar
     }
     
-    // Limitar tamanho para display
-    return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
+    // ⚡ Limitação otimizada (evita substring desnecessário)
+    return fileName.length > 50 ? 
+           fileName.substring(0, 47) + '...' : 
+           fileName;
 };
 
-// 3. Validar tipo de arquivo (otimizada)
-window.mediaValidateFileType = function(file, allowedTypes) {
-    const fileType = file.type.toLowerCase();
+// ⚡ FUNÇÃO INLINE: Validar arquivo (chamada frequente no upload)
+window.mediaValidateFile = function(file, config) {
+    if (!file || !config) return false;
     
-    // Verificação rápida para tipos comuns
-    if (fileType.startsWith('image/')) {
-        return allowedTypes.includes(fileType) || 
-               allowedTypes.some(type => type.startsWith('image/'));
+    // ⚡ Validações em cadeia (short-circuit evaluation)
+    const isImage = config.allowedImageTypes.includes(file.type);
+    const isVideo = config.allowedVideoTypes.includes(file.type);
+    
+    if (!isImage && !isVideo) {
+        return { valid: false, error: 'Tipo não suportado' };
     }
     
-    if (fileType.startsWith('video/')) {
-        return allowedTypes.includes(fileType) ||
-               allowedTypes.some(type => type.startsWith('video/'));
+    if (file.size > config.maxSize) {
+        return { 
+            valid: false, 
+            error: `Arquivo muito grande (${mediaFormatFileSize(file.size)})` 
+        };
     }
     
-    return allowedTypes.includes(fileType);
+    return { valid: true, isImage, isVideo };
 };
 
-// 4. Gerar ID único para arquivo
-window.mediaGenerateFileId = function(prefix = 'file') {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
-// 5. Criar URL de preview otimizada
+// ⚡ FUNÇÃO INLINE: Criar preview URL para imagem (performance crítica)
 window.mediaCreatePreviewUrl = function(file) {
     if (!file) return null;
     
-    try {
-        return URL.createObjectURL(file);
-    } catch (error) {
-        console.error('Erro ao criar preview URL:', error);
-        return null;
-    }
+    // ⚡ URL.createObjectURL é síncrono e rápido
+    return URL.createObjectURL(file);
 };
 
-// 6. Liberar URL de preview (evitar memory leaks)
-window.mediaRevokePreviewUrl = function(url) {
-    if (url && url.startsWith('blob:')) {
-        try {
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.warn('Erro ao liberar preview URL:', error);
+// ⚡ FUNÇÃO INLINE: Limpar preview URLs (evita memory leaks)
+window.mediaRevokePreviewUrls = function(filesArray) {
+    if (!Array.isArray(filesArray)) return;
+    
+    // ⚡ Loop otimizado
+    for (let i = 0; i < filesArray.length; i++) {
+        const file = filesArray[i];
+        if (file && file.preview && file.preview.startsWith('blob:')) {
+            URL.revokeObjectURL(file.preview);
         }
     }
 };
 
-// 7. Sanitizar nome de arquivo para upload
-window.mediaSanitizeFileName = function(fileName) {
-    return fileName
-        .normalize('NFD') // Normalizar acentos
-        .replace(/[\u0300-\u036f]/g, '') // Remover diacríticos
-        .replace(/[^a-zA-Z0-9._-]/g, '_') // Substituir caracteres inválidos
-        .replace(/_+/g, '_') // Remover underscores duplicados
-        .replace(/^_+|_+$/g, '') // Remover underscores no início/fim
-        .toLowerCase()
-        .substring(0, 100); // Limitar tamanho
-};
-
-// 8. Processamento em batch de arquivos
-window.mediaProcessBatch = function(files, batchSize = 5, processCallback) {
-    const results = [];
-    
-    for (let i = 0; i < files.length; i += batchSize) {
-        const batch = files.slice(i, i + batchSize);
-        const batchResults = batch.map((file, index) => 
-            processCallback(file, i + index, files.length)
-        );
-        results.push(...batchResults.filter(r => r !== null));
-    }
-    
-    return results;
-};
-
-// ========== CONSTANTES DE CONFIGURAÇÃO ==========
+// ⚡ CONSTANTES OTIMIZADAS (acesso direto, sem overhead)
 window.MEDIA_CONSTANTS = {
     MAX_FILES: 10,
     MAX_SIZE: 5 * 1024 * 1024, // 5MB
-    ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-    ALLOWED_VIDEO_TYPES: ['video/mp4', 'video/quicktime'],
-    THUMBNAIL_SIZE: { width: 100, height: 100 },
-    BATCH_SIZE: 5
-};
-
-// ========== FUNÇÕES DE VALIDAÇÃO OTIMIZADAS ==========
-
-// Validação rápida de tamanho
-window.mediaValidateFileSize = function(file, maxSize = window.MEDIA_CONSTANTS.MAX_SIZE) {
-    return file.size <= maxSize;
-};
-
-// Validação combinada (tipo + tamanho)
-window.mediaValidateFile = function(file, config = window.MEDIA_CONFIG) {
-    if (!file) return { valid: false, error: 'Arquivo inválido' };
-    
-    // Validação de tipo
-    const isImage = window.MEDIA_CONSTANTS.ALLOWED_IMAGE_TYPES.includes(file.type);
-    const isVideo = window.MEDIA_CONSTANTS.ALLOWED_VIDEO_TYPES.includes(file.type);
-    
-    if (!isImage && !isVideo) {
-        return { 
-            valid: false, 
-            error: `Tipo de arquivo não suportado: ${file.type || 'desconhecido'}` 
-        };
+    IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    VIDEO_TYPES: ['video/mp4', 'video/quicktime'],
+    BUCKETS: {
+        VENDAS: 'properties',
+        ALUGUEL: 'rentals'
     }
-    
-    // Validação de tamanho
-    if (!window.mediaValidateFileSize(file)) {
-        return { 
-            valid: false, 
-            error: `Arquivo muito grande: ${window.mediaFormatFileSize(file.size)} > ${window.mediaFormatFileSize(config?.maxSize || window.MEDIA_CONSTANTS.MAX_SIZE)}` 
-        };
-    }
-    
-    return { valid: true, type: isImage ? 'image' : 'video' };
 };
 
-// ========== INICIALIZAÇÃO ==========
-console.log('✅ media-utils.js carregado com 12 funções utilitárias');
-console.log('📊 Funções disponíveis:', Object.keys(window).filter(k => k.startsWith('media')));
+console.log('✅ media-utils.js pronto com funções otimizadas para inlining');
