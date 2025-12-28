@@ -1,18 +1,10 @@
 // js/modules/media/media-core.js - VERSÃO COMPLETA
-
 console.log('🖼️ media-core.js carregado - Sistema de Mídia Compartilhado');
 
 /**
  * MÓDULO CORE DE MÍDIA - Projetado para VENDAS e ALUGUEL
  * @param {string} systemName - 'vendas' ou 'aluguel' (define bucket e configurações)
  */
-
-// Funções depreciadas (mantidas para compatibilidade)
-window.formatFileSize = window.mediaFormatFileSize || formatFileSize;
-// NO TOPO DO ARQUIVO (LINHA 12) - Só comentário
-// window.formatFileNameFast = window.mediaExtractFileName || function(url, defaultName = 'Arquivo') { ... }
-window.formatFileNameFast = window.mediaExtractFileName || function(url, defaultName = 'Arquivo') {
-
 window.initMediaSystem = function(systemName = 'vendas') {
     console.log(`🔧 Inicializando módulo de mídia para: ${systemName.toUpperCase()}`);
 
@@ -106,7 +98,7 @@ window.formatFileNameFast = window.mediaExtractFileName || function(url, default
     // Limitar tamanho
     return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
 };
-    
+
 // ⚡ FUNÇÃO OTIMIZADA: Atualização de preview com batch DOM updates
 window.updatePreviewOptimized = function() {
     const startTime = Date.now();
@@ -241,8 +233,8 @@ window.handleNewMediaFiles = function(files) {
         
         // Validação de tamanho
         if (file.size > config.maxSize) {
-            alert(`❌ "${file.name}" é muito grande!\n\nTamanho: ${formatFileSize(file.size)}\nMáximo: ${formatFileSize(config.maxSize)}`);
-            console.error(`Arquivo muito grande: ${formatFileSize(file.size)} > ${formatFileSize(config.maxSize)}`);
+            alert(`❌ "${file.name}" é muito grande!\n\nTamanho: ${window.mediaFormatFileSize ? window.mediaFormatFileSize(file.size) : file.size + ' bytes'}\nMáximo: ${window.mediaFormatFileSize ? window.mediaFormatFileSize(config.maxSize) : config.maxSize + ' bytes'}`);
+            console.error(`Arquivo muito grande: ${file.size} > ${config.maxSize}`);
             continue;
         }
         
@@ -260,7 +252,7 @@ window.handleNewMediaFiles = function(files) {
         });
         
         addedCount++;
-        console.log(`✅ "${file.name}" adicionado à lista (${formatFileSize(file.size)})`);
+        console.log(`✅ "${file.name}" adicionado à lista (${file.size} bytes)`);
     }
     
     console.log(`📊 Resultado: ${addedCount}/${filesArray.length} arquivo(s) adicionado(s) com sucesso.`);
@@ -284,16 +276,6 @@ window.handleNewMediaFiles = function(files) {
     return addedCount;
 };
 
-// ========== FUNÇÕES AUXILIARES ==========
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
 // ========== FUNÇÃO DE UPLOAD (para ser usada depois) ==========
 window.uploadMediaToSupabase = async function(files, propertyId) {
     console.log('📤 uploadMediaToSupabase chamada (função futura)');
@@ -302,7 +284,6 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
 };
 
 // ========== FUNÇÃO PARA REMOVER ARQUIVO (chamada pelos botões X) ==========
-// Em js/modules/media/media-core.js - MODIFICAR A FUNÇÃO removeMediaFile
 window.removeMediaFile = function(index) {
     console.group(`🗑️ removeMediaFile chamada para índice: ${index}`);
     
@@ -320,10 +301,7 @@ window.removeMediaFile = function(index) {
         // É um arquivo EXISTENTE (ajustar índice)
         const existingIndex = index - (window.selectedMediaFiles ? window.selectedMediaFiles.length : 0);
         if (existingIndex >= 0 && existingIndex < window.existingMediaFiles.length) {
-            // ❌ REMOVER ESTA LINHA:
-            // const removed = window.existingMediaFiles.splice(existingIndex, 1)[0];
-            
-            // ✅ SUBSTITUIR POR: Marcar para exclusão ao invés de remover
+            // Marcar para exclusão ao invés de remover
             window.existingMediaFiles[existingIndex].markedForDeletion = true;
             window.existingMediaFiles[existingIndex].isVisible = false; // Opcional: para UI
             const removed = window.existingMediaFiles[existingIndex];
@@ -342,14 +320,13 @@ window.removeMediaFile = function(index) {
     }
 };
 
-// ========== FUNÇÃO DE LIMPEZA OTIMIZADA (INLINED) ==========
+// ========== FUNÇÃO DE LIMPEZA OTIMIZADA ==========
 window.clearMediaSystem = function() {
-    // ⚡ INLINE CANDIDATE: função pequena, chamada frequentemente
     console.log('🧹 Executando clearMediaSystem...');
     
     // 1. Limpar arrays (passagem por referência - mais rápido)
-    window.selectedMediaFiles.length = 0; // ⚡ MAIS RÁPIDO que = []
-    window.existingMediaFiles.length = 0;
+    if (window.selectedMediaFiles) window.selectedMediaFiles.length = 0;
+    if (window.existingMediaFiles) window.existingMediaFiles.length = 0;
     window.isUploadingMedia = false;
     
     // 2. Limpar DOM diretamente (sem dependência de outras funções)
@@ -371,8 +348,6 @@ window.clearMediaSystem = function() {
     console.log('✅ Sistema de mídia completamente limpo');
     return true;
 };
-
-// Em js/modules/media/media-core.js - ADICIONAR APÓS A FUNÇÃO EXISTENTE
 
 window.clearMediaSystemComplete = function() {
     console.group('🧹 LIMPEZA COMPLETA DO SISTEMA DE MÍDIA');
@@ -428,6 +403,5 @@ window.initMediaSystem('vendas');
 
 // NO FINAL DO ARQUIVO, ATUALIZE O LOG:
 console.log('✅ Módulo de mídia completamente carregado.');
-console.log('🔧 Funções disponíveis: handleNewMediaFiles(), removeMediaFile(), uploadMediaToSupabase(), clearMediaSystem()');
+console.log('🔧 Funções disponíveis: initMediaSystem(), handleNewMediaFiles(), removeMediaFile(), clearMediaSystem()');
 console.log('📌 Próximo: Testar seleção de arquivos -> preview deve aparecer.');
-console.log('📌 Estado: Pronto para limpeza automática após salvamento.');
