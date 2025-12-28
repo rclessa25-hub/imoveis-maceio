@@ -1052,86 +1052,86 @@ setTimeout(() => {
 }, 3000);
 
 // ========== BOTÃO DE TESTE DE MÍDIA ==========
-//setTimeout(() => {
-//    if (!document.getElementById('media-test-btn')) {
-//        const testBtn = document.createElement('button');
-//        testBtn.id = 'media-test-btn';
-//        testBtn.innerHTML = '🖼️ TEST UPLOAD';
-//        testBtn.style.cssText = `
-//            position: fixed;
-//            top: 100px;
-//            right: 10px;
-//            background: #9b59b6;
-//            color: white;
-//            border: none;
-//            padding: 8px 12px;
-//            border-radius: 5px;
-//            cursor: pointer;
-//            z-index: 9999;
-//            font-weight: bold;
-//            font-size: 0.8rem;
-//            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+setTimeout(() => {
+    if (!document.getElementById('media-test-btn')) {
+        const testBtn = document.createElement('button');
+        testBtn.id = 'media-test-btn';
+        testBtn.innerHTML = '🖼️ TEST UPLOAD';
+        testBtn.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 10px;
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 9999;
+            font-weight: bold;
+            font-size: 0.8rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         `;
         
-//        testBtn.onclick = function() {
-//            console.group('🧪 TESTE COMPLETO DO SISTEMA DE MÍDIA');
+        testBtn.onclick = function() {
+            console.group('🧪 TESTE COMPLETO DO SISTEMA DE MÍDIA');
             
-//            // 1. Testar conexão básica
-//            console.log('1️⃣ Testando conexão entre módulos...');
-//            console.log('- handleNewMediaFiles:', typeof window.handleNewMediaFiles);
-//            console.log('- updateMediaPreview:', typeof window.updateMediaPreview);
+            // 1. Testar conexão básica
+            console.log('1️⃣ Testando conexão entre módulos...');
+            console.log('- handleNewMediaFiles:', typeof window.handleNewMediaFiles);
+            console.log('- updateMediaPreview:', typeof window.updateMediaPreview);
             
-//            // 2. Testar com arquivo simulado
-//            if (typeof window.handleNewMediaFiles === 'function') {
-//                console.log('2️⃣ Simulando upload de arquivo...');
+            // 2. Testar com arquivo simulado
+            if (typeof window.handleNewMediaFiles === 'function') {
+                console.log('2️⃣ Simulando upload de arquivo...');
                 
-//                // Criar arquivo de teste em memória
-//                const blob = new Blob(['dummy image data'], { type: 'image/jpeg' });
-//                const testFile = new File([blob], 'test_foto.jpg', { 
-//                    type: 'image/jpeg',
-//                    lastModified: Date.now()
-//                });
+                // Criar arquivo de teste em memória
+                const blob = new Blob(['dummy image data'], { type: 'image/jpeg' });
+                const testFile = new File([blob], 'test_foto.jpg', { 
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
                 
-//                // Chamar função diretamente
-//                const fileList = {
-//                    0: testFile,
-//                    length: 1,
-//                    item: (index) => index === 0 ? testFile : null
-//                };
+                // Chamar função diretamente
+                const fileList = {
+                    0: testFile,
+                    length: 1,
+                    item: (index) => index === 0 ? testFile : null
+                };
                 
-//                window.handleNewMediaFiles(fileList);
-//                console.log('✅ Arquivo de teste enviado para processamento');
-//            } else {
-//                console.error('❌ handleNewMediaFiles não disponível!');
-//            }
+                window.handleNewMediaFiles(fileList);
+                console.log('✅ Arquivo de teste enviado para processamento');
+            } else {
+                console.error('❌ handleNewMediaFiles não disponível!');
+            }
             
-//            // 3. Verificar preview
-//            setTimeout(() => {
-//                console.log('3️⃣ Verificando preview...');
-//                const preview = document.getElementById('uploadPreview');
-//                if (preview) {
-//                    console.log('✅ Preview container encontrado');
-//                    console.log('📸 Conteúdo:', preview.innerHTML.length, 'caracteres');
+            // 3. Verificar preview
+            setTimeout(() => {
+                console.log('3️⃣ Verificando preview...');
+                const preview = document.getElementById('uploadPreview');
+                if (preview) {
+                    console.log('✅ Preview container encontrado');
+                    console.log('📸 Conteúdo:', preview.innerHTML.length, 'caracteres');
                     
-//                    if (preview.innerHTML.includes('test_foto')) {
-//                        console.log('🎉 ARQUIVO DE TESTE APARECE NO PREVIEW!');
-//                        alert('✅ SISTEMA FUNCIONANDO!\n\nArquivo de teste apareceu no preview.');
-//                    } else {
-//                        console.log('⚠️ Preview não mostra arquivo de teste');
-//                        console.log('🔍 HTML do preview:', preview.innerHTML.substring(0, 200));
-//                    }
-//                } else {
-//                    console.error('❌ Preview container NÃO encontrado!');
-//                }
-//            }, 500);
+                    if (preview.innerHTML.includes('test_foto')) {
+                        console.log('🎉 ARQUIVO DE TESTE APARECE NO PREVIEW!');
+                        alert('✅ SISTEMA FUNCIONANDO!\n\nArquivo de teste apareceu no preview.');
+                   } else {
+                        console.log('⚠️ Preview não mostra arquivo de teste');
+                        console.log('🔍 HTML do preview:', preview.innerHTML.substring(0, 200));
+                    }
+                } else {
+                    console.error('❌ Preview container NÃO encontrado!');
+                }
+            }, 500);
             
-//            console.groupEnd();
-//        };
+            console.groupEnd();
+        };
         
-//        document.body.appendChild(testBtn);
-//        console.log('🧪 Botão de teste de mídia criado');
-//    }
-//}, 2000);
+        document.body.appendChild(testBtn);
+        console.log('🧪 Botão de teste de mídia criado');
+    }
+}, 2000);
 
 // ========== SOLUÇÃO FINAL - OBSERVADOR DE FILTROS ==========
 (function startFilterObserver() {
