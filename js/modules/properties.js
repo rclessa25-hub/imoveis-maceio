@@ -557,6 +557,7 @@ window.updateProperty = async function(id, propertyData) {
             rural: propertyData.type === 'rural' || property.rural || false,
             images: propertyData.images || property.images || '',
             pdfs: propertyData.pdfs || property.pdfs || '' // ✅ PDFs já processados
+            console.log('📊 VALOR DO CHECKBOX VIDEO:', propertyData.has_video);
         };
         
         console.log('📤 Dados para Supabase:', updateData);
