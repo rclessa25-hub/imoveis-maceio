@@ -289,6 +289,35 @@ window.testMediaUpload = async function() {
     }
 };
 
+// ========== LIMPAR URLs TEMPORÁRIAS ==========
+window.cleanupTempMediaUrls = function() {
+    console.log('🧹 Limpando URLs temporárias de mídia...');
+    
+    if (window.selectedMediaFiles && Array.isArray(window.selectedMediaFiles)) {
+        window.selectedMediaFiles.forEach(item => {
+            // ⚡ Liberar URLs temporárias (blob:) para evitar memory leaks
+            if (item.preview && item.preview.startsWith('blob:') && !item.uploaded) {
+                try {
+                    URL.revokeObjectURL(item.preview);
+                    console.log(`✅ URL temporária liberada: ${item.name}`);
+                } catch (e) {
+                    // Ignora erros na liberação
+                }
+            }
+        });
+    }
+    
+    // ⚡ Também limpar arrays após processamento completo
+    setTimeout(() => {
+        if (window.selectedMediaFiles) {
+            window.selectedMediaFiles = window.selectedMediaFiles.filter(item => 
+                item.uploaded || item.isExisting
+            );
+            console.log(`📊 Mídia filtrada: ${window.selectedMediaFiles.length} itens mantidos`);
+        }
+    }, 1000);
+};
+
 // ========== deleteMediaFromSupabaseStorage ==========
 // Em js/modules/media/media-integration.js - ADICIONAR APÓS A FUNÇÃO uploadMediaToSupabase
 window.deleteMediaFromSupabaseStorage = async function(fileUrl) {
