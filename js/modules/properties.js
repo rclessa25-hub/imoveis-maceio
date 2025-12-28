@@ -559,7 +559,14 @@ window.updateProperty = async function(id, propertyData) {
             pdfs: propertyData.pdfs || property.pdfs || '' // ✅ PDFs já processados
             console.log('📊 VALOR DO CHECKBOX VIDEO:', propertyData.has_video);
         };
-        
+       
+        console.log('🔍 DEBUG CHECKBOX VIDEO:', {
+            propertyId: id,
+            has_video: propertyData.has_video,
+            type: typeof propertyData.has_video,
+            original: property.has_video
+        });
+    
         console.log('📤 Dados para Supabase:', updateData);
         
         // ✅ 2. ATUALIZAR NO SUPABASE
