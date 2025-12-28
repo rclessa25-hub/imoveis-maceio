@@ -1320,12 +1320,12 @@ window.recoverMediaSystem = function() {
 };
 
 // Executar recuperação após 3 segundos
-setTimeout(() => {
-    if (typeof window.handleNewMediaFiles !== 'function') {
-        console.log('🚨 Sistema de mídia não carregou. Iniciando recuperação...');
-        window.recoverMediaSystem();
-    }
-}, 3000);
+//setTimeout(() => {
+//    if (typeof window.handleNewMediaFiles !== 'function') {
+//        console.log('🚨 Sistema de mídia não carregou. Iniciando recuperação...');
+//        window.recoverMediaSystem();
+//    }
+//}, 3000);
 
 // Adicionar ANTES da linha 1346 (setTimeout que tenta ocultar)
 
