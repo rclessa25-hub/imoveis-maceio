@@ -362,11 +362,7 @@ window.createPropertyGallery = function(property) {
          <!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
-                    onclick="event.stopPropagation();
-                             window.currentPropertyId=${property.id};
-                             document.getElementById('pdfModal')
-                                ? document.getElementById('pdfModal').style.display='flex'
-                                : window.openPdfModalDirectFallback(${property.id})"
+                    onclick="event.stopPropagation(); window.currentPropertyId=${property.id}; document.getElementById('pdfModal').style.display='flex'; document.getElementById('pdfPassword')?.focus();"
                     title="Documentos do imóvel (senha: doc123)">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
