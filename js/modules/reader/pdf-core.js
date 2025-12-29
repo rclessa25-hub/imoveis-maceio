@@ -8,15 +8,16 @@ if (typeof window.isProcessingPdfs === 'undefined') window.isProcessingPdfs = fa
 
 // ========== 2. SISTEMA DE VISUALIZAÇÃO NOS CARDS ==========
 
-// 2.1 Mostrar PDFs do imóvel
+// 2.1 Mostrar PDFs do imóvel (CONTROLADOR)
 window.showPropertyPdf = function(propertyId) {
     const property = window.properties.find(p => p.id === propertyId);
     if (!property) {
         alert('Imóvel não encontrado!');
         return;
     }
-    
-    window.showPdfModal(propertyId);
+
+    // ⚠️ NÃO chamar showPdfModal diretamente (evita loop)
+    window.showPdfModalDirect(propertyId);
 };
 
 // 2.2 Modal de PDFs (COM SENHA)
