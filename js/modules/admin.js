@@ -1078,7 +1078,7 @@ setTimeout(() => {
 }, 2000);
 
 // ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
-window.accessPdfDocuments = function() {
+window.accessPdfDocuments = async function() {
     console.log('🔓 accessPdfDocuments chamada');
     
     // 1. Obter senha digitada
@@ -1099,7 +1099,7 @@ window.accessPdfDocuments = function() {
         return;
     }
     
-    // 3. ✅ SENHA CORRETA - ABRIR DOCUMENTOS
+    // 3. ✅ SENHA CORRETA - BUSCAR DOCUMENTOS
     console.log('✅ Senha válida! Buscando documentos...');
     
     // Obter ID do imóvel atual
@@ -1139,29 +1139,64 @@ window.accessPdfDocuments = function() {
     
     console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
     
-    // Abrir cada PDF em nova aba
-    let openedCount = 0;
-    pdfUrls.forEach((url, index) => {
+    // ✅ NOVA ABORDAGEM: Download direto em vez de abrir
+    let successCount = 0;
+    let failedCount = 0;
+    
+    for (const [index, url] of pdfUrls.entries()) {
         try {
-            // Verificar se a URL é válida
-            if (url.startsWith('http') || url.includes('supabase.co')) {
-                window.open(url, '_blank');
-                openedCount++;
-                console.log(`✅ PDF ${index + 1} aberto: ${url.substring(0, 60)}...`);
-            } else {
-                console.warn(`⚠️ URL inválida ignorada: ${url}`);
-            }
+            console.log(`📥 Tentando acessar PDF ${index + 1}: ${url.substring(0, 60)}...`);
+            
+            // ✅ SOLUÇÃO CRÍTICA: Forçar download em vez de abrir
+            const tempAnchor = document.createElement('a');
+            tempAnchor.href = url;
+            
+            // Extrair nome do arquivo da URL
+            const fileName = url.split('/').pop() || `documento_${propertyId}_${index + 1}.pdf`;
+            
+            // Forçar download com atributo download
+            tempAnchor.download = fileName;
+            tempAnchor.target = '_blank'; // Abrir em nova aba como fallback
+            tempAnchor.rel = 'noopener noreferrer';
+            
+            // Adicionar ao documento temporariamente
+            document.body.appendChild(tempAnchor);
+            tempAnchor.click();
+            document.body.removeChild(tempAnchor);
+            
+            console.log(`✅ Download iniciado: ${fileName}`);
+            successCount++;
+            
+            // Pequena pausa entre downloads para evitar bloqueio do navegador
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
         } catch (error) {
-            console.error(`❌ Erro ao abrir PDF ${url}:`, error);
+            console.error(`❌ Erro ao processar PDF ${url}:`, error);
+            failedCount++;
+            
+            // Tentar abrir diretamente como fallback
+            try {
+                window.open(url, '_blank');
+                console.log(`⚠️ PDF ${index + 1} aberto via fallback`);
+                successCount++;
+            } catch (fallbackError) {
+                console.error(`❌ Fallback também falhou: ${fallbackError}`);
+            }
         }
-    });
+    }
+    
+    // ✅ Fechar modal após processamento
+    closePdfModal();
     
     // Feedback ao usuário
-    if (openedCount > 0) {
-        alert(`✅ ${openedCount} documento(s) PDF aberto(s) em nova(s) aba(s)!`);
-        closePdfModal();
+    if (successCount > 0) {
+        if (failedCount > 0) {
+            alert(`✅ ${successCount} documento(s) processado(s)!\n\n${failedCount} documento(s) com problemas.\nVerifique seu navegador.`);
+        } else {
+            alert(`✅ ${successCount} documento(s) PDF disponível(is) para download!\n\nVerifique a barra de downloads do seu navegador.`);
+        }
     } else {
-        alert('❌ Não foi possível abrir os documentos. Verifique as URLs.');
+        alert('❌ Não foi possível acessar os documentos.\n\nTente novamente ou entre em contato com o suporte.');
     }
 };
 
