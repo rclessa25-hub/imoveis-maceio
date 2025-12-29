@@ -1008,7 +1008,7 @@ window.showPdfModal = function(propertyId) {
     }
 };
 
-// ========== FUNÇÃO DE FALLBACK (no mesmo arquivo, após showPdfModal ==========
+// ========== FUNÇÃO DE FALLBACK (ATUALIZADA) ==========
 function openPdfModalDirectFallback(propertyId) {
     console.log(`📄 Fallback PDF modal para ID: ${propertyId}`);
     
@@ -1021,34 +1021,25 @@ function openPdfModalDirectFallback(propertyId) {
         return;
     }
     
-    // Abrir modal de PDF
-    const modal = document.getElementById('pdfModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        
-        // Configurar título COM ID do imóvel
-        const titleElement = document.getElementById('pdfModalTitle');
-        if (titleElement) {
-            titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
-            titleElement.dataset.propertyId = propertyId; // Armazenar ID no elemento
-        }
-        
-        // Limpar campo de senha
-        const passwordInput = document.getElementById('pdfPassword');
-        if (passwordInput) {
-            passwordInput.value = '';
-            passwordInput.focus();
-        }
-    } else {
-        // Se modal não existe, usar função do pdf-core.js
-        if (typeof window.showPropertyPdf === 'function') {
-            window.showPropertyPdf(propertyId);
-        } else {
-            alert('📄 Documentos PDF disponíveis! Abrindo em nova aba...');
-            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-            pdfUrls.forEach(url => window.open(url, '_blank'));
-        }
+    // ✅ GARANTIR QUE O MODAL EXISTE (FUNÇÃO JÁ ADICIONADA POR VOCÊ)
+    const modal = window.ensurePdfModalExists();
+    
+    // ✅ Configurar título com segurança
+    const titleElement = document.getElementById('pdfModalTitle');
+    if (titleElement) {
+        titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
+        titleElement.dataset.propertyId = propertyId;
     }
+    
+    // ✅ Resetar campo de senha
+    const passwordInput = document.getElementById('pdfPassword');
+    if (passwordInput) {
+        passwordInput.value = '';
+        setTimeout(() => passwordInput.focus(), 100);
+    }
+    
+    // ✅ Exibir modal
+    modal.style.display = 'flex';
 }
 
 // ✅ ADICIONAR ESTA FUNÇÃO PARA TESTAR (opcional):
