@@ -1012,6 +1012,35 @@ window.showPdfModal = function(propertyId) {
     }
 };
 
+// Adicionar verificação de módulos PDF
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO MÓDULOS PDF:');
+    console.log('- showPropertyPdf:', typeof window.showPropertyPdf);
+    console.log('- pdf-core.js carregado:', typeof window.showPropertyPdf === 'function');
+    console.log('- pdf-ui.js carregado:', typeof window.loadExistingPdfsForEdit === 'function');
+    
+    // Se não carregou, tentar recarregar
+    if (typeof window.showPropertyPdf !== 'function') {
+        console.warn('⚠️ Módulos PDF não carregaram automaticamente');
+        console.log('📦 Tentando carregar manualmente...');
+        
+        // Forçar recarregamento dos módulos PDF
+        const pdfModules = [
+            'js/modules/reader/pdf-core.js',
+            'js/modules/reader/pdf-ui.js',
+            'js/modules/reader/pdf-integration.js'
+        ];
+        
+        pdfModules.forEach(url => {
+            const script = document.createElement('script');
+            script.src = url + '?reload=' + Date.now();
+            script.defer = true;
+            document.head.appendChild(script);
+            console.log('🔄 Recarregando:', url);
+        });
+    }
+}, 2000);
+
 window.accessPdfDocuments = function() {
     const password = document.getElementById('pdfPassword')?.value;
     if (password === "doc123") {
