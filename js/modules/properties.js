@@ -513,6 +513,28 @@ window.hasPendingPdfs = function() {
     return window.selectedPdfFiles && window.selectedPdfFiles.length > 0;
 };
 
+// ========== DEBUG AVANÇADO: CHECKBOX "TEM VÍDEO" ==========
+window.debugHasVideoIssue = function(propertyId) {
+    console.group('🔍 DEBUG AVANÇADO: CHECKBOX TEM VÍDEO');
+    
+    const property = window.properties.find(p => p.id == propertyId);
+    const checkbox = document.getElementById('propHasVideo');
+    
+    console.log('📊 ESTADO ATUAL:');
+    console.log('- Checkbox marcado:', checkbox?.checked);
+    console.log('- Valor na propriedade original:', property?.has_video);
+    console.log('- Tipo na propriedade:', typeof property?.has_video);
+    
+    // Forçar atualização do estado
+    if (property) {
+        property.has_video = checkbox?.checked || false;
+        console.log('🔄 Estado forçado para:', property.has_video);
+        window.savePropertiesToStorage();
+    }
+    
+    console.groupEnd();
+};
+
 // ========== FUNÇÃO 8: ATUALIZAR IMÓVEL (VERSÃO ROBUSTA CORRIGIDA COM SUPABASE) ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ ATUALIZANDO IMÓVEL ${id}:`, propertyData);
@@ -552,7 +574,7 @@ window.updateProperty = async function(id, propertyData) {
             description: propertyData.description || property.description || '',
             features: propertyData.features || property.features || '',
             type: propertyData.type || property.type || 'residencial',
-            has_video: propertyData.has_video || property.has_video || false,
+            has_video: Boolean(propertyData.has_video) || false,
             badge: propertyData.badge || property.badge || 'Novo',
             rural: propertyData.type === 'rural' || property.rural || false,
             images: propertyData.images || property.images || '',
