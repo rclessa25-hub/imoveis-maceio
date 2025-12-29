@@ -996,8 +996,20 @@ window.forceMediaSystemInit = function() {
 
 // ========== FUNÇÕES PDF BÁSICAS ==========
 window.showPdfModal = function(propertyId) {
-    console.log(`📄 Abrindo PDFs do imóvel ${propertyId}`);
-    alert('📄 Sistema de PDFs em desenvolvimento');
+    const property = window.properties.find(p => p.id === propertyId);
+    if (!property) {
+        alert('Imóvel não encontrado!');
+        return;
+    }
+    
+    // Usar a função CORRETA do módulo de PDFs
+    if (typeof window.showPropertyPdf === 'function') {
+        window.showPropertyPdf(propertyId);
+    } else {
+        // Fallback para função do pdf-core.js
+        alert('📄 Documentos PDF disponíveis! (Sistema carregando...)');
+        console.log('ℹ️ Use window.showPropertyPdf() diretamente');
+    }
 };
 
 window.accessPdfDocuments = function() {
