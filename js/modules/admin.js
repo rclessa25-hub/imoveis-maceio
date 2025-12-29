@@ -1189,39 +1189,6 @@ window.ensurePdfModalExists = function() {
     return modal;
 };
 
-// ✅ ATUALIZAR openPdfModalDirectFallback para usar ensurePdfModalExists
-function openPdfModalDirectFallback(propertyId) {
-    console.log(`📄 Fallback PDF modal para ID: ${propertyId}`);
-    
-    window.currentPropertyId = propertyId;
-    const property = window.properties.find(p => p.id === propertyId);
-    
-    if (!property || !property.pdfs || property.pdfs === 'EMPTY') {
-        alert('Nenhum documento PDF disponível para este imóvel.');
-        return;
-    }
-    
-    // Garantir que o modal existe
-    const modal = window.ensurePdfModalExists();
-    
-    // Configurar título
-    const titleElement = document.getElementById('pdfModalTitle');
-    if (titleElement) {
-        titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
-        titleElement.dataset.propertyId = propertyId;
-    }
-    
-    // Limpar e focar senha
-    const passwordInput = document.getElementById('pdfPassword');
-    if (passwordInput) {
-        passwordInput.value = '';
-        setTimeout(() => passwordInput.focus(), 100);
-    }
-    
-    // Mostrar modal
-    modal.style.display = 'flex';
-}
-
 window.closePdfModal = function() {
     const modal = document.getElementById('pdfModal');
     if (modal) {
