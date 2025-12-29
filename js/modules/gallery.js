@@ -365,8 +365,8 @@ window.createPropertyGallery = function(property) {
                     onclick="event.stopPropagation();
                              window.currentPropertyId=${property.id};
                              document.getElementById('pdfModal').style.display='flex';
-                             document.getElementById('pdfPassword')?.focus();"
-                    title="Documentos do imóvel (senha: doc123)">
+                             setTimeout(() => document.getElementById('pdfPassword')?.focus(), 100);"
+                    title="Documentos do imóvel">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
         </div>
