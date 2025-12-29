@@ -1069,11 +1069,56 @@ setTimeout(() => {
 
 window.accessPdfDocuments = function() {
     const password = document.getElementById('pdfPassword')?.value;
+    const passwordInput = document.getElementById('pdfPassword');
+    
+    if (!password || password.trim() === '') {
+        alert('Digite a senha para acessar os documentos!');
+        passwordInput?.focus();
+        return;
+    }
+    
     if (password === "doc123") {
-        alert('✅ Documentos PDF acessados com sucesso!');
-        closePdfModal();
+        // ✅ CHAMAR A FUNÇÃO CORRETA DO MÓDULO DE PDFs
+        if (typeof window.validatePdfPassword === 'function') {
+            // Obter propertyId do título ou atributo
+            const modalTitle = document.getElementById('pdfModalTitle');
+            let propertyId = null;
+            
+            // Tentar extrair ID do título ou usar último imóvel clicado
+            if (modalTitle && modalTitle.dataset.propertyId) {
+                propertyId = modalTitle.dataset.propertyId;
+            } else {
+                // Fallback: usar window.currentPropertyId se existir
+                propertyId = window.currentPropertyId || window.editingPropertyId;
+            }
+            
+            if (propertyId) {
+                window.validatePdfPassword(propertyId);
+            } else {
+                alert('⚠️ Não foi possível identificar o imóvel. Recarregue a página.');
+            }
+        } else {
+            // Fallback se função não estiver disponível
+            alert('✅ Acesso concedido! Documentos serão abertos em nova aba.');
+            
+            // Procurar documentos do imóvel atual
+            const property = window.properties.find(p => 
+                p.id === (window.currentPropertyId || window.editingPropertyId)
+            );
+            
+            if (property && property.pdfs && property.pdfs !== 'EMPTY') {
+                const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+                pdfUrls.forEach(url => {
+                    window.open(url, '_blank');
+                });
+            }
+            
+            closePdfModal();
+        }
     } else {
-        alert('❌ Senha incorreta para documentos PDF!');
+        alert('❌ Senha incorreta para documentos PDF!\n\nSenha correta: doc123');
+        passwordInput.value = '';
+        passwordInput.focus();
     }
 };
 
