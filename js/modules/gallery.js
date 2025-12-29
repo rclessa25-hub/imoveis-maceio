@@ -361,7 +361,7 @@ window.createPropertyGallery = function(property) {
             
             <!-- Botão PDF -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-                `<button class="pdf-access" onclick="event.stopPropagation(); showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
+                `<button class="pdf-access" onclick="event.stopPropagation(); window.showPdfModalDirect && window.showPdfModalDirect(${property.id}) || window.showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
         </div>
