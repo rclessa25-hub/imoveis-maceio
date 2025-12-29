@@ -1008,9 +1008,12 @@ window.showPdfModal = function(propertyId) {
     }
 };
 
-// ✅ ADICIONAR ESTA FUNÇÃO DE FALLBACK (no mesmo arquivo, após showPdfModal):
+// ========== FUNÇÃO DE FALLBACK (no mesmo arquivo, após showPdfModal ==========
 function openPdfModalDirectFallback(propertyId) {
     console.log(`📄 Fallback PDF modal para ID: ${propertyId}`);
+    
+    // Armazenar ID para uso posterior
+    window.currentPropertyId = propertyId;
     
     const property = window.properties.find(p => p.id === propertyId);
     if (!property || !property.pdfs || property.pdfs === 'EMPTY') {
@@ -1018,17 +1021,33 @@ function openPdfModalDirectFallback(propertyId) {
         return;
     }
     
-    // Abrir modal de PDF diretamente (código do pdf-core.js simplificado)
+    // Abrir modal de PDF
     const modal = document.getElementById('pdfModal');
     if (modal) {
         modal.style.display = 'flex';
-        // Configurar modal com dados do imóvel
+        
+        // Configurar título COM ID do imóvel
         const titleElement = document.getElementById('pdfModalTitle');
         if (titleElement) {
             titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
+            titleElement.dataset.propertyId = propertyId; // Armazenar ID no elemento
+        }
+        
+        // Limpar campo de senha
+        const passwordInput = document.getElementById('pdfPassword');
+        if (passwordInput) {
+            passwordInput.value = '';
+            passwordInput.focus();
         }
     } else {
-        alert('📄 Documentos PDF disponíveis! (Modal não encontrado)');
+        // Se modal não existe, usar função do pdf-core.js
+        if (typeof window.showPropertyPdf === 'function') {
+            window.showPropertyPdf(propertyId);
+        } else {
+            alert('📄 Documentos PDF disponíveis! Abrindo em nova aba...');
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            pdfUrls.forEach(url => window.open(url, '_blank'));
+        }
     }
 }
 
