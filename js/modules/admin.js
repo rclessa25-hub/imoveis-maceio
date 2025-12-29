@@ -1141,6 +1141,96 @@ window.accessPdfDocuments = function() {
     }
 };
 
+// ✅ FUNÇÃO PARA CRIAR MODAL PDF SE NÃO EXISTIR
+window.ensurePdfModalExists = function() {
+    let modal = document.getElementById('pdfModal');
+    
+    if (!modal) {
+        console.log('🔄 Criando modal PDF dinamicamente...');
+        
+        modal = document.createElement('div');
+        modal.id = 'pdfModal';
+        modal.className = 'pdf-modal';
+        modal.style.cssText = `
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        modal.innerHTML = `
+            <div class="pdf-modal-content" style="background: white; border-radius: 10px; padding: 2rem; max-width: 400px; width: 90%; text-align: center;">
+                <h3 id="pdfModalTitle" style="color: var(--primary); margin: 0 0 1rem 0;">
+                    <i class="fas fa-file-pdf"></i> Documentos do Imóvel
+                </h3>
+                <div id="pdfPreview" class="pdf-preview" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 5px;">
+                    <p>Documentos técnicos e legais disponíveis</p>
+                </div>
+                <input type="password" id="pdfPassword" class="pdf-password-input" 
+                       placeholder="Digite a senha para acessar" 
+                       style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; margin: 1rem 0;">
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button onclick="accessPdfDocuments()" 
+                            style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                        <i class="fas fa-lock-open"></i> Acessar
+                    </button>
+                    <button onclick="closePdfModal()" 
+                            style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                        <i class="fas fa-times"></i> Fechar
+                    </button>
+                </div>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
+                    <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
+                </p>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        console.log('✅ Modal PDF criado dinamicamente');
+    }
+    
+    return modal;
+};
+
+// ✅ ATUALIZAR openPdfModalDirectFallback para usar ensurePdfModalExists
+function openPdfModalDirectFallback(propertyId) {
+    console.log(`📄 Fallback PDF modal para ID: ${propertyId}`);
+    
+    window.currentPropertyId = propertyId;
+    const property = window.properties.find(p => p.id === propertyId);
+    
+    if (!property || !property.pdfs || property.pdfs === 'EMPTY') {
+        alert('Nenhum documento PDF disponível para este imóvel.');
+        return;
+    }
+    
+    // Garantir que o modal existe
+    const modal = window.ensurePdfModalExists();
+    
+    // Configurar título
+    const titleElement = document.getElementById('pdfModalTitle');
+    if (titleElement) {
+        titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
+        titleElement.dataset.propertyId = propertyId;
+    }
+    
+    // Limpar e focar senha
+    const passwordInput = document.getElementById('pdfPassword');
+    if (passwordInput) {
+        passwordInput.value = '';
+        setTimeout(() => passwordInput.focus(), 100);
+    }
+    
+    // Mostrar modal
+    modal.style.display = 'flex';
+}
+
 window.closePdfModal = function() {
     const modal = document.getElementById('pdfModal');
     if (modal) {
