@@ -996,20 +996,46 @@ window.forceMediaSystemInit = function() {
 
 // ========== FUNÇÕES PDF BÁSICAS ==========
 window.showPdfModal = function(propertyId) {
+    console.log(`📄 showPdfModal chamado para ID: ${propertyId}`);
+    
+    // Usar a função ORIGINAL do pdf-core.js DIRETAMENTE
+    // Não chamar showPropertyPdf, pois ele chama showPdfModal de volta
+    if (typeof window.openPdfModalDirect !== 'undefined') {
+        window.openPdfModalDirect(propertyId);
+    } else {
+        // Fallback: abrir modal diretamente sem loop
+        openPdfModalDirectFallback(propertyId);
+    }
+};
+
+// ✅ ADICIONAR ESTA FUNÇÃO DE FALLBACK (no mesmo arquivo, após showPdfModal):
+function openPdfModalDirectFallback(propertyId) {
+    console.log(`📄 Fallback PDF modal para ID: ${propertyId}`);
+    
     const property = window.properties.find(p => p.id === propertyId);
-    if (!property) {
-        alert('Imóvel não encontrado!');
+    if (!property || !property.pdfs || property.pdfs === 'EMPTY') {
+        alert('Nenhum documento PDF disponível para este imóvel.');
         return;
     }
     
-    // Usar a função CORRETA do módulo de PDFs
-    if (typeof window.showPropertyPdf === 'function') {
-        window.showPropertyPdf(propertyId);
+    // Abrir modal de PDF diretamente (código do pdf-core.js simplificado)
+    const modal = document.getElementById('pdfModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Configurar modal com dados do imóvel
+        const titleElement = document.getElementById('pdfModalTitle');
+        if (titleElement) {
+            titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
+        }
     } else {
-        // Fallback para função do pdf-core.js
-        alert('📄 Documentos PDF disponíveis! (Sistema carregando...)');
-        console.log('ℹ️ Use window.showPropertyPdf() diretamente');
+        alert('📄 Documentos PDF disponíveis! (Modal não encontrado)');
     }
+}
+
+// ✅ ADICIONAR ESTA FUNÇÃO PARA TESTAR (opcional):
+window.testPdfModalDirect = function(propertyId) {
+    console.log('🧪 TESTE DIRETO DO MODAL PDF');
+    openPdfModalDirectFallback(propertyId || 101); // Testar com ID 101 ou fornecido
 };
 
 // Adicionar verificação de módulos PDF
