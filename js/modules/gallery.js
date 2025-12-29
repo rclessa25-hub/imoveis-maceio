@@ -359,13 +359,17 @@ window.createPropertyGallery = function(property) {
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-             <!-- Botão PDF (VERSÃO CORRIGIDA) -->
-             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-                 `<button class="pdf-access"
-                     onclick="event.stopPropagation(); window.showPdfModalDirect && window.showPdfModalDirect(${property.id}) || window.showPdfModal(${property.id})"
-                     title="Documentos do imóvel (senha: doc123)">
-                     <i class="fas fa-file-pdf"></i>
-                 </button>` : ''}
+         <!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
+            ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
+                `<button class="pdf-access"
+                    onclick="event.stopPropagation();
+                             window.currentPropertyId=${property.id};
+                             document.getElementById('pdfModal')
+                                ? document.getElementById('pdfModal').style.display='flex'
+                                : window.openPdfModalDirectFallback(${property.id})"
+                    title="Documentos do imóvel (senha: doc123)">
+                    <i class="fas fa-file-pdf"></i>
+                </button>` : ''}
         </div>
     `;
 };
