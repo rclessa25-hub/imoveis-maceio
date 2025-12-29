@@ -16,6 +16,37 @@ window.pdfValidateUrl = function(url) {
            (url.startsWith('http') || url.includes('supabase.co'));
 };
 
+// Função para verificar se URL de PDF é válida
+window.pdfVerifyUrl = async function(url) {
+    return new Promise((resolve) => {
+        // Verificação básica
+        if (!url || !url.includes('supabase.co')) {
+            resolve({ valid: false, error: 'URL inválida' });
+            return;
+        }
+        
+        // Verificar HEAD request (sem carregar arquivo completo)
+        fetch(url, { method: 'HEAD' })
+            .then(response => {
+                const isValid = response.ok && 
+                              response.headers.get('content-type')?.includes('pdf');
+                resolve({ 
+                    valid: isValid, 
+                    status: response.status,
+                    contentType: response.headers.get('content-type'),
+                    url: url
+                });
+            })
+            .catch(error => {
+                resolve({ 
+                    valid: false, 
+                    error: error.message,
+                    url: url
+                });
+            });
+    });
+};
+
 window.pdfExtractFileName = function(url, index) {
     let fileName = 'Documento';
     if (url.includes('/')) {
