@@ -1287,6 +1287,14 @@ window.ensurePdfModalExists = function() {
     return modal;
 };
 
+// Verificação automática na inicialização
+setTimeout(() => {
+    if (!document.getElementById('pdfModal')) {
+        console.log('⚠️ Modal PDF não encontrado. Criando automaticamente...');
+        window.ensurePdfModalExists();
+    }
+}, 1000);
+
 window.closePdfModal = function() {
     const modal = document.getElementById('pdfModal');
     if (modal) {
