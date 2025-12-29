@@ -156,7 +156,7 @@ window.editProperty = function(id) {
         property.features.join(', ') : (property.features || '');
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
-    document.getElementById('propHasVideo').checked = property.has_video === true || property.has_video === 'true' || false;
+    //document.getElementById('propHasVideo').checked = property.has_video === true || property.has_video === 'true' || false;
     document.getElementById('propHasVideo').checked = 
     property.has_video === true || 
     property.has_video === 'true' || 
