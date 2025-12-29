@@ -1165,6 +1165,36 @@ window.accessPdfDocuments = function() {
     }
 };
 
+// ✅ FUNÇÃO DE TESTE DIRETO (adicionar após accessPdfDocuments)
+window.testPdfAccessDirect = function(propertyId) {
+    console.log('🧪 TESTE DIRETO DE ACESSO A PDFs');
+    
+    if (!propertyId) {
+        propertyId = window.currentPropertyId || 101; // Usar ID 101 como teste
+    }
+    
+    const property = window.properties.find(p => p.id == propertyId);
+    if (!property) {
+        alert('Imóvel de teste não encontrado');
+        return;
+    }
+    
+    console.log(`📊 Imóvel ${propertyId}: "${property.title}"`);
+    console.log(`📄 PDFs: ${property.pdfs || 'Nenhum'}`);
+    
+    // Abrir PDFs diretamente (pular validação de senha)
+    if (property.pdfs && property.pdfs !== 'EMPTY') {
+        const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+        pdfUrls.forEach(url => {
+            console.log(`🔗 Abrindo: ${url.substring(0, 80)}...`);
+            window.open(url, '_blank');
+        });
+        alert(`✅ ${pdfUrls.length} PDF(s) aberto(s) diretamente!`);
+    } else {
+        alert('ℹ️ Imóvel de teste não tem PDFs');
+    }
+};
+
 // ✅ FUNÇÃO PARA CRIAR MODAL PDF SE NÃO EXISTIR
 window.ensurePdfModalExists = function() {
     let modal = document.getElementById('pdfModal');
