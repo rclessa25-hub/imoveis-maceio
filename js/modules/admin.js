@@ -1077,58 +1077,91 @@ setTimeout(() => {
     }
 }, 2000);
 
+// ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
 window.accessPdfDocuments = function() {
-    const password = document.getElementById('pdfPassword')?.value;
-    const passwordInput = document.getElementById('pdfPassword');
+    console.log('🔓 accessPdfDocuments chamada');
     
-    if (!password || password.trim() === '') {
+    // 1. Obter senha digitada
+    const passwordInput = document.getElementById('pdfPassword');
+    const password = passwordInput?.value?.trim();
+    
+    if (!password) {
         alert('Digite a senha para acessar os documentos!');
         passwordInput?.focus();
         return;
     }
     
-    if (password === "doc123") {
-        // ✅ CHAMAR A FUNÇÃO CORRETA DO MÓDULO DE PDFs
-        if (typeof window.validatePdfPassword === 'function') {
-            // Obter propertyId do título ou atributo
-            const modalTitle = document.getElementById('pdfModalTitle');
-            let propertyId = null;
-            
-            // Tentar extrair ID do título ou usar último imóvel clicado
-            if (modalTitle && modalTitle.dataset.propertyId) {
-                propertyId = modalTitle.dataset.propertyId;
-            } else {
-                // Fallback: usar window.currentPropertyId se existir
-                propertyId = window.currentPropertyId || window.editingPropertyId;
-            }
-            
-            if (propertyId) {
-                window.validatePdfPassword(propertyId);
-            } else {
-                alert('⚠️ Não foi possível identificar o imóvel. Recarregue a página.');
-            }
-        } else {
-            // Fallback se função não estiver disponível
-            alert('✅ Acesso concedido! Documentos serão abertos em nova aba.');
-            
-            // Procurar documentos do imóvel atual
-            const property = window.properties.find(p => 
-                p.id === (window.currentPropertyId || window.editingPropertyId)
-            );
-            
-            if (property && property.pdfs && property.pdfs !== 'EMPTY') {
-                const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-                pdfUrls.forEach(url => {
-                    window.open(url, '_blank');
-                });
-            }
-            
-            closePdfModal();
-        }
-    } else {
-        alert('❌ Senha incorreta para documentos PDF!\n\nSenha correta: doc123');
+    // 2. Verificar senha
+    if (password !== "doc123") {
+        alert('❌ Senha incorreta!\n\nSenha correta: doc123');
         passwordInput.value = '';
         passwordInput.focus();
+        return;
+    }
+    
+    // 3. ✅ SENHA CORRETA - ABRIR DOCUMENTOS
+    console.log('✅ Senha válida! Buscando documentos...');
+    
+    // Obter ID do imóvel atual
+    const propertyId = window.currentPropertyId || 
+                      (document.getElementById('pdfModalTitle')?.dataset?.propertyId) || 
+                      window.editingPropertyId;
+    
+    if (!propertyId) {
+        alert('⚠️ Não foi possível identificar o imóvel. Recarregue a página.');
+        return;
+    }
+    
+    // Buscar imóvel
+    const property = window.properties.find(p => p.id == propertyId);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        return;
+    }
+    
+    // Verificar se tem PDFs
+    if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
+        alert('ℹ️ Este imóvel não tem documentos PDF.');
+        closePdfModal();
+        return;
+    }
+    
+    // Processar URLs dos PDFs
+    const pdfUrls = property.pdfs.split(',')
+        .map(url => url.trim())
+        .filter(url => url && url !== 'EMPTY' && url !== '');
+    
+    if (pdfUrls.length === 0) {
+        alert('ℹ️ Nenhum documento PDF disponível.');
+        closePdfModal();
+        return;
+    }
+    
+    console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
+    
+    // Abrir cada PDF em nova aba
+    let openedCount = 0;
+    pdfUrls.forEach((url, index) => {
+        try {
+            // Verificar se a URL é válida
+            if (url.startsWith('http') || url.includes('supabase.co')) {
+                window.open(url, '_blank');
+                openedCount++;
+                console.log(`✅ PDF ${index + 1} aberto: ${url.substring(0, 60)}...`);
+            } else {
+                console.warn(`⚠️ URL inválida ignorada: ${url}`);
+            }
+        } catch (error) {
+            console.error(`❌ Erro ao abrir PDF ${url}:`, error);
+        }
+    });
+    
+    // Feedback ao usuário
+    if (openedCount > 0) {
+        alert(`✅ ${openedCount} documento(s) PDF aberto(s) em nova(s) aba(s)!`);
+        closePdfModal();
+    } else {
+        alert('❌ Não foi possível abrir os documentos. Verifique as URLs.');
     }
 };
 
