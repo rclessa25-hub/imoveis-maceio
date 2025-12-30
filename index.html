@@ -439,6 +439,88 @@
 <button class="admin-toggle">
     <i class="fas fa-user-cog"></i>
 </button>
+
+========== SCRIPT DE VERIFICAÇÃO DE DUPLICAÇÕES (APÓS TODOS OS MÓDULOS) ========== -->
+//<script src="js/modules/debug/verify-functions.js" defer></script>
+
+<!-- ========== CARREGAMENTO CONDICIONAL DE MÓDULOS DE SUPORTE ========== -->
+<script>
+// DEBUG: Marcar início da execução
+console.log('🔧 [SUPORTE] Script de carregamento iniciado');
+
+// Carregar módulos do repositório de suporte APENAS quando necessário
+(function loadSupportModules() {
+    // DEBUG: Log das condições
+    console.log('🔧 [SUPORTE] Verificando condições...');
+    console.log('🔧 [SUPORTE] URL:', window.location.href);
+    console.log('🔧 [SUPORTE] Search:', window.location.search);
+    console.log('🔧 [SUPORTE] Hostname:', window.location.hostname);
+    
+    // Condições para carregar módulos de suporte
+    const shouldLoadSupport = 
+        window.location.search.includes('debug=true') || 
+        window.location.search.includes('test=true') ||
+        window.location.hostname.includes('localhost') ||
+        window.location.hostname.includes('127.0.0.1');
+    
+    console.log('🔧 [SUPORTE] shouldLoadSupport:', shouldLoadSupport);
+    
+    if (shouldLoadSupport) {
+        console.log('🔧 [SUPORTE] Carregando módulos do repositório de suporte...');
+        
+        // Array de módulos a carregar (COM URL COMPLETA PARA DEBUG)
+        const supportModules = [
+            'debug/function-verifier.js',
+            'debug/media-logger.js',
+            'debug/duplication-checker.js'
+        ];
+        
+        const baseUrl = 'https://rclessa25-hub.github.io/weberlessa-support/';
+        let loadedCount = 0;
+        
+        // Carregar cada módulo
+        supportModules.forEach(modulePath => {
+            const fullUrl = baseUrl + modulePath;
+            console.log(`🔧 [SUPORTE] Tentando carregar: ${fullUrl}`);
+            
+            const script = document.createElement('script');
+            script.src = fullUrl;
+            script.defer = true;
+            
+            script.onload = () => {
+                loadedCount++;
+                console.log(`✅ [SUPORTE] ${modulePath} carregado (${loadedCount}/${supportModules.length})`);
+                
+                if (loadedCount === supportModules.length) {
+                    console.log('🎉 [SUPORTE] TODOS os módulos carregados com sucesso!');
+                    
+                    // Executar verificações automáticas
+                    setTimeout(() => {
+                        if (typeof window.verifySystemFunctions === 'function') {
+                            window.verifySystemFunctions();
+                        }
+                        if (typeof window.checkModuleDuplications === 'function') {
+                            window.checkModuleDuplications();
+                        }
+                    }, 1000);
+                }
+            };
+            
+            script.onerror = (error) => {
+                console.error(`❌ [SUPORTE] Falha ao carregar: ${modulePath}`, error);
+                console.error(`❌ [SUPORTE] URL falhou: ${fullUrl}`);
+            };
+            
+            document.head.appendChild(script);
+        });
+        
+        console.log(`📦 [SUPORTE] Total de módulos: ${supportModules.length}`);
+        console.log('🔗 [SUPORTE] Repositório: https://github.com/rclessa25-hub/weberlessa-support');
+    } else {
+        console.log('🚀 [SUPORTE] Site principal em modo produção - sem módulos de suporte');
+    }
+})();
+</script>
     
 <!-- Adicione esta linha ANTES dos seus scripts -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -635,88 +717,6 @@ setTimeout(() => {
     
     console.groupEnd();
 }, 3000);
-</script>
-
-========== SCRIPT DE VERIFICAÇÃO DE DUPLICAÇÕES (APÓS TODOS OS MÓDULOS) ========== -->
-//<script src="js/modules/debug/verify-functions.js" defer></script>
-
-<!-- ========== CARREGAMENTO CONDICIONAL DE MÓDULOS DE SUPORTE ========== -->
-<script>
-// DEBUG: Marcar início da execução
-console.log('🔧 [SUPORTE] Script de carregamento iniciado');
-
-// Carregar módulos do repositório de suporte APENAS quando necessário
-(function loadSupportModules() {
-    // DEBUG: Log das condições
-    console.log('🔧 [SUPORTE] Verificando condições...');
-    console.log('🔧 [SUPORTE] URL:', window.location.href);
-    console.log('🔧 [SUPORTE] Search:', window.location.search);
-    console.log('🔧 [SUPORTE] Hostname:', window.location.hostname);
-    
-    // Condições para carregar módulos de suporte
-    const shouldLoadSupport = 
-        window.location.search.includes('debug=true') || 
-        window.location.search.includes('test=true') ||
-        window.location.hostname.includes('localhost') ||
-        window.location.hostname.includes('127.0.0.1');
-    
-    console.log('🔧 [SUPORTE] shouldLoadSupport:', shouldLoadSupport);
-    
-    if (shouldLoadSupport) {
-        console.log('🔧 [SUPORTE] Carregando módulos do repositório de suporte...');
-        
-        // Array de módulos a carregar (COM URL COMPLETA PARA DEBUG)
-        const supportModules = [
-            'debug/function-verifier.js',
-            'debug/media-logger.js',
-            'debug/duplication-checker.js'
-        ];
-        
-        const baseUrl = 'https://rclessa25-hub.github.io/weberlessa-support/';
-        let loadedCount = 0;
-        
-        // Carregar cada módulo
-        supportModules.forEach(modulePath => {
-            const fullUrl = baseUrl + modulePath;
-            console.log(`🔧 [SUPORTE] Tentando carregar: ${fullUrl}`);
-            
-            const script = document.createElement('script');
-            script.src = fullUrl;
-            script.defer = true;
-            
-            script.onload = () => {
-                loadedCount++;
-                console.log(`✅ [SUPORTE] ${modulePath} carregado (${loadedCount}/${supportModules.length})`);
-                
-                if (loadedCount === supportModules.length) {
-                    console.log('🎉 [SUPORTE] TODOS os módulos carregados com sucesso!');
-                    
-                    // Executar verificações automáticas
-                    setTimeout(() => {
-                        if (typeof window.verifySystemFunctions === 'function') {
-                            window.verifySystemFunctions();
-                        }
-                        if (typeof window.checkModuleDuplications === 'function') {
-                            window.checkModuleDuplications();
-                        }
-                    }, 1000);
-                }
-            };
-            
-            script.onerror = (error) => {
-                console.error(`❌ [SUPORTE] Falha ao carregar: ${modulePath}`, error);
-                console.error(`❌ [SUPORTE] URL falhou: ${fullUrl}`);
-            };
-            
-            document.head.appendChild(script);
-        });
-        
-        console.log(`📦 [SUPORTE] Total de módulos: ${supportModules.length}`);
-        console.log('🔗 [SUPORTE] Repositório: https://github.com/rclessa25-hub/weberlessa-support');
-    } else {
-        console.log('🚀 [SUPORTE] Site principal em modo produção - sem módulos de suporte');
-    }
-})();
 </script>
     
 <!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
