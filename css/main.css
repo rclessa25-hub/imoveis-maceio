@@ -154,18 +154,36 @@ body {
 }
 
 .filter-btn {
-    background: var(--light);
-    border: none;
+    background: #f8f9fa; /* Fundo mais claro para contraste */
+    border: 2px solid #e0e0e0;
     padding: 0.7rem 1.5rem;
     border-radius: 30px;
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    color: #2c3e50; /* Cor escura para melhor leitura */
+    font-weight: 600; /* Texto mais forte */
+}
+
+.filter-btn:hover {
+    background: #e9ecef;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .filter-btn.active {
-    background: var(--primary);
-    color: white;
+    background: var(--primary); /* #1a5276 */
+    border-color: var(--primary);
+    color: white !important; /* Forçar cor branca */
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3);
+}
+
+/* Adicionar estilo específico para garantir contraste */
+.filter-btn.active:hover {
+    background: #154060; /* Tom mais escuro do primary */
+    border-color: #154060;
 }
 
 .property-grid {
