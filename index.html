@@ -639,6 +639,33 @@ setTimeout(() => {
 
 ========== SCRIPT DE VERIFICAÇÃO DE DUPLICAÇÕES (APÓS TODOS OS MÓDULOS) ========== -->
 //<script src="js/modules/debug/verify-functions.js" defer></script>
+
+<!-- ========== CARREGAMENTO CONDICIONAL DE MÓDULOS DE SUPORTE ========== -->
+<script>
+// Carregar módulos do repositório de suporte APENAS quando necessário
+document.addEventListener('DOMContentLoaded', function() {
+    // Condições para carregar módulos de suporte
+    const shouldLoadSupport = 
+        window.location.search.includes('debug=true') || 
+        window.location.search.includes('test=true') ||
+        window.location.hostname === 'localhost';
+    
+    if (shouldLoadSupport) {
+        console.log('🔧 Carregando módulos do repositório de suporte...');
+        
+        // 1. Verificador de funções
+        const verifierScript = document.createElement('script');
+        verifierScript.src = 'https://rclessa25-hub.github.io/weberlessa-support/debug/function-verifier.js';
+        verifierScript.defer = true;
+        document.head.appendChild(verifierScript);
+        
+        console.log('✅ Módulos de suporte carregados do repositório externo');
+        console.log('🔗 Repositório: https://github.com/rclessa25-hub/weberlessa-support');
+    } else {
+        console.log('🚀 Site principal em modo produção - sem módulos de suporte');
+    }
+});
+</script>
     
 <!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
 <script>
