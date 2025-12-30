@@ -497,3 +497,36 @@ body {
         gap: 1rem;
     }
 }
+
+/* ========== CORREÇÃO DEFINITIVA DOS FILTROS ========== */
+/* Remover qualquer estilo inline que possa estar sobrescrevendo */
+
+.filter-btn[style*="color:"] {
+    color: #2c3e50 !important; /* Corrigir caso tenha estilo inline */
+}
+
+.filter-btn.active[style*="color:"] {
+    color: white !important; /* Forçar branco quando ativo */
+}
+
+/* Garantir que JavaScript não sobrescreva cores erradas */
+.filter-btn {
+    color: #2c3e50 !important;
+}
+
+.filter-btn.active {
+    color: white !important;
+}
+
+/* Prevenir transparência indesejada */
+.filter-btn.active {
+    opacity: 1 !important;
+}
+
+/* Correção para Firefox e Safari */
+@supports (-webkit-appearance: none) or (-moz-appearance: none) {
+    .filter-btn.active {
+        -webkit-text-fill-color: white !important;
+        text-fill-color: white !important;
+    }
+}
