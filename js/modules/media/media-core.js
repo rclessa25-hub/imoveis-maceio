@@ -427,30 +427,12 @@ setTimeout(() => {
         };
     }
     
-    if (typeof window.MediaLogger !== 'object') {
-        console.warn('⚠️ media-logger.js não carregou completamente');
-        // Fallback básico
-        window.MediaLogger = {
-            info: (m, msg) => console.log(`[${m}] ${msg}`),
-            error: (m, msg) => console.error(`[${m}] ${msg}`)
-        };
-    }
-    
-   // Registrar inicialização no logger
-    if (typeof window.MediaLogger !== 'undefined' && window.MediaLogger.system && window.MediaLogger.system.init) {
-        window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
-    } else {
-        // Sem logger - operação normal em produção
-        console.log('🔧 Sistema de mídia inicializado para:', window.currentMediaSystem || 'vendas');
-    }
-    
-// ========== FALLBACK PARA MEDIA LOGGER (quando não carregado do suporte) ==========
-setTimeout(() => {
-    // ⚠️ IMPORTANTE: Em produção, NÃO criar console logs desnecessários
+    // ⚠️ NÃO VERIFICAR media-logger.js - ele está no repositório de suporte
+    // Criar fallback SILENCIOSO se não existir
     if (typeof window.MediaLogger === 'undefined') {
         // Fallback SILENCIOSO para produção
         window.MediaLogger = {
-            info: () => {},
+            info: () => {}, // Funções vazias em produção
             error: () => {},
             upload: {
                 start: () => {},
@@ -462,10 +444,64 @@ setTimeout(() => {
                 init: () => {}
             }
         };
-        console.log('🔧 MediaLogger: usando fallback silencioso para produção');
+        // Apenas log em desenvolvimento
+        if (window.location.hostname.includes('localhost') || window.location.search.includes('debug')) {
+            console.log('🔧 MediaLogger: usando fallback silencioso');
+        }
     }
-}, 500);
+    
+    // Registrar inicialização (usando fallback silencioso se necessário)
+    if (window.MediaLogger && window.MediaLogger.system && typeof window.MediaLogger.system.init === 'function') {
+        window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
+    } else {
+        // Sem logger - operação normal em produção
+        if (window.location.hostname.includes('localhost') || window.location.search.includes('debug')) {
+            console.log('🔧 Sistema de mídia inicializado para:', window.currentMediaSystem || 'vendas');
+        }
+    }
     
     console.log('✅ Dependências verificadas e prontas');
     console.groupEnd();
 }, 1500);
+
+// ========== FALLBACK PARA MEDIA LOGGER (quando não carregado do suporte) ==========
+// Este bloco adicional garante que mesmo se algo tentar usar MediaLogger mais tarde,
+// não haverá erros
+(function ensureMediaLoggerFallback() {
+    // Verificar periodicamente por 5 segundos
+    let checkCount = 0;
+    const maxChecks = 10; // 5 segundos (10 * 500ms)
+    
+    const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        if (typeof window.MediaLogger === 'undefined') {
+            // Fallback mínimo e SILENCIOSO
+            window.MediaLogger = {
+                info: () => {},
+                error: () => {},
+                upload: {
+                    start: () => {},
+                    success: () => {},
+                    file: () => {},
+                    error: () => {}
+                },
+                system: {
+                    init: () => {}
+                }
+            };
+            
+            // Parar verificação
+            clearInterval(checkInterval);
+            
+            // Log apenas em desenvolvimento
+            if (window.location.hostname.includes('localhost') || window.location.search.includes('debug')) {
+                console.log('🔧 Fallback do MediaLogger garantido (verificação tardia)');
+            }
+        }
+        
+        if (checkCount >= maxChecks) {
+            clearInterval(checkInterval);
+        }
+    }, 500);
+})();
