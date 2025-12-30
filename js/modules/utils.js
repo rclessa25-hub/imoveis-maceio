@@ -135,20 +135,6 @@ console.log('- PDF_PASSWORD:', window.PDF_PASSWORD ? '***' + window.PDF_PASSWORD
 console.log('- Hostname:', window.location.hostname);
 console.log('- É GitHub Pages?', window.location.hostname.includes('github.io'));
 
-// Teste de conexão básico
-if (window.SUPABASE_URL) {
-    console.log('🌐 Testando acesso ao Supabase...');
-    fetch(window.SUPABASE_URL, { method: 'HEAD' })
-        .then(response => {
-            console.log('📡 Supabase acessível?', response.ok);
-        })
-        .catch(error => {
-            console.log('❌ Não foi possível acessar Supabase:', error.message);
-        });
-}
-
-console.log('✅ utils.js completamente carregado');
-
 // ========== FUNÇÃO SUPABASE FETCH CORRIGIDA (ADICIONAR AQUI) ==========
 window.supabaseFetch = async function(endpoint, options = {}) {
     console.log('🌐 supabaseFetch chamado para:', endpoint);
@@ -203,3 +189,4 @@ window.supabaseFetch = async function(endpoint, options = {}) {
 };
 
 console.log('✅ supabaseFetch adicionada ao utils.js');
+console.log('✅ utils.js completamente carregado');
