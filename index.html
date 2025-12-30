@@ -653,13 +653,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (shouldLoadSupport) {
         console.log('🔧 Carregando módulos do repositório de suporte...');
         
-        // 1. Verificador de funções
-        const verifierScript = document.createElement('script');
-        verifierScript.src = 'https://rclessa25-hub.github.io/weberlessa-support/debug/function-verifier.js';
-        verifierScript.defer = true;
-        document.head.appendChild(verifierScript);
+        // Array de módulos a carregar
+        const supportModules = [
+            'debug/function-verifier.js',
+            'debug/media-logger.js'
+        ];
         
-        console.log('✅ Módulos de suporte carregados do repositório externo');
+        // Carregar cada módulo
+        supportModules.forEach(modulePath => {
+            const script = document.createElement('script');
+            script.src = `https://rclessa25-hub.github.io/weberlessa-support/${modulePath}`;
+            script.defer = true;
+            script.onload = () => console.log(`✅ ${modulePath} carregado`);
+            script.onerror = () => console.warn(`⚠️ Falha ao carregar: ${modulePath}`);
+            document.head.appendChild(script);
+        });
+        
+        console.log('📦 Total de módulos:', supportModules.length);
         console.log('🔗 Repositório: https://github.com/rclessa25-hub/weberlessa-support');
     } else {
         console.log('🚀 Site principal em modo produção - sem módulos de suporte');
