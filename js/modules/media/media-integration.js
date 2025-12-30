@@ -132,12 +132,19 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
     const config = window.MEDIA_CONFIG || { supabaseBucket: 'properties' };
     
     console.log(`📦 Configuração: Bucket=${config.supabaseBucket}, Sistema=${window.currentMediaSystem}`);
+    if (window.MediaLogger && window.MediaLogger.upload && window.MediaLogger.upload.start) {
     window.MediaLogger.upload.start(files.length);
+    } else {
+        console.log(`📤 Upload: ${files.length} arquivos`); // Fallback básico
+    }
     
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         console.log(`📤 Enviando ${i+1}/${files.length}: ${file.name}`);
-        window.MediaLogger.upload.file(i+1, files.length, file.name, window.mediaFormatFileSize(file.size));
+        if (window.MediaLogger && window.MediaLogger.upload && window.MediaLogger.upload.file) {
+            window.MediaLogger.upload.file(i+1, files.length, file.name, window.mediaFormatFileSize(file.size));
+        }
+
         
         try {
             // ⚡ Gerar nome único otimizado
@@ -176,7 +183,9 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
                 uploadedUrls.push(publicUrl);
                 
                 console.log(`✅ Upload bem-sucedido: ${publicUrl}`);
-                window.MediaLogger.upload.success(file.name, publicUrl);
+                if (window.MediaLogger && window.MediaLogger.upload && window.MediaLogger.upload.success) {
+                    window.MediaLogger.upload.success(file.name, publicUrl);
+                }
                 
                 // ⚡ Atualizar preview com URL real
                 const fileIndex = window.selectedMediaFiles.findIndex(f => 
@@ -196,7 +205,9 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
             } else {
                 const errorText = await response.text();
                 console.error(`❌ Falha no upload (${response.status}):`, errorText);
-                window.MediaLogger.upload.error(file.name, new Error(`HTTP ${response.status}: ${errorText}`));
+                if (window.MediaLogger && window.MediaLogger.upload && window.MediaLogger.upload.error) {
+                    window.MediaLogger.upload.error(file.name, new Error(`HTTP ${response.status}: ${errorText}`));
+                }
                 
                 // ⚡ Fallback: Usar URL temporária
                 const tempUrl = URL.createObjectURL(file);
@@ -205,7 +216,9 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
             }
         } catch (error) {
             console.error(`💥 Erro no upload de ${file.name}:`, error);
-            window.MediaLogger.upload.error(file.name, error);
+            if (window.MediaLogger && window.MediaLogger.upload && window.MediaLogger.upload.error) {
+                window.MediaLogger.upload.error(file.name, error);
+            }
             
             // ⚡ Fallback: URL temporária
             const tempUrl = URL.createObjectURL(file);
@@ -214,7 +227,9 @@ window.uploadMediaToSupabase = async function(files, propertyId) {
     }
     
     console.log(`🎉 Upload concluído: ${uploadedUrls.length}/${files.length} sucesso(s)`);
-    window.MediaLogger.info('UPLOAD', `Concluído: ${uploadedUrls.length}/${files.length} arquivos`);
+    if (window.MediaLogger && window.MediaLogger.info) {
+        window.MediaLogger.info('UPLOAD', `Concluído: ${uploadedUrls.length}/${files.length} arquivos`);
+    }
     console.groupEnd();
     
     return uploadedUrls;
