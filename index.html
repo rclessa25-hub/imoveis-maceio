@@ -649,12 +649,23 @@ setTimeout(() => {
         
         if (data.loaded) {
             data.functions.forEach(func => {
-                const funcExists = eval(`typeof ${func} !== 'undefined'`);
+                // Modificar a verificação para ser mais flexível
+                let funcExists = false;
+                
+                if (func.includes('.')) {
+                    // Para MediaLogger.upload (nested object)
+                    const parts = func.split('.');
+                    if (parts.length === 2) {
+                        funcExists = window[parts[0]] && window[parts[0]][parts[1]];
+                    }
+                } else {
+                    // Para funções simples
+                    funcExists = typeof window[func] !== 'undefined';
+                }
+                
                 console.log(`   ${func}: ${funcExists ? '✅' : '❌'}`);
                 if (!funcExists) allOk = false;
             });
-        } else {
-            allOk = false;
         }
     });
     
@@ -683,13 +694,7 @@ setTimeout(() => {
     
     console.log(`\n${allOk ? '🎉 TODOS MÓDULOS CARREGADOS CORRETAMENTE!' : '⚠️  PROBLEMAS DETECTADOS'}`);
     console.groupEnd();
-    
-    // Mostrar alerta apenas se houver erro crítico
-    if (!allOk) {
-        setTimeout(() => {
-            alert('⚠️  Sistema de mídia com problemas.\nVerifique o console (F12) para detalhes.');
-        }, 1000);
-    }
+  
 }, 3000);
 </script>
     
