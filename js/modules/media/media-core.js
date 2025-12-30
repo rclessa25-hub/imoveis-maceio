@@ -430,10 +430,15 @@ setTimeout(() => {
     }
     
     // Registrar inicialização no logger
-    if (window.MediaLogger && window.MediaLogger.system) {
+    //if (window.MediaLogger && window.MediaLogger.system) {
+    //    window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
+    //}
+    if (typeof window.MediaLogger !== 'undefined' && window.MediaLogger.system) {
         window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
+    } else {
+        console.log('ℹ️ MediaLogger não disponível - usando console padrão');
     }
-
+    
 // ========== FALLBACK PARA MEDIA LOGGER (quando não carregado do suporte) ==========
 setTimeout(() => {
     // Verificar se MediaLogger foi carregado do repositório de suporte
