@@ -1,16 +1,6 @@
-//imoveis-maceio/js/modules/debug/verify-functions.js
+// ARQUIVO REMOVIDO - Migrado para repositório de suporte
+// Ver: https://github.com/rclessa25-hub/weberlessa-support/tree/main/debug
+console.log('📁 verify-functions.js removido - migrado para repositório de suporte');
 
-// Verificação de duplicações nas funções relacionadas a mídia
-setTimeout(() => {
-    const allFunctions = Object.keys(window).sort();
-    const mediaFunctions = allFunctions.filter(name => 
-        name.toLowerCase().includes('media') || 
-        name.toLowerCase().includes('format') ||
-        name.toLowerCase().includes('file')
-    );
-
-    console.log('📊 FUNÇÕES RELACIONADAS A MÍDIA:');
-    mediaFunctions.forEach(name => {
-        console.log(`- ${name}: ${typeof window[name]}`);
-    });
-}, 3000); // Atraso de 3 segundos para garantir que os módulos principais foram carregados
+// Este arquivo mantido apenas para compatibilidade
+// O código real está em: https://rclessa25-hub.github.io/weberlessa-support/debug/function-verifier.js
