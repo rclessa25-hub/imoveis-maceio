@@ -787,80 +787,61 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 </script>
     
-<!-- ========== TESTE DO CLIENTE E SINCRONIZAÇÃO SUPABASE ========== -->
+<!-- ========== TESTES SUPABASE (APENAS EM MODO DEBUG) ========== -->
 <script>
-// Teste do cliente Supabase
-setTimeout(() => {
-    console.log('🧪 TESTE DO CLIENTE SUPABASE:');
-    console.log('1. supabase global:', typeof supabase);
-    console.log('2. supabaseClient:', window.supabaseClient);
-    console.log('3. supabaseLoadProperties:', typeof window.supabaseLoadProperties);
-    console.log('4. supabaseSaveProperty:', typeof window.supabaseSaveProperty);
-    console.log('5. forceSyncProperties:', typeof window.forceSyncProperties);
+// MODO PRODUÇÃO LIMPO - Sem testes automáticos
+(function() {
+    const IS_DEBUG_MODE = 
+        window.location.search.includes('debug=true') || 
+        window.location.hostname.includes('localhost');
     
-    // Função de teste manual aprimorada
-    window.testSupabaseFull = async function() {
-        console.log('🧪 TESTE COMPLETO DO SUPABASE...');
+    if (IS_DEBUG_MODE) {
+        // MODO DEBUG: Ativar logs e testes
+        console.log('🔧 [DEBUG] Testes Supabase disponíveis');
         
-        if (window.supabaseClient) {
-            console.log('✅ supabaseClient disponível');
+        // Função de teste (só disponível em debug)
+        window.testSupabaseFull = async function() {
+            console.group('🧪 TESTE COMPLETO DO SUPABASE (DEBUG)');
             
-            // Teste 1: Consulta geral
-            try {
-                const { data: allData, error: allError } = await window.supabaseClient
-                    .from('properties')
-                    .select('id, title')
-                    .order('id', { ascending: false });
-                    
-                if (allError) {
-                    console.error('❌ Erro na consulta geral:', allError.message);
-                } else {
-                    console.log(`✅ Consulta geral: ${allData?.length || 0} imóveis`);
-                    console.log('📋 IDs encontrados:', allData?.map(p => p.id).join(', '));
+            if (window.supabaseClient) {
+                console.log('✅ supabaseClient disponível');
+                
+                try {
+                    const { data: allData, error: allError } = await window.supabaseClient
+                        .from('properties')
+                        .select('id, title')
+                        .order('id', { ascending: false });
+                        
+                    if (allError) {
+                        console.error('❌ Erro:', allError.message);
+                    } else {
+                        console.log(`✅ ${allData?.length || 0} imóveis`);
+                        console.log('📋 IDs:', allData?.map(p => p.id).join(', '));
+                    }
+                } catch (e) {
+                    console.error('❌ Exceção:', e.message);
                 }
-            } catch (e) {
-                console.error('❌ Exceção na consulta geral:', e.message);
+            } else {
+                console.error('❌ supabaseClient não disponível');
             }
             
-            // Teste 2: Consulta específica do ID 71
-            try {
-                const { data: specificData, error: specificError } = await window.supabaseClient
-                    .from('properties')
-                    .select('*')
-                    .eq('id', 71)
-                    .single();
-                    
-                if (specificError) {
-                    console.error('❌ Erro na consulta do ID 71:', specificError.message);
-                } else if (specificData) {
-                    console.log('✅ ✅ ✅ IMÓVEL ID 71 ENCONTRADO NO BANCO!');
-                    console.log('📊 Dados:', specificData);
-                } else {
-                    console.log('⚠️ Nenhum dado retornado para ID 71');
-                }
-            } catch (e) {
-                console.error('❌ Exceção na consulta específica:', e.message);
-            }
-        } else {
-            console.error('❌ supabaseClient NÃO disponível');
-        }
-    };
-    
-    // Executar teste completo após 5 segundos
-    setTimeout(() => {
-        console.log('🕒 Executando teste completo em 5 segundos...');
-        window.testSupabaseFull();
+            console.groupEnd();
+        };
         
-        // Após 8 segundos, mostrar opção de sincronização forçada
+        // Log das funções disponíveis
         setTimeout(() => {
-            console.log('🔄 Pronto para sincronização forçada');
-            console.log('💡 Digite no console: window.forceSyncProperties()');
-            console.log('💡 Ou teste o ID 71: window.testProperty71()');
-        }, 8000);
-    }, 5000);
-    
-}, 2000);
-</script> 
+            console.log('🔧 [DEBUG] Funções disponíveis:');
+            console.log('- testSupabaseFull()');
+            console.log('- testProperty71()');
+            console.log('- forceSyncProperties()');
+        }, 3000);
+        
+    } else {
+        // MODO PRODUÇÃO: Apenas log essencial
+        console.log('🚀 Weber Lessa - Site carregado');
+    }
+})();
+</script>
     
 // Função auxiliar para verificar se o imóvel foi realmente salvo
 <script>
