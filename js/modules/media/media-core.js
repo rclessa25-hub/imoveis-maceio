@@ -429,14 +429,12 @@ setTimeout(() => {
         };
     }
     
-    // Registrar inicialização no logger
-    //if (window.MediaLogger && window.MediaLogger.system) {
-    //    window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
-    //}
-    if (typeof window.MediaLogger !== 'undefined' && window.MediaLogger.system) {
+   // Registrar inicialização no logger
+    if (typeof window.MediaLogger !== 'undefined' && window.MediaLogger.system && window.MediaLogger.system.init) {
         window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
     } else {
-        console.log('ℹ️ MediaLogger não disponível - usando console padrão');
+        // Sem logger - operação normal em produção
+        console.log('🔧 Sistema de mídia inicializado para:', window.currentMediaSystem || 'vendas');
     }
     
 // ========== FALLBACK PARA MEDIA LOGGER (quando não carregado do suporte) ==========
