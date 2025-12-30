@@ -1433,18 +1433,15 @@ setTimeout(() => {
         if (clickedFilter) {
             console.log('🎯 Filtro clicado via observer:', clickedFilter.textContent.trim());
             
-            // Forçar remoção de 'active' de todos
+            // Forçar remoção de 'active' de todos (SEM ESTILO INLINE)
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 if (btn !== clickedFilter) {
                     btn.classList.remove('active');
-                    btn.style.backgroundColor = '';
                 }
             });
             
-            // Forçar adição de 'active' ao clicado
+            // Forçar adição de 'active' ao clicado (SEM ESTILO INLINE)
             clickedFilter.classList.add('active');
-            clickedFilter.style.backgroundColor = '#667eea';
-            clickedFilter.style.color = 'white';
             
             // Executar filtro
             const filter = clickedFilter.textContent.trim() === 'Todos' ? 'todos' : clickedFilter.textContent.trim();
