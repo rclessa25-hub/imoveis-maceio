@@ -1,5 +1,12 @@
 // js/modules/media/media-core.js - VERSÃO COMPLETA
-console.log('🖼️ media-core.js carregado - Sistema de Mídia Compartilhado');
+// 
+// 📁 ARQUITETURA DE DOIS REPOSITÓRIOS:
+// 1. REPOSITÓRIO PRINCIPAL (CORE): Este arquivo - funcionalidade essencial
+// 2. REPOSITÓRIO SUPORTE: media-logger.js - logs e debug (carregado condicionalmente)
+//
+// ✅ Em produção: Usa fallback silencioso
+// 🔧 Em debug (?debug=true): Carrega do repositório de suporte
+console.log('🖼️ media-core.js carregado - Sistema de Mídia Compartilhado (Arquitetura 2 Repos)');
 
 /**
  * MÓDULO CORE DE MÍDIA - Projetado para VENDAS e ALUGUEL
