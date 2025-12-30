@@ -433,6 +433,29 @@ setTimeout(() => {
     if (window.MediaLogger && window.MediaLogger.system) {
         window.MediaLogger.system.init(window.currentMediaSystem || 'vendas');
     }
+
+// ========== FALLBACK PARA MEDIA LOGGER (quando não carregado do suporte) ==========
+setTimeout(() => {
+    // Verificar se MediaLogger foi carregado do repositório de suporte
+    if (typeof window.MediaLogger === 'undefined') {
+        console.log('⚠️ MediaLogger não carregado - criando fallback básico');
+        
+        // Fallback mínimo para não quebrar outros módulos
+        window.MediaLogger = {
+            info: (module, message) => console.log(`[${module}] ${message}`),
+            error: (module, message) => console.error(`[${module}] ${message}`),
+            upload: {
+                start: (count) => console.log(`📤 Upload iniciado: ${count} arquivos`),
+                success: (fileName) => console.log(`✅ ${fileName} enviado`)
+            },
+            system: {
+                init: (systemName) => console.log(`🔧 Sistema de mídia: ${systemName}`)
+            }
+        };
+        
+        console.log('✅ Fallback do MediaLogger criado');
+    }
+}, 500);
     
     console.log('✅ Dependências verificadas e prontas');
     console.groupEnd();
