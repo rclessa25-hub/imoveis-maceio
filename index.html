@@ -440,89 +440,6 @@
     <i class="fas fa-user-cog"></i>
 </button>
 
-<!-- ========== SCRIPT NON-ESSENTIAL CODE ========== -->
-//js/modules/debug/verify-functions.js Sistema de verificação de duplicações (MIGRADO)
-// js/modules/media/media-logger.js  Sistema de logs para mídia (MIGRADO)
-
-<!-- ========== CARREGAMENTO CONDICIONAL DE MÓDULOS DE SUPORTE ========== -->
-<script>
-// DEBUG: Marcar início da execução
-console.log('🔧 [SUPORTE] Script de carregamento iniciado');
-
-// Carregar módulos do repositório de suporte APENAS quando necessário
-(function loadSupportModules() {
-    // DEBUG: Log das condições
-    console.log('🔧 [SUPORTE] Verificando condições...');
-    console.log('🔧 [SUPORTE] URL:', window.location.href);
-    console.log('🔧 [SUPORTE] Search:', window.location.search);
-    console.log('🔧 [SUPORTE] Hostname:', window.location.hostname);
-    
-    // Condições para carregar módulos de suporte
-    const shouldLoadSupport = 
-        window.location.search.includes('debug=true') || 
-        window.location.search.includes('test=true') ||
-        window.location.hostname.includes('localhost') ||
-        window.location.hostname.includes('127.0.0.1');
-    
-    console.log('🔧 [SUPORTE] shouldLoadSupport:', shouldLoadSupport);
-    
-    if (shouldLoadSupport) {
-        console.log('🔧 [SUPORTE] Carregando módulos do repositório de suporte...');
-        
-        // Array de módulos a carregar (COM URL COMPLETA PARA DEBUG)
-        const supportModules = [
-            'debug/function-verifier.js',
-            'debug/media-logger.js',
-            'debug/duplication-checker.js'
-        ];
-        
-        const baseUrl = 'https://rclessa25-hub.github.io/weberlessa-support/';
-        let loadedCount = 0;
-        
-        // Carregar cada módulo
-        supportModules.forEach(modulePath => {
-            const fullUrl = baseUrl + modulePath;
-            console.log(`🔧 [SUPORTE] Tentando carregar: ${fullUrl}`);
-            
-            const script = document.createElement('script');
-            script.src = fullUrl;
-            script.defer = true;
-            
-            script.onload = () => {
-                loadedCount++;
-                console.log(`✅ [SUPORTE] ${modulePath} carregado (${loadedCount}/${supportModules.length})`);
-                
-                if (loadedCount === supportModules.length) {
-                    console.log('🎉 [SUPORTE] TODOS os módulos carregados com sucesso!');
-                    
-                    // Executar verificações automáticas
-                    setTimeout(() => {
-                        if (typeof window.verifySystemFunctions === 'function') {
-                            window.verifySystemFunctions();
-                        }
-                        if (typeof window.checkModuleDuplications === 'function') {
-                            window.checkModuleDuplications();
-                        }
-                    }, 1000);
-                }
-            };
-            
-            script.onerror = (error) => {
-                console.error(`❌ [SUPORTE] Falha ao carregar: ${modulePath}`, error);
-                console.error(`❌ [SUPORTE] URL falhou: ${fullUrl}`);
-            };
-            
-            document.head.appendChild(script);
-        });
-        
-        console.log(`📦 [SUPORTE] Total de módulos: ${supportModules.length}`);
-        console.log('🔗 [SUPORTE] Repositório: https://github.com/rclessa25-hub/weberlessa-support');
-    } else {
-        console.log('🚀 [SUPORTE] Site principal em modo produção - sem módulos de suporte');
-    }
-})();
-</script>
-
 <!-- ========== SUPABASE E UTILITÁRIOS (CORE) ========== -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/modules/supabase.js" defer></script>
@@ -540,361 +457,66 @@ console.log('🔧 [SUPORTE] Script de carregamento iniciado');
 <script src="js/modules/reader/pdf-ui.js" defer></script>
 <script src="js/modules/reader/pdf-integration.js" defer></script>
 
-<!-- ========== MÓDULOS DE MÍDIA (NOVOS - AGORA COM defer) ========== -->
+<!-- ========== MÓDULOS DE MÍDIA (DEFER) ========== -->
 <script src="js/modules/media/media-core.js" defer></script>
 <script src="js/modules/media/media-ui.js" defer></script>
 <script src="js/modules/media/media-integration.js" defer></script>
 <script src="js/modules/media/media-utils.js" defer></script>
-    
-<!-- ========== VERIFICAÇÃO DE CARREGAMENTO DOS MÓDULOS DE MÍDIA ========== -->
-<script>
-setTimeout(() => {
-    console.group('🔍 VERIFICAÇÃO DE CARREGAMENTO DE MÓDULOS');
-    
-    const modules = {
-        'media-core.js': {
-            loaded: typeof window.initMediaSystem !== 'undefined',
-            functions: {
-                initMediaSystem: typeof window.initMediaSystem,
-                handleNewMediaFiles: typeof window.handleNewMediaFiles,
-                clearMediaSystem: typeof window.clearMediaSystem
-            }
-        },
-        'media-ui.js': {
-            loaded: typeof window.initMediaUI !== 'undefined',
-            functions: {
-                initMediaUI: typeof window.initMediaUI,
-                updateMediaPreview: typeof window.updateMediaPreview
-            }
-        },
-        'media-integration.js': {
-            loaded: typeof window.setupMediaIntegration !== 'undefined',
-            functions: {
-                setupMediaIntegration: typeof window.setupMediaIntegration,
-                getMediaUrlsForProperty: typeof window.getMediaUrlsForProperty
-            }
-        }
-    };
-    
-    Object.entries(modules).forEach(([name, data]) => {
-        console.log(`📦 ${name}: ${data.loaded ? '✅ CARREGADO' : '❌ NÃO CARREGADO'}`);
-        if (data.loaded) {
-            Object.entries(data.functions).forEach(([func, type]) => {
-                console.log(`   ${func}: ${type === 'function' ? '✅' : '❌'} (${type})`);
-            });
-        }
-    });
-    
-    console.groupEnd();
-    
-    if (!modules['media-core.js'].loaded) {
-        console.error('🚨 media-core.js NÃO CARREGOU! Recarregando...');
-        
-        const script = document.createElement('script');
-        script.src = 'js/modules/media/media-core.js?fix=' + Date.now();
-        script.onload = function() {
-            console.log('✅ media-core.js recarregado manualmente');
-            if (typeof window.initMediaSystem === 'function') {
-                window.initMediaSystem('vendas');
-            }
-        };
-        script.onerror = function() {
-            console.error('❌ Falha ao recarregar media-core.js');
-        };
-        document.head.appendChild(script);
-    }
-}, 2000);
-</script>
-    
+
 <!-- ========== ADMIN (DEPENDE DA MÍDIA) ========== -->
 <script src="js/modules/admin.js" defer></script>
 
-<!-- ========== TESTE DE VALIDAÇÃO FINAL ========== -->
+<!-- ========== CARREGAMENTO CONDICIONAL DE SUPORTE ========== -->
 <script>
-// Aguardar 3 segundos após carregamento completo
-setTimeout(() => {
-    console.group('✅ VALIDAÇÃO FINAL DA ESTRUTURA DE MÍDIA');
+// Carregar módulos de suporte apenas em modo debug
+(function loadSupportModules() {
+    const shouldLoadSupport = 
+        window.location.search.includes('debug=true') || 
+        window.location.search.includes('test=true') ||
+        window.location.hostname.includes('localhost') ||
+        window.location.hostname.includes('127.0.0.1');
     
-    // Testar cada módulo
-    const modules = {
-        'media-core.js': {
-            loaded: typeof window.initMediaSystem === 'function',
-            functions: ['initMediaSystem', 'handleNewMediaFiles', 'clearMediaSystem']
-        },
-        'media-ui.js': {
-            loaded: typeof window.initMediaUI === 'function',
-            functions: ['initMediaUI', 'updateMediaPreview']
-        },
-        'media-integration.js': {
-            loaded: typeof window.setupMediaIntegration === 'function',
-            functions: ['setupMediaIntegration', 'getMediaUrlsForProperty']
-        },
-        'media-utils.js': {
-            loaded: typeof window.mediaFormatFileSize === 'function',
-            functions: ['mediaFormatFileSize', 'mediaExtractFileName', 'mediaValidateFile']
-        },
-        'media-logger.js': {
-            loaded: typeof window.MediaLogger !== 'undefined',
-            functions: ['MediaLogger.upload', 'MediaLogger.preview', 'MediaLogger.system']
-        }
-    };
-    
-    let allOk = true;
-    
-    Object.entries(modules).forEach(([name, data]) => {
-        console.log(`📦 ${name}: ${data.loaded ? '✅ CARREGADO' : '❌ FALTANDO'}`);
+    if (shouldLoadSupport) {
+        console.log('🔧 [SUPORTE] Carregando módulos de suporte...');
         
-        if (data.loaded) {
-            data.functions.forEach(func => {
-                // Modificar a verificação para ser mais flexível
-                let funcExists = false;
-                
-                if (func.includes('.')) {
-                    // Para MediaLogger.upload (nested object)
-                    const parts = func.split('.');
-                    if (parts.length === 2) {
-                        funcExists = window[parts[0]] && window[parts[0]][parts[1]];
-                    }
-                } else {
-                    // Para funções simples
-                    funcExists = typeof window[func] !== 'undefined';
-                }
-                
-                console.log(`   ${func}: ${funcExists ? '✅' : '❌'}`);
-                if (!funcExists) allOk = false;
-            });
-        }
-    });
-    
-    // Verificar duplicações
-    console.log('\n🔍 VERIFICAÇÃO DE DUPLICAÇÕES:');
-    const functionNames = Object.keys(window).filter(k => 
-        k.includes('media') || k.includes('Media') || k.includes('format')
-    );
-    const duplicates = functionNames.reduce((acc, name) => {
-        acc[name] = (acc[name] || 0) + 1;
-        return acc;
-    }, {});
-    
-    Object.entries(duplicates).forEach(([name, count]) => {
-        if (count > 1) console.warn(`⚠️  ${name} aparece ${count} vezes`);
-    });
-    
-    // Verificar botão de teste
-    const testBtn = document.getElementById('media-test-btn');
-    console.log(`\n🎯 Botão de teste: ${testBtn ? 'ENCONTRADO' : 'NÃO ENCONTRADO'}`);
-    if (testBtn) {
-        console.warn('❌ Botão de teste AINDA VISÍVEL!');
-        testBtn.style.display = 'none';
-        testBtn.remove();
+        const supportModules = [
+            'debug/function-verifier.js',
+            'debug/media-logger.js',
+            'debug/duplication-checker.js'
+        ];
+        
+        const baseUrl = 'https://rclessa25-hub.github.io/weberlessa-support/';
+        
+        supportModules.forEach(modulePath => {
+            const script = document.createElement('script');
+            script.src = baseUrl + modulePath;
+            script.defer = true;
+            document.head.appendChild(script);
+        });
     }
-    
-    console.log(`\n${allOk ? '🎉 TODOS MÓDULOS CARREGADOS CORRETAMENTE!' : '⚠️  PROBLEMAS DETECTADOS'}`);
-    console.groupEnd();
-  
-}, 3000);
+})();
 </script>
-    
-<!-- ========== TESTE DE CONEXÃO ENTRE MÓDULOS (DEBUG CONTROLADO) ========== -->
-<script>
-setTimeout(() => {
-    console.group('🔗 TESTE DE CONEXÃO ENTRE MÓDULOS');
-    
-    console.log('📦 Módulos carregados:');
-    console.log('- media-core.js:', typeof window.initMediaSystem);
-    console.log('- media-ui.js:', typeof window.initMediaUI);
-    console.log('- media-integration.js:', typeof window.setupMediaIntegration);
-    
-    console.log('🔧 Funções disponíveis:');
-    console.log('- handleNewMediaFiles:', typeof window.handleNewMediaFiles);
-    console.log('- updateMediaPreview:', typeof window.updateMediaPreview);
-    console.log('- clearMediaSystem:', typeof window.clearMediaSystem);
-    
-    const uploadArea = document.getElementById('uploadArea');
-    const fileInput = document.getElementById('fileInput');
-    console.log('🎯 Elementos DOM:');
-    console.log('- uploadArea:', !!uploadArea);
-    console.log('- fileInput:', !!fileInput);
-    
-    console.groupEnd();
-}, 3000);
-</script>
-    
-<!-- ========== INICIALIZAÇÃO SIMPLES ========== -->
-<script>
-console.log('🎯 Inicialização do site Weber Lessa - SCRIPTS CARREGANDO EM PARALELO');
 
-// Inicialização robusta com fallback
+<!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
+<script>
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🏠 Site completamente carregado!');
     
-    // Forçar carregamento de imóveis após 1 segundo
+    // Carregar imóveis após 1 segundo
     setTimeout(async () => {
-        console.log('⚡ Executando carregamento de imóveis...');
-        
-        // 1. Carregar imóveis
         if (typeof window.initializeProperties === 'function') {
             await window.initializeProperties();
         }
         
-        // 2. Se ainda estiver vazio, forçar carregamento
-        if (!window.properties || window.properties.length === 0) {
-            console.log('🚨 window.properties vazio após inicialização!');
-            
-            // Verificar localStorage
-            const stored = localStorage.getItem('weberlessa_properties');
-            if (stored) {
-                try {
-                    window.properties = JSON.parse(stored);
-                    console.log(`✅ Carregado do localStorage: ${window.properties.length} imóveis`);
-                } catch (e) {
-                    console.error('❌ Erro ao parsear localStorage:', e);
-                }
-            }
-            
-            // Se ainda vazio, carregar dados iniciais
-            if (!window.properties || window.properties.length === 0) {
-                console.log('📦 Carregando dados iniciais...');
-                if (typeof window.getInitialProperties === 'function') {
-                    window.properties = window.getInitialProperties();
-                    console.log(`✅ Dados iniciais: ${window.properties.length} imóveis`);
-                }
-            }
-        }
-        
-        // 3. Renderizar
-        if (typeof window.renderProperties === 'function' && window.properties && window.properties.length > 0) {
-            setTimeout(() => {
-                window.renderProperties('todos');
-                console.log('🎨 Imóveis renderizados');
-            }, 300);
-        }
-        
-        // 4. Configurar filtros
+        // Configurar filtros
         if (typeof window.setupFilters === 'function') {
-            setTimeout(() => {
-                window.setupFilters();
-                console.log('🎛️ Filtros configurados');
-            }, 500);
+            window.setupFilters();
         }
         
-        console.log('📊 Status final:');
-        console.log('- Imóveis:', window.properties?.length || 0);
-        console.log('- Admin funcionando:', typeof toggleAdminPanel === 'function');
-        console.log('- Filtros prontos:', document.querySelectorAll('.filter-btn').length > 0);
-        
+        console.log('✅ Sistema Weber Lessa inicializado');
     }, 1000);
 });
 </script>
-    
-<!-- ========== TESTES SUPABASE (APENAS EM MODO DEBUG) ========== -->
-<script>
-// MODO PRODUÇÃO LIMPO - Sem testes automáticos
-(function() {
-    const IS_DEBUG_MODE = 
-        window.location.search.includes('debug=true') || 
-        window.location.hostname.includes('localhost');
-    
-    if (IS_DEBUG_MODE) {
-        // MODO DEBUG: Ativar logs e testes
-        console.log('🔧 [DEBUG] Testes Supabase disponíveis');
-        
-        // Função de teste (só disponível em debug)
-        window.testSupabaseFull = async function() {
-            console.group('🧪 TESTE COMPLETO DO SUPABASE (DEBUG)');
-            
-            if (window.supabaseClient) {
-                console.log('✅ supabaseClient disponível');
-                
-                try {
-                    const { data: allData, error: allError } = await window.supabaseClient
-                        .from('properties')
-                        .select('id, title')
-                        .order('id', { ascending: false });
-                        
-                    if (allError) {
-                        console.error('❌ Erro:', allError.message);
-                    } else {
-                        console.log(`✅ ${allData?.length || 0} imóveis`);
-                        console.log('📋 IDs:', allData?.map(p => p.id).join(', '));
-                    }
-                } catch (e) {
-                    console.error('❌ Exceção:', e.message);
-                }
-            } else {
-                console.error('❌ supabaseClient não disponível');
-            }
-            
-            console.groupEnd();
-        };
-        
-        // Log das funções disponíveis
-        setTimeout(() => {
-            console.log('🔧 [DEBUG] Funções disponíveis:');
-            console.log('- testSupabaseFull()');
-            console.log('- testProperty71()');
-            console.log('- forceSyncProperties()');
-        }, 3000);
-        
-    } else {
-        // MODO PRODUÇÃO: Apenas log essencial
-        console.log('🚀 Weber Lessa - Site carregado');
-    }
-})();
-</script>
-    
-// Função auxiliar para verificar se o imóvel foi realmente salvo
-<script>
-window.verifyProperty71 = function() {
-    console.log('🔍 VERIFICANDO IMÓVEL 71 LOCALMENTE...');
-    console.log('window.properties:', window.properties);
-    
-    const property71 = window.properties.find(p => p.id === 71);
-    if (property71) {
-        console.log('✅ Imóvel 71 encontrado LOCALMENTE:', property71);
-        return true;
-    } else {
-        console.log('❌ Imóvel 71 NÃO encontrado localmente');
-        console.log('📋 IDs locais:', window.properties.map(p => p.id).join(', '));
-        return false;
-    }
-};
-</script>
-
-<!-- ========== TESTE RÁPIDO FINAL (CORRIGIDO) ========== -->
-<script>
-setTimeout(() => {
-    console.log('🧪 TESTE RÁPIDO DOS MÓDULOS:');
-    
-    // Testar módulos críticos
-    const criticalModules = {
-        'media-core.js': typeof window.initMediaSystem,
-        'media-ui.js': typeof window.initMediaUI,
-        'media-integration.js': typeof window.setupMediaIntegration,
-        'media-utils.js': typeof window.mediaFormatFileSize,
-        'admin.js (não duplicado)': !window.ADMIN_CONFIG || (() => {
-            const configs = Object.keys(window).filter(k => k === 'ADMIN_CONFIG');
-            return configs.length === 1;
-        })()
-    };
-    
-    let allOk = true;
-    Object.entries(criticalModules).forEach(([name, status]) => {
-        const ok = status && status !== 'undefined';
-        console.log(`${name}: ${ok ? '✅' : '❌'}`);
-        if (!ok) allOk = false;
-    });
-    
-    if (allOk) {
-        console.log('🎉 TODOS OS MÓDULOS CARREGADOS!');
-        // Remover alerta de erro
-        const errorAlert = document.querySelector('.alert-error');
-        if (errorAlert) errorAlert.remove();
-    } else {
-        console.error('⚠️  PROBLEMAS DETECTADOS!');
-    }
-}, 2000);
-</script>   
     
 </body>
 </html>
