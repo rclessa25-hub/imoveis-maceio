@@ -1078,8 +1078,8 @@ setTimeout(() => {
 }, 2000);
 
 // ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
-window.accessPdfDocuments = async function() {
-    console.log('🔓 accessPdfDocuments chamada');
+window.accessPdfDocuments = function() {
+    console.log('🔓 accessPdfDocuments chamada - MOSTRANDO LISTA');
     
     // 1. Obter senha digitada
     const passwordInput = document.getElementById('pdfPassword');
@@ -1091,7 +1091,7 @@ window.accessPdfDocuments = async function() {
         return;
     }
     
-    // 2. Verificar senha
+    // 2. Verificar senha (senha fixa "doc123")
     if (password !== "doc123") {
         alert('❌ Senha incorreta!\n\nSenha correta: doc123');
         passwordInput.value = '';
@@ -1099,16 +1099,15 @@ window.accessPdfDocuments = async function() {
         return;
     }
     
-    // 3. ✅ SENHA CORRETA - BUSCAR DOCUMENTOS
-    console.log('✅ Senha válida! Buscando documentos...');
+    console.log('✅ Senha válida! Preparando lista de documentos...');
     
-    // Obter ID do imóvel atual
+    // 3. ✅ SENHA CORRETA - BUSCAR DOCUMENTOS E MOSTRAR LISTA
     const propertyId = window.currentPropertyId || 
                       (document.getElementById('pdfModalTitle')?.dataset?.propertyId) || 
                       window.editingPropertyId;
     
     if (!propertyId) {
-        alert('⚠️ Não foi possível identificar o imóvel. Recarregue a página.');
+        alert('⚠️ Não foi possível identificar o imóvel.');
         return;
     }
     
@@ -1139,64 +1138,205 @@ window.accessPdfDocuments = async function() {
     
     console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
     
-    // ✅ NOVA ABORDAGEM: Download direto em vez de abrir
-    let successCount = 0;
-    let failedCount = 0;
+    // ✅ 4. CRIAR E MOSTRAR LISTA INTERATIVA (em vez de download automático)
+    showPdfSelectionList(propertyId, property.title, pdfUrls);
+};
+
+// ✅ 5. FUNÇÃO PARA MOSTRAR LISTA DE SELEÇÃO DE PDFs
+function showPdfSelectionList(propertyId, propertyTitle, pdfUrls) {
+    console.log('📋 Criando lista de seleção de PDFs...');
     
-    for (const [index, url] of pdfUrls.entries()) {
-        try {
-            console.log(`📥 Tentando acessar PDF ${index + 1}: ${url.substring(0, 60)}...`);
+    // Fechar modal de senha primeiro
+    closePdfModal();
+    
+    // Criar modal de seleção
+    let selectionModal = document.getElementById('pdfSelectionModal');
+    
+    if (!selectionModal) {
+        selectionModal = document.createElement('div');
+        selectionModal.id = 'pdfSelectionModal';
+        selectionModal.className = 'pdf-modal';
+        selectionModal.style.cssText = `
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        
+        document.body.appendChild(selectionModal);
+    }
+    
+    // Gerar HTML da lista
+    const pdfListHtml = pdfUrls.map((url, index) => {
+        const fileName = url.split('/').pop() || `Documento ${index + 1}`;
+        const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
+        const fileSize = 'PDF Document'; // Poderia extrair tamanho se disponível
+        
+        return `
+            <div class="pdf-list-item" style="
+                background: white;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 0.8rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+                transition: all 0.3s ease;
+                cursor: pointer;
+                border-left: 4px solid var(--primary);
+            ">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.5rem;"></i>
+                        <div>
+                            <strong style="display: block; color: #2c3e50;">${displayName}</strong>
+                            <small style="color: #7f8c8d;">${fileSize} • Documento ${index + 1}/${pdfUrls.length}</small>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="openPdfInNewTab('${url}')" 
+                        style="
+                            background: var(--primary);
+                            color: white;
+                            border: none;
+                            padding: 0.6rem 1.2rem;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            display: flex;
+                            align-items: center;
+                            gap: 5px;
+                            transition: all 0.3s ease;
+                        "
+                        onmouseover="this.style.background='#154060'"
+                        onmouseout="this.style.background='var(--primary)'">
+                    <i class="fas fa-eye"></i> Visualizar
+                </button>
+            </div>
+        `;
+    }).join('');
+    
+    selectionModal.innerHTML = `
+        <div style="
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        ">
+            <button onclick="closePdfSelectionModal()" 
+                    style="
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        background: #e74c3c;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 30px;
+                        height: 30px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                    ">
+                ×
+            </button>
             
-            // ✅ SOLUÇÃO CRÍTICA: Forçar download em vez de abrir
+            <h3 style="color: var(--primary); margin: 0 0 1.5rem 0;">
+                <i class="fas fa-file-pdf"></i> Documentos do Imóvel
+            </h3>
+            
+            <p style="color: #666; margin-bottom: 1.5rem;">
+                <strong>${propertyTitle}</strong><br>
+                Selecione o documento que deseja visualizar:
+            </p>
+            
+            <div style="margin-bottom: 1.5rem;">
+                ${pdfListHtml}
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <small style="color: #95a5a6;">
+                    <i class="fas fa-info-circle"></i> Clique em "Visualizar" para abrir em nova aba
+                </small>
+                <button onclick="downloadAllPdfs([${pdfUrls.map(url => `'${url}'`).join(',')}])" 
+                        style="
+                            background: var(--success);
+                            color: white;
+                            border: none;
+                            padding: 0.6rem 1.2rem;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 5px;
+                        ">
+                    <i class="fas fa-download"></i> Baixar Todos
+                </button>
+            </div>
+        </div>
+    `;
+    
+    selectionModal.style.display = 'flex';
+    console.log('✅ Lista de PDFs exibida para seleção');
+}
+
+// ✅ 6. FUNÇÃO PARA ABRIR PDF EM NOVA ABA
+window.openPdfInNewTab = function(url) {
+    console.log('🔗 Abrindo PDF:', url.substring(0, 80) + '...');
+    window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+// ✅ 7. FUNÇÃO PARA BAIXAR TODOS OS PDFs
+window.downloadAllPdfs = async function(urls) {
+    console.log(`📥 Iniciando download de ${urls.length} PDF(s)...`);
+    
+    let successCount = 0;
+    
+    for (const [index, url] of urls.entries()) {
+        try {
+            const fileName = url.split('/').pop() || `documento_${index + 1}.pdf`;
             const tempAnchor = document.createElement('a');
             tempAnchor.href = url;
-            
-            // Extrair nome do arquivo da URL
-            const fileName = url.split('/').pop() || `documento_${propertyId}_${index + 1}.pdf`;
-            
-            // Forçar download com atributo download
             tempAnchor.download = fileName;
-            tempAnchor.target = '_blank'; // Abrir em nova aba como fallback
-            tempAnchor.rel = 'noopener noreferrer';
-            
-            // Adicionar ao documento temporariamente
+            tempAnchor.style.display = 'none';
             document.body.appendChild(tempAnchor);
             tempAnchor.click();
             document.body.removeChild(tempAnchor);
             
-            console.log(`✅ Download iniciado: ${fileName}`);
             successCount++;
+            console.log(`✅ Download iniciado: ${fileName}`);
             
-            // Pequena pausa entre downloads para evitar bloqueio do navegador
+            // Pequena pausa entre downloads
             await new Promise(resolve => setTimeout(resolve, 300));
             
         } catch (error) {
-            console.error(`❌ Erro ao processar PDF ${url}:`, error);
-            failedCount++;
-            
-            // Tentar abrir diretamente como fallback
-            try {
-                window.open(url, '_blank');
-                console.log(`⚠️ PDF ${index + 1} aberto via fallback`);
-                successCount++;
-            } catch (fallbackError) {
-                console.error(`❌ Fallback também falhou: ${fallbackError}`);
-            }
+            console.error(`❌ Erro ao baixar ${url}:`, error);
         }
     }
     
-    // ✅ Fechar modal após processamento
-    closePdfModal();
-    
-    // Feedback ao usuário
     if (successCount > 0) {
-        if (failedCount > 0) {
-            alert(`✅ ${successCount} documento(s) processado(s)!\n\n${failedCount} documento(s) com problemas.\nVerifique seu navegador.`);
-        } else {
-            alert(`✅ ${successCount} documento(s) PDF disponível(is) para download!\n\nVerifique a barra de downloads do seu navegador.`);
-        }
-    } else {
-        alert('❌ Não foi possível acessar os documentos.\n\nTente novamente ou entre em contato com o suporte.');
+        alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
+    }
+};
+
+// ✅ 8. FUNÇÃO PARA FECHAR MODAL DE SELEÇÃO
+window.closePdfSelectionModal = function() {
+    const modal = document.getElementById('pdfSelectionModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.remove(); // Remove completamente do DOM
+        console.log('✅ Modal de seleção de PDFs fechado');
     }
 };
 
