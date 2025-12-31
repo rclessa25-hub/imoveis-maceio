@@ -9,57 +9,36 @@ window.PDF_PASSWORD = "doc123";
 
 console.log('✅ Constantes definidas globalmente');
 
-// FUNÇÕES SUPABASE
-// ========== TESTE DE CONEXÃO SUPABASE ==========
-window.testSupabaseConnection = async function() {
-    try {
-        console.log('🌐 Testando conexão Supabase (modo CORS)...');
-        
-        // Usar proxy CORS para GitHub Pages
-        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-        const testUrl = `${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`;
-        
-        const response = await fetch(proxyUrl + testUrl, {
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`
-            }
-        });
-        
-        const isOk = response.ok;
-        console.log('✅ Supabase acessível via proxy?', isOk);
-        return isOk;
-        
-    } catch (error) {
-        console.log('⚠️ Supabase não acessível, usando modo offline');
-        return false;
-    }
+// ========== FUNÇÕES DE PERFORMANCE (ESSENCIAIS - MANTIDAS NO CORE) ==========
+window.debounce = function(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 };
 
-window.testImageAccess = async function() {
-    console.log('🔍 Testando acesso às imagens...');
-    
-    const testImages = [
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341618532_thumbnail3.jpeg',
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341628860_thumbnail2.jpeg',
-        'https://syztbxvpdaplpetmixmt.supabase.co/storage/v1/object/public/properties/1764341634876_thumbnail1.jpeg'
-    ];
-    
-    for (const imgUrl of testImages) {
-        try {
-            const response = await fetch(imgUrl);
-            if (response.ok) {
-                console.log(`✅ Imagem acessível: ${imgUrl}`);
-            } else {
-                console.log(`❌ Imagem não acessível: ${imgUrl} - Status: ${response.status}`);
-            }
-        } catch (error) {
-            console.log(`❌ Erro ao acessar imagem: ${imgUrl} - ${error.message}`);
+window.throttle = function(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
         }
-    }
+    };
 };
 
-// UTILITÁRIOS
+// 💡 Comentários de migração
+console.log('✅ Funções de performance essenciais mantidas no core');
+console.log('💡 Para otimizações avançadas: use ?debug=true para carregar módulos de suporte');
+
 // ========== FUNÇÕES UTILITÁRIAS ==========
 window.isMobileDevice = function() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -100,47 +79,19 @@ window.copyToClipboard = async function(text) {
     }
 };
 
-window.debounce = function(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-};
-
-window.throttle = function(func, limit) {
-    let inThrottle;
-    return function() {
-        const args = arguments;
-        const context = this;
-        if (!inThrottle) {
-            func.apply(context, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
-    };
-};
-
 // ========== DEBUG DO CARREGAMENTO ==========
 console.log('🔧 utils.js - DEBUG DE CARREGAMENTO:');
 console.log('- SUPABASE_URL:', window.SUPABASE_URL);
 console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD ? '***' + window.ADMIN_PASSWORD.slice(-3) : 'NÃO DEFINIDA');
 console.log('- PDF_PASSWORD:', window.PDF_PASSWORD ? '***' + window.PDF_PASSWORD.slice(-3) : 'NÃO DEFINIDA');
-
-// Verificar se está sendo carregado no GitHub Pages
 console.log('- Hostname:', window.location.hostname);
 console.log('- É GitHub Pages?', window.location.hostname.includes('github.io'));
 
-// ========== FUNÇÃO SUPABASE FETCH CORRIGIDA (ADICIONAR AQUI) ==========
+// ========== SUPABASE FETCH ==========
 window.supabaseFetch = async function(endpoint, options = {}) {
     console.log('🌐 supabaseFetch chamado para:', endpoint);
     
     try {
-        // Usar proxy CORS para GitHub Pages
         const proxyUrl = 'https://corsproxy.io/?';
         const targetUrl = `${window.SUPABASE_URL}/rest/v1${endpoint}`;
         const finalUrl = proxyUrl + encodeURIComponent(targetUrl);
@@ -160,7 +111,6 @@ window.supabaseFetch = async function(endpoint, options = {}) {
         
         if (!response.ok) {
             console.warn(`⚠️ Supabase retornou ${response.status}: ${response.statusText}`);
-            // Retornar estrutura vazia mas consistente
             return { 
                 ok: false, 
                 data: [], 
