@@ -199,60 +199,102 @@ window.closePdfViewer = function() {
 //REMOVIDA
 
 // ========== 4. SISTEMA DE SALVAMENTO NO SUPABASE ==========
-
 // 4.1 Upload REAL para Supabase Storage
 window.uploadPdfToSupabaseStorage = async function(file, propertyId) {
+    console.group('📤 UPLOAD DE PDF PARA SUPABASE');
+    console.log('📄 Arquivo:', file.name, `(${file.size} bytes)`);
+    console.log('🏠 ID do imóvel:', propertyId);
+    
     try {
-        const safePropertyId = propertyId && propertyId !== 'undefined' && propertyId !== 'null' 
-            ? propertyId 
-            : `temp_${Date.now()}`;
+        // 1. Validar credenciais
+        if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+            console.error('❌ Credenciais do Supabase não configuradas');
+            return null;
+        }
         
+        // 2. Preparar nome do arquivo (SIMPLIFICADO)
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        const fileExt = file.name.split('.').pop().toLowerCase();
         const safeName = file.name
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/[^a-zA-Z0-9._-]/g, '_')
-            .toLowerCase();
+            .replace(/[^a-zA-Z0-9.-]/g, '_')
+            .substring(0, 40);
         
-        const fileName = `pdf_${safePropertyId}_${Date.now()}_${safeName}`;
-        const uploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/public/properties/${fileName}`;
-        const storageUploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/properties/${fileName}`;
+        // Nome FINAL correto para Supabase
+        const fileName = `pdf_${propertyId}_${timestamp}_${random}_${safeName}`;
         
-        const response = await fetch(storageUploadUrl, {
+        console.log('📝 Nome do arquivo gerado:', fileName);
+        
+        // 3. URL CORRETA para upload (IMPORTANTE!)
+        // Supabase espera: /storage/v1/object/{bucket}/{path}
+        const bucket = 'properties'; // Mesmo bucket das imagens
+        const uploadUrl = `${window.SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`;
+        
+        console.log('🔗 URL de upload:', uploadUrl);
+        
+        // 4. Fazer upload CORRETAMENTE
+        const response = await fetch(uploadUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${window.SUPABASE_KEY}`,
                 'apikey': window.SUPABASE_KEY,
-                'x-upsert': 'true'
+                'Content-Type': file.type || 'application/pdf',
+                'Cache-Control': 'no-cache'
             },
             body: file
         });
         
+        console.log('📊 Status do upload:', response.status, response.statusText);
+        
         if (response.ok) {
-            return uploadUrl;
+            // URL pública para acesso (IMPORTANTE: usar 'public' no caminho)
+            const publicUrl = `${window.SUPABASE_URL}/storage/v1/object/public/${bucket}/${fileName}`;
+            
+            console.log('✅ Upload bem-sucedido!');
+            console.log('🔗 URL pública:', publicUrl);
+            console.groupEnd();
+            
+            return publicUrl;
         } else {
-            const altUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/public/pdfs/${fileName}`;
-            const altUploadUrl = `${PDF_CONFIG.supabaseUrl}/storage/v1/object/pdfs/${fileName}`;
+            const errorText = await response.text();
+            console.error('❌ Erro no upload:', errorText);
+            
+            // Tentar método alternativo com FormData
+            console.log('🔄 Tentando método alternativo com FormData...');
             
             try {
-                const altResponse = await fetch(altUploadUrl, {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const formResponse = await fetch(uploadUrl, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${window.SUPABASE_KEY}`,
                         'apikey': window.SUPABASE_KEY
+                        // NÃO definir Content-Type - FormData define automaticamente
                     },
-                    body: file
+                    body: formData
                 });
                 
-                if (altResponse.ok) {
-                    return altUrl;
+                if (formResponse.ok) {
+                    const publicUrl = `${window.SUPABASE_URL}/storage/v1/object/public/${bucket}/${fileName}`;
+                    console.log('✅ Upload com FormData bem-sucedido!');
+                    console.groupEnd();
+                    return publicUrl;
+                } else {
+                    console.error('❌ FormData também falhou:', await formResponse.text());
                 }
-            } catch (altError) {
-                return null;
+            } catch (formError) {
+                console.error('❌ Erro no FormData:', formError);
             }
             
+            console.groupEnd();
             return null;
         }
+        
     } catch (error) {
+        console.error('💥 Erro fatal no upload:', error);
+        console.groupEnd();
         return null;
     }
 };
@@ -399,6 +441,127 @@ window.linkPendingPdfsToProperty = function(tempId, realId) {
             localStorage.setItem('pending_pdfs', JSON.stringify(filtered));
         }
     } catch (error) {}
+};
+
+// ========== FUNÇÃO DE TESTE DE PDF ==========
+window.testPdfUpload = async function() {
+    console.group('🧪 TESTE DE UPLOAD DE PDF');
+    
+    // Verificar credenciais
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.error('❌ Credenciais não configuradas');
+        alert('Configure SUPABASE_URL e SUPABASE_KEY no utils.js');
+        console.groupEnd();
+        return false;
+    }
+    
+    console.log('🔑 Credenciais OK');
+    console.log('🌐 URL:', window.SUPABASE_URL);
+    console.log('🔑 Key:', window.SUPABASE_KEY.substring(0, 20) + '...');
+    
+    // Testar acesso ao bucket
+    try {
+        const testUrl = `${window.SUPABASE_URL}/storage/v1/object/list/properties`;
+        const response = await fetch(testUrl, {
+            headers: {
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                'apikey': window.SUPABASE_KEY
+            }
+        });
+        
+        console.log('📦 Status do bucket:', response.status);
+        
+        if (response.ok) {
+            console.log('✅ Bucket "properties" acessível');
+            
+            // Criar arquivo de teste
+            const testContent = 'PDF de teste - Weber Lessa Imóveis';
+            const blob = new Blob([testContent], { type: 'application/pdf' });
+            const testFile = new File([blob], 'teste_weber_lessa.pdf', {
+                type: 'application/pdf',
+                lastModified: Date.now()
+            });
+            
+            console.log('📄 Arquivo de teste criado:', testFile.name);
+            
+            // Testar upload
+            if (typeof window.uploadPdfToSupabaseStorage === 'function') {
+                console.log('🚀 Iniciando upload de teste...');
+                const testId = 'test_' + Date.now();
+                const uploadedUrl = await window.uploadPdfToSupabaseStorage(testFile, testId);
+                
+                if (uploadedUrl) {
+                    console.log('🎉 UPLOAD BEM-SUCEDIDO!');
+                    console.log('🔗 URL:', uploadedUrl);
+                    
+                    // Testar acesso ao arquivo
+                    const accessResponse = await fetch(uploadedUrl);
+                    console.log('🔍 Teste de acesso:', accessResponse.status);
+                    
+                    if (accessResponse.ok) {
+                        alert('✅ SISTEMA DE PDF FUNCIONANDO!\n\nURL: ' + uploadedUrl);
+                    } else {
+                        alert('⚠️  Upload feito mas acesso falhou. Verifique permissões do bucket.');
+                    }
+                    
+                    console.groupEnd();
+                    return true;
+                } else {
+                    console.error('❌ Upload falhou');
+                    alert('❌ Upload falhou. Verifique console para detalhes.');
+                }
+            } else {
+                console.error('❌ Função uploadPdfToSupabaseStorage não encontrada');
+            }
+        } else {
+            console.error('❌ Bucket não acessível');
+            alert('Bucket "properties" não acessível. Verifique:\n1. Permissões do bucket\n2. CORS configuration\n3. Row Level Security');
+        }
+    } catch (error) {
+        console.error('❌ Erro no teste:', error);
+        alert('Erro: ' + error.message);
+    }
+    
+    console.groupEnd();
+    return false;
+};
+
+// Adicionar também uma função para verificar PDFs existentes
+window.checkExistingPdfs = function() {
+    console.group('🔍 VERIFICAÇÃO DE PDFs EXISTENTES');
+    
+    if (!window.properties || window.properties.length === 0) {
+        console.log('ℹ️ Nenhum imóvel carregado');
+        console.groupEnd();
+        return;
+    }
+    
+    let pdfCount = 0;
+    let brokenPdfs = 0;
+    
+    window.properties.forEach((property, index) => {
+        if (property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '') {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            
+            pdfUrls.forEach((url, pdfIndex) => {
+                pdfCount++;
+                console.log(`📄 Imóvel ${index}: ${property.title}`);
+                console.log(`   PDF ${pdfIndex + 1}: ${url.substring(0, 80)}...`);
+                
+                // Verificar se URL é válida
+                if (!url.includes('supabase.co')) {
+                    console.warn(`   ⚠️  URL não é do Supabase`);
+                    brokenPdfs++;
+                }
+            });
+        }
+    });
+    
+    console.log(`📊 Total: ${pdfCount} PDF(s) em ${window.properties.length} imóvel(is)`);
+    console.log(`⚠️  PDFs com problemas: ${brokenPdfs}`);
+    console.groupEnd();
+    
+    return { total: pdfCount, broken: brokenPdfs };
 };
 
 // ========== 5. INICIALIZAÇÃO COMPLETA ==========
