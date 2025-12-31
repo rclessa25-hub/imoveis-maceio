@@ -464,44 +464,24 @@ setTimeout(() => {
     console.groupEnd();
 }, 1500);
 
-// ========== FALLBACK PARA MEDIA LOGGER (quando não carregado do suporte) ==========
-// Este bloco adicional garante que mesmo se algo tentar usar MediaLogger mais tarde,
-// não haverá erros
-(function ensureMediaLoggerFallback() {
-    // Verificar periodicamente por 5 segundos
-    let checkCount = 0;
-    const maxChecks = 10; // 5 segundos (10 * 500ms)
-    
-    const checkInterval = setInterval(() => {
-        checkCount++;
-        
+// ========== FALLBACK BÁSICO DO MEDIA LOGGER ==========
+// Fallback silencioso apenas se necessário durante carregamento
+(function setupMediaLoggerFallback() {
+    // Aguardar 1 segundo antes de criar fallback
+    setTimeout(() => {
         if (typeof window.MediaLogger === 'undefined') {
-            // Fallback mínimo e SILENCIOSO
+            // Fallback silencioso para produção
             window.MediaLogger = {
                 info: () => {},
                 error: () => {},
-                upload: {
-                    start: () => {},
-                    success: () => {},
-                    file: () => {},
-                    error: () => {}
-                },
-                system: {
-                    init: () => {}
-                }
+                upload: { start: () => {}, success: () => {}, file: () => {}, error: () => {} },
+                system: { init: () => {} }
             };
             
-            // Parar verificação
-            clearInterval(checkInterval);
-            
-            // Log apenas em desenvolvimento
-            if (window.location.hostname.includes('localhost') || window.location.search.includes('debug')) {
-                console.log('🔧 Fallback do MediaLogger garantido (verificação tardia)');
+            // Log apenas em debug
+            if (window.location.search.includes('debug=true')) {
+                console.log('🔧 MediaLogger: usando fallback silencioso');
             }
         }
-        
-        if (checkCount >= maxChecks) {
-            clearInterval(checkInterval);
-        }
-    }, 500);
+    }, 1000);
 })();
