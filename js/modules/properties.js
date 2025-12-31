@@ -7,20 +7,41 @@ window.editingPropertyId = null;
 
 window.initializeProperties = async function() {
     console.log('🔄 Inicializando sistema de propriedades (USANDO CLIENTE OFICIAL)...');
-    
+
+    // ==========================================================
+    // CACHE OPCIONAL (Performance Support)
+    // ==========================================================
+    if (window.PerformanceCache) {
+        const cached = PerformanceCache.get('properties_data', 'data');
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+            window.properties = cached;
+            console.log('⚡ Propriedades carregadas do cache');
+
+            if (typeof window.renderProperties === 'function') {
+                setTimeout(() => window.renderProperties('todos'), 50);
+            }
+            return; // ⛔ Evita fetch, parse e fallback
+        }
+    }
+
     try {
-        // ✅ 1. PRIMEIRO: Tentar com cliente Supabase oficial
+        // ==========================================================
+        // 1️⃣ SUPABASE CLIENTE OFICIAL (PRIORIDADE)
+        // ==========================================================
         console.log('🌐 Tentando conexão com Supabase via cliente oficial...');
-        
+
         if (window.supabaseLoadProperties) {
             try {
                 console.log('📥 Chamando supabaseLoadProperties()...');
                 const supabaseResult = await window.supabaseLoadProperties();
-                
+
                 console.log('📊 Resultado do supabaseLoadProperties:', supabaseResult);
-                
-                if (supabaseResult.data && Array.isArray(supabaseResult.data) && supabaseResult.data.length > 0) {
-                    // Converter formato Supabase para local
+
+                if (
+                    supabaseResult.data &&
+                    Array.isArray(supabaseResult.data) &&
+                    supabaseResult.data.length > 0
+                ) {
                     const formattedData = supabaseResult.data.map(item => ({
                         id: item.id,
                         title: item.title || 'Sem título',
@@ -32,23 +53,32 @@ window.initializeProperties = async function() {
                         has_video: item.has_video || false,
                         badge: item.badge || 'Novo',
                         rural: item.rural || false,
-                        images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                        images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa',
                         pdfs: item.pdfs || '',
                         created_at: item.created_at || new Date().toISOString()
                     }));
-                    
+
                     window.properties = formattedData;
                     window.savePropertiesToStorage();
-                    
-                    console.log(`✅ ${formattedData.length} imóveis carregados do Supabase (via cliente oficial)`);
-                    
-                    // Renderizar imediatamente
+
+                    // 💾 Salvar no cache (se disponível)
+                    if (window.PerformanceCache) {
+                        PerformanceCache.set(
+                            'properties_data',
+                            formattedData,
+                            'data',
+                            60000 // 1 minuto
+                        );
+                    }
+
+                    console.log(`✅ ${formattedData.length} imóveis carregados do Supabase (cliente oficial)`);
+
                     if (typeof window.renderProperties === 'function') {
                         setTimeout(() => window.renderProperties('todos'), 100);
                     }
-                    return; // SAI DA FUNÇÃO - SUPABASE BEM SUCEDIDO
+                    return;
                 } else {
-                    console.log('⚠️ Cliente oficial não retornou dados:', supabaseResult.error);
+                    console.log('⚠️ Cliente oficial não retornou dados');
                 }
             } catch (supabaseError) {
                 console.error('❌ Erro no cliente oficial:', supabaseError);
@@ -56,13 +86,16 @@ window.initializeProperties = async function() {
         } else {
             console.log('⚠️ window.supabaseLoadProperties não disponível');
         }
-        
-        // ✅ 2. SEGUNDO: Tentar com supabaseFetch (fallback)
+
+        // ==========================================================
+        // 2️⃣ SUPABASE FETCH (FALLBACK)
+        // ==========================================================
         console.log('🔄 Tentando com supabaseFetch (fallback)...');
+
         if (window.supabaseFetch) {
             try {
                 const result = await window.supabaseFetch('/properties?select=*&order=id.desc');
-                
+
                 if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
                     const formattedData = result.data.map(item => ({
                         id: item.id,
@@ -75,16 +108,25 @@ window.initializeProperties = async function() {
                         has_video: item.has_video || false,
                         badge: item.badge || 'Novo',
                         rural: item.rural || false,
-                        images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                        images: item.images || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa',
                         pdfs: item.pdfs || '',
                         created_at: item.created_at || new Date().toISOString()
                     }));
-                    
+
                     window.properties = formattedData;
                     window.savePropertiesToStorage();
-                    
-                    console.log(`✅ ${formattedData.length} imóveis carregados do Supabase (via supabaseFetch)`);
-                    
+
+                    if (window.PerformanceCache) {
+                        PerformanceCache.set(
+                            'properties_data',
+                            formattedData,
+                            'data',
+                            60000
+                        );
+                    }
+
+                    console.log(`✅ ${formattedData.length} imóveis carregados do Supabase (fallback)`);
+
                     if (typeof window.renderProperties === 'function') {
                         setTimeout(() => window.renderProperties('todos'), 100);
                     }
@@ -94,17 +136,30 @@ window.initializeProperties = async function() {
                 console.error('❌ Erro no supabaseFetch:', error);
             }
         }
-        
-        // ✅ 3. TERCEIRO: localStorage (fallback)
+
+        // ==========================================================
+        // 3️⃣ LOCALSTORAGE (FALLBACK)
+        // ==========================================================
         console.log('📁 Usando fallback: localStorage...');
         const stored = localStorage.getItem('weberlessa_properties');
+
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     window.properties = parsed;
+
+                    if (window.PerformanceCache) {
+                        PerformanceCache.set(
+                            'properties_data',
+                            parsed,
+                            'data',
+                            30000 // menor TTL
+                        );
+                    }
+
                     console.log(`📁 ${parsed.length} imóveis carregados do localStorage`);
-                    
+
                     if (typeof window.renderProperties === 'function') {
                         setTimeout(() => window.renderProperties('todos'), 100);
                     }
@@ -114,22 +169,34 @@ window.initializeProperties = async function() {
                 console.error('❌ Erro ao parsear localStorage:', e);
             }
         }
-        
-        // ✅ 4. QUARTO: Dados iniciais (último fallback)
+
+        // ==========================================================
+        // 4️⃣ DADOS INICIAIS (ÚLTIMO FALLBACK)
+        // ==========================================================
         console.log('📦 Usando fallback: dados iniciais...');
         window.properties = getInitialProperties();
         window.savePropertiesToStorage();
-        
+
+        if (window.PerformanceCache) {
+            PerformanceCache.set(
+                'properties_data',
+                window.properties,
+                'data',
+                30000
+            );
+        }
+
         if (typeof window.renderProperties === 'function') {
             setTimeout(() => window.renderProperties('todos'), 100);
         }
-        
+
         console.log(`✅ ${window.properties.length} imóveis de exemplo carregados`);
-        
+
     } catch (error) {
         console.error('❌ Erro crítico ao carregar propriedades:', error);
-        // Garantir que temos pelo menos dados básicos
+
         window.properties = getInitialProperties();
+
         if (typeof window.renderProperties === 'function') {
             setTimeout(() => window.renderProperties('todos'), 100);
         }
