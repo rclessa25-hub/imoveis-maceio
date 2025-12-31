@@ -512,13 +512,18 @@ console.log('🔧 [SUPORTE] Script de carregamento iniciado');
                 if (loadedCount === supportModules.length) {
                     console.log('🎉 [SUPORTE] TODOS os módulos carregados com sucesso!');
                     
-                    // Executar verificações automáticas
+                    // Executar verificações automáticas (centralizadas)
                     setTimeout(() => {
-                        if (typeof window.verifySystemFunctions === 'function') {
-                            window.verifySystemFunctions();
-                        }
-                        if (typeof window.checkModuleDuplications === 'function') {
-                            window.checkModuleDuplications();
+                        if (typeof window.runSupportChecks === 'function') {
+                            window.runSupportChecks();
+                        } else {
+                            // Fallback seguro (retrocompatibilidade)
+                            if (typeof window.verifySystemFunctions === 'function') {
+                                window.verifySystemFunctions();
+                            }
+                            if (typeof window.checkModuleDuplications === 'function') {
+                                window.checkModuleDuplications();
+                            }
                         }
                     }, 1000);
                 }
