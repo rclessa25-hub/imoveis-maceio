@@ -1320,7 +1320,17 @@ async function saveWithFetchDirect(propertyData) {
 }
 
 // ========== FUNÇÃO DE DEBUG: VERIFICAR CARREGAMENTO ==========
-// REMOVIDO
-// ========== FUNÇÃO DE DEBUG: DIAGNOSTICO UODATE ==========
-// Função de diagnóstico para debug
-// REMOVIDO
+// Debug carregamento de propriedades (via suporte)
+if (window.emergencyRecovery && typeof window.emergencyRecovery.debugPropertiesLoad === 'function') {
+    window.emergencyRecovery.debugPropertiesLoad();
+} else {
+    console.log('ℹ️ Módulo de suporte não disponível, fallback core minimalista mantido');
+}
+
+// ========== FUNÇÃO DE DEBUG: DIAGNOSTICO UPDATE ==========
+// Diagnóstico de update (via suporte)
+if (window.emergencyRecovery && typeof window.emergencyRecovery.diagnoseUpdateError === 'function') {
+    window.emergencyRecovery.diagnoseUpdateError();
+} else {
+    console.log('ℹ️ Módulo de suporte não disponível, fallback core minimalista mantido');
+}
