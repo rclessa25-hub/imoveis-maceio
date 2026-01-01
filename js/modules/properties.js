@@ -663,14 +663,13 @@ window.debugHasVideoIssue = function(propertyId) {
     console.groupEnd();
 };
 
-// ========== FUNÇÃO 8: ATUALIZAR IMÓVEL (VERSÃO ROBUSTA CORRIGIDA COM SUPABASE) ==========
+// ========== FUNÇÃO 8: ATUALIZAR IMÓVEL (VERSÃO ROBUSTA COM SUPABASE E CACHE INTELIGENTE) ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ ATUALIZANDO IMÓVEL ${id}:`, propertyData);
-    
+
     // ✅ VALIDAÇÃO DO ID
     if (!id || id === 'null' || id === 'undefined') {
         console.error('❌ ID inválido fornecido:', id);
-        
         if (window.editingPropertyId) {
             console.log(`🔄 Usando editingPropertyId: ${window.editingPropertyId}`);
             id = window.editingPropertyId;
@@ -679,9 +678,9 @@ window.updateProperty = async function(id, propertyData) {
             return false;
         }
     }
-    
+
     console.log(`🔍 ID para atualização: ${id}`);
-    
+
     // ✅ BUSCAR IMÓVEL
     const index = window.properties.findIndex(p => p.id == id || p.id === id);
     if (index === -1) {
@@ -689,10 +688,13 @@ window.updateProperty = async function(id, propertyData) {
         alert(`❌ Imóvel não encontrado!\n\nIDs disponíveis: ${window.properties.map(p => p.id).join(', ')}`);
         return false;
     }
-    
+
     const property = window.properties[index];
     console.log(`✅ Imóvel encontrado: "${property.title}"`);
-    
+
+    const operationId = window.OperationMonitor ? 
+        window.OperationMonitor.startOperation('updateProperty', { id, title: propertyData.title }) : null;
+
     try {
         // ✅ 1. DADOS PARA SUPABASE
         const updateData = {
@@ -706,21 +708,13 @@ window.updateProperty = async function(id, propertyData) {
             badge: propertyData.badge || property.badge || 'Novo',
             rural: propertyData.type === 'rural' || property.rural || false,
             images: propertyData.images || property.images || '',
-            pdfs: propertyData.pdfs || property.pdfs || '' // ✅ PDFs já processados
+            pdfs: propertyData.pdfs || property.pdfs || ''
         };
-        console.log('📊 VALOR DO CHECKBOX VIDEO:', propertyData.has_video);       
-        console.log('🔍 DEBUG CHECKBOX VIDEO:', {
-            propertyId: id,
-            has_video: propertyData.has_video,
-            type: typeof propertyData.has_video,
-            original: property.has_video
-        });
-    
+
         console.log('📤 Dados para Supabase:', updateData);
-        
+
         // ✅ 2. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
-        
         if (window.SUPABASE_URL && window.SUPABASE_KEY) {
             try {
                 const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
@@ -733,9 +727,9 @@ window.updateProperty = async function(id, propertyData) {
                     },
                     body: JSON.stringify(updateData)
                 });
-                
+
                 console.log('📊 Status do Supabase:', response.status);
-                
+
                 if (response.ok) {
                     supabaseSuccess = true;
                     console.log(`✅ Imóvel ${id} atualizado no Supabase`);
@@ -747,45 +741,56 @@ window.updateProperty = async function(id, propertyData) {
                 console.error('❌ Erro de conexão com Supabase:', error);
             }
         }
-        
+
         // ✅ 3. ATUALIZAR LOCALMENTE
-        console.log('💾 Atualizando localmente...');
-        
         window.properties[index] = {
             ...property,
             ...updateData,
-            id: id // Garantir ID correto
+            id: id
         };
-        
         window.savePropertiesToStorage();
         console.log('✅ Atualização local salva');
-        
+
         // ✅ 4. RENDERIZAR
         if (typeof window.renderProperties === 'function') {
             window.renderProperties('todos');
         }
-        
+
         // ✅ 5. ATUALIZAR ADMIN
         if (typeof window.loadPropertyList === 'function') {
             setTimeout(() => window.loadPropertyList(), 300);
         }
-        
-        // ✅ 6. FEEDBACK
+
+        // ✅ 6. INVALIDAR CACHE INTELIGENTE
+        if (window.SmartCache) {
+            SmartCache.invalidatePropertiesCache();
+            console.log('🗑️ Cache invalidado após atualizar imóvel');
+        }
+
+        // ✅ 7. FEEDBACK
         if (supabaseSuccess) {
             const pdfsCount = updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0;
             const pdfMsg = pdfsCount > 0 ? ` com ${pdfsCount} PDF(s)` : '';
             alert(`✅ Imóvel "${updateData.title}" atualizado PERMANENTEMENTE${pdfMsg}!`);
-            console.log(`🎯 Imóvel ${id} atualizado ONLINE + localmente`);
         } else {
             alert(`⚠️ Imóvel "${updateData.title}" atualizado apenas LOCALMENTE.\n\nAlterações serão sincronizadas quando possível.`);
-            console.log(`🎯 Imóvel ${id} atualizado apenas localmente`);
         }
-        
+
+        // ✅ 8. Finalizar monitoramento
+        if (operationId && window.OperationMonitor) {
+            window.OperationMonitor.endOperationSuccess(operationId, { id, title: propertyData.title });
+        }
+
         return true;
-        
+
     } catch (error) {
         console.error('❌ ERRO ao atualizar imóvel:', error);
         alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
+
+        if (operationId && window.OperationMonitor) {
+            window.OperationMonitor.endOperationError(operationId, error);
+        }
+
         return false;
     }
 };
