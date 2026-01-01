@@ -813,37 +813,39 @@ function stringSimilarity(str1, str2) {
     return match / Math.max(str1.length, str2.length);
 }
 
-// ========== FUNÇÃO 10: EXCLUIR IMÓVEL (COM SUPABASE) ==========
+// ========== FUNÇÃO 10: EXCLUIR IMÓVEL (COM SUPABASE E CACHE INTELIGENTE) ==========
 window.deleteProperty = async function(id) {
     console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
-    
+
+    const operationId = window.OperationMonitor ? 
+        window.OperationMonitor.startOperation('deleteProperty', { id }) : null;
+
     // 1. Encontrar imóvel
     const property = window.properties.find(p => p.id === id);
     if (!property) {
         alert('❌ Imóvel não encontrado!');
         return false;
     }
-    
+
     // 2. Confirmação DUPLA (segurança)
     if (!confirm(`⚠️ TEM CERTEZA que deseja excluir o imóvel?\n\n"${property.title}"\n\nEsta ação NÃO pode ser desfeita.`)) {
         console.log('❌ Exclusão cancelada pelo usuário');
         return false;
     }
-    
+
     if (!confirm(`❌ CONFIRMAÇÃO FINAL:\n\nClique em OK APENAS se tiver absoluta certeza.\nO imóvel "${property.title}" será PERMANENTEMENTE excluído.`)) {
         console.log('❌ Exclusão cancelada na confirmação final');
         return false;
     }
-    
+
     console.log(`🗑️ Excluindo imóvel ${id}: "${property.title}"`);
-    
+
     let supabaseSuccess = false;
     let supabaseError = null;
-    
+
     // ✅ 3. PRIMEIRO: Tentar excluir do Supabase
     if (window.SUPABASE_URL && window.SUPABASE_KEY) {
         console.log(`🌐 Tentando excluir imóvel ${id} do Supabase...`);
-        
         try {
             const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
                 method: 'DELETE',
@@ -853,9 +855,9 @@ window.deleteProperty = async function(id) {
                     'Prefer': 'return=representation'
                 }
             });
-            
+
             console.log('📊 Status da exclusão no Supabase:', response.status);
-            
+
             if (response.ok) {
                 supabaseSuccess = true;
                 console.log(`✅ Imóvel ${id} excluído do Supabase com sucesso!`);
@@ -864,7 +866,6 @@ window.deleteProperty = async function(id) {
                 supabaseError = errorText;
                 console.error(`❌ Erro ao excluir do Supabase:`, errorText);
             }
-            
         } catch (error) {
             supabaseError = error.message;
             console.error(`❌ Erro de conexão ao excluir do Supabase:`, error);
@@ -872,26 +873,25 @@ window.deleteProperty = async function(id) {
     } else {
         console.log('⚠️ Credenciais Supabase não disponíveis');
     }
-    
-    // ✅ 4. Excluir localmente (sempre, independente do Supabase)
+
+    // ✅ 4. Excluir localmente (sempre)
     const originalLength = window.properties.length;
     window.properties = window.properties.filter(p => p.id !== id);
     const newLength = window.properties.length;
-    
-    if (originalLength === newLength) {
-        console.log('⚠️ Imóvel não encontrado localmente após tentativa de exclusão');
-    } else {
+    if (originalLength !== newLength) {
         console.log(`💾 Imóvel ${id} excluído localmente`);
+    } else {
+        console.log('⚠️ Imóvel não encontrado localmente após tentativa de exclusão');
     }
-    
+
     // ✅ 5. Salvar no localStorage
     window.savePropertiesToStorage();
-    
+
     // ✅ 6. Atualizar interface
     if (typeof window.renderProperties === 'function') {
         window.renderProperties('todos');
     }
-    
+
     // ✅ 7. Atualizar lista do admin
     if (typeof window.loadPropertyList === 'function') {
         setTimeout(() => {
@@ -899,18 +899,21 @@ window.deleteProperty = async function(id) {
             console.log('📋 Lista do admin atualizada após exclusão');
         }, 300);
     }
-    
-    // ✅ 8. Feedback ao usuário baseado no resultado
+
+    // ✅ 8. INVALIDAR CACHE INTELIGENTE
+    if (window.SmartCache) {
+        SmartCache.invalidatePropertiesCache();
+        console.log('🗑️ Cache invalidado após excluir imóvel');
+    }
+
+    // ✅ 9. Feedback ao usuário
     if (supabaseSuccess) {
         alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
         console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
-        
-        // ✅ 9. Tentar excluir PDFs relacionados (opcional)
-        // SUBSTITUA por:
+
+        // ✅ 10. Excluir PDFs relacionados (opcional)
         if (property.pdfs && property.pdfs !== '' && property.pdfs !== 'EMPTY') {
             console.log(`🗑️ Excluindo ${property.pdfs.split(',').length} PDF(s) do storage...`);
-            
-            // Chamar função para excluir PDFs
             if (typeof window.deletePdfFromSupabaseStorage === 'function') {
                 const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
                 pdfUrls.forEach(url => {
@@ -924,11 +927,16 @@ window.deleteProperty = async function(id) {
         const errorMessage = supabaseError ? 
             `\n\nErro no servidor: ${supabaseError.substring(0, 100)}...` : 
             '\n\nMotivo: Conexão com servidor falhou.';
-            
+
         alert(`⚠️ Imóvel "${property.title}" excluído apenas LOCALMENTE.${errorMessage}\n\nO imóvel ainda existe no servidor e reaparecerá ao sincronizar.`);
         console.log(`🎯 Imóvel ${id} excluído apenas localmente (Supabase falhou)`);
     }
-    
+
+    // ✅ 11. Finalizar monitoramento
+    if (operationId && window.OperationMonitor) {
+        window.OperationMonitor.endOperationSuccess(operationId, { id, success: supabaseSuccess });
+    }
+
     return supabaseSuccess;
 };
 
