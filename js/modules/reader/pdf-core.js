@@ -1,4 +1,12 @@
 // js/modules/reader/pdf-core.js  
+// Logger seguro e centralizado
+const PdfLog = window.PdfLogger || {
+    simple: () => {},
+    error: () => {},
+    start: () => Date.now(),
+    end: () => {}
+};
+
 console.log('📄 pdf-core.js carregado - VERIFICANDO VARIÁVEIS GLOBAIS');
 
 // GARANTIR compatibilidade com outros módulos
