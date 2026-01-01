@@ -296,94 +296,133 @@ window.savePropertiesToStorage = function() {
     }
 };
 
-// ========== FUNÇÃO 4: Renderizar Propriedades ==========
+// ========== FUNÇÃO 4: Renderizar Propriedades (Atualizada com cache de DOM) ==========
 window.renderProperties = function(filter = 'todos') {
     console.log('🎨 renderProperties() com filtro:', filter);
-    
-    const container = document.getElementById('properties-container');
-    if (!container) {
-        console.error('❌ Container não encontrado!');
-        return;
-    }
-    
-    // Limpar container
-    container.innerHTML = '';
 
-    if (!window.properties || window.properties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 3rem; color: #666;">Nenhum imóvel disponível.</p>';
-        return;
-    }
-    
-    // Filtrar propriedades
-    let filteredProperties = [...window.properties];
-    
-    if (filter !== 'todos') {
-        filteredProperties = window.properties.filter(p => {
-            if (filter === 'Residencial') return p.type === 'residencial';
-            if (filter === 'Comercial') return p.type === 'comercial';
-            if (filter === 'Rural') return p.type === 'rural' || p.rural === true;
-            if (filter === 'Minha Casa Minha Vida') return p.badge === 'MCMV';
-            return true;
-        });
-    }
-    
-    if (filteredProperties.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel para este filtro.</p>';
-        return;
-    }
-    
-    console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
-    
-    // Renderizar cada imóvel
-    filteredProperties.forEach(property => {
-        const features = Array.isArray(property.features) ? property.features : 
-                        (property.features ? property.features.split(',') : []);
-        
-        // Gerar HTML da imagem (com ou sem galeria)
-        let propertyImageHTML = '';
-        
-        if (typeof window.createPropertyGallery === 'function') {
-            propertyImageHTML = window.createPropertyGallery(property);
-        } else {
-            const imageUrl = property.images ? 
-                property.images.split(',')[0] : 
-                'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
-            
-            propertyImageHTML = `
-                <div class="property-image" style="position: relative; height: 250px;">
-                    <img src="${imageUrl}" 
-                         style="width: 100%; height: 100%; object-fit: cover;"
-                         alt="${property.title}"
-                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                    ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
-                </div>
-            `;
+    const operationId = window.OperationMonitor ? 
+        window.OperationMonitor.startOperation('renderProperties', { filter }) : null;
+
+    try {
+        const container = document.getElementById('properties-container');
+        if (!container) {
+            console.error('❌ Container não encontrado!');
+            if (operationId && window.OperationMonitor) {
+                window.OperationMonitor.endOperationError(operationId, new Error('Container não encontrado'));
+            }
+            return;
         }
-        
-        const card = `
-            <div class="property-card">
-                ${propertyImageHTML}
-                <div class="property-content">
-                    <div class="property-price">${property.price || 'R$ 0,00'}</div>
-                    <h3 class="property-title">${property.title || 'Sem título'}</h3>
-                    <div class="property-location">
-                        <i class="fas fa-map-marker-alt"></i> ${property.location || 'Local não informado'}
+
+        // Verificar cache de DOM
+        const cacheKey = `properties_container_${filter}`;
+        let cachedHTML = null;
+        if (window.PerformanceCache && PerformanceCache.get(cacheKey, 'dom')) {
+            cachedHTML = PerformanceCache.get(cacheKey, 'dom');
+            console.log('⚡ Usando HTML cacheado do DOM');
+        }
+
+        if (cachedHTML) {
+            container.innerHTML = cachedHTML;
+        } else {
+            // Limpar container
+            container.innerHTML = '';
+
+            if (!window.properties || window.properties.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 3rem; color: #666;">Nenhum imóvel disponível.</p>';
+                return;
+            }
+
+            // Filtrar propriedades
+            let filteredProperties = [...window.properties];
+            if (filter !== 'todos') {
+                filteredProperties = window.properties.filter(p => {
+                    if (filter === 'Residencial') return p.type === 'residencial';
+                    if (filter === 'Comercial') return p.type === 'comercial';
+                    if (filter === 'Rural') return p.type === 'rural' || p.rural === true;
+                    if (filter === 'Minha Casa Minha Vida') return p.badge === 'MCMV';
+                    return true;
+                });
+            }
+
+            if (filteredProperties.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel para este filtro.</p>';
+                return;
+            }
+
+            console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
+
+            // Renderizar cada imóvel
+            filteredProperties.forEach(property => {
+                const features = Array.isArray(property.features) ? property.features : 
+                                (property.features ? property.features.split(',') : []);
+
+                // Gerar HTML da imagem
+                let propertyImageHTML = '';
+                if (typeof window.createPropertyGallery === 'function') {
+                    propertyImageHTML = window.createPropertyGallery(property);
+                } else {
+                    const imageUrl = property.images ? 
+                        property.images.split(',')[0] : 
+                        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+                    propertyImageHTML = `
+                        <div class="property-image" style="position: relative; height: 250px;">
+                            <img src="${imageUrl}" 
+                                 style="width: 100%; height: 100%; object-fit: cover;"
+                                 alt="${property.title}"
+                                 onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                            ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
+                        </div>
+                    `;
+                }
+
+                const card = `
+                    <div class="property-card">
+                        ${propertyImageHTML}
+                        <div class="property-content">
+                            <div class="property-price">${property.price || 'R$ 0,00'}</div>
+                            <h3 class="property-title">${property.title || 'Sem título'}</h3>
+                            <div class="property-location">
+                                <i class="fas fa-map-marker-alt"></i> ${property.location || 'Local não informado'}
+                            </div>
+                            <p>${property.description || 'Descrição não disponível.'}</p>
+                            <div class="property-features">
+                                ${features.map(f => `<span class="feature-tag">${f.trim()}</span>`).join('')}
+                            </div>
+                            <button class="contact-btn" onclick="contactAgent(${property.id})">
+                                <i class="fab fa-whatsapp"></i> Entrar em Contato
+                            </button>
+                        </div>
                     </div>
-                    <p>${property.description || 'Descrição não disponível.'}</p>
-                    <div class="property-features">
-                        ${features.map(f => `<span class="feature-tag">${f.trim()}</span>`).join('')}
-                    </div>
-                    <button class="contact-btn" onclick="contactAgent(${property.id})">
-                        <i class="fab fa-whatsapp"></i> Entrar em Contato
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        container.innerHTML += card;
-    });
-    
-    console.log('✅ Imóveis renderizados com sucesso');
+                `;
+
+                container.innerHTML += card;
+            });
+
+            // Cachear HTML gerado
+            if (window.PerformanceCache && container.innerHTML) {
+                PerformanceCache.set(cacheKey, container.innerHTML, 'dom', 30000); // 30 segundos
+                console.log(`💾 HTML cacheado para filtro: ${filter}`);
+            }
+        }
+
+        if (operationId && window.OperationMonitor) {
+            const propertyCount = window.properties ? window.properties.length : 0;
+            window.OperationMonitor.endOperationSuccess(operationId, { 
+                filter,
+                rendered: propertyCount,
+                cached: !!cachedHTML
+            });
+        }
+
+        console.log('✅ Imóveis renderizados com sucesso');
+
+    } catch (error) {
+        console.error('❌ Erro ao renderizar propriedades:', error);
+        if (operationId && window.OperationMonitor) {
+            window.OperationMonitor.endOperationError(operationId, error);
+        }
+    }
 };
 
 // ========== FUNÇÃO 5: Configurar Filtros ==========
@@ -447,7 +486,6 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== FUNÇÃO 7: Adicionar Novo Imóvel (COM SUPABASE) ==========
 // ========== FUNÇÃO 7: Adicionar Novo Imóvel (COM SUPABASE) ==========
 window.addNewProperty = async function(propertyData) {
     console.log('➕ ADICIONANDO NOVO IMÓVEL COM SUPABASE + PDFs CORRIGIDO:', propertyData);
