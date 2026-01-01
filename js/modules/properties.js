@@ -1220,18 +1220,23 @@ window.getInitialProperties = getInitialProperties;
 // ========== RECUPERAÇÃO DE EMERGÊNCIA ==========
 (function emergencyPropertiesRecovery() {
     console.log('🚨 VERIFICAÇÃO DE EMERGÊNCIA: window.properties...');
-    
-    // Verificar a cada 2 segundos se properties está vazio
+
+    const isDebug = location.search.includes('debug=true');
+    const hasAdvancedRecovery = isDebug && typeof window.emergencyRecovery !== 'undefined';
+
     const checkInterval = setInterval(() => {
         if (!window.properties || window.properties.length === 0) {
-            console.log('🚨 DETECTADO: window.properties está vazio!');
-            console.log('🔄 Executando recuperação automática...');
-            
-            // Parar o intervalo
+            console.warn('🚨 DETECTADO: window.properties vazio');
+
             clearInterval(checkInterval);
-            
-            // Forçar carregamento de dados
-            forceLoadProperties();
+
+            if (hasAdvancedRecovery && typeof window.emergencyRecovery.recoverMediaSystem === 'function') {
+                console.log('🔧 Delegando recuperação ao sistema avançado (suporte)');
+                window.emergencyRecovery.recoverMediaSystem();
+            } else {
+                console.log('🚀 Usando recuperação essencial do core');
+                forceLoadProperties();
+            }
         } else {
             console.log(`✅ Verificação OK: ${window.properties.length} imóveis carregados`);
             clearInterval(checkInterval);
