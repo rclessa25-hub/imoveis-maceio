@@ -1218,25 +1218,25 @@ if (document.readyState === 'loading') {
 window.getInitialProperties = getInitialProperties;
 
 // ========== RECUPERAÇÃO DE EMERGÊNCIA ==========
-(function emergencyPropertiesRecovery() {
-    console.log('🚨 VERIFICAÇÃO DE EMERGÊNCIA: window.properties...');
-
-    const isDebug = location.search.includes('debug=true');
-    const hasAdvancedRecovery = isDebug && typeof window.emergencyRecovery !== 'undefined';
-
+// properties.js - fallback minimalista
+(function essentialPropertiesCheck() {
+    console.log('🔍 Verificação essencial: window.properties...');
     const checkInterval = setInterval(() => {
         if (!window.properties || window.properties.length === 0) {
-            console.warn('🚨 DETECTADO: window.properties vazio');
-
-            clearInterval(checkInterval);
-
-            if (hasAdvancedRecovery && typeof window.emergencyRecovery.recoverMediaSystem === 'function') {
-                console.log('🔧 Delegando recuperação ao sistema avançado (suporte)');
-                window.emergencyRecovery.recoverMediaSystem();
-            } else {
-                console.log('🚀 Usando recuperação essencial do core');
-                forceLoadProperties();
-            }
+            console.warn('⚠️ window.properties vazio, aguardando carregamento...');
+            setTimeout(() => {
+                if (!window.properties || window.properties.length === 0) {
+                    const stored = localStorage.getItem('weberlessa_properties');
+                    if (stored) {
+                        try {
+                            window.properties = JSON.parse(stored);
+                            console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóveis`);
+                        } catch (e) {
+                            console.error('❌ Erro ao parsear localStorage');
+                        }
+                    }
+                }
+            }, 5000);
         } else {
             console.log(`✅ Verificação OK: ${window.properties.length} imóveis carregados`);
             clearInterval(checkInterval);
