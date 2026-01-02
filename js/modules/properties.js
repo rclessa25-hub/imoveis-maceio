@@ -1180,38 +1180,53 @@ window.testSupabaseConnectionSimple = async function() {
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js carregado com 10 funções principais');
 
+// Função utilitária para executar tarefas em baixa prioridade
+function runLowPriority(task) {
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(task, { timeout: 1000 });
+    } else {
+        setTimeout(task, 100);
+    }
+}
+
 // Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🏠 DOM carregado - inicializando properties...');
-        
-        // Carregar propriedades
-        setTimeout(() => {
+
+        // Inicializar propriedades em baixa prioridade
+        runLowPriority(() => {
             if (typeof window.initializeProperties === 'function') {
                 window.initializeProperties();
+                console.log('⚙️ initializeProperties executada');
             }
-            
-            // Configurar filtros
-            setTimeout(() => {
+
+            // Configurar filtros também em baixa prioridade
+            runLowPriority(() => {
                 if (typeof window.setupFilters === 'function') {
                     window.setupFilters();
+                    console.log('⚙️ setupFilters executada');
                 }
-            }, 500);
-            
-        }, 300);
+            });
+        });
     });
 } else {
     console.log('🏠 DOM já carregado - inicializando agora...');
-    setTimeout(() => {
+
+    // Inicializar direto em baixa prioridade
+    runLowPriority(() => {
         if (typeof window.initializeProperties === 'function') {
             window.initializeProperties();
+            console.log('⚙️ initializeProperties executada');
         }
-        setTimeout(() => {
+
+        runLowPriority(() => {
             if (typeof window.setupFilters === 'function') {
                 window.setupFilters();
+                console.log('⚙️ setupFilters executada');
             }
-        }, 500);
-    }, 300);
+        });
+    });
 }
 
 // Exportar funções necessárias
