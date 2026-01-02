@@ -1,15 +1,13 @@
-// js/modules/utils.js - VERSÃO CORRIGIDA SEM MÓDULOS
-console.log('🚀 utils.js carregado - SEM módulos ES6');
+// js/modules/utils.js - VERSÃO OTIMIZADA
+console.log('⚡ utils.js carregado - Versão Otimizada do Core');
 
-// ========== CONSTANTES GLOBAIS ==========
+// ========== CONSTANTES ESSENCIAIS (12 itens) ==========
 window.SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
 window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
 window.ADMIN_PASSWORD = "wl654";
 window.PDF_PASSWORD = "doc123";
 
-console.log('✅ Constantes definidas globalmente');
-
-// ========== FUNÇÕES DE PERFORMANCE (ESSENCIAIS - MANTIDAS NO CORE) ==========
+// ========== FUNÇÕES DE PERFORMANCE ESSENCIAIS (2 funções) ==========
 window.debounce = function(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -35,11 +33,7 @@ window.throttle = function(func, limit) {
     };
 };
 
-// 💡 Comentários de migração
-console.log('✅ Funções de performance essenciais mantidas no core');
-console.log('💡 Para otimizações avançadas: use ?debug=true para carregar módulos de suporte');
-
-// ========== FUNÇÕES UTILITÁRIAS ==========
+// ========== FUNÇÕES UTILITÁRIAS ESSENCIAIS (10 funções) ==========
 window.isMobileDevice = function() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
@@ -50,8 +44,7 @@ window.logModule = function(moduleName, message) {
 };
 
 window.elementExists = function(id) {
-    const element = document.getElementById(id);
-    return element !== null;
+    return document.getElementById(id) !== null;
 };
 
 window.formatPrice = function(price) {
@@ -79,24 +72,12 @@ window.copyToClipboard = async function(text) {
     }
 };
 
-// ========== DEBUG DO CARREGAMENTO ==========
-console.log('🔧 utils.js - DEBUG DE CARREGAMENTO:');
-console.log('- SUPABASE_URL:', window.SUPABASE_URL);
-console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD ? '***' + window.ADMIN_PASSWORD.slice(-3) : 'NÃO DEFINIDA');
-console.log('- PDF_PASSWORD:', window.PDF_PASSWORD ? '***' + window.PDF_PASSWORD.slice(-3) : 'NÃO DEFINIDA');
-console.log('- Hostname:', window.location.hostname);
-console.log('- É GitHub Pages?', window.location.hostname.includes('github.io'));
-
-// ========== SUPABASE FETCH ==========
+// ========== SUPABASE FETCH ESSENCIAL ==========
 window.supabaseFetch = async function(endpoint, options = {}) {
-    console.log('🌐 supabaseFetch chamado para:', endpoint);
-    
     try {
         const proxyUrl = 'https://corsproxy.io/?';
         const targetUrl = `${window.SUPABASE_URL}/rest/v1${endpoint}`;
         const finalUrl = proxyUrl + encodeURIComponent(targetUrl);
-        
-        console.log('🔗 URL de acesso via proxy:', finalUrl);
         
         const response = await fetch(finalUrl, {
             method: options.method || 'GET',
@@ -110,7 +91,6 @@ window.supabaseFetch = async function(endpoint, options = {}) {
         });
         
         if (!response.ok) {
-            console.warn(`⚠️ Supabase retornou ${response.status}: ${response.statusText}`);
             return { 
                 ok: false, 
                 data: [], 
@@ -119,7 +99,6 @@ window.supabaseFetch = async function(endpoint, options = {}) {
         }
         
         const data = await response.json();
-        console.log(`✅ Supabase fetch bem-sucedido: ${data.length || 0} itens`);
         
         return { 
             ok: true, 
@@ -128,59 +107,43 @@ window.supabaseFetch = async function(endpoint, options = {}) {
         };
         
     } catch (error) {
-        console.error('❌ Erro em supabaseFetch:', error.message);
         return { 
             ok: false, 
             data: [], 
-            error: error.message,
-            fallback: true
+            error: error.message
         };
     }
 };
 
-console.log('✅ supabaseFetch adicionada ao utils.js');
-
-// ========== FALLBACKS ESSENCIAIS PARA VALIDAÇÃO ==========
-// Garante que funções básicas existam mesmo sem módulos de suporte
-
-(function setupEssentialValidationFallbacks() {
-    const isDebug = window.location.search.includes('debug=true');
-
-    if (isDebug) {
-        console.log('🔧 [DEBUG] Configurando fallbacks de validação essenciais...');
-    }
-
-    // Aguardar um pouco para não interferir com carregamento
+// ========== FALLBACKS MÍNIMOS (apenas em produção) ==========
+(function() {
+    // Apenas cria fallbacks se os módulos de suporte não carregarem
     setTimeout(() => {
-        // Fallback para validateGalleryModule
-        if (typeof window.validateGalleryModule === 'undefined') {
-            window.validateGalleryModule = function() {
-                if (isDebug) {
-                    console.log('🔍 [DEBUG][FALLBACK] Validação mínima da galeria');
-                }
-                return typeof window.openGallery === 'function';
-            };
-        }
-
-        // Fallback básico para ValidationSystem se não carregar
-        if (typeof window.ValidationSystem === 'undefined') {
-            window.ValidationSystem = {
-                quickSystemCheck: function() {
-                    return {
-                        properties: !!window.properties,
-                        propertiesCount: window.properties ? window.properties.length : 0,
-                        timestamp: new Date().toISOString()
-                    };
-                }
-            };
-
-            if (isDebug) {
-                console.log('✅ [DEBUG] Fallbacks de validação configurados');
+        const isProduction = window.location.hostname.includes('github.io') && 
+                           !window.location.search.includes('debug=true');
+        
+        if (isProduction) {
+            // Fallback mínimo para validateGalleryModule
+            if (typeof window.validateGalleryModule === 'undefined') {
+                window.validateGalleryModule = function() {
+                    return typeof window.openGallery === 'function';
+                };
+            }
+            
+            // Fallback mínimo para ValidationSystem
+            if (typeof window.ValidationSystem === 'undefined') {
+                window.ValidationSystem = {
+                    quickSystemCheck: function() {
+                        return {
+                            properties: !!window.properties,
+                            propertiesCount: window.properties ? window.properties.length : 0,
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                };
             }
         }
-    }, 3000); // 3 segundos para permitir carregamento normal
+    }, 5000);
 })();
 
-if (window.location.search.includes('debug=true')) {
-    console.log('✅ [DEBUG] utils.js completamente carregado');
-}
+console.log('✅ utils.js otimizado - apenas funções essenciais mantidas');
