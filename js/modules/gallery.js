@@ -698,41 +698,24 @@ window.optimizeGalleryForMobile = function() {
 // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
 
 window.validateGalleryModule = function() {
-    console.log('🔍 Validando módulo da galeria...');
+    console.log('🔍 Validação básica da galeria (core)...');
     
-    const checks = {
-        variables: {
-            currentGalleryImages: Array.isArray(window.currentGalleryImages),
-            currentGalleryIndex: typeof window.currentGalleryIndex === 'number',
-            SWIPE_THRESHOLD: window.SWIPE_THRESHOLD === 50
-        },
-        functions: {
-            createPropertyGallery: typeof window.createPropertyGallery === 'function',
-            openGallery: typeof window.openGallery === 'function',
-            closeGallery: typeof window.closeGallery === 'function',
-            nextGalleryImage: typeof window.nextGalleryImage === 'function',
-            prevGalleryImage: typeof window.prevGalleryImage === 'function',
-            setupGalleryEvents: typeof window.setupGalleryEvents === 'function'
-        }
+    // Se ValidationSystem disponível, delega para ele
+    if (window.ValidationSystem && typeof window.ValidationSystem.validateGalleryModule === 'function') {
+        return window.ValidationSystem.validateGalleryModule();
+    }
+    
+    // Fallback mínimo no core
+    const basicChecks = {
+        'openGallery': typeof window.openGallery === 'function',
+        'closeGallery': typeof window.closeGallery === 'function',
+        'currentGalleryImages': Array.isArray(window.currentGalleryImages)
     };
     
-    let allPassed = true;
-    Object.entries(checks).forEach(([category, items]) => {
-        console.log(`\n${category.toUpperCase()}:`);
-        Object.entries(items).forEach(([item, result]) => {
-            const status = result ? '✅' : '❌';
-            console.log(`  ${item}: ${status}`);
-            if (!result) allPassed = false;
-        });
-    });
+    const allValid = Object.values(basicChecks).every(check => check === true);
+    console.log(allValid ? '✅ Galeria OK' : '⚠️ Galeria com problemas');
     
-    if (allPassed) {
-        console.log('🎉 Módulo da galeria validado com sucesso!');
-        return true;
-    } else {
-        console.error('⚠️ Problemas encontrados na validação da galeria');
-        return false;
-    }
+    return allValid;
 };
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA (OPCIONAL) ==========
