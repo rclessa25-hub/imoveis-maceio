@@ -1218,31 +1218,73 @@ if (document.readyState === 'loading') {
 window.getInitialProperties = getInitialProperties;
 
 // ========== RECUPERAÇÃO DE EMERGÊNCIA ==========
-// properties.js - fallback minimalista
+// properties.js - fallback minimalista (silencioso em produção)
+
 (function essentialPropertiesCheck() {
-    console.log('🔍 Verificação essencial: window.properties...');
+    const isDebug =
+        window.location.search.includes('debug=true') ||
+        window.location.hostname.includes('localhost');
+
+    if (isDebug) {
+        console.log('🔍 [DEBUG] Verificação essencial: window.properties...');
+    }
+
     const checkInterval = setInterval(() => {
         if (!window.properties || window.properties.length === 0) {
-            console.warn('⚠️ window.properties vazio, aguardando carregamento...');
+
+            if (isDebug) {
+                console.warn('⚠️ [DEBUG] window.properties vazio, aguardando carregamento...');
+            }
+
+            // Recuperação tardia com prioridade baixa
             setTimeout(() => {
                 if (!window.properties || window.properties.length === 0) {
                     const stored = localStorage.getItem('weberlessa_properties');
+
                     if (stored) {
                         try {
                             window.properties = JSON.parse(stored);
-                            console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóveis`);
+
+                            if (isDebug) {
+                                console.log(
+                                    `✅ [DEBUG] Recuperado do localStorage: ${window.properties.length} imóveis`
+                                );
+                            }
+
                         } catch (e) {
-                            console.error('❌ Erro ao parsear localStorage');
+                            if (isDebug) {
+                                console.error('❌ [DEBUG] Erro ao parsear localStorage');
+                            }
                         }
                     }
                 }
             }, 5000);
+
         } else {
-            console.log(`✅ Verificação OK: ${window.properties.length} imóveis carregados`);
+            if (isDebug) {
+                console.log(
+                    `✅ [DEBUG] Verificação OK: ${window.properties.length} imóveis carregados`
+                );
+            }
             clearInterval(checkInterval);
         }
     }, 2000);
 })();
+
+// Inicialização pesada em prioridade baixa
+setTimeout(() => {
+    if (typeof window.initializeProperties === 'function') {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => {
+                window.initializeProperties();
+            }, { timeout: 1000 });
+        } else {
+            setTimeout(() => {
+                window.initializeProperties();
+            }, 100);
+        }
+    }
+}, 0);
 
 function forceLoadProperties() {
     console.log('⚡ FORÇANDO CARREGAMENTO DE IMÓVEIS...');
