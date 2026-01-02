@@ -53,11 +53,13 @@ window.initializeProperties = async function () {
         }
 
         // ==========================================================
-        // 1️⃣ SUPABASE – CLIENTE OFICIAL (PRIORIDADE)
+        // 1️⃣ SUPABASE – CLIENTE OFICIAL (PRIORIDADE) [ATUALIZADO]
         // ==========================================================
-        console.log('🌐 Tentando conexão com Supabase via cliente oficial...');
+        const loadSupabaseProperties = async () => {
+            console.log('🌐 Tentando conexão com Supabase via cliente oficial...');
 
-        if (window.supabaseLoadProperties) {
+            if (!window.supabaseLoadProperties) return;
+
             try {
                 const supabaseResult = await window.supabaseLoadProperties();
 
@@ -85,7 +87,6 @@ window.initializeProperties = async function () {
                     window.properties = formattedData;
                     window.savePropertiesToStorage();
 
-                    // 💾 Cache inteligente com auto-invalidação
                     if (window.SmartCache && window.PerformanceCache) {
                         SmartCache.setWithAutoInvalidation(
                             'properties_data',
@@ -107,11 +108,17 @@ window.initializeProperties = async function () {
                             count: formattedData.length
                         });
                     }
-                    return;
                 }
-            } catch (supabaseError) {
-                console.error('❌ Erro no cliente oficial:', supabaseError);
+            } catch (error) {
+                console.error('❌ Erro no cliente oficial:', error);
             }
+        };
+
+        // Inicialização inteligente: requestIdleCallback ou fallback
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(loadSupabaseProperties);
+        } else {
+            setTimeout(loadSupabaseProperties, 300);
         }
 
         // ==========================================================
