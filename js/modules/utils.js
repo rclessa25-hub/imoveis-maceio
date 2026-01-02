@@ -144,18 +144,24 @@ console.log('✅ supabaseFetch adicionada ao utils.js');
 // Garante que funções básicas existam mesmo sem módulos de suporte
 
 (function setupEssentialValidationFallbacks() {
-    console.log('🔧 Configurando fallbacks de validação essenciais...');
-    
+    const isDebug = window.location.search.includes('debug=true');
+
+    if (isDebug) {
+        console.log('🔧 [DEBUG] Configurando fallbacks de validação essenciais...');
+    }
+
     // Aguardar um pouco para não interferir com carregamento
     setTimeout(() => {
         // Fallback para validateGalleryModule
         if (typeof window.validateGalleryModule === 'undefined') {
             window.validateGalleryModule = function() {
-                console.log('🔍 [FALLBACK] Validação mínima da galeria');
+                if (isDebug) {
+                    console.log('🔍 [DEBUG][FALLBACK] Validação mínima da galeria');
+                }
                 return typeof window.openGallery === 'function';
             };
         }
-        
+
         // Fallback básico para ValidationSystem se não carregar
         if (typeof window.ValidationSystem === 'undefined') {
             window.ValidationSystem = {
@@ -167,9 +173,14 @@ console.log('✅ supabaseFetch adicionada ao utils.js');
                     };
                 }
             };
-            console.log('✅ Fallbacks de validação configurados');
+
+            if (isDebug) {
+                console.log('✅ [DEBUG] Fallbacks de validação configurados');
+            }
         }
     }, 3000); // 3 segundos para permitir carregamento normal
 })();
 
-console.log('✅ utils.js completamente carregado');
+if (window.location.search.includes('debug=true')) {
+    console.log('✅ [DEBUG] utils.js completamente carregado');
+}
