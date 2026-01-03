@@ -1017,53 +1017,68 @@ setTimeout(() => {
 
 // ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
 window.accessPdfDocuments = function() {
-    console.log('🔓 accessPdfDocuments chamada - MOSTRANDO LISTA');
+    console.log('🔓 accessPdfDocuments chamada - Versão Corrigida');
     
-    // 1. Obter senha digitada
+    // 1. Obter elementos CRÍTICOS
     const passwordInput = document.getElementById('pdfPassword');
-    const password = passwordInput?.value?.trim();
+    const modalTitle = document.getElementById('pdfModalTitle');
     
-    if (!password) {
-        alert('Digite a senha para acessar os documentos!');
-        passwordInput?.focus();
+    if (!passwordInput) {
+        console.error('❌ Campo de senha PDF não encontrado!');
+        // Recriar dinamicamente se necessário
+        recreatePdfPasswordField();
+        setTimeout(() => window.accessPdfDocuments(), 100);
         return;
     }
     
-    // 2. Verificar senha (senha fixa "doc123")
+    // 2. Obter senha digitada
+    const password = passwordInput.value.trim();
+    
+    if (!password) {
+        alert('Digite a senha para acessar os documentos!');
+        passwordInput.focus();
+        return;
+    }
+    
+    // 3. Validar senha (senha fixa "doc123")
     if (password !== "doc123") {
-        alert('❌ Senha incorreta!\n\nSenha correta: doc123');
+        alert('❌ Senha incorreta!\n\nA senha correta é: doc123\n(Solicite ao corretor se não souber)');
         passwordInput.value = '';
         passwordInput.focus();
         return;
     }
     
-    console.log('✅ Senha válida! Preparando lista de documentos...');
+    console.log('✅ Senha válida! Processando documentos...');
     
-    // 3. ✅ SENHA CORRETA - BUSCAR DOCUMENTOS E MOSTRAR LISTA
-    const propertyId = window.currentPropertyId || 
-                      (document.getElementById('pdfModalTitle')?.dataset?.propertyId) || 
-                      window.editingPropertyId;
+    // 4. Obter ID do imóvel de múltiplas fontes (robustez)
+    const propertyId = 
+        window.currentPropertyId || 
+        (modalTitle && modalTitle.dataset.propertyId) || 
+        (document.querySelector('.property-card.active') && 
+         document.querySelector('.property-card.active').dataset.propertyId);
     
     if (!propertyId) {
-        alert('⚠️ Não foi possível identificar o imóvel.');
+        console.error('❌ Não foi possível identificar o imóvel');
+        alert('⚠️ Não foi possível identificar o imóvel. Tente novamente.');
         return;
     }
     
-    // Buscar imóvel
+    // 5. Buscar imóvel
     const property = window.properties.find(p => p.id == propertyId);
     if (!property) {
         alert('❌ Imóvel não encontrado!');
-        return;
-    }
-    
-    // Verificar se tem PDFs
-    if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
-        alert('ℹ️ Este imóvel não tem documentos PDF.');
         closePdfModal();
         return;
     }
     
-    // Processar URLs dos PDFs
+    // 6. Verificar se tem PDFs
+    if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
+        alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
+        closePdfModal();
+        return;
+    }
+    
+    // 7. Processar URLs dos PDFs
     const pdfUrls = property.pdfs.split(',')
         .map(url => url.trim())
         .filter(url => url && url !== 'EMPTY' && url !== '');
@@ -1076,9 +1091,44 @@ window.accessPdfDocuments = function() {
     
     console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
     
-    // ✅ 4. CRIAR E MOSTRAR LISTA INTERATIVA (em vez de download automático)
+    // 8. Fechar modal de senha e abrir modal de seleção
+    closePdfModal();
     showPdfSelectionList(propertyId, property.title, pdfUrls);
 };
+
+// Função auxiliar para recriar campo de senha se necessário
+function recreatePdfPasswordField() {
+    console.log('🔧 Recriando campo de senha PDF...');
+    
+    const modal = document.getElementById('pdfModal');
+    if (!modal) return;
+    
+    // Verificar se já existe o input
+    let passwordInput = document.getElementById('pdfPassword');
+    if (!passwordInput) {
+        // Criar novo input
+        passwordInput = document.createElement('input');
+        passwordInput.type = 'password';
+        passwordInput.id = 'pdfPassword';
+        passwordInput.className = 'pdf-password-input';
+        passwordInput.placeholder = 'Digite a senha para acessar';
+        passwordInput.style.cssText = `
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-size: 1rem;
+        `;
+        
+        // Inserir no local correto
+        const previewDiv = document.getElementById('pdfPreview');
+        if (previewDiv && previewDiv.parentNode) {
+            previewDiv.parentNode.insertBefore(passwordInput, previewDiv.nextSibling);
+            console.log('✅ Campo de senha recriado');
+        }
+    }
+}
 
 // ✅ 5. FUNÇÃO PARA MOSTRAR LISTA DE SELEÇÃO DE PDFs
 function showPdfSelectionList(propertyId, propertyTitle, pdfUrls) {
