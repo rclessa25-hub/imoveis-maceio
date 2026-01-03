@@ -936,12 +936,11 @@ if (document.readyState === 'loading') {
 window.showPdfModal = function(propertyId) {
     console.log(`📄 showPdfModal chamado para ID: ${propertyId}`);
     
-    // Usar a função ORIGINAL do pdf-core.js DIRETAMENTE
-    // Não chamar showPropertyPdf, pois ele chama showPdfModal de volta
+    // Usar a função ORIGINAL do pdf-core.js
     if (typeof window.openPdfModalDirect !== 'undefined') {
         window.openPdfModalDirect(propertyId);
     } else {
-        // Fallback: abrir modal diretamente sem loop
+        // Fallback robusto que GARANTE campo de senha
         openPdfModalDirectFallback(propertyId);
     }
 };
