@@ -1755,6 +1755,36 @@ setTimeout(() => {
     }
 }, 3000);
 
+// NO FINAL DO admin.js - ADICIONAR verificação de integridade
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO DE INTEGRIDADE DO SISTEMA PDF');
+    
+    // Verificar se elementos críticos existem
+    const criticalElements = [
+        { id: 'pdfModal', desc: 'Modal principal' },
+        { id: 'pdfPassword', desc: 'Campo de senha' },
+        { id: 'pdfModalTitle', desc: 'Título do modal' }
+    ];
+    
+    let allExist = true;
+    criticalElements.forEach(el => {
+        const exists = document.getElementById(el.id);
+        console.log(`${exists ? '✅' : '❌'} ${el.desc}: ${exists ? 'OK' : 'FALTANDO'}`);
+        if (!exists) allExist = false;
+    });
+    
+    if (!allExist) {
+        console.log('⚠️  Elementos PDF faltando. Recriando sistema...');
+        window.ensurePdfModalExists(true);
+    }
+    
+    // Teste funcional (apenas em debug)
+    if (window.location.search.includes('debug=true')) {
+        console.log('🧪 Teste funcional do sistema PDF disponível');
+        console.log('💡 Use: testPdfAccessDirect(101) para testar com imóvel ID 101');
+    }
+}, 3000);
+
 console.log('✅ admin.js pronto e funcional');
 
 // 🔧 PATCH TEMPORÁRIO: Corrigir checkbox "Tem vídeo" na edição
