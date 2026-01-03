@@ -947,19 +947,19 @@ window.showPdfModal = function(propertyId) {
 
 // ========== FUNÇÃO DE FALLBACK (ATUALIZADA) ==========
 function openPdfModalDirectFallback(propertyId) {
-    console.log(`📄 Fallback PDF modal para ID: ${propertyId}`);
+    console.log(`📄 Fallback PDF modal para ID: ${propertyId} - Versão Corrigida`);
     
     // Armazenar ID para uso posterior
     window.currentPropertyId = propertyId;
     
-    const property = window.properties.find(p => p.id === propertyId);
+    const property = window.properties.find(p => p.id == propertyId);
     if (!property || !property.pdfs || property.pdfs === 'EMPTY') {
         alert('Nenhum documento PDF disponível para este imóvel.');
         return;
     }
     
-    // ✅ GARANTIR QUE O MODAL EXISTE (FUNÇÃO JÁ ADICIONADA POR VOCÊ)
-    const modal = window.ensurePdfModalExists();
+    // ✅ GARANTIR QUE O MODAL EXISTE COM TODOS OS ELEMENTOS
+    const modal = window.ensurePdfModalExists(true); // true = forçar verificação completa
     
     // ✅ Configurar título com segurança
     const titleElement = document.getElementById('pdfModalTitle');
@@ -968,15 +968,48 @@ function openPdfModalDirectFallback(propertyId) {
         titleElement.dataset.propertyId = propertyId;
     }
     
-    // ✅ Resetar campo de senha
-    const passwordInput = document.getElementById('pdfPassword');
-    if (passwordInput) {
-        passwordInput.value = '';
-        setTimeout(() => passwordInput.focus(), 100);
+    // ✅ GARANTIR QUE O CAMPO DE SENHA EXISTE E É VISÍVEL
+    let passwordInput = document.getElementById('pdfPassword');
+    if (!passwordInput) {
+        // Criar se não existir
+        passwordInput = document.createElement('input');
+        passwordInput.type = 'password';
+        passwordInput.id = 'pdfPassword';
+        passwordInput.className = 'pdf-password-input';
+        passwordInput.placeholder = 'Digite a senha para acessar';
+        passwordInput.style.cssText = `
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-size: 1rem;
+            display: block !important; /* FORÇAR VISIBILIDADE */
+        `;
+        
+        // Inserir após o preview
+        const previewDiv = document.getElementById('pdfPreview');
+        if (previewDiv) {
+            previewDiv.parentNode.insertBefore(passwordInput, previewDiv.nextSibling);
+        }
+    } else {
+        // Tornar visível se existir
+        passwordInput.style.display = 'block';
+        passwordInput.style.visibility = 'visible';
+        passwordInput.style.opacity = '1';
     }
+    
+    // ✅ Resetar campo de senha
+    passwordInput.value = '';
     
     // ✅ Exibir modal
     modal.style.display = 'flex';
+    
+    // ✅ Focar no campo de senha após breve delay
+    setTimeout(() => {
+        passwordInput.focus();
+        console.log('✅ Modal PDF aberto com campo de senha visível');
+    }, 150);
 }
 
 // ✅ ADICIONAR ESTA FUNÇÃO PARA TESTAR (opcional):
