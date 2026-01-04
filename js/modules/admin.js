@@ -11,6 +11,9 @@ console.log('🔧 admin.js carregado - Sistema Administrativo');
  * Mantém compatibilidade sem refatoração agressiva
  */
 
+// ========== INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA ==========
+
+// Sobrescrever funções antigas para usar o sistema unificado
 window.handleNewMediaFiles = function(files) {
     return MediaSystem.addFiles(files);
 };
@@ -27,14 +30,50 @@ window.clearMediaSystem = function() {
     MediaSystem.resetState();
 };
 
-window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
-    const result = await MediaSystem.uploadAll(propertyId, propertyTitle);
-    return result.images;
+window.clearMediaSystemComplete = function() {
+    MediaSystem.resetState();
 };
 
-window.getPdfsForProperty = async function(propertyId, propertyTitle) {
-    const result = await MediaSystem.uploadAll(propertyId, propertyTitle);
-    return result.pdfs;
+// ⚠️ IMPORTANTE: Estas funções são CHAMADAS pelo admin.js - DEVEM existir
+window.processAndSavePdfs = async function(propertyId, propertyTitle) {
+    if (MediaSystem && MediaSystem.processAndSavePdfs) {
+        return await MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
+    }
+    return '';
+};
+
+window.clearAllPdfs = function() {
+    if (MediaSystem && MediaSystem.clearAllPdfs) {
+        MediaSystem.clearAllPdfs();
+    }
+};
+
+window.loadExistingPdfsForEdit = function(property) {
+    if (MediaSystem && MediaSystem.loadExistingPdfsForEdit) {
+        MediaSystem.loadExistingPdfsForEdit(property);
+    }
+};
+
+window.getPdfsToSave = async function(propertyId) {
+    if (MediaSystem && MediaSystem.getPdfsToSave) {
+        return await MediaSystem.getPdfsToSave(propertyId);
+    }
+    return '';
+};
+
+window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
+    if (MediaSystem && MediaSystem.getMediaUrlsForProperty) {
+        return await MediaSystem.getMediaUrlsForProperty(propertyId, propertyTitle);
+    }
+    return '';
+};
+
+window.clearProcessedPdfs = function() {
+    // Esta função limpa apenas PDFs processados
+    if (MediaSystem && MediaSystem.state && MediaSystem.state.pdfs) {
+        MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
+        MediaSystem.updateUI();
+    }
 };
 
 // ========== CONFIGURAÇÕES ==========
