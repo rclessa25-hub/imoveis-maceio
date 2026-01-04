@@ -494,77 +494,88 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== FUNÇÃO 7: Adicionar Novo Imóvel (COM SUPABASE) ==========
+// ========== FUNÇÃO 7: Adicionar Novo Imóvel (COM SISTEMA UNIFICADO DE MÍDIA) ==========
 window.addNewProperty = async function(propertyData) {
-    console.log('➕ ADICIONANDO NOVO IMÓVEL COM SUPABASE + PDFs CORRIGIDO:', propertyData);
+    console.log('➕ ADICIONANDO NOVO IMÓVEL COM SISTEMA UNIFICADO:', propertyData);
 
+    // ✅ Validação básica
     if (!propertyData.title || !propertyData.price || !propertyData.location) {
         alert('❌ Preencha Título, Preço e Localização!');
         return null;
     }
 
-    const operationId = window.OperationMonitor ? 
-        window.OperationMonitor.startOperation('addNewProperty', { title: propertyData.title }) : null;
+    const operationId = window.OperationMonitor
+        ? window.OperationMonitor.startOperation('addNewProperty', { title: propertyData.title })
+        : null;
 
     try {
-        // ✅ 1. Salvar PDFs no Supabase Storage (SE HOUVER)
-        let pdfsString = '';
+        // =========================================================
+        // 1. PROCESSAR MÍDIA (IMAGENS + PDFs) VIA SISTEMA UNIFICADO
+        // =========================================================
+        let mediaResult = { images: '', pdfs: '' };
 
-        if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
-            console.log(`📤 Processando ${window.selectedPdfFiles.length} PDF(s) primeiro...`);
+        if (typeof MediaSystem !== 'undefined' &&
+            (MediaSystem.state.files.length > 0 || MediaSystem.state.pdfs.length > 0)) {
+
+            console.log('📤 Processando mídia com MediaSystem...');
             const tempId = `temp_${Date.now()}`;
 
-            if (typeof window.processAndSavePdfs === 'function') {
-                pdfsString = await window.processAndSavePdfs(tempId, propertyData.title);
-                console.log(`✅ PDFs processados: ${pdfsString ? 'SIM' : 'NÃO'}`);
+            mediaResult = await MediaSystem.uploadAll(tempId, propertyData.title);
 
-                if (pdfsString) {
-                    propertyData.pdfs = pdfsString;
-                    console.log('📎 PDFs adicionados aos dados do imóvel');
-                }
-            }
+            if (mediaResult.images) propertyData.images = mediaResult.images;
+            if (mediaResult.pdfs) propertyData.pdfs = mediaResult.pdfs;
+        } else {
+            console.log('ℹ️ Nenhuma mídia selecionada para este imóvel');
         }
 
-        // ✅ 2. Salvar imóvel no Supabase Database
-        let supabaseResult = null;
+        // =========================================================
+        // 2. SALVAR NO SUPABASE (SE DISPONÍVEL)
+        // =========================================================
         let supabaseSuccess = false;
         let supabaseId = null;
 
-        if (window.supabaseSaveProperty) {
+        if (typeof window.supabaseSaveProperty === 'function') {
             try {
                 const supabaseData = {
                     title: propertyData.title,
                     price: propertyData.price,
                     location: propertyData.location,
                     description: propertyData.description || '',
-                    features: typeof propertyData.features === 'string' ? propertyData.features :
-                             Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
+                    features: typeof propertyData.features === 'string'
+                        ? propertyData.features
+                        : Array.isArray(propertyData.features)
+                            ? propertyData.features.join(', ')
+                            : '',
                     type: propertyData.type || 'residencial',
                     has_video: propertyData.has_video || false,
                     badge: propertyData.badge || 'Novo',
                     rural: propertyData.type === 'rural',
-                    images: propertyData.images || "https://images.unsplash.com/photo-1568605114967-8130f3a36994",
-                    pdfs: pdfsString || '',
+                    images: propertyData.images || '',
+                    pdfs: propertyData.pdfs || '',
                     created_at: new Date().toISOString()
                 };
 
-                console.log('📤 ENVIANDO IMÓVEL + PDFs para Supabase:', supabaseData);
+                console.log('📤 Enviando imóvel ao Supabase:', supabaseData);
+                const result = await window.supabaseSaveProperty(supabaseData);
 
-                supabaseResult = await window.supabaseSaveProperty(supabaseData);
-
-                if (supabaseResult && supabaseResult.success) {
+                if (result && result.success) {
                     supabaseSuccess = true;
-                    supabaseId = supabaseResult.data?.id;
-                    console.log(`✅ ✅ ✅ IMÓVEL SALVO NO SUPABASE COM ID: ${supabaseId}`);
+                    supabaseId = result.data?.id;
+                    console.log(`✅ Imóvel salvo no Supabase com ID ${supabaseId}`);
                 }
             } catch (error) {
-                console.error('❌ Erro ao salvar imóvel:', error);
+                console.error('❌ Erro ao salvar no Supabase:', error);
             }
         }
 
-        // ✅ 3. Criar objeto local do imóvel
-        const newId = supabaseSuccess ? supabaseId : 
-                     (window.properties.length > 0 ? Math.max(...window.properties.map(p => p.id)) + 1 : 1);
+        // =========================================================
+        // 3. CRIAR OBJETO LOCAL
+        // =========================================================
+        const newId = supabaseSuccess && supabaseId
+            ? supabaseId
+            : (window.properties.length > 0
+                ? Math.max(...window.properties.map(p => p.id)) + 1
+                : 1);
 
         const newProperty = {
             id: newId,
@@ -572,86 +583,79 @@ window.addNewProperty = async function(propertyData) {
             price: propertyData.price,
             location: propertyData.location,
             description: propertyData.description || '',
-            features: typeof propertyData.features === 'string' ? propertyData.features :
-                     Array.isArray(propertyData.features) ? propertyData.features.join(', ') : '',
+            features: typeof propertyData.features === 'string'
+                ? propertyData.features
+                : Array.isArray(propertyData.features)
+                    ? propertyData.features.join(', ')
+                    : '',
             type: propertyData.type || 'residencial',
             has_video: propertyData.has_video || false,
             badge: propertyData.badge || 'Novo',
             rural: propertyData.type === 'rural',
-            images: propertyData.images || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-            pdfs: pdfsString || '',
+            images: propertyData.images || '',
+            pdfs: propertyData.pdfs || '',
             created_at: new Date().toISOString(),
             savedToSupabase: supabaseSuccess
         };
 
-        // ✅ 4. Adicionar localmente
+        // =========================================================
+        // 4. SALVAR LOCALMENTE
+        // =========================================================
         window.properties.unshift(newProperty);
         window.savePropertiesToStorage();
 
-        // ✅ 5. Se tem PDFs e salvou no Supabase, atualizar URLs
-        if (pdfsString && supabaseSuccess && supabaseId) {
-            console.log(`🔄 Atualizando URLs dos PDFs com ID real ${supabaseId}...`);
-
-            if (typeof window.linkPendingPdfsToProperty === 'function') {
-                const tempId = `temp_${Date.now() - 1000}`;
-                window.linkPendingPdfsToProperty(tempId, supabaseId);
-            }
-
-            setTimeout(async () => {
-                try {
-                    const updatedPdfs = await window.processAndSavePdfs(supabaseId, propertyData.title);
-                    if (updatedPdfs && updatedPdfs !== pdfsString) {
-                        newProperty.pdfs = updatedPdfs;
-                        window.savePropertiesToStorage();
-
-                        if (window.supabaseUpdateProperty) {
-                            await window.supabaseUpdateProperty(supabaseId, { pdfs: updatedPdfs });
-                            console.log(`✅ PDFs atualizados no Supabase para ID ${supabaseId}`);
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Erro ao atualizar PDFs:', error);
-                }
-            }, 2000);
-        }
-
-        // ✅ 6. Renderizar
+        // =========================================================
+        // 5. ATUALIZAR UI
+        // =========================================================
         if (typeof window.renderProperties === 'function') {
             window.renderProperties('todos');
         }
 
-        // ✅ 7. Atualizar admin
         if (typeof window.loadPropertyList === 'function') {
             setTimeout(() => window.loadPropertyList(), 300);
         }
 
-        // ✅ 8. Feedback
-        if (supabaseSuccess) {
-            if (pdfsString) {
-                alert(`✅ Imóvel "${newProperty.title}" cadastrado com ${window.selectedPdfFiles.length} PDF(s)!\n\nID: ${newId}\n\nPDFs disponíveis após atualização.`);
-            } else {
-                alert(`✅ Imóvel "${newProperty.title}" cadastrado PERMANENTEMENTE!\n\nID: ${newId}`);
-            }
-        } else {
-            alert(`⚠️ Imóvel "${newProperty.title}" cadastrado apenas LOCALMENTE.`);
-        }
+        // =========================================================
+        // 6. FEEDBACK AO USUÁRIO
+        // =========================================================
+        const imageCount = newProperty.images
+            ? newProperty.images.split(',').filter(u => u.trim()).length
+            : 0;
 
-        // ✅ 9. Limpar PDFs selecionados
+        const pdfCount = newProperty.pdfs
+            ? newProperty.pdfs.split(',').filter(u => u.trim()).length
+            : 0;
+
+        let message = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
+        if (imageCount > 0) message += `\n📸 ${imageCount} mídia(s)`;
+        if (pdfCount > 0) message += `\n📄 ${pdfCount} PDF(s)`;
+        if (!supabaseSuccess) message += `\n⚠️ Salvo apenas localmente`;
+
+        alert(message);
+
+        // =========================================================
+        // 7. LIMPEZA DO SISTEMA DE MÍDIA
+        // =========================================================
         setTimeout(() => {
-            if (typeof window.clearAllPdfs === 'function') {
-                window.clearAllPdfs();
+            if (typeof MediaSystem !== 'undefined') {
+                MediaSystem.resetState();
+                console.log('🧹 MediaSystem resetado após criação');
             }
-        }, 100);
+        }, 300);
 
-        // ✅ 10. INVALIDAR CACHE INTELIGENTE
+        // =========================================================
+        // 8. INVALIDAR CACHE
+        // =========================================================
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
-            console.log('🗑️ Cache invalidado após adicionar novo imóvel');
+            console.log('🗑️ Cache invalidado');
         }
 
-        // ✅ 11. Finalizar monitoramento
+        // =========================================================
+        // 9. FINALIZAR MONITORAMENTO
+        // =========================================================
         if (operationId && window.OperationMonitor) {
-            window.OperationMonitor.endOperationSuccess(operationId, { 
+            window.OperationMonitor.endOperationSuccess(operationId, {
                 id: newProperty.id,
                 title: newProperty.title
             });
