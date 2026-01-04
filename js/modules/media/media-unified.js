@@ -631,3 +631,57 @@ setTimeout(() => {
     window.MediaSystem.init('vendas');
     console.log('✅ Sistema de mídia unificado pronto');
 }, 1000);
+
+// NO FINAL do media-unified.js - ANTES do console.log final
+
+// ========== VERIFICAÇÃO DE INTEGRIDADE ==========
+
+// Verificar se todas as funções necessárias estão disponíveis
+setTimeout(() => {
+    console.log('🔍 Verificação de integridade do MediaSystem');
+    
+    const requiredFunctions = [
+        'addFiles',
+        'addPdfs', 
+        'loadExisting',
+        'resetState',
+        'uploadAll',
+        'processAndSavePdfs',     // Nova
+        'clearAllPdfs',           // Nova
+        'loadExistingPdfsForEdit', // Nova
+        'getPdfsToSave',          // Nova
+        'getMediaUrlsForProperty' // Nova
+    ];
+    
+    const missing = [];
+    requiredFunctions.forEach(func => {
+        if (typeof MediaSystem[func] !== 'function') {
+            missing.push(func);
+        }
+    });
+    
+    if (missing.length === 0) {
+        console.log('✅ Todas as funções necessárias disponíveis');
+    } else {
+        console.error('❌ Funções faltando:', missing);
+    }
+}, 2000);
+
+// ========== COMPATIBILIDADE COM MÓDULOS DE SUPORTE ==========
+
+// Criar fallbacks silenciosos para funções que os módulos de suporte podem procurar
+if (typeof window.initMediaSystem === 'undefined') {
+    window.initMediaSystem = function() {
+        console.log('🔧 initMediaSystem chamada (fallback para compatibilidade)');
+        return MediaSystem ? MediaSystem.init('vendas') : null;
+    };
+}
+
+if (typeof window.updateMediaPreview === 'undefined') {
+    window.updateMediaPreview = function() {
+        console.log('🎨 updateMediaPreview chamada (fallback para compatibilidade)');
+        return MediaSystem ? MediaSystem.updateUI() : null;
+    };
+}
+
+console.log('✅ Sistema de mídia unificado pronto com compatibilidade total');
