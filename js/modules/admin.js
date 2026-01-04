@@ -827,34 +827,9 @@ function initializeAdminSystem() {
     
     // 4. Adicionar botão sincronização
     addSyncButton();
-
-    // 5. FORÇAR INICIALIZAÇÃO DO SISTEMA DE MÍDIA
-    setTimeout(() => {
-        console.log('🖼️ Verificando sistema de mídia...');
-        
-        // Verificar se os elementos de upload existem
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        
-        if (uploadArea && fileInput) {
-            console.log('✅ Elementos de upload encontrados');
-            
-            // Forçar inicialização
-            if (typeof window.forceMediaSystemInit === 'function') {
-                setTimeout(() => {
-                    window.forceMediaSystemInit();
-                    console.log('🎯 Sistema de mídia forçado a inicializar');
-                }, 1500);
-            }
-        } else {
-            console.error('❌ Elementos de upload NÃO encontrados!');
-            console.log('🔍 Procurando uploadArea:', !!uploadArea);
-            console.log('🔍 Procurando fileInput:', !!fileInput);
-        }
-    }, 2000);
     
     // Na função initializeAdminSystem, procure esta parte:
-    // 6. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
+    // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
     console.log('🎯 Iniciando correção garantida dos filtros...');
     
     // Tentativa 1: Imediata (800ms)
@@ -899,10 +874,6 @@ if (document.readyState === 'loading') {
     setTimeout(initializeAdminSystem, 300);
 }
 
-// ========== DIAGNÓSTICO DOS EVENT LISTENERS ==========
-// REMOVIDO
-// ========== FORÇAR INICIALIZAÇÃO DO SISTEMA DE MÍDIA ==========
-// REMOVIDO
 // ========== FUNÇÕES PDF BÁSICAS ==========
 window.showPdfModal = function(propertyId) {
     console.log(`📄 showPdfModal chamado para ID: ${propertyId}`);
@@ -1609,28 +1580,6 @@ window.clearProcessedPdfs = function() {
         window.updatePdfPreview();
     }
 };
-
-// ========== FALLBACK MÍNIMO PARA SISTEMA DE MÍDIA ==========
-// Se o sistema de mídia não carregar, criar fallback básico
-(function setupMediaFallback() {
-    // Aguardar 3 segundos para carregamento normal
-    setTimeout(() => {
-        if (typeof window.handleNewMediaFiles !== 'function') {
-            console.warn('⚠️ Sistema de mídia não carregou automaticamente');
-            
-            // Fallback mínimo e silencioso
-            window.handleNewMediaFiles = function(files) {
-                console.log('📸 [FALLBACK] Sistema de mídia em carregamento...');
-                return 0; // Não processa arquivos
-            };
-            
-            // Apenas mostrar alerta em modo debug
-            if (window.location.search.includes('debug=true')) {
-                console.log('💡 Dica: Adicione ?debug=true para carregar sistema de recuperação');
-            }
-        }
-    }, 3000);
-})();
 
 // ========== VERIFICAÇÃO DE FORMULÁRIO VAZIO (MANTER - É ESSENCIAL) ==========
 window.isAdminFormEmpty = function() {
