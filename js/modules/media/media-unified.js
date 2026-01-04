@@ -281,7 +281,61 @@ const MediaSystem = {
         }
     },
 
-    // ========== FUNÇÕES PRIVADAS ==========
+    // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
+    // ADICIONADAS APÓS uploadAll (linha ~350)
+
+    processAndSavePdfs: async function(propertyId, propertyTitle) {
+        console.log(`📄 processAndSavePdfs chamado para ${propertyId}`);
+        const result = await this.uploadAll(propertyId, propertyTitle);
+        return result.pdfs;
+    },
+
+    clearAllPdfs: function() {
+        console.log('🧹 Limpando apenas PDFs');
+        this.state.pdfs.length = 0;
+        this.state.existingPdfs.length = 0;
+        this.updateUI();
+        return this;
+    },
+
+    loadExistingPdfsForEdit: function(property) {
+        console.log('📄 Carregando PDFs existentes para edição');
+        if (!property) return this;
+        this.state.existingPdfs.length = 0;
+        if (property.pdfs && property.pdfs !== 'EMPTY') {
+            const pdfUrls = property.pdfs.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            this.state.existingPdfs = pdfUrls.map((url, index) => ({
+                url: url,
+                id: `existing_pdf_${property.id}_${index}`,
+                name: this.extractFileName(url),
+                isExisting: true,
+                markedForDeletion: false
+            }));
+        }
+        this.updateUI();
+        return this;
+    },
+
+    getPdfsToSave: async function(propertyId) {
+        console.log(`💾 Obtendo PDFs para salvar para ${propertyId}`);
+        const result = await this.uploadAll(propertyId, 'Imóvel');
+        return result.pdfs;
+    },
+
+    getMediaUrlsForProperty: async function(propertyId, propertyTitle) {
+        console.log(`🖼️ Obtendo URLs de mídia para ${propertyId}`);
+        const result = await this.uploadAll(propertyId, propertyTitle);
+        return result.images;
+    },
+
+    clearAllMedia: function() {
+        console.log('🧹 LIMPEZA COMPLETA DE MÍDIA E PDFs');
+        return this.resetState();
+    },
+    
+    // ===== RESTANTE DAS FUNÇÕES (UI, validação, utilidades) FUNÇÕES PRIVADAS ======
     
     validateFile(file) {
         const isImage = this.config.allowedTypes.images.includes(file.type);
