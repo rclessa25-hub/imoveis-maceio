@@ -134,25 +134,25 @@ window.toggleAdminPanel = function() {
 };
 
 // ========== FUNÇÕES DO FORMULÁRIO ==========
+// NO admin.js - ATUALIZAR função cancelEdit
 window.cancelEdit = function() {
     console.log('❌ Cancelando edição...');
     window.editingPropertyId = null;
 
-     // Limpar PDFs
+    // ⚠️ LIMPAR TUDO usando o sistema unificado
+    if (typeof MediaSystem !== 'undefined') {
+        MediaSystem.resetState();
+    }
+    
+    // Limpar também funções específicas se existirem
+    if (typeof window.clearAllPdfs === 'function') {
+        window.clearAllPdfs();
+    }
+    
     if (typeof window.clearProcessedPdfs === 'function') {
         window.clearProcessedPdfs();
     }
-    
-    if (typeof window.clearPdfsOnCancel === 'function') {
-        window.clearPdfsOnCancel();
-    }
 
-    // ⭐ NOVO: Limpar mídia (fotos/vídeos)
-    if (typeof window.clearMediaSystem === 'function') {
-        window.clearMediaSystem();
-        console.log('✅ Mídia limpa no cancelamento');
-    }
-    
     const form = document.getElementById('propertyForm');
     if (form) form.reset();
     
@@ -162,7 +162,32 @@ window.cancelEdit = function() {
     const formTitle = document.getElementById('formTitle');
     if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
     
-    console.log('✅ Edição cancelada');
+    // FORÇAR limpeza visual dos previews
+    setTimeout(() => {
+        const mediaPreview = document.getElementById('uploadPreview');
+        const pdfPreview = document.getElementById('pdfUploadPreview');
+        
+        if (mediaPreview) {
+            mediaPreview.innerHTML = `
+                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+                </div>
+            `;
+        }
+        
+        if (pdfPreview) {
+            pdfPreview.innerHTML = `
+                <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                    <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+                </div>
+            `;
+        }
+    }, 100);
+    
+    console.log('✅ Edição cancelada e sistema limpo');
 };
 
 window.loadPropertyList = function() {
