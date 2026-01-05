@@ -359,11 +359,19 @@ window.createPropertyGallery = function(property) {
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-         <!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
+<!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
                     onclick="event.stopPropagation(); 
-                             PdfSystem.showModal(${property.id});"
+                             if (typeof PdfSystem !== 'undefined' && typeof PdfSystem.showModal === 'function') {
+                                 PdfSystem.showModal(${property.id});
+                             } else {
+                                 // Fallback para sistema antigo
+                                 window.currentPropertyId=${property.id};
+                                 const modal = document.getElementById('pdfModal');
+                                 if (modal) modal.style.display='flex';
+                                 setTimeout(() => document.getElementById('pdfPassword')?.focus(), 100);
+                             }"
                     title="Documentos do imóvel">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
