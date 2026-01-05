@@ -6,7 +6,7 @@ const PdfSystem = (function() {
     const CONFIG = {
         password: window.PDF_PASSWORD || "doc123",
         maxFiles: 5,
-        maxSize: 10 * // js/modules/reader/pdf-unified.js - VERSÃO COMPLETA ATUALIZADA
+        maxSize: 10 * 1024 * 1024,
 console.log('📄 pdf-unified.js - Sistema PDF Unificado V1.3');
 
 const PdfSystem = (function() {
