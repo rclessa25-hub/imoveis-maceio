@@ -362,15 +362,20 @@ window.createPropertyGallery = function(property) {
 <!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
-                    onclick="event.stopPropagation(); 
-                             if (typeof PdfSystem !== 'undefined' && typeof PdfSystem.showModal === 'function') {
+                    onclick="event.stopPropagation();
+                             if (typeof PdfSystem !== 'undefined' && PdfSystem.showModal) {
                                  PdfSystem.showModal(${property.id});
                              } else {
-                                 // Fallback para sistema antigo
+                                 // Fallback
                                  window.currentPropertyId=${property.id};
                                  const modal = document.getElementById('pdfModal');
-                                 if (modal) modal.style.display='flex';
-                                 setTimeout(() => document.getElementById('pdfPassword')?.focus(), 100);
+                                 if (modal) {
+                                     modal.style.display = 'flex';
+                                     setTimeout(() => {
+                                         const passwordInput = document.getElementById('pdfPassword');
+                                         if (passwordInput) passwordInput.focus();
+                                     }, 100);
+                                 }
                              }"
                     title="Documentos do imóvel">
                     <i class="fas fa-file-pdf"></i>
