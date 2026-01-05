@@ -36,27 +36,46 @@ window.clearMediaSystemComplete = function() {
 
 // ⚠️ IMPORTANTE: Estas funções são CHAMADAS pelo admin.js - DEVEM existir
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    if (MediaSystem && MediaSystem.processAndSavePdfs) {
-        return await MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
+    if (window.PdfSystem && window.PdfSystem.processAndSavePdfs) {
+        return await window.PdfSystem.processAndSavePdfs(propertyId, propertyTitle);
+    }
+    // Fallback para MediaSystem (compatibilidade)
+    if (window.MediaSystem && window.MediaSystem.processAndSavePdfs) {
+        return await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
     }
     return '';
 };
 
 window.clearAllPdfs = function() {
-    if (MediaSystem && MediaSystem.clearAllPdfs) {
-        MediaSystem.clearAllPdfs();
+    // Tentar PdfSystem primeiro
+    if (window.PdfSystem && window.PdfSystem.clearAllPdfs) {
+        window.PdfSystem.clearAllPdfs();
+    } 
+    // Fallback para MediaSystem (compatibilidade)
+    else if (window.MediaSystem && window.MediaSystem.clearAllPdfs) {
+        window.MediaSystem.clearAllPdfs();
     }
 };
 
 window.loadExistingPdfsForEdit = function(property) {
-    if (MediaSystem && MediaSystem.loadExistingPdfsForEdit) {
-        MediaSystem.loadExistingPdfsForEdit(property);
+    // Tentar PdfSystem primeiro
+    if (window.PdfSystem && window.PdfSystem.loadExistingPdfsForEdit) {
+        window.PdfSystem.loadExistingPdfsForEdit(property);
+    }
+    // Fallback para MediaSystem (compatibilidade)
+    else if (window.MediaSystem && window.MediaSystem.loadExistingPdfsForEdit) {
+        window.MediaSystem.loadExistingPdfsForEdit(property);
     }
 };
 
 window.getPdfsToSave = async function(propertyId) {
-    if (MediaSystem && MediaSystem.getPdfsToSave) {
-        return await MediaSystem.getPdfsToSave(propertyId);
+    // Tentar PdfSystem primeiro
+    if (window.PdfSystem && window.PdfSystem.getPdfsToSave) {
+        return await window.PdfSystem.getPdfsToSave(propertyId);
+    }
+    // Fallback para MediaSystem (compatibilidade)
+    else if (window.MediaSystem && window.MediaSystem.getPdfsToSave) {
+        return await window.MediaSystem.getPdfsToSave(propertyId);
     }
     return '';
 };
@@ -70,9 +89,16 @@ window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
 
 window.clearProcessedPdfs = function() {
     // Esta função limpa apenas PDFs processados
-    if (MediaSystem && MediaSystem.state && MediaSystem.state.pdfs) {
-        MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
-        MediaSystem.updateUI();
+    // Tentar PdfSystem primeiro
+    if (window.PdfSystem && window.PdfSystem.clearProcessedPdfs) {
+        window.PdfSystem.clearProcessedPdfs();
+    }
+    // Fallback para MediaSystem (compatibilidade)
+    else if (window.MediaSystem && window.MediaSystem.state && window.MediaSystem.state.pdfs) {
+        window.MediaSystem.state.pdfs = window.MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
+        if (window.MediaSystem.updateUI) {
+            window.MediaSystem.updateUI();
+        }
     }
 };
 
@@ -1570,20 +1596,40 @@ setTimeout(() => {
 window.clearProcessedPdfs = function() {
     console.log('🧹 Limpando PDFs processados...');
     
-    // Manter apenas PDFs NÃO processados
-    window.selectedPdfFiles = window.selectedPdfFiles.filter(pdf => !pdf.processed);
-    
-    console.log(`📊 Após limpeza: ${window.selectedPdfFiles.length} PDF(s) não processados`);
-    
-    // Atualizar preview
-    if (typeof window.updatePdfPreview === 'function') {
-        window.updatePdfPreview();
+    // Tentar PdfSystem primeiro
+    if (window.PdfSystem && window.PdfSystem.clearProcessedPdfs) {
+        window.PdfSystem.clearProcessedPdfs();
+    }
+    // Fallback para MediaSystem (compatibilidade)
+    else if (window.MediaSystem && window.MediaSystem.state && window.MediaSystem.state.pdfs) {
+        window.MediaSystem.state.pdfs = window.MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
+        if (window.MediaSystem.updateUI) {
+            window.MediaSystem.updateUI();
+        }
+        console.log(`📊 Após limpeza: ${window.MediaSystem.state.pdfs.length} PDF(s) não processados`);
     }
 };
 
 // ========== VERIFICAÇÃO DE FORMULÁRIO VAZIO (MANTER - É ESSENCIAL) ==========
 window.isAdminFormEmpty = function() {
-    // ... (manter código existente, é essencial para UX)
+    const checks = {
+        titulo: !document.getElementById('propTitle').value.trim(),
+        preco: !document.getElementById('propPrice').value.trim(),
+        localizacao: !document.getElementById('propLocation').value.trim(),
+        descricao: !document.getElementById('propDescription').value.trim(),
+        temMidia: !window.selectedMediaFiles || window.selectedMediaFiles.length === 0,
+        temPdfs: !window.selectedPdfFiles || window.selectedPdfFiles.length === 0
+    };
+    
+    const isEditing = window.editingPropertyId !== null;
+    const isTrulyEmpty = checks.titulo && checks.preco && checks.localizacao && 
+                        checks.temMidia && checks.temPdfs && !isEditing;
+    
+    return {
+        isEmpty: isTrulyEmpty,
+        isEditing: isEditing,
+        checks: checks
+    };
 };
 
 // Verificação automática ao carregar formulário
