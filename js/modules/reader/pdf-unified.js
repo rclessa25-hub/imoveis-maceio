@@ -1,5 +1,5 @@
 // js/modules/reader/pdf-unified.js - VERSÃO COMPLETA ATUALIZADA
-console.log('📄 pdf-unified.js - Sistema PDF Unificado V1.1');
+console.log('📄 pdf-unified.js - Sistema PDF Unificado V1.2');
 
 const PdfSystem = (function() {
     // ========== CONFIGURAÇÃO PRIVADA ==========
@@ -130,7 +130,7 @@ const PdfSystem = (function() {
                 
                 // 3. Combinar com existentes não excluídos
                 const keptExisting = state.existing
-                    .filter(item => !item.markedForletion && item.url)
+                    .filter(item => !item.markedForDeletion && item.url)
                     .map(item => item.url);
                 
                 if (keptExisting.length > 0) {
@@ -140,6 +140,10 @@ const PdfSystem = (function() {
                 }
                 
                 console.log('✅ Upload PDF completo:', results);
+                
+                // 4. Resetar estado após salvamento bem-sucedido
+                this.resetState();
+                
                 return results.pdfs;
                 
             } catch (error) {
@@ -159,8 +163,7 @@ const PdfSystem = (function() {
         
         clearAllPdfs() {
             console.log('🧹 Limpando todos os PDFs');
-            this.resetState();
-            return this;
+            return this.resetState();
         },
         
         loadExistingPdfsForEdit(property) {
@@ -516,6 +519,67 @@ const PdfSystem = (function() {
             }
         },
         
+        // FUNÇÃO ATUALIZADA: resetState (RESET COMPLETO)
+        resetState() {
+            console.log('🧹 PdfSystem.resetState() - LIMPEZA COMPLETA');
+            
+            // 1. Limpar arrays
+            state.files = [];
+            state.existing = [];
+            
+            // 2. Resetar flags
+            state.isProcessing = false;
+            state.currentPropertyId = null;
+            
+            // 3. Limpar UI
+            this.updateUI();
+            
+            // 4. Limpar também variáveis globais antigas (para compatibilidade)
+            if (typeof window.selectedPdfFiles !== 'undefined') {
+                window.selectedPdfFiles = [];
+            }
+            
+            if (typeof window.existingPdfFiles !== 'undefined') {
+                window.existingPdfFiles = [];
+            }
+            
+            // 5. Resetar o input de arquivo
+            const pdfFileInput = document.getElementById('pdfFileInput');
+            if (pdfFileInput) {
+                pdfFileInput.value = '';
+            }
+            
+            console.log('✅ Estado do PdfSystem completamente resetado');
+            return this;
+        },
+        
+        // FUNÇÃO ADICIONADA: resetCoordinated
+        resetCoordinated() {
+            console.log('🔄 Reset coordenado entre PdfSystem e admin');
+            
+            // 1. Resetar PdfSystem
+            this.resetState();
+            
+            // 2. Chamar clearAllPdfs do admin.js (que limpa ambos sistemas)
+            if (typeof window.clearAllPdfs === 'function') {
+                window.clearAllPdfs();
+            }
+            
+            // 3. Forçar atualização visual
+            const pdfPreview = document.getElementById('pdfUploadPreview');
+            if (pdfPreview) {
+                pdfPreview.innerHTML = `
+                    <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                        <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+                    </div>
+                `;
+            }
+            
+            console.log('✅ Reset coordenado completo');
+            return this;
+        },
+        
         // UTILITÁRIOS
         validateFile(file) {
             if (!CONFIG.allowedTypes.includes(file.type)) {
@@ -548,15 +612,6 @@ const PdfSystem = (function() {
         },
         
         // ESTADO
-        resetState() {
-            state.files = [];
-            state.existing = [];
-            state.isProcessing = false;
-            state.currentPropertyId = null;
-            this.updateUI();
-            return this;
-        },
-        
         updateUI() {
             // Implementação simplificada - usar debounce se necessário
             this.renderPdfPreview();
