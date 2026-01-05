@@ -362,10 +362,8 @@ window.createPropertyGallery = function(property) {
          <!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
-                    onclick="event.stopPropagation();
-                             window.currentPropertyId=${property.id};
-                             document.getElementById('pdfModal').style.display='flex';
-                             setTimeout(() => document.getElementById('pdfPassword')?.focus(), 100);"
+                    onclick="event.stopPropagation(); 
+                             PdfSystem.showModal(${property.id});"
                     title="Documentos do imóvel">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
