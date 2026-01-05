@@ -751,13 +751,29 @@ const PdfSystem = (function() {
     return api;
 })();
 
-// Auto-inicialização segura
-setTimeout(() => {
-    if (typeof window.PdfSystem !== 'undefined') {
-        window.PdfSystem.init();
-        console.log('✅ PdfSystem unificado pronto');
-    }
-}, 1000);
-
 // Exportação global
 window.PdfSystem = PdfSystem;
+
+// INICIALIZAÇÃO ÚNICA - CORREÇÃO DE CONFLITO
+if (!window.pdfSystemInitialized) {
+    window.pdfSystemInitialized = false;
+    
+    const initPdfSystem = function() {
+        if (window.pdfSystemInitialized) return;
+        
+        if (typeof window.PdfSystem !== 'undefined') {
+            window.PdfSystem.init();
+            window.pdfSystemInitialized = true;
+            console.log('✅ PdfSystem unificado inicializado UMA VEZ');
+        }
+    };
+    
+    // Aguardar DOM e outros sistemas
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initPdfSystem, 1500);
+        });
+    } else {
+        setTimeout(initPdfSystem, 2000);
+    }
+}
