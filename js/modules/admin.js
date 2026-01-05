@@ -1,9 +1,17 @@
 // js/modules/admin.js - SISTEMA ADMIN CORRETO E FUNCIONAL
 console.log('🔧 admin.js carregado - Sistema Administrativo');
 
-// ========== INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA ==========
+/* ==========================================================
+   INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA E PDF (ETAPA 12/14)
+   ========================================================== */
 
-// Sobrescrever funções antigas para usar o sistema unificado
+/**
+ * Sobrescreve as funções globais antigas para apontar
+ * exclusivamente para o MediaSystem ou PdfSystem (unificado)
+ * Mantém compatibilidade sem refatoração agressiva
+ */
+
+// ========== INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA ==========
 window.handleNewMediaFiles = function(files) {
     return MediaSystem.addFiles(files);
 };
@@ -92,20 +100,36 @@ window.getPdfsToSave = async function(propertyId) {
     return await window.processAndSavePdfs(propertyId, 'Imóvel');
 };
 
-window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
-    if (MediaSystem && MediaSystem.getMediaUrlsForProperty) {
-        return await MediaSystem.getMediaUrlsForProperty(propertyId, propertyTitle);
-    }
-    return '';
-};
+// ========== CORREÇÃO DO FLUXO DE SALVAMENTO ==========
+// DENTRO da função de submit do formulário (~linha 376) após coletar propertyData:
+// console.log('🔍 Verificando PDFs para salvar...');
 
-window.clearProcessedPdfs = function() {
-    // Esta função limpa apenas PDFs processados
-    if (MediaSystem && MediaSystem.state && MediaSystem.state.pdfs) {
-        MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
-        MediaSystem.updateUI();
+const hasPdfChanges = 
+    (window.PdfSystem && (window.PdfSystem.state.files.length > 0 || 
+                         window.PdfSystem.state.existing.some(p => p.markedForDeletion))) ||
+    (window.selectedPdfFiles && window.selectedPdfFiles.length > 0);
+
+if (hasPdfChanges && window.editingPropertyId) {
+    console.log(`📄 Processando PDFs para edição do imóvel ${window.editingPropertyId}...`);
+    
+    if (window.PdfSystem && typeof window.PdfSystem.processAndSavePdfs === 'function') {
+        try {
+            const pdfsString = await window.PdfSystem.processAndSavePdfs(
+                window.editingPropertyId, 
+                propertyData.title
+            );
+            
+            if (pdfsString !== undefined && pdfsString !== null) {
+                updateData.pdfs = pdfsString || '';
+                const pdfCount = pdfsString ? pdfsString.split(',').filter(url => url.trim() !== '').length : 0;
+                console.log(`✅ ${pdfCount} PDF(s) processado(s): ${pdfsString.substring(0, 60)}...`);
+            }
+        } catch (pdfError) {
+            console.error('❌ Erro ao processar PDFs com PdfSystem:', pdfError);
+            updateData.pdfs = '';
+        }
     }
-};
+}
 
 // ========== CONFIGURAÇÕES ==========
 const ADMIN_CONFIG = {
