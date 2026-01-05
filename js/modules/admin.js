@@ -1,16 +1,6 @@
 // js/modules/admin.js - SISTEMA ADMIN CORRETO E FUNCIONAL
 console.log('🔧 admin.js carregado - Sistema Administrativo');
 
-/* ==========================================================
-   INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA (ETAPA 12)
-   ========================================================== */
-
-/**
- * Sobrescreve as funções globais antigas para apontar
- * exclusivamente para o MediaSystem (media-unified.js)
- * Mantém compatibilidade sem refatoração agressiva
- */
-
 // ========== INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA ==========
 
 // Sobrescrever funções antigas para usar o sistema unificado
@@ -34,50 +24,72 @@ window.clearMediaSystemComplete = function() {
     MediaSystem.resetState();
 };
 
-// ⚠️ IMPORTANTE: Estas funções são CHAMADAS pelo admin.js - DEVEM existir
+// ========== INTEGRAÇÃO COM PDFSystem UNIFICADO ==========
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    if (window.PdfSystem && window.PdfSystem.processAndSavePdfs) {
-        return await window.PdfSystem.processAndSavePdfs(propertyId, propertyTitle);
+    console.log(`📄 admin.js: processAndSavePdfs chamado para ${propertyId}`);
+    
+    // PRIORIDADE 1: Usar PdfSystem (novo sistema unificado)
+    if (window.PdfSystem && typeof window.PdfSystem.processAndSavePdfs === 'function') {
+        try {
+            const result = await window.PdfSystem.processAndSavePdfs(propertyId, propertyTitle);
+            console.log(`✅ PdfSystem retornou: ${result ? result.substring(0, 80) + '...' : 'vazio'}`);
+            return result || '';
+        } catch (error) {
+            console.error('❌ Erro no PdfSystem:', error);
+        }
     }
-    // Fallback para MediaSystem (compatibilidade)
-    if (window.MediaSystem && window.MediaSystem.processAndSavePdfs) {
+    
+    // PRIORIDADE 2: Fallback para MediaSystem (compatibilidade)
+    if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
+        console.log('🔄 Usando MediaSystem como fallback');
         return await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
     }
+    
+    // PRIORIDADE 3: Fallback manual (emergência)
+    console.warn('⚠️  Nenhum sistema PDF disponível - retornando string vazia');
     return '';
 };
 
 window.clearAllPdfs = function() {
-    // Tentar PdfSystem primeiro
-    if (window.PdfSystem && window.PdfSystem.clearAllPdfs) {
+    console.log('🧹 admin.js: clearAllPdfs chamado');
+    
+    // Limpar ambos os sistemas para garantir
+    if (window.PdfSystem && typeof window.PdfSystem.clearAllPdfs === 'function') {
         window.PdfSystem.clearAllPdfs();
-    } 
-    // Fallback para MediaSystem (compatibilidade)
-    else if (window.MediaSystem && window.MediaSystem.clearAllPdfs) {
+    }
+    
+    if (window.MediaSystem && typeof window.MediaSystem.clearAllPdfs === 'function') {
         window.MediaSystem.clearAllPdfs();
     }
+    
+    // Limpeza manual de fallback
+    if (window.selectedPdfFiles) window.selectedPdfFiles = [];
+    if (window.existingPdfFiles) window.existingPdfFiles = [];
+    
+    console.log('✅ PDFs limpos em todos os sistemas');
 };
 
 window.loadExistingPdfsForEdit = function(property) {
-    // Tentar PdfSystem primeiro
-    if (window.PdfSystem && window.PdfSystem.loadExistingPdfsForEdit) {
-        window.PdfSystem.loadExistingPdfsForEdit(property);
+    console.log('📄 admin.js: loadExistingPdfsForEdit chamado');
+    
+    // PRIORIDADE 1: PdfSystem
+    if (window.PdfSystem && typeof window.PdfSystem.loadExistingPdfsForEdit === 'function') {
+        return window.PdfSystem.loadExistingPdfsForEdit(property);
     }
-    // Fallback para MediaSystem (compatibilidade)
-    else if (window.MediaSystem && window.MediaSystem.loadExistingPdfsForEdit) {
-        window.MediaSystem.loadExistingPdfsForEdit(property);
+    
+    // PRIORIDADE 2: MediaSystem
+    if (window.MediaSystem && typeof window.MediaSystem.loadExistingPdfsForEdit === 'function') {
+        return window.MediaSystem.loadExistingPdfsForEdit(property);
     }
+    
+    console.warn('⚠️  Nenhum sistema PDF disponível para carregar existentes');
 };
 
 window.getPdfsToSave = async function(propertyId) {
-    // Tentar PdfSystem primeiro
-    if (window.PdfSystem && window.PdfSystem.getPdfsToSave) {
-        return await window.PdfSystem.getPdfsToSave(propertyId);
-    }
-    // Fallback para MediaSystem (compatibilidade)
-    else if (window.MediaSystem && window.MediaSystem.getPdfsToSave) {
-        return await window.MediaSystem.getPdfsToSave(propertyId);
-    }
-    return '';
+    console.log(`💾 admin.js: getPdfsToSave chamado para ${propertyId}`);
+    
+    // Redirecionar para processAndSavePdfs (mesma lógica)
+    return await window.processAndSavePdfs(propertyId, 'Imóvel');
 };
 
 window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
@@ -89,16 +101,9 @@ window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
 
 window.clearProcessedPdfs = function() {
     // Esta função limpa apenas PDFs processados
-    // Tentar PdfSystem primeiro
-    if (window.PdfSystem && window.PdfSystem.clearProcessedPdfs) {
-        window.PdfSystem.clearProcessedPdfs();
-    }
-    // Fallback para MediaSystem (compatibilidade)
-    else if (window.MediaSystem && window.MediaSystem.state && window.MediaSystem.state.pdfs) {
-        window.MediaSystem.state.pdfs = window.MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
-        if (window.MediaSystem.updateUI) {
-            window.MediaSystem.updateUI();
-        }
+    if (MediaSystem && MediaSystem.state && MediaSystem.state.pdfs) {
+        MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
+        MediaSystem.updateUI();
     }
 };
 
