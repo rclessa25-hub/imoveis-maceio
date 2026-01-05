@@ -919,42 +919,37 @@ if (document.readyState === 'loading') {
 window.showPdfModal = function(propertyId) {
     console.log(`📄 showPdfModal chamado para ID: ${propertyId}`);
     
-    // Usar a função ORIGINAL do pdf-core.js
-    if (typeof window.openPdfModalDirect !== 'undefined') {
-        window.openPdfModalDirect(propertyId);
-    } else {
-        // Fallback robusto que GARANTE campo de senha
-        openPdfModalDirectFallback(propertyId);
-    }
-};
-
-// ========== FUNÇÃO DE FALLBACK (ATUALIZADA) ==========
-function openPdfModalDirectFallback(propertyId) {
-    console.log(`📄 Fallback PDF modal para ID: ${propertyId} - Versão Corrigida`);
-    
-    // Armazenar ID para uso posterior
-    window.currentPropertyId = propertyId;
-    
-    const property = window.properties.find(p => p.id == propertyId);
-    if (!property || !property.pdfs || property.pdfs === 'EMPTY') {
-        alert('Nenhum documento PDF disponível para este imóvel.');
+    // Usar o PdfSystem unificado se disponível
+    if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        window.PdfSystem.showModal(propertyId);
         return;
     }
     
-    // ✅ GARANTIR QUE O MODAL EXISTE COM TODOS OS ELEMENTOS
-    const modal = window.ensurePdfModalExists(true); // true = forçar verificação completa
+    // Fallback robusto
+    const property = window.properties?.find(p => p.id == propertyId);
+    if (!property) {
+        alert('Imóvel não encontrado!');
+        return;
+    }
     
-    // ✅ Configurar título com segurança
+    // Garantir que o modal existe COMPLETO
+    const modal = window.ensurePdfModalExists(true);
+    
+    if (!modal) {
+        alert('Erro: sistema de documentos não disponível');
+        return;
+    }
+    
+    // Configurar título
     const titleElement = document.getElementById('pdfModalTitle');
     if (titleElement) {
         titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
         titleElement.dataset.propertyId = propertyId;
     }
     
-    // ✅ GARANTIR QUE O CAMPO DE SENHA EXISTE E É VISÍVEL
+    // Garantir campo de senha visível
     let passwordInput = document.getElementById('pdfPassword');
     if (!passwordInput) {
-        // Criar se não existir
         passwordInput = document.createElement('input');
         passwordInput.type = 'password';
         passwordInput.id = 'pdfPassword';
@@ -966,34 +961,34 @@ function openPdfModalDirectFallback(propertyId) {
             border: 1px solid #ddd;
             border-radius: 5px;
             margin: 1rem 0;
-            font-size: 1rem;
-            display: block !important; /* FORÇAR VISIBILIDADE */
+            display: block !important;
         `;
         
-        // Inserir após o preview
+        // Inserir no lugar correto
         const previewDiv = document.getElementById('pdfPreview');
-        if (previewDiv) {
+        if (previewDiv && previewDiv.parentNode) {
             previewDiv.parentNode.insertBefore(passwordInput, previewDiv.nextSibling);
         }
-    } else {
-        // Tornar visível se existir
-        passwordInput.style.display = 'block';
-        passwordInput.style.visibility = 'visible';
-        passwordInput.style.opacity = '1';
     }
     
-    // ✅ Resetar campo de senha
+    // Resetar campo
     passwordInput.value = '';
+    passwordInput.style.display = 'block';
+    passwordInput.style.visibility = 'visible';
+    passwordInput.style.opacity = '1';
     
-    // ✅ Exibir modal
+    // Armazenar ID para uso posterior
+    window.currentPropertyId = propertyId;
+    
+    // Exibir modal
     modal.style.display = 'flex';
     
-    // ✅ Focar no campo de senha após breve delay
+    // Focar no campo após breve delay
     setTimeout(() => {
         passwordInput.focus();
         console.log('✅ Modal PDF aberto com campo de senha visível');
     }, 150);
-}
+};
 
 // ✅ ADICIONAR ESTA FUNÇÃO PARA TESTAR (opcional):
 window.testPdfModalDirect = function(propertyId) {
