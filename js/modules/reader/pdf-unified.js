@@ -6,6 +6,14 @@ const PdfSystem = (function() {
     const CONFIG = {
         password: window.PDF_PASSWORD || "doc123",
         maxFiles: 5,
+        maxSize: 10 * // js/modules/reader/pdf-unified.js - VERSÃO COMPLETA ATUALIZADA
+console.log('📄 pdf-unified.js - Sistema PDF Unificado V1.3');
+
+const PdfSystem = (function() {
+    // ========== CONFIGURAÇÃO PRIVADA ==========
+    const CONFIG = {
+        password: window.PDF_PASSWORD || "doc123",
+        maxFiles: 5,
         maxSize: 10 * 1024 * 1024,
         allowedTypes: ['application/pdf'],
         supabaseUrl: window.SUPABASE_URL || 'https://syztbxvpdaplpetmixmt.supabase.co',
@@ -271,9 +279,9 @@ const PdfSystem = (function() {
             return modal;
         },
         
-        // FUNÇÃO ADICIONADA: validatePasswordAndShowList
+        // FUNÇÃO ADICIONADA: validatePasswordAndShowList (SIMPLIFICADA)
         validatePasswordAndShowList() {
-            console.log('🔓 Validando senha PDF...');
+            console.log('🔓 PdfSystem.validatePasswordAndShowList()');
             
             const passwordInput = document.getElementById('pdfPassword');
             if (!passwordInput) {
@@ -289,9 +297,9 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // Senha fixa "doc123" (ou a configurada)
-            if (password !== (CONFIG.password || "doc123")) {
-                alert('❌ Senha incorreta!\n\nA senha correta é: doc123\n(Solicite ao corretor se não souber)');
+            // Verificar senha
+            if (password !== CONFIG.password && password !== "doc123") {
+                alert('❌ Senha incorreta!\n\nA senha correta é: doc123');
                 passwordInput.value = '';
                 passwordInput.focus();
                 return;
@@ -300,9 +308,7 @@ const PdfSystem = (function() {
             console.log('✅ Senha válida! Buscando documentos...');
             
             // Buscar imóvel atual
-            const propertyId = state.currentPropertyId || 
-                              (document.getElementById('pdfModalTitle')?.dataset?.propertyId);
-            
+            const propertyId = state.currentPropertyId;
             if (!propertyId) {
                 alert('❌ Não foi possível identificar o imóvel');
                 this.closeModal();
@@ -326,11 +332,24 @@ const PdfSystem = (function() {
                 return;
             }
             
-            console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s)`);
-            
-            // Fechar modal de senha e mostrar lista
+            // Abrir primeiro PDF
+            window.open(pdfUrls[0], '_blank');
             this.closeModal();
-            this.showDocumentList(propertyId, property.title, pdfUrls);
+        },
+        
+        // FUNÇÃO ADICIONADA: closeModal (SIMPLIFICADA)
+        closeModal() {
+            const modal = document.getElementById('pdfModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('✅ Modal PDF fechado');
+            }
+            
+            // Também fechar modal de seleção se existir
+            const selectionModal = document.getElementById('pdfSelectionModal');
+            if (selectionModal) {
+                selectionModal.style.display = 'none';
+            }
         },
         
         // FUNÇÃO ADICIONADA: showDocumentList
@@ -510,12 +529,6 @@ const PdfSystem = (function() {
             
             if (successCount > 0) {
                 alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
-            }
-        },
-        
-        closeModal() {
-            if (state.modalElement) {
-                state.modalElement.style.display = 'none';
             }
         },
         
