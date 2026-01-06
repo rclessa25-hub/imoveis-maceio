@@ -1101,32 +1101,55 @@ window.testPdfModalDirect = function(propertyId) {
 };
 
 // Adicionar verificação de módulos PDF
+// ========== VERIFICAÇÃO DO SISTEMA PDF UNIFICADO ==========
 setTimeout(() => {
-    console.log('🔍 VERIFICAÇÃO MÓDULOS PDF:');
-    console.log('- showPropertyPdf:', typeof window.showPropertyPdf);
-    console.log('- pdf-core.js carregado:', typeof window.showPropertyPdf === 'function');
-    console.log('- pdf-ui.js carregado:', typeof window.loadExistingPdfsForEdit === 'function');
+    console.log('🔍 VERIFICAÇÃO SISTEMA PDF UNIFICADO (pdf-unified.js):');
     
-    // Se não carregou, tentar recarregar
-    if (typeof window.showPropertyPdf !== 'function') {
-        console.warn('⚠️ Módulos PDF não carregaram automaticamente');
-        console.log('📦 Tentando carregar manualmente...');
+    // 1. VERIFICAR SE O ARQUIVO pdf-unified.js FOI CARREGADO
+    const hasPdfUnified = Array.from(document.scripts).some(script => 
+        script.src && script.src.includes('pdf-unified.js')
+    );
+    
+    console.log('📦 pdf-unified.js no HTML:', hasPdfUnified ? '✅ Carregado' : '❌ Não encontrado');
+    
+    // 2. VERIFICAR SE PdfSystem FOI CRIADO
+    if (window.PdfSystem) {
+        console.log('✅ PdfSystem disponível');
         
-        // Forçar recarregamento dos módulos PDF
-        const pdfModules = [
-            'js/modules/reader/pdf-core.js',
-            'js/modules/reader/pdf-ui.js',
-            'js/modules/reader/pdf-integration.js'
-        ];
-        
-        pdfModules.forEach(url => {
-            const script = document.createElement('script');
-            script.src = url + '?reload=' + Date.now();
-            script.defer = true;
-            document.head.appendChild(script);
-            console.log('🔄 Recarregando:', url);
+        // Verificar métodos CRÍTICOS
+        const criticalMethods = ['showModal', 'processAndSavePdfs', 'clearAllPdfs'];
+        console.log('🎯 Métodos críticos disponíveis:');
+        criticalMethods.forEach(method => {
+            console.log(`   - ${method}:`, typeof window.PdfSystem[method] === 'function' ? '✅' : '❌');
         });
+    } else {
+        console.warn('⚠️  PdfSystem NÃO disponível');
+        console.log('🔧 Possíveis causas:');
+        console.log('   1. pdf-unified.js não foi carregado corretamente');
+        console.log('   2. Há erro de sintaxe em pdf-unified.js');
+        console.log('   3. O arquivo não exporta window.PdfSystem');
     }
+    
+    // 3. VERIFICAR FUNÇÕES GLOBAIS QUE O admin.js USA
+    console.log('🌐 Funções globais para admin.js:');
+    const adminFunctions = [
+        'showPdfModal',
+        'accessPdfDocuments', 
+        'processAndSavePdfs',
+        'clearAllPdfs',
+        'loadExistingPdfsForEdit',
+        'getPdfsToSave',
+        'clearProcessedPdfs'
+    ];
+    
+    adminFunctions.forEach(func => {
+        console.log(`   - ${func}:`, typeof window[func] === 'function' ? '✅' : '❌');
+    });
+    
+    // 4. CONCLUSÃO
+    const systemReady = window.PdfSystem && typeof window.PdfSystem.showModal === 'function';
+    console.log(systemReady ? '🎉 Sistema PDF unificado PRONTO!' : '⚠️  Sistema PDF precisa de ajustes');
+    
 }, 2000);
 
 // ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
