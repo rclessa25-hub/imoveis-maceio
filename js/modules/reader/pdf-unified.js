@@ -769,3 +769,14 @@ if (!window.pdfSystemInitialized) {
         setTimeout(initPdfSystem, 2000);
     }
 }
+
+// 🔑 Inicialização garantida do PdfSystem
+if (window.PdfSystem) {
+    if (typeof PdfSystem.init === 'function') {
+        PdfSystem.init();
+        console.log('✅ PdfSystem inicializado automaticamente');
+    } else if (typeof PdfSystem.resetState === 'function') {
+        PdfSystem.resetState();
+        console.log('✅ PdfSystem estado criado via resetState');
+    }
+}
