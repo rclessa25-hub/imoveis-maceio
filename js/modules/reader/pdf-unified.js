@@ -296,6 +296,12 @@ const PdfSystem = (function() {
         validatePasswordAndShowList() {
             console.log('🔓 PdfSystem.validatePasswordAndShowList()');
             
+            // ✅ APENAS ESTAS 3 LINHAS NOVAS - O RESTO PERMANECE IGUAL
+            // Verificar e garantir que campo existe
+            if (!document.getElementById('pdfPassword')) {
+                this.createEmergencyPasswordField();
+            }
+            // ⬇⬇⬇ TODO O RESTO DO SEU CÓDIGO ORIGINAL PERMANECE AQUI ⬇⬇⬇
             const passwordInput = document.getElementById('pdfPassword');
             if (!passwordInput) {
                 console.error('❌ Campo de senha não encontrado!');
@@ -700,6 +706,43 @@ const PdfSystem = (function() {
                         this.addFiles(e.target.files);
                     }
                 });
+            }
+        },
+
+        // ✅ FUNÇÃO AUXILIAR - ADICIONE APÓS validatePasswordAndShowList
+        createEmergencyPasswordField() {
+            console.log('🆘 Criando campo de senha de emergência...');
+            
+            const modal = document.getElementById('pdfModal');
+            if (!modal) return;
+            
+            // Criar input de emergência
+            const emergencyDiv = document.createElement('div');
+            emergencyDiv.style.cssText = `
+                margin: 1rem 0;
+                padding: 1rem;
+                background: #ffebee;
+                border: 2px solid #e74c3c;
+                border-radius: 8px;
+            `;
+            
+            emergencyDiv.innerHTML = `
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #c0392b;">
+                    🔒 SENHA DE ACESSO
+                </label>
+                <input type="password" 
+                       id="pdfPassword" 
+                       placeholder="DIGITE: doc123"
+                       style="width: 100%; padding: 1rem; border: 2px solid #e74c3c; font-size: 1rem;">
+                <small style="display: block; margin-top: 0.5rem; color: #e74c3c;">
+                    <i class="fas fa-exclamation-triangle"></i> Campo criado automaticamente
+                </small>
+            `;
+            
+            // Inserir antes dos botões
+            const buttonContainer = modal.querySelector('div[style*="display: flex"]');
+            if (buttonContainer && buttonContainer.parentNode) {
+                buttonContainer.parentNode.insertBefore(emergencyDiv, buttonContainer);
             }
         },
         
