@@ -919,76 +919,180 @@ if (document.readyState === 'loading') {
 window.showPdfModal = function(propertyId) {
     console.log(`📄 showPdfModal chamado para ID: ${propertyId}`);
     
-    // Usar o PdfSystem unificado se disponível
+    // Usar o PdfSystem unificado se disponível (PRIORIDADE 1)
     if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
         window.PdfSystem.showModal(propertyId);
         return;
     }
     
-    // Fallback robusto
+    // Fallback robusto que GARANTE campo de senha
+    openPdfModalDirectFallback(propertyId);
+};
+
+// ========== FUNÇÃO DE FALLBACK (ATUALIZADA E MELHORADA) ==========
+function openPdfModalDirectFallback(propertyId) {
+    console.log(`📄 Fallback PDF modal para ID: ${propertyId} - Versão Corrigida`);
+    
+    // 1. Buscar imóvel
     const property = window.properties?.find(p => p.id == propertyId);
     if (!property) {
-        alert('Imóvel não encontrado!');
+        alert('❌ Imóvel não encontrado!');
         return;
     }
     
-    // Garantir que o modal existe COMPLETO
-    const modal = window.ensurePdfModalExists(true);
-    
-    if (!modal) {
-        alert('Erro: sistema de documentos não disponível');
+    // 2. Verificar se tem PDFs
+    if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
+        alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
         return;
     }
     
-    // Configurar título
+    // 3. Armazenar ID para uso posterior
+    window.currentPropertyId = propertyId;
+    
+    // ✅ 4. GARANTIR QUE O MODAL EXISTE COM TODOS OS ELEMENTOS
+    const modal = window.ensurePdfModalExists(true); // true = forçar verificação completa
+    
+    // ✅ 5. Configurar título com segurança
     const titleElement = document.getElementById('pdfModalTitle');
     if (titleElement) {
         titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
         titleElement.dataset.propertyId = propertyId;
     }
     
-    // Garantir campo de senha visível
+    // ✅ 6. GARANTIR QUE O CAMPO DE SENHA EXISTE E É VISÍVEL (CORREÇÃO CRÍTICA)
     let passwordInput = document.getElementById('pdfPassword');
-    if (!passwordInput) {
+    
+    // Se não existe ou está oculto por form pai
+    if (!passwordInput || (passwordInput.parentElement && 
+        window.getComputedStyle(passwordInput.parentElement).display === 'none')) {
+        
+        console.log('⚠️ Campo de senha não encontrado ou oculto. Recriando...');
+        
+        // Remover input antigo se existir
+        if (passwordInput && passwordInput.parentElement) {
+            passwordInput.parentElement.removeChild(passwordInput);
+        }
+        
+        // Criar novo campo VISÍVEL
         passwordInput = document.createElement('input');
         passwordInput.type = 'password';
         passwordInput.id = 'pdfPassword';
         passwordInput.className = 'pdf-password-input';
         passwordInput.placeholder = 'Digite a senha para acessar';
+        passwordInput.autocomplete = 'off';
         passwordInput.style.cssText = `
             width: 100%;
             padding: 0.8rem;
             border: 1px solid #ddd;
             border-radius: 5px;
             margin: 1rem 0;
+            font-size: 1rem;
             display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: static !important;
         `;
         
-        // Inserir no lugar correto
+        // Inserir no local correto (após o preview, antes dos botões)
         const previewDiv = document.getElementById('pdfPreview');
-        if (previewDiv && previewDiv.parentNode) {
-            previewDiv.parentNode.insertBefore(passwordInput, previewDiv.nextSibling);
+        const buttonContainer = modal.querySelector('div[style*="display: flex; gap: 1rem;"]');
+        
+        if (previewDiv && buttonContainer && previewDiv.parentNode === buttonContainer.parentNode) {
+            previewDiv.parentNode.insertBefore(passwordInput, buttonContainer);
+            console.log('✅ Campo de senha inserido na posição correta');
+        } else {
+            // Fallback: inserir antes dos botões
+            const modalContent = document.querySelector('.pdf-modal-content');
+            if (modalContent) {
+                const buttons = modalContent.querySelectorAll('button');
+                if (buttons.length > 0) {
+                    buttons[0].parentNode.insertBefore(passwordInput, buttons[0]);
+                    console.log('✅ Campo de senha inserido antes dos botões');
+                }
+            }
+        }
+    } else {
+        // ✅ Tornar visível se existir mas estiver oculto
+        passwordInput.style.display = 'block';
+        passwordInput.style.visibility = 'visible';
+        passwordInput.style.opacity = '1';
+        passwordInput.style.position = 'static';
+        
+        // Remover qualquer display: none do pai
+        if (passwordInput.parentElement && passwordInput.parentElement.style.display === 'none') {
+            passwordInput.parentElement.style.display = 'block';
         }
     }
     
-    // Resetar campo
+    // ✅ 7. Resetar campo de senha
     passwordInput.value = '';
-    passwordInput.style.display = 'block';
-    passwordInput.style.visibility = 'visible';
-    passwordInput.style.opacity = '1';
     
-    // Armazenar ID para uso posterior
-    window.currentPropertyId = propertyId;
+    // ✅ 8. Conectar evento de Enter para facilitar
+    passwordInput.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            window.accessPdfDocuments();
+        }
+    };
     
-    // Exibir modal
+    // ✅ 9. Exibir modal
     modal.style.display = 'flex';
     
-    // Focar no campo após breve delay
+    // ✅ 10. Focar no campo de senha após breve delay
     setTimeout(() => {
-        passwordInput.focus();
-        console.log('✅ Modal PDF aberto com campo de senha visível');
-    }, 150);
+        if (passwordInput) {
+            passwordInput.focus();
+            passwordInput.select();
+            console.log('✅ Modal PDF aberto com campo de senha visível e focado');
+            
+            // DEBUG: Verificar visibilidade
+            const style = window.getComputedStyle(passwordInput);
+            console.log('🔍 DEBUG Campo senha:', {
+                display: style.display,
+                visibility: style.visibility,
+                opacity: style.opacity,
+                parentDisplay: passwordInput.parentElement ? 
+                    window.getComputedStyle(passwordInput.parentElement).display : 'no parent'
+            });
+        }
+    }, 200);
+}
+
+// ✅ FUNÇÃO AUXILIAR PARA TESTE RÁPIDO
+window.testPdfModalFallback = function(testId = 101) {
+    console.log('🧪 TESTE: Abrindo modal PDF via fallback...');
+    openPdfModalDirectFallback(testId);
 };
+
+// ✅ VERIFICAÇÃO AUTOMÁTICA DO CAMPO DE SENHA
+function checkPdfPasswordField() {
+    const passwordInput = document.getElementById('pdfPassword');
+    if (!passwordInput) {
+        console.warn('⚠️ Campo de senha PDF não encontrado no DOM');
+        return false;
+    }
+    
+    const style = window.getComputedStyle(passwordInput);
+    const isVisible = style.display !== 'none' && 
+                     style.visibility !== 'hidden' && 
+                     style.opacity !== '0';
+    
+    console.log(`🔍 Status campo senha: ${isVisible ? 'VISÍVEL ✅' : 'OCULTO ❌'}`, {
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        hasParent: !!passwordInput.parentElement,
+        parentDisplay: passwordInput.parentElement ? 
+            window.getComputedStyle(passwordInput.parentElement).display : 'no parent'
+    });
+    
+    return isVisible;
+}
+
+// Executar verificação após carregamento
+setTimeout(() => {
+    console.log('🔍 Verificando integridade do campo de senha PDF...');
+    checkPdfPasswordField();
+}, 3000);
 
 // ✅ ADICIONAR ESTA FUNÇÃO PARA TESTAR (opcional):
 window.testPdfModalDirect = function(propertyId) {
