@@ -747,25 +747,41 @@ const PdfSystem = (function() {
 window.PdfSystem = PdfSystem;
 
 // INICIALIZAÇÃO ÚNICA - CORREÇÃO DE CONFLITO
-// Remova completamente esta seção problemática
+// INICIALIZAÇÃO SEGURA E ÚNICA
+window.pdfUnifiedInitialized = window.pdfUnifiedInitialized || false;
 
-// Em vez disso, use inicialização simples e segura:
-if (!window.pdfUnifiedInitialized && typeof window.PdfSystem !== 'undefined') {
+const initializeUnifiedPdfSystem = function() {
+    // Evitar inicializações múltiplas
+    if (window.pdfUnifiedInitialized) {
+        console.log('⚠️ PdfSystem já inicializado - ignorando');
+        return;
+    }
+    
+    // Verificar se o objeto PdfSystem existe
+    if (typeof window.PdfSystem === 'undefined') {
+        console.warn('⚠️ PdfSystem não disponível para inicialização');
+        return;
+    }
+    
     try {
-        window.PdfSystem.init();
-        window.pdfUnifiedInitialized = true;
-        console.log('✅ PdfSystem unificado inicializado com sucesso');
+        // Inicializar com timeout para evitar conflitos
+        setTimeout(() => {
+            if (!window.pdfUnifiedInitialized && window.PdfSystem && typeof window.PdfSystem.init === 'function') {
+                window.PdfSystem.init();
+                window.pdfUnifiedInitialized = true;
+                console.log('✅ PdfSystem unificado inicializado com sucesso');
+            }
+        }, 1500);
     } catch (error) {
         console.error('❌ Erro ao inicializar PdfSystem:', error);
     }
-}
-    
-    // Aguardar DOM e outros sistemas
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initPdfSystem, 1500);
-        });
-    } else {
-        setTimeout(initPdfSystem, 2000);
-    }
+};
+
+// Agendar inicialização após carregamento
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initializeUnifiedPdfSystem, 1000);
+    });
+} else {
+    setTimeout(initializeUnifiedPdfSystem, 2000);
 }
