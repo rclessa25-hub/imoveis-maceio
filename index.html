@@ -414,38 +414,30 @@
     </div>
 </section>
    
-<!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
-<div id="pdfModal" class="pdf-modal" style="display: none;">
-    <div class="pdf-modal-content">
-        <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
-        <div id="pdfPreview" class="pdf-preview">
-            <p>Documentos técnicos e legais disponíveis</p>
+    <!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
+    <div id="pdfModal" class="pdf-modal">
+        <div class="pdf-modal-content">
+            <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
+            <div id="pdfPreview" class="pdf-preview">
+                <p>Documentos técnicos e legais disponíveis</p>
+            </div>
+            <form style="display: none;" aria-hidden="true" autocomplete="off">
+                <input type="text" name="dummy-username" style="display:none" autocomplete="username">
+                <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar" autocomplete="new-password">
+            </form>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                    <i class="fas fa-lock-open"></i> Acessar
+                </button>
+                <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                    <i class="fas fa-times"></i> Fechar
+                </button>
+            </div>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
+                <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
+            </p>
         </div>
-        
-        <!-- CAMPO DE SENHA VISÍVEL SEM FORM -->
-        <input type="password" 
-               id="pdfPassword" 
-               class="pdf-password-input" 
-               placeholder="Digite a senha para acessar" 
-               autocomplete="off"
-               style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; margin: 1rem 0; display: block;">
-        
-        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-            <button onclick="accessPdfDocuments()" 
-                    style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
-                <i class="fas fa-lock-open"></i> Acessar
-            </button>
-            <button onclick="closePdfModal()" 
-                    style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
-                <i class="fas fa-times"></i> Fechar
-            </button>
-        </div>
-        
-        <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
-            <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
-        </p>
     </div>
-</div>
 
 <button class="admin-toggle">
     <i class="fas fa-user-cog"></i>
