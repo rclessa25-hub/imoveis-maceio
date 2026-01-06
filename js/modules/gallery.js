@@ -289,7 +289,7 @@ window.galleryStyles = `
 
 // ========== FUNÇÕES BÁSICAS DA GALERIA ==========
 
-// Função para criar a galeria no card do imóvel
+// Função para criar a galeria no card do imóvel - VERSÃO CORRIGIDA
 window.createPropertyGallery = function(property) {
     console.log('🖼️ Criando galeria para:', property.title);
     
@@ -319,7 +319,9 @@ window.createPropertyGallery = function(property) {
                 ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
                 
                 ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-                    `<button class="pdf-access" onclick="showPdfModal(${property.id})" title="Documentos do imóvel (senha: doc123)">
+                    `<button class="pdf-access" 
+                            onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})" 
+                            title="Documentos do imóvel (senha: doc123)">
                         <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
             </div>
@@ -346,12 +348,12 @@ window.createPropertyGallery = function(property) {
                     ${imageUrls.map((_, index) => `
                         <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
                              data-index="${index}"
-                             onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
+                             onclick="event.stopPropagation(); event.preventDefault(); showGalleryImage(${property.id}, ${index})"></div>
                     `).join('')}
                 </div>
                 
                 <!-- Ícone de expansão -->
-                <div class="gallery-expand-icon" onclick="openGallery(${property.id})">
+                <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
                     <i class="fas fa-expand"></i>
                 </div>
             </div>
@@ -359,10 +361,10 @@ window.createPropertyGallery = function(property) {
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-<!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
+            <!-- Botão PDF CORRIGIDO - SEM CONFLITO DE EVENTOS -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
-                    onclick="event.stopPropagation(); window.openPdfModal(${property.id});"
+                    onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id});"
                     title="Documentos do imóvel (senha: doc123)">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
