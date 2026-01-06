@@ -746,7 +746,17 @@ const PdfSystem = (function() {
 // Exportação global
 window.PdfSystem = PdfSystem;
 
-// INICIALIZAÇÃO ÚNICA - CORREÇÃO DE CONFLITO
+// INICIALIZAR ESTADO SE NECESSÁRIO (OPÇÃO 2)
+if (!window.PdfSystem.state) {
+    window.PdfSystem.state = {
+        files: [],          // PDFs selecionados para upload
+        existing: [],       // PDFs existentes do imóvel
+        processing: false,  // Flag de processamento
+        uploaded: []        // PDFs já enviados
+    };
+    console.log('📦 Estado do PdfSystem inicializado externamente');
+}
+
 // INICIALIZAÇÃO SEGURA E ÚNICA
 window.pdfUnifiedInitialized = window.pdfUnifiedInitialized || false;
 
