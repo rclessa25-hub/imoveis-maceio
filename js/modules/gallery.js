@@ -362,22 +362,8 @@ window.createPropertyGallery = function(property) {
 <!-- Botão PDF (VERSÃO SIMPLIFICADA E ROBUSTA) -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
-                    onclick="event.stopPropagation();
-                             if (typeof PdfSystem !== 'undefined' && PdfSystem.showModal) {
-                                 PdfSystem.showModal(${property.id});
-                             } else {
-                                 // Fallback
-                                 window.currentPropertyId=${property.id};
-                                 const modal = document.getElementById('pdfModal');
-                                 if (modal) {
-                                     modal.style.display = 'flex';
-                                     setTimeout(() => {
-                                         const passwordInput = document.getElementById('pdfPassword');
-                                         if (passwordInput) passwordInput.focus();
-                                     }, 100);
-                                 }
-                             }"
-                    title="Documentos do imóvel">
+                    onclick="event.stopPropagation(); window.openPdfModal(${property.id});"
+                    title="Documentos do imóvel (senha: doc123)">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
         </div>
