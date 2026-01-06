@@ -7,14 +7,6 @@ const PdfSystem = (function() {
         password: window.PDF_PASSWORD || "doc123",
         maxFiles: 5,
         maxSize: 10 * 1024 * 1024,
-console.log('📄 pdf-unified.js - Sistema PDF Unificado V1.3');
-
-const PdfSystem = (function() {
-    // ========== CONFIGURAÇÃO PRIVADA ==========
-    const CONFIG = {
-        password: window.PDF_PASSWORD || "doc123",
-        maxFiles: 5,
-        maxSize: 10 * 1024 * 1024,
         allowedTypes: ['application/pdf'],
         supabaseUrl: window.SUPABASE_URL || 'https://syztbxvpdaplpetmixmt.supabase.co',
         supabaseKey: window.SUPABASE_KEY
