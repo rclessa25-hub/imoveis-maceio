@@ -747,18 +747,18 @@ const PdfSystem = (function() {
 window.PdfSystem = PdfSystem;
 
 // INICIALIZAÇÃO ÚNICA - CORREÇÃO DE CONFLITO
-if (!window.pdfSystemInitialized) {
-    window.pdfSystemInitialized = false;
-    
-    const initPdfSystem = function() {
-        if (window.pdfSystemInitialized) return;
-        
-        if (typeof window.PdfSystem !== 'undefined') {
-            window.PdfSystem.init();
-            window.pdfSystemInitialized = true;
-            console.log('✅ PdfSystem unificado inicializado UMA VEZ');
-        }
-    };
+// Remova completamente esta seção problemática
+
+// Em vez disso, use inicialização simples e segura:
+if (!window.pdfUnifiedInitialized && typeof window.PdfSystem !== 'undefined') {
+    try {
+        window.PdfSystem.init();
+        window.pdfUnifiedInitialized = true;
+        console.log('✅ PdfSystem unificado inicializado com sucesso');
+    } catch (error) {
+        console.error('❌ Erro ao inicializar PdfSystem:', error);
+    }
+}
     
     // Aguardar DOM e outros sistemas
     if (document.readyState === 'loading') {
