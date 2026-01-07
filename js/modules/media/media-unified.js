@@ -282,11 +282,23 @@ const MediaSystem = {
     },
 
     // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
-    // ADICIONADAS APÓS uploadAll (linha ~350)
+    // ADICIONADAS APÓS uploadAll 
 
     processAndSavePdfs: async function(propertyId, propertyTitle) {
-        console.log(`📄 processAndSavePdfs chamado para ${propertyId}`);
+        console.group(`📄 MediaSystem.processAndSavePdfs CHAMADO para ${propertyId}`);
+        console.log('🔍 Estado atual dos PDFs:');
+        console.log('- PDFs novos:', this.state.pdfs.length);
+        console.log('- PDFs existentes:', this.state.existingPdfs.length);
+        console.log('- PDFs marcados para exclusão:', 
+            this.state.existingPdfs.filter(p => p.markedForDeletion).length);
+        
         const result = await this.uploadAll(propertyId, propertyTitle);
+        
+        console.log('📊 Resultado do uploadAll:', {
+            pdfs: result.pdfs ? `${result.pdfs.split(',').length} URL(s)` : 'Nenhum'
+        });
+        console.groupEnd();
+        
         return result.pdfs;
     },
 
