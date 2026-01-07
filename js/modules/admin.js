@@ -34,29 +34,27 @@ window.clearMediaSystemComplete = function() {
     MediaSystem.resetState();
 };
 
-// ========== INTEGRAÇÃO COM PDFSystem UNIFICADO ==========
+// ========== INTEGRAÇÃO COM MediaSystem (ÚNICO para PDFs) ==========
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    console.log(`📄 admin.js: processAndSavePdfs chamado para ${propertyId}`);
+    console.log(`📄 admin.js: processAndSavePdfs chamado para ${propertyId} - USANDO APENAS MediaSystem`);
     
-    // PRIORIDADE 1: Usar PdfSystem (novo sistema unificado)
-    if (window.PdfSystem && typeof window.PdfSystem.processAndSavePdfs === 'function') {
+    // DESATIVAR COMPLETAMENTE PdfSystem para uploads
+    console.log('🚫 Desativando PdfSystem para uploads (usando MediaSystem)');
+    
+    // PRIORIDADE 1: Usar MediaSystem (AGORA ÚNICO para PDFs)
+    if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
         try {
-            const result = await window.PdfSystem.processAndSavePdfs(propertyId, propertyTitle);
-            console.log(`✅ PdfSystem retornou: ${result ? 'PDFs salvos' : 'vazio'}`);
+            console.log('🔄 Processando PDFs exclusivamente com MediaSystem');
+            const result = await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
+            console.log(`✅ MediaSystem retornou: ${result ? 'PDFs salvos' : 'vazio'}`);
             return result || '';
         } catch (error) {
-            console.error('❌ Erro no PdfSystem:', error);
+            console.error('❌ Erro no MediaSystem:', error);
         }
     }
     
-    // PRIORIDADE 2: Fallback para MediaSystem (compatibilidade)
-    if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
-        console.log('🔄 Usando MediaSystem como fallback');
-        return await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
-    }
-    
-    // PRIORIDADE 3: Fallback manual (emergência)
-    console.warn('⚠️  Nenhum sistema PDF disponível - retornando string vazia');
+    // Fallback manual (emergência)
+    console.warn('⚠️ MediaSystem não disponível - retornando string vazia');
     return '';
 };
 
