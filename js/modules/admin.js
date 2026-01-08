@@ -391,7 +391,7 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados`);
 };
 
-// ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA ==========
+// ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA E SCROLL ==========
 window.editProperty = function(id) {
     console.log(`📝 EDITANDO IMÓVEL ${id} (MediaSystem unificado ativo)`);
 
@@ -440,6 +440,7 @@ window.editProperty = function(id) {
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+        submitBtn.style.background = 'var(--accent)'; // Cor diferente para edição
     }
 
     const cancelBtn = document.getElementById('cancelEditBtn');
@@ -458,7 +459,63 @@ window.editProperty = function(id) {
         console.log('🖼️ Mídia existente carregada no MediaSystem');
     }
 
+    // ==============================
+    // ⭐⭐ 4️⃣ ROLAR ATÉ O FORMULÁRIO AUTOMATICAMENTE ⭐⭐
+    // ==============================
+    setTimeout(() => {
+        const adminPanel = document.getElementById('adminPanel');
+        const propertyForm = document.getElementById('propertyForm');
+        
+        // Primeiro garantir que o painel admin está visível
+        if (adminPanel && adminPanel.style.display !== 'block') {
+            adminPanel.style.display = 'block';
+            console.log('✅ Painel admin aberto automaticamente');
+        }
+        
+        // Agora rolar suavemente até o formulário
+        if (propertyForm) {
+            console.log('📜 Rolando até o formulário de edição...');
+            
+            // Método 1: Usar scrollIntoView com comportamento suave
+            propertyForm.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start', // Alinha ao topo
+                inline: 'nearest'
+            });
+            
+            // Método 2: Destacar visualmente o formulário
+            propertyForm.style.transition = 'all 0.3s ease';
+            propertyForm.style.boxShadow = '0 0 0 3px var(--accent)';
+            
+            // Remover destaque após 2 segundos
+            setTimeout(() => {
+                propertyForm.style.boxShadow = '';
+            }, 2000);
+            
+            console.log('✅ Formulário em foco para edição');
+            
+        } else {
+            console.warn('⚠️ Formulário não encontrado para scroll');
+            // Fallback: rolar até o painel admin
+            if (adminPanel) {
+                adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        
+        // Focar no primeiro campo (título) para facilitar edição
+        setTimeout(() => {
+            const titleField = document.getElementById('propTitle');
+            if (titleField) {
+                titleField.focus();
+                titleField.select(); // Selecionar texto para fácil edição
+                console.log('🎯 Foco no campo título');
+            }
+        }, 600);
+        
+    }, 100); // Pequeno delay para garantir que o DOM foi atualizado
+
     console.log(`✅ Imóvel ${id} pronto para edição`);
+    return true;
 };
 
 // ========== Função de Limpeza do Formulário ==========
