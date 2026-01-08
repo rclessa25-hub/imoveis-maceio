@@ -178,35 +178,74 @@ window.toggleAdminPanel = function() {
 };
 
 // ========== FUNÇÕES DO FORMULÁRIO ==========
-// NO admin.js - ATUALIZAR função cancelEdit
+// NO admin.js - ATUALIZAR função cancelEdit (linha ~130)
 window.cancelEdit = function() {
     console.log('❌ Cancelando edição...');
+    console.group('🧹 LIMPEZA COMPLETA DO FORMULÁRIO');
+    
+    // 1. Resetar ID de edição
     window.editingPropertyId = null;
 
-    // ⚠️ LIMPAR TUDO usando o sistema unificado
+    // 2. LIMPAR SISTEMA DE MÍDIA (fotos/vídeos)
     if (typeof MediaSystem !== 'undefined') {
+        console.log('🔄 Limpando sistema de mídia...');
         MediaSystem.resetState();
+    } else {
+        console.log('⚠️ MediaSystem não disponível, limpando manualmente...');
+        if (typeof window.clearMediaSystemComplete === 'function') {
+            window.clearMediaSystemComplete();
+        }
     }
     
-    // Limpar também funções específicas se existirem
+    // 3. LIMPAR SISTEMA DE PDFs
+    console.log('📄 Limpando PDFs...');
     if (typeof window.clearAllPdfs === 'function') {
         window.clearAllPdfs();
+    } else {
+        // Fallback manual
+        if (window.selectedPdfFiles) window.selectedPdfFiles = [];
+        if (window.existingPdfFiles) window.existingPdfFiles = [];
     }
     
-    if (typeof window.clearProcessedPdfs === 'function') {
-        window.clearProcessedPdfs();
-    }
-
+    // 4. ⚠️⚠️⚠️ LIMPAR TODOS OS CAMPOS DE TEXTO DO FORMULÁRIO ⚠️⚠️⚠️
+    console.log('📝 Limpando campos de texto...');
     const form = document.getElementById('propertyForm');
-    if (form) form.reset();
+    if (form) {
+        // Método 1: Reset padrão
+        form.reset();
+        
+        // Método 2: Garantir campos específicos vazios
+        const textFields = [
+            'propTitle', 'propPrice', 'propLocation', 
+            'propDescription', 'propFeatures'
+        ];
+        
+        textFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = '';
+                console.log(`   ✅ ${fieldId}: limpo`);
+            }
+        });
+        
+        // Resetar selects e checkbox
+        const typeSelect = document.getElementById('propType');
+        const badgeSelect = document.getElementById('propBadge');
+        const videoCheckbox = document.getElementById('propHasVideo');
+        
+        if (typeSelect) typeSelect.value = 'residencial';
+        if (badgeSelect) badgeSelect.value = 'Novo';
+        if (videoCheckbox) videoCheckbox.checked = false;
+        
+        console.log('✅ Campos resetados:', { 
+            type: typeSelect ? typeSelect.value : 'n/a',
+            badge: badgeSelect ? badgeSelect.value : 'n/a',
+            hasVideo: videoCheckbox ? videoCheckbox.checked : 'n/a'
+        });
+    }
     
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) cancelBtn.style.display = 'none';
-    
-    const formTitle = document.getElementById('formTitle');
-    if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
-    
-    // FORÇAR limpeza visual dos previews
+    // 5. LIMPAR PREVIEWS VISUAIS (redundante, mas garante)
+    console.log('🎨 Resetando previews visuais...');
     setTimeout(() => {
         const mediaPreview = document.getElementById('uploadPreview');
         const pdfPreview = document.getElementById('pdfUploadPreview');
@@ -229,9 +268,86 @@ window.cancelEdit = function() {
                 </div>
             `;
         }
+        
+        console.log('✅ Previews resetados');
     }, 100);
     
-    console.log('✅ Edição cancelada e sistema limpo');
+    // 6. ATUALIZAR UI DO FORMULÁRIO
+    console.log('🏷️ Atualizando interface...');
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
+    
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+        submitBtn.style.background = 'var(--primary)';
+    }
+    
+    // 7. LIMPAR VARIÁVEIS GLOBAIS
+    console.log('🧼 Limpando variáveis globais...');
+    if (typeof window.selectedMediaFiles !== 'undefined') {
+        window.selectedMediaFiles = [];
+    }
+    if (typeof window.existingMediaFiles !== 'undefined') {
+        window.existingMediaFiles = [];
+    }
+    
+    // 8. VERIFICAÇÃO FINAL
+    setTimeout(() => {
+        const formState = window.isAdminFormEmpty ? window.isAdminFormEmpty() : null;
+        if (formState && !formState.isEmpty && formState.isEditing === false) {
+            console.warn('⚠️ Formulário ainda não está vazio após limpeza!');
+            console.log('🔍 Estado:', formState.checks);
+            // Forçar limpeza novamente
+            form.reset();
+        }
+    }, 300);
+    
+    console.groupEnd();
+    console.log('✅ Edição cancelada e formulário COMPLETAMENTE limpo');
+    return true;
+};
+
+// ADICIONAR TAMBÉM UMA FUNÇÃO DE FORÇAR LIMPEZA
+window.forceFormCleanup = function() {
+    console.log('🧹 FORÇANDO limpeza completa do formulário...');
+    
+    // Limpar manualmente cada campo
+    const fieldsToClear = [
+        { id: 'propTitle', type: 'text', defaultValue: '' },
+        { id: 'propPrice', type: 'text', defaultValue: '' },
+        { id: 'propLocation', type: 'text', defaultValue: '' },
+        { id: 'propDescription', type: 'textarea', defaultValue: '' },
+        { id: 'propFeatures', type: 'text', defaultValue: '' },
+        { id: 'propType', type: 'select', defaultValue: 'residencial' },
+        { id: 'propBadge', type: 'select', defaultValue: 'Novo' }
+    ];
+    
+    fieldsToClear.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.value = field.defaultValue;
+            console.log(`   ✅ ${field.id} = "${field.defaultValue}"`);
+            
+            // Disparar evento change para qualquer listener
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    });
+    
+    // Checkbox específico
+    const videoCheckbox = document.getElementById('propHasVideo');
+    if (videoCheckbox) {
+        videoCheckbox.checked = false;
+        videoCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log('   ✅ propHasVideo = false');
+    }
+    
+    console.log('✅ Limpeza forçada completa');
+    return true;
 };
 
 window.loadPropertyList = function() {
@@ -1916,6 +2032,21 @@ window.isAdminFormEmpty = function() {
         checks: checks
     };
 };
+
+// ========== ADICIONAR VERIFICAÇÃO AO CARREGAR O FORMULÁRIO ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar se o formulário está sujo ao carregar
+    setTimeout(() => {
+        const hasTitle = document.getElementById('propTitle')?.value.trim();
+        const hasPrice = document.getElementById('propPrice')?.value.trim();
+        const hasLocation = document.getElementById('propLocation')?.value.trim();
+        
+        if ((hasTitle || hasPrice || hasLocation) && !window.editingPropertyId) {
+            console.warn('⚠️ Formulário carregado com dados! Limpando automaticamente...');
+            window.forceFormCleanup();
+        }
+    }, 500);
+});
 
 // Verificação automática ao carregar formulário
 document.addEventListener('DOMContentLoaded', function() {
