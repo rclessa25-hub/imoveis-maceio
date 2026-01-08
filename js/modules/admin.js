@@ -129,6 +129,302 @@ const ADMIN_CONFIG = {
     storageKey: "weberlessa_properties"
 };
 
+// ========== SISTEMA DE LOADING VISUAL ==========
+const LoadingManager = {
+    // Configuração
+    config: {
+        containerId: 'loadingOverlay',
+        minShowTime: 800, // Tempo mínimo que o loading aparece (ms)
+        fadeDuration: 300 // Duração da animação de fade
+    },
+    
+    // Criar overlay de loading
+    createOverlay() {
+        // Remover se já existir
+        this.removeOverlay();
+        
+        // Criar elemento
+        const overlay = document.createElement('div');
+        overlay.id = this.config.containerId;
+        overlay.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.95);
+                z-index: 99999;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(5px);
+                transition: opacity ${this.config.fadeDuration}ms ease;
+            ">
+                <div style="
+                    text-align: center;
+                    max-width: 500px;
+                    padding: 2rem;
+                    background: white;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+                    border: 2px solid var(--primary);
+                ">
+                    <!-- Spinner animado -->
+                    <div class="loading-spinner" style="
+                        width: 60px;
+                        height: 60px;
+                        margin: 0 auto 1.5rem;
+                        border: 5px solid #f3f3f3;
+                        border-top: 5px solid var(--primary);
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                    "></div>
+                    
+                    <!-- Texto dinâmico -->
+                    <h3 style="color: var(--primary); margin: 0 0 0.5rem 0;" id="loadingTitle">
+                        Salvando Imóvel...
+                    </h3>
+                    
+                    <p style="color: #666; margin: 0 0 1.5rem 0;" id="loadingMessage">
+                        Processando fotos, vídeos e documentos. Isso pode levar alguns instantes.
+                    </p>
+                    
+                    <!-- Barra de progresso -->
+                    <div style="
+                        width: 100%;
+                        height: 6px;
+                        background: #f0f0f0;
+                        border-radius: 3px;
+                        overflow: hidden;
+                        margin-bottom: 1rem;
+                    ">
+                        <div id="loadingProgressBar" style="
+                            width: 0%;
+                            height: 100%;
+                            background: linear-gradient(90deg, var(--primary), var(--accent));
+                            transition: width 0.5s ease;
+                            border-radius: 3px;
+                        "></div>
+                    </div>
+                    
+                    <!-- Etapas do processo -->
+                    <div style="
+                        font-size: 0.85rem;
+                        color: #888;
+                        text-align: left;
+                        margin-top: 1rem;
+                        padding: 0.5rem;
+                        background: #f9f9f9;
+                        border-radius: 5px;
+                    ">
+                        <div class="loading-step" style="margin-bottom: 0.3rem;">
+                            <span style="color: var(--success);">✓</span> Validando dados...
+                        </div>
+                        <div class="loading-step" style="margin-bottom: 0.3rem;">
+                            <span style="color: #ccc;">⏳</span> Processando fotos e vídeos...
+                        </div>
+                        <div class="loading-step" style="margin-bottom: 0.3rem;">
+                            <span style="color: #ccc;">⏳</span> Enviando documentos PDF...
+                        </div>
+                        <div class="loading-step">
+                            <span style="color: #ccc;">⏳</span> Salvando no banco de dados...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Adicionar animação CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.7; }
+                100% { opacity: 1; }
+            }
+            
+            .loading-step {
+                transition: all 0.3s ease;
+            }
+            
+            .step-completed {
+                color: var(--success) !important;
+            }
+            
+            .step-active {
+                color: var(--primary) !important;
+                font-weight: 600;
+                animation: pulse 1.5s infinite;
+            }
+        `;
+        overlay.appendChild(style);
+        
+        document.body.appendChild(overlay);
+        return overlay;
+    },
+    
+    // Mostrar loading
+    show(title = 'Salvando Imóvel...', message = 'Processando dados, aguarde...') {
+        console.log('🔄 Mostrando loading...');
+        
+        const overlay = this.createOverlay();
+        const startTime = Date.now();
+        
+        // Atualizar título e mensagem
+        const titleEl = document.getElementById('loadingTitle');
+        const messageEl = document.getElementById('loadingMessage');
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
+        
+        // Iniciar barra de progresso
+        this.startProgressAnimation();
+        
+        // Controlar etapas visuais
+        this.currentStep = 0;
+        this.updateSteps();
+        
+        return {
+            overlay: overlay,
+            startTime: startTime,
+            hide: () => this.hide(startTime),
+            updateTitle: (newTitle) => {
+                if (titleEl) titleEl.textContent = newTitle;
+            },
+            updateMessage: (newMessage) => {
+                if (messageEl) messageEl.textContent = newMessage;
+            },
+            completeStep: () => this.completeStep(),
+            updateProgress: (percent) => this.updateProgress(percent)
+        };
+    },
+    
+    // Atualizar barra de progresso
+    startProgressAnimation() {
+        const progressBar = document.getElementById('loadingProgressBar');
+        if (!progressBar) return;
+        
+        // Animação sutil de 0 a 80% (os 20% finais são preenchidos quando termina)
+        let progress = 0;
+        const interval = setInterval(() => {
+            if (progress >= 80) {
+                clearInterval(interval);
+                return;
+            }
+            
+            progress += Math.random() * 3 + 1; // Incremento variável
+            if (progress > 80) progress = 80;
+            
+            progressBar.style.width = `${progress}%`;
+        }, 200);
+        
+        this.progressInterval = interval;
+    },
+    
+    // Atualizar progresso específico
+    updateProgress(percent) {
+        const progressBar = document.getElementById('loadingProgressBar');
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+        }
+    },
+    
+    // Controlar etapas visuais
+    updateSteps() {
+        const steps = document.querySelectorAll('.loading-step');
+        steps.forEach((step, index) => {
+            if (index < this.currentStep) {
+                step.innerHTML = `<span style="color: var(--success);">✓</span> ${step.textContent.replace(/[✓⏳]/g, '').trim()}`;
+                step.classList.add('step-completed');
+                step.classList.remove('step-active');
+            } else if (index === this.currentStep) {
+                step.innerHTML = `<span style="color: var(--primary);">⏳</span> ${step.textContent.replace(/[✓⏳]/g, '').trim()}`;
+                step.classList.add('step-active');
+                step.classList.remove('step-completed');
+            } else {
+                step.innerHTML = `<span style="color: #ccc;">⏳</span> ${step.textContent.replace(/[✓⏳]/g, '').trim()}`;
+                step.classList.remove('step-completed', 'step-active');
+            }
+        });
+    },
+    
+    // Completar uma etapa
+    completeStep() {
+        this.currentStep++;
+        this.updateSteps();
+        
+        // Atualizar progresso baseado nas etapas (4 etapas totais)
+        const progressPercent = Math.min(80, (this.currentStep / 4) * 80);
+        this.updateProgress(progressPercent);
+    },
+    
+    // Esconder loading
+    hide(startTime) {
+        console.log('✅ Escondendo loading...');
+        
+        // Garantir tempo mínimo de exibição
+        const elapsedTime = Date.now() - startTime;
+        const minTime = this.config.minShowTime;
+        
+        const hideNow = () => {
+            // Completar barra de progresso
+            this.updateProgress(100);
+            
+            // Parar animação de progresso
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+            }
+            
+            // Completar todas as etapas
+            this.currentStep = 4;
+            this.updateSteps();
+            
+            // Mudar para estado de sucesso
+            const titleEl = document.getElementById('loadingTitle');
+            const messageEl = document.getElementById('loadingMessage');
+            const spinner = document.querySelector('.loading-spinner');
+            
+            if (titleEl) titleEl.textContent = '✅ Concluído!';
+            if (messageEl) messageEl.textContent = 'Imóvel salvo com sucesso!';
+            if (spinner) {
+                spinner.style.borderTopColor = 'var(--success)';
+                spinner.style.animation = 'none';
+                spinner.style.transform = 'rotate(0deg)';
+            }
+            
+            // Fechar após breve delay
+            setTimeout(() => {
+                this.removeOverlay();
+            }, 800);
+        };
+        
+        if (elapsedTime < minTime) {
+            setTimeout(hideNow, minTime - elapsedTime);
+        } else {
+            hideNow();
+        }
+    },
+    
+    // Remover overlay
+    removeOverlay() {
+        const overlay = document.getElementById(this.config.containerId);
+        if (overlay) {
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, this.config.fadeDuration);
+        }
+    }
+};
+
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
 
@@ -575,7 +871,7 @@ window.resetAdminFormToInitialState = function() {
     }
 };
 
-// ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM MÍDIA ==========
+// ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM SISTEMA DE LOADING ==========
 window.setupForm = function() {
     console.log('📝 Configurando formulário admin com sistema de mídia integrado...');
     
@@ -590,47 +886,85 @@ window.setupForm = function() {
     form.parentNode.replaceChild(newForm, form);
     const freshForm = document.getElementById('propertyForm');
     
+    // Configurar botão de submit
+    const submitBtn = freshForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.addEventListener('click', function() {
+            // Não desabilitar aqui, será desabilitado no listener de submit
+        });
+    }
+    
     freshForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         console.group('🚀 SUBMISSÃO DO FORMULÁRIO ADMIN');
         
-        // 1. COLETAR DADOS DO FORMULÁRIO
-        const propertyData = {
-            title: document.getElementById('propTitle').value,
-            price: document.getElementById('propPrice').value,
-            location: document.getElementById('propLocation').value,
-            description: document.getElementById('propDescription').value,
-            features: document.getElementById('propFeatures').value,
-            type: document.getElementById('propType').value,
-            badge: document.getElementById('propBadge').value,
-            has_video: document.getElementById('propHasVideo')?.checked || false
-        };
+        // 1. INICIAR LOADING
+        const loading = LoadingManager.show(
+            'Salvando Imóvel...', 
+            'Por favor, aguarde enquanto processamos todos os dados.'
+        );
         
-        console.log('📋 Dados coletados:', propertyData);
-        
-        // 2. VALIDAÇÃO BÁSICA
-        if (!propertyData.title || !propertyData.price || !propertyData.location) {
-            alert('❌ Preencha Título, Preço e Localização!');
-            console.error('❌ Validação falhou: campos obrigatórios vazios');
-            console.groupEnd();
-            return;
+        // Desabilitar botão de submit
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
         }
         
-        console.log('✅ Validação básica OK');
-        
-        // 3. PROCESSAMENTO PRINCIPAL
         try {
+            // 2. COLETAR DADOS DO FORMULÁRIO
+            loading.updateMessage('Validando dados do formulário...');
+            const propertyData = {
+                title: document.getElementById('propTitle').value,
+                price: document.getElementById('propPrice').value,
+                location: document.getElementById('propLocation').value,
+                description: document.getElementById('propDescription').value,
+                features: document.getElementById('propFeatures').value,
+                type: document.getElementById('propType').value,
+                badge: document.getElementById('propBadge').value,
+                has_video: document.getElementById('propHasVideo')?.checked || false
+            };
+            
+            console.log('📋 Dados coletados:', propertyData);
+            loading.completeStep(); // Etapa 1 completa
+            
+            // 3. VALIDAÇÃO BÁSICA
+            if (!propertyData.title || !propertyData.price || !propertyData.location) {
+                loading.updateTitle('❌ Validação Falhou');
+                loading.updateMessage('Preencha Título, Preço e Localização!');
+                setTimeout(() => {
+                    loading.hide();
+                    alert('❌ Preencha Título, Preço e Localização!');
+                    
+                    // Reabilitar botão
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = window.editingPropertyId ? 
+                            '<i class="fas fa-save"></i> Salvar Alterações' : 
+                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+                    }
+                }, 1500);
+                console.error('❌ Validação falhou: campos obrigatórios vazios');
+                console.groupEnd();
+                return;
+            }
+            
+            loading.updateMessage('Validação aprovada, processando...');
+            console.log('✅ Validação básica OK');
+            
+            // 4. PROCESSAMENTO PRINCIPAL
             if (window.editingPropertyId) {
                 // ========== EDIÇÃO DE IMÓVEL EXISTENTE ==========
                 console.log(`🔄 EDITANDO imóvel ID: ${window.editingPropertyId}`);
+                loading.updateTitle('Atualizando Imóvel...');
                 
-                // 3.1 Preparar objeto de atualização
+                // 4.1 Preparar objeto de atualização
                 const updateData = { ...propertyData };
                 
-                // 3.2 PROCESSAR PDFs (sistema existente)
-                console.log(`📄 Processando PDFs para edição...`);
-                console.log(`- PDFs existentes: ${window.existingPdfFiles ? window.existingPdfFiles.length : 0}`);
-                console.log(`- Novos PDFs: ${window.selectedPdfFiles ? window.selectedPdfFiles.length : 0}`);
+                // 4.2 PROCESSAR PDFs
+                loading.updateMessage('Processando documentos PDF...');
+                loading.completeStep(); // Etapa 2 completa
                 
                 if (typeof window.processAndSavePdfs === 'function') {
                     console.log(`📄 Delegando processamento de PDFs para MediaSystem...`);
@@ -648,11 +982,9 @@ window.setupForm = function() {
                     updateData.pdfs = '';
                 }
                 
-                // 3.3 PROCESSAR MÍDIA (FOTOS/VIDEOS) - NOVO SISTEMA INTEGRADO
-                console.log(`🖼️ Processando mídia (fotos/vídeos) para edição...`);
-                console.log(`📊 Estado da mídia:`);
-                console.log(`- Novos arquivos: ${window.selectedMediaFiles ? window.selectedMediaFiles.length : 0}`);
-                console.log(`- Existentes: ${window.existingMediaFiles ? window.existingMediaFiles.length : 0}`);
+                // 4.3 PROCESSAR MÍDIA (FOTOS/VIDEOS)
+                loading.updateMessage('Processando fotos e vídeos...');
+                loading.completeStep(); // Etapa 3 completa
                 
                 try {
                     if (typeof window.getMediaUrlsForProperty === 'function') {
@@ -691,14 +1023,10 @@ window.setupForm = function() {
                     updateData.images = currentProperty ? currentProperty.images : '';
                 }
                 
-                // 3.4 LOG FINAL DOS DADOS PARA SUPABASE
-                console.log('📤 Dados completos para Supabase:', {
-                    title: updateData.title,
-                    images: updateData.images ? `${updateData.images.split(',').length} URL(s)` : 'Nenhuma',
-                    pdfs: updateData.pdfs ? `${updateData.pdfs.split(',').length} PDF(s)` : 'Nenhum'
-                });
+                // 4.4 SALVAR NO BANCO
+                loading.updateMessage('Salvando alterações no banco de dados...');
+                loading.completeStep(); // Etapa 4 completa
                 
-                // 3.5 CHAMAR ATUALIZAÇÃO NO BANCO
                 if (typeof window.updateProperty === 'function') {
                     console.log('💾 Enviando atualização para o sistema de propriedades...');
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
@@ -706,18 +1034,29 @@ window.setupForm = function() {
                     if (success) {
                         console.log('✅ Imóvel atualizado com sucesso no banco de dados!');
                         
-                        // Feedback visual para o usuário
-                        const imageCount = updateData.images ? updateData.images.split(',').filter(url => url.trim() !== '').length : 0;
-                        const pdfCount = updateData.pdfs ? updateData.pdfs.split(',').filter(url => url.trim() !== '').length : 0;
+                        // Feedback final
+                        loading.updateTitle('✅ Concluído!');
+                        loading.updateMessage('Imóvel atualizado com sucesso!');
                         
-                        let successMessage = `✅ Imóvel "${updateData.title}" atualizado!`;
-                        if (imageCount > 0) successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) salvo(s)`;
-                        if (pdfCount > 0) successMessage += `\n📄 ${pdfCount} documento(s) PDF salvo(s)`;
+                        // Mostrar resumo para o usuário
+                        setTimeout(() => {
+                            const imageCount = updateData.images ? updateData.images.split(',').filter(url => url.trim() !== '').length : 0;
+                            const pdfCount = updateData.pdfs ? updateData.pdfs.split(',').filter(url => url.trim() !== '').length : 0;
+                            
+                            let successMessage = `✅ Imóvel "${updateData.title}" atualizado!`;
+                            if (imageCount > 0) successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) salvo(s)`;
+                            if (pdfCount > 0) successMessage += `\n📄 ${pdfCount} documento(s) PDF salvo(s)`;
+                            
+                            alert(successMessage);
+                        }, 800);
                         
-                        alert(successMessage);
                     } else {
-                        console.error('❌ Falha na atualização do imóvel');
-                        alert('❌ Não foi possível atualizar o imóvel. Verifique o console.');
+                        loading.updateTitle('❌ Erro');
+                        loading.updateMessage('Falha na atualização');
+                        setTimeout(() => {
+                            loading.hide();
+                            alert('❌ Não foi possível atualizar o imóvel. Verifique o console.');
+                        }, 1500);
                     }
                 } else {
                     console.error('❌ Função updateProperty não disponível!');
@@ -727,8 +1066,12 @@ window.setupForm = function() {
             } else {
                 // ========== CRIAÇÃO DE NOVO IMÓVEL ==========
                 console.log('🆕 CRIANDO novo imóvel...');
+                loading.updateTitle('Criando Novo Imóvel...');
                 
-                // 3.6 PROCESSAR MÍDIA PARA NOVO IMÓVEL
+                // 4.5 PROCESSAR MÍDIA PARA NOVO IMÓVEL
+                loading.updateMessage('Processando fotos e vídeos...');
+                loading.completeStep(); // Etapa 2 completa
+                
                 let mediaUrls = '';
                 if (window.selectedMediaFiles && window.selectedMediaFiles.length > 0) {
                     console.log(`🖼️ Processando ${window.selectedMediaFiles.length} arquivo(s) de mídia para novo imóvel...`);
@@ -749,13 +1092,19 @@ window.setupForm = function() {
                     }
                 }
                 
-                // 3.7 PROCESSAR PDFs PARA NOVO IMÓVEL
+                // 4.6 PROCESSAR PDFs PARA NOVO IMÓVEL
+                loading.updateMessage('Processando documentos PDF...');
+                loading.completeStep(); // Etapa 3 completa
+                
                 if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
                     console.log(`📄 Processando ${window.selectedPdfFiles.length} PDF(s) para novo imóvel...`);
                     // A lógica de PDFs para novo imóvel já está em addNewProperty
                 }
                 
-                // 3.8 CHAMAR CRIAÇÃO NO BANCO
+                // 4.7 CRIAR NO BANCO
+                loading.updateMessage('Salvando no banco de dados...');
+                loading.completeStep(); // Etapa 4 completa
+                
                 if (typeof window.addNewProperty === 'function') {
                     console.log('💾 Chamando addNewProperty com dados:', {
                         title: propertyData.title,
@@ -768,29 +1117,32 @@ window.setupForm = function() {
                     if (newProperty) {
                         console.log(`✅ Novo imóvel criado com ID: ${newProperty.id}`);
 
-                        // 🧼 LIMPEZA DO SISTEMA DE MÍDIA APÓS SALVAMENTO COM SUCESSO
-                        if (typeof window.clearMediaSystem === 'function') {
-                            setTimeout(() => {
-                                window.clearMediaSystem();
-                                console.log('🔄 Sistema de mídia limpo após salvamento');
-                            }, 300);
-                        }
+                        // Feedback final
+                        loading.updateTitle('✅ Concluído!');
+                        loading.updateMessage('Imóvel cadastrado com sucesso!');
                         
-                        // Feedback para o usuário
-                        let successMessage = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
-                        if (newProperty.images && newProperty.images !== 'EMPTY') {
-                            const imageCount = newProperty.images.split(',').filter(url => url.trim() !== '').length;
-                            successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) incluída(s)`;
-                        }
-                        if (newProperty.pdfs && newProperty.pdfs !== 'EMPTY') {
-                            const pdfCount = newProperty.pdfs.split(',').filter(url => url.trim() !== '').length;
-                            successMessage += `\n📄 ${pdfCount} documento(s) PDF incluído(s)`;
-                        }
+                        // Mostrar resumo
+                        setTimeout(() => {
+                            let successMessage = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
+                            if (newProperty.images && newProperty.images !== 'EMPTY') {
+                                const imageCount = newProperty.images.split(',').filter(url => url.trim() !== '').length;
+                                successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) incluída(s)`;
+                            }
+                            if (newProperty.pdfs && newProperty.pdfs !== 'EMPTY') {
+                                const pdfCount = newProperty.pdfs.split(',').filter(url => url.trim() !== '').length;
+                                successMessage += `\n📄 ${pdfCount} documento(s) PDF incluído(s)`;
+                            }
+                            
+                            alert(successMessage);
+                        }, 800);
                         
-                        alert(successMessage);
                     } else {
-                        console.error('❌ Falha na criação do novo imóvel');
-                        alert('❌ Não foi possível criar o imóvel. Verifique o console.');
+                        loading.updateTitle('❌ Erro');
+                        loading.updateMessage('Falha na criação');
+                        setTimeout(() => {
+                            loading.hide();
+                            alert('❌ Não foi possível criar o imóvel. Verifique o console.');
+                        }, 1500);
                     }
                 } else {
                     console.error('❌ Função addNewProperty não disponível!');
@@ -798,60 +1150,96 @@ window.setupForm = function() {
                 }
             }
             
-        // 4. LIMPEZA E RESET APÓS SALVAMENTO (SUCESSO OU ERRO)
-        setTimeout(() => {
-            console.log('🧹 Executando limpeza automática pós-salvamento...');
-            
-            // ✅ CHAVE: Resetar formulário para estado inicial
-            if (typeof window.resetAdminFormToInitialState === 'function') {
-                window.resetAdminFormToInitialState();
-            } else {
-                // Fallback: chamar cancelEdit() que já existe
-                if (typeof window.cancelEdit === 'function') {
-                    window.cancelEdit();
-                }
-            }
-            
-            // Atualizar lista de imóveis no admin
-            if (typeof window.loadPropertyList === 'function') {
-                window.loadPropertyList();
-                console.log('📋 Lista de imóveis atualizada');
-            }
-            
-            // Forçar recarregamento da galeria principal
-            if (typeof window.renderProperties === 'function') {
-                setTimeout(() => {
-                    window.renderProperties('todos');
-                    console.log('🔄 Galeria principal atualizada');
-                }, 500);
-            }
-            
-            // Feedback visual para usuário
-            console.log('🎯 Formulário limpo e pronto para novo imóvel');
-            
-        }, 800);
-            
         } catch (error) {
-            // 5. TRATAMENTO DE ERROS GLOBAIS
+            // 5. TRATAMENTO DE ERROS
             console.error('❌ ERRO CRÍTICO no processamento do formulário:', error);
             console.error('🔍 Stack trace:', error.stack);
             
-            let errorMessage = `❌ Erro ao processar: ${error.message || 'Erro desconhecido'}`;
+            loading.updateTitle('❌ Erro no Processamento');
+            loading.updateMessage(error.message || 'Erro desconhecido');
             
-            // Mensagens mais amigáveis para erros comuns
-            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                errorMessage = '❌ Erro de conexão. Verifique sua internet e tente novamente.';
-            } else if (error.message.includes('Supabase') || error.message.includes('storage')) {
-                errorMessage = '❌ Erro no servidor de armazenamento. Tente novamente em alguns instantes.';
-            }
+            setTimeout(() => {
+                loading.hide();
+                
+                let errorMessage = `❌ Erro ao processar: ${error.message || 'Erro desconhecido'}`;
+                
+                // Mensagens mais amigáveis para erros comuns
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = '❌ Erro de conexão. Verifique sua internet e tente novamente.';
+                } else if (error.message.includes('Supabase') || error.message.includes('storage')) {
+                    errorMessage = '❌ Erro no servidor de armazenamento. Tente novamente em alguns instantes.';
+                }
+                
+                alert(errorMessage + '\n\nVerifique o console para detalhes técnicos.');
+                
+                // Reabilitar botão
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = window.editingPropertyId ? 
+                        '<i class="fas fa-save"></i> Salvar Alterações' : 
+                        '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+                }
+                
+            }, 1500);
             
-            alert(errorMessage + '\n\nVerifique o console para detalhes técnicos.');
+        } finally {
+            // 6. LIMPEZA E RESET APÓS SALVAMENTO (SUCESSO OU ERRO)
+            setTimeout(() => {
+                console.log('🧹 Executando limpeza automática pós-salvamento...');
+                
+                // Esconder loading
+                loading.hide();
+                
+                // ✅ CHAVE: Resetar formulário para estado inicial
+                if (typeof window.resetAdminFormToInitialState === 'function') {
+                    setTimeout(() => {
+                        window.resetAdminFormToInitialState();
+                    }, 500);
+                } else {
+                    // Fallback: chamar cancelEdit() que já existe
+                    if (typeof window.cancelEdit === 'function') {
+                        setTimeout(() => {
+                            window.cancelEdit();
+                        }, 500);
+                    }
+                }
+                
+                // Reabilitar botão de submit
+                if (submitBtn) {
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = window.editingPropertyId ? 
+                            '<i class="fas fa-save"></i> Salvar Alterações' : 
+                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+                    }, 500);
+                }
+                
+                // Atualizar lista de imóveis no admin
+                if (typeof window.loadPropertyList === 'function') {
+                    setTimeout(() => {
+                        window.loadPropertyList();
+                        console.log('📋 Lista de imóveis atualizada');
+                    }, 700);
+                }
+                
+                // Forçar recarregamento da galeria principal
+                if (typeof window.renderProperties === 'function') {
+                    setTimeout(() => {
+                        window.renderProperties('todos');
+                        console.log('🔄 Galeria principal atualizada');
+                    }, 1000);
+                }
+                
+                // Feedback visual para usuário
+                console.log('🎯 Formulário limpo e pronto para novo imóvel');
+                
+            }, 1000);
         }
         
         console.groupEnd();
     });
     
-    console.log('✅ Formulário admin configurado com sistema de mídia integrado.');
+    console.log('✅ Formulário admin configurado com sistema de loading visual');
 };
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
@@ -1227,6 +1615,14 @@ function initializeAdminSystem() {
         }
     }, 2000);
 
+    // 6. VERIFICAR SISTEMA DE LOADING (⭐ NOVA SEÇÃO ⭐)
+    console.log('🔍 Verificando sistema de loading...');
+    if (typeof LoadingManager !== 'undefined') {
+        console.log('✅ LoadingManager disponível');
+    } else {
+        console.warn('⚠️ LoadingManager não carregado');
+    }
+   
     console.log('✅ Sistema admin inicializado');
 }
 
@@ -1424,7 +1820,6 @@ window.testPdfModalDirect = function(propertyId) {
     openPdfModalDirectFallback(propertyId || 101); // Testar com ID 101 ou fornecido
 };
 
-// Adicionar verificação de módulos PDF
 // ========== VERIFICAÇÃO DO SISTEMA PDF UNIFICADO ==========
 setTimeout(() => {
     console.log('🔍 VERIFICAÇÃO SISTEMA PDF UNIFICADO (pdf-unified.js):');
@@ -2238,5 +2633,101 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
 });
+
+// ========== ADICIONAR ESTILOS CSS PARA O LOADING ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Estilos já foram adicionados no createOverlay, mas adicionamos extras aqui
+    const extraStyles = document.createElement('style');
+    extraStyles.textContent = `
+        /* Melhorar botão de submit durante processamento */
+        #propertyForm button[type="submit"]:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            position: relative;
+        }
+        
+        #propertyForm button[type="submit"]:disabled::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Feedback visual durante upload */
+        .uploading-file {
+            opacity: 0.7;
+            position: relative;
+        }
+        
+        .uploading-file::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.2), transparent);
+            animation: file-uploading 2s infinite;
+            z-index: 1;
+        }
+        
+        @keyframes file-uploading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Animações para o loading */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading-enter {
+            animation: fadeIn 0.3s ease forwards;
+        }
+        
+        /* Estilo para botões durante processamento */
+        .processing {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .processing::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(30deg);
+            animation: processing-shimmer 2s infinite;
+        }
+        
+        @keyframes processing-shimmer {
+            0% { transform: translateX(-100%) rotate(30deg); }
+            100% { transform: translateX(100%) rotate(30deg); }
+        }
+    `;
+    document.head.appendChild(extraStyles);
+    
+    console.log('🎨 Estilos de loading visual aplicados');
+});
+
+console.log('✅ Sistema de loading visual adicionado ao admin.js');
 
 console.log('✅ admin.js pronto e funcional - SEM ERROS DE SINTAXE');
