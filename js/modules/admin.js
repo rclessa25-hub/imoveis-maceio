@@ -18,8 +18,16 @@ window.handleNewMediaFiles = function(files) {
     return MediaSystem.addFiles(files);
 };
 
+// ========== GARANTIR QUE A FUNÇÃO handleNewPdfFiles USA APENAS MEDIASYSTEM ==========
 window.handleNewPdfFiles = function(files) {
-    return MediaSystem.addPdfs(files);
+    console.log('📄 handleNewPdfFiles chamada - Delegando APENAS para MediaSystem');
+    
+    if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+        return MediaSystem.addPdfs(files);
+    }
+    
+    console.warn('⚠️ MediaSystem não disponível para PDFs');
+    return 0;
 };
 
 window.loadExistingMediaForEdit = function(property) {
@@ -34,27 +42,24 @@ window.clearMediaSystemComplete = function() {
     MediaSystem.resetState();
 };
 
-// ========== INTEGRAÇÃO COM MediaSystem (ÚNICO para PDFs) ==========
+// ========== BLOQUEAR QUALQUER OUTRO PROCESSAMENTO DE PDF NO admin.js ==========
+// Sobrescrever funções antigas para evitar processamento duplicado
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    console.log(`📄 admin.js: processAndSavePdfs chamado para ${propertyId} - USANDO APENAS MediaSystem`);
+    console.log(`📄 processAndSavePdfs REDIRECIONADO para MediaSystem: ${propertyId}`);
     
-    // DESATIVAR COMPLETAMENTE PdfSystem para uploads
-    console.log('🚫 Desativando PdfSystem para uploads (usando MediaSystem)');
-    
-    // PRIORIDADE 1: Usar MediaSystem (AGORA ÚNICO para PDFs)
+    // DELEGAR 100% PARA MEDIASYSTEM
     if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
         try {
-            console.log('🔄 Processando PDFs exclusivamente com MediaSystem');
             const result = await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
-            console.log(`✅ MediaSystem retornou: ${result ? 'PDFs salvos' : 'vazio'}`);
+            console.log(`✅ MediaSystem processou PDFs: ${result ? 'Sucesso' : 'Vazio'}`);
             return result || '';
         } catch (error) {
             console.error('❌ Erro no MediaSystem:', error);
         }
     }
     
-    // Fallback manual (emergência)
-    console.warn('⚠️ MediaSystem não disponível - retornando string vazia');
+    // Fallback
+    console.warn('⚠️ Usando fallback vazio');
     return '';
 };
 
@@ -454,24 +459,19 @@ window.setupForm = function() {
                 console.log(`- PDFs existentes: ${window.existingPdfFiles ? window.existingPdfFiles.length : 0}`);
                 console.log(`- Novos PDFs: ${window.selectedPdfFiles ? window.selectedPdfFiles.length : 0}`);
                 
-                try {
-                    if (typeof window.processAndSavePdfs === 'function') {
-                        const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
-                        
-                        if (pdfsString && pdfsString.trim() !== '') {
-                            updateData.pdfs = pdfsString;
-                            console.log(`✅ PDFs processados: ${pdfsString.substring(0, 60)}...`);
-                        } else {
-                            // Se não há PDFs, definir como string vazia
-                            updateData.pdfs = '';
-                            console.log('ℹ️ Nenhum PDF para o imóvel');
-                        }
+                if (typeof window.processAndSavePdfs === 'function') {
+                    console.log(`📄 Delegando processamento de PDFs para MediaSystem...`);
+                    const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
+                    
+                    if (pdfsString && pdfsString.trim() !== '') {
+                        updateData.pdfs = pdfsString;
+                        console.log(`✅ PDFs processados pelo MediaSystem: ${pdfsString.substring(0, 60)}...`);
                     } else {
-                        console.warn('⚠️  Função processAndSavePdfs não disponível');
                         updateData.pdfs = '';
+                        console.log('ℹ️ Nenhum PDF para o imóvel (MediaSystem retornou vazio)');
                     }
-                } catch (pdfError) {
-                    console.error('❌ Erro ao processar PDFs:', pdfError);
+                } else {
+                    console.warn('⚠️ Função processAndSavePdfs não disponível');
                     updateData.pdfs = '';
                 }
                 
@@ -837,71 +837,62 @@ window.fixFilterVisuals = function() {
 // ========== CONFIGURAÇÃO DEFINITIVA DO UPLOAD DE PDF (APENAS MEDIASYSTEM) ==========
 console.log('🔒 Configurando upload de PDFs: Exclusivamente via MediaSystem');
 
-// 1. Limpar qualquer listener antigo (fazemos clean slate)
-const pdfFileInput = document.getElementById('pdfFileInput');
-const pdfUploadArea = document.getElementById('pdfUploadArea');
+// ========== REMOVER COMPLETAMENTE A CONFIGURAÇÃO DO UPLOAD DE PDF DO admin.js ==========
+// O MediaSystem já tem sua própria configuração completa
+// Não vamos configurar nada aqui para evitar duplicação
 
-if (pdfFileInput && pdfUploadArea) {
-    // Clonar elementos para remover TODOS os listeners
-    const newPdfInput = pdfFileInput.cloneNode(true);
-    const newPdfArea = pdfUploadArea.cloneNode(true);
+// ========== EM VEZ DISSO, DESATIVAR QUALQUER CONFIGURAÇÃO LOCAL ==========
+setTimeout(() => {
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
     
-    pdfFileInput.parentNode.replaceChild(newPdfInput, pdfFileInput);
-    pdfUploadArea.parentNode.replaceChild(newPdfArea, pdfUploadArea);
-    
-    // Re-obter referências limpas
-    const freshUploadArea = document.getElementById('pdfUploadArea');
-    const freshFileInput = document.getElementById('pdfFileInput');
-    
-    // 2. Configurar APENAS UM listener (100% MediaSystem)
-    let mediaSystemListenerActive = false;
-    
-    freshUploadArea.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+    if (pdfFileInput && pdfUploadArea) {
+        // REMOVER todos os event listeners clonando os elementos
+        const cleanPdfInput = pdfFileInput.cloneNode(true);
+        const cleanPdfArea = pdfUploadArea.cloneNode(true);
         
-        if (mediaSystemListenerActive) {
-            console.log('⚠️ Listener já ativo, prevenindo duplicação');
-            return;
-        }
+        pdfFileInput.parentNode.replaceChild(cleanPdfInput, pdfFileInput);
+        pdfUploadArea.parentNode.replaceChild(cleanPdfArea, pdfUploadArea);
         
-        console.log('🎯 Área de PDF clicada - MediaSystem exclusivo');
-        mediaSystemListenerActive = true;
-        freshFileInput.click();
+        console.log('✅ Elementos de PDF resetados - Sem listeners duplicados');
         
-        // Reset após processamento
-        setTimeout(() => {
-            mediaSystemListenerActive = false;
-        }, 1000);
-    }, { once: false }); // Permite múltiplos cliques, mas controla duplicação
-    
-    freshFileInput.addEventListener('change', function(e) {
-        if (e.target.files.length > 0) {
-            console.log('📄 Arquivo(s) selecionado(s) - Processando via MediaSystem APENAS');
-            
-            // CHAMADA ÚNICA E DIRETA AO MEDIASYSTEM
-            if (window.MediaSystem && typeof MediaSystem.addPdfs === 'function') {
-                MediaSystem.addPdfs(e.target.files);
-            } else {
-                console.error('❌ MediaSystem não disponível!');
-            }
-            
-            // LIMPAR input (permite mesmo arquivo novamente)
-            e.target.value = '';
-        }
-    });
-    
-    // 3. BLOQUEAR QUALQUER outro listener no PdfSystem para upload
-    if (window.PdfSystem && typeof window.PdfSystem.addFiles === 'function') {
-        const originalAddFiles = window.PdfSystem.addFiles;
-        window.PdfSystem.addFiles = function() {
-            console.log('🚫 PdfSystem.addFiles() BLOQUEADA - Use MediaSystem');
-            return 0; // Sempre retorna 0 para indicar "não processado"
-        };
+        // AGORA APENAS DELEGAR PARA O MediaSystem EXISTENTE
+        // O MediaSystem já tem seus próprios listeners configurados em media-unified.js
+        // Não vamos adicionar mais nada aqui
     }
+}, 1000);
+
+// ========== VERIFICAÇÃO DE DUPLICAÇÃO ==========
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO DE DUPLICAÇÃO DE LISTENERS PDF');
     
-    console.log('✅ Upload de PDFs configurado: MediaSystem exclusivo');
-}
+    const pdfInput = document.getElementById('pdfFileInput');
+    if (pdfInput) {
+        // Tentar verificar se há listeners duplicados
+        try {
+            // Esta verificação só funciona se getEventListeners estiver disponível (Chrome DevTools)
+            if (typeof getEventListeners === 'function') {
+                const listeners = getEventListeners(pdfInput);
+                if (listeners && listeners.change) {
+                    console.log(`⚠️  ${listeners.change.length} listener(s) no pdfFileInput`);
+                    if (listeners.change.length > 1) {
+                        console.warn('❌ DUPLICAÇÃO DETECTADA! Vários listeners no mesmo input');
+                        console.log('🔧 Removendo listeners duplicados...');
+                        
+                        // Clone para remover todos os listeners
+                        const cleanInput = pdfInput.cloneNode(true);
+                        pdfInput.parentNode.replaceChild(cleanInput, pdfInput);
+                        console.log('✅ Input limpo - listeners duplicados removidos');
+                    }
+                }
+            } else {
+                console.log('ℹ️ getEventListeners não disponível - continuando normalmente');
+            }
+        } catch (error) {
+            console.log('ℹ️ Não foi possível verificar listeners:', error.message);
+        }
+    }
+}, 2000);
 
 // ========== INICIALIZAÇÃO DO SISTEMA ==========
 function initializeAdminSystem() {
@@ -939,8 +930,8 @@ function initializeAdminSystem() {
     // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
     console.log('🎯 Iniciando correção garantida dos filtros...');
 
-    // A configuração do upload de PDF já foi feita acima globalmente
-    console.log('✅ Configuração de upload PDF já aplicada globalmente');
+    // A configuração do upload de PDF já foi tratada acima
+    console.log('✅ Upload de PDF delegado 100% para MediaSystem');
 
     // Tentativa 1: Imediata (800ms)
     setTimeout(() => {
@@ -965,12 +956,6 @@ function initializeAdminSystem() {
             }
         }
     }, 2000);
-
-    // Tentativa 3: Emergência após 3 segundos
-    setTimeout(() => {
-        console.log('🆘 Aplicando correção de emergência...');
-        // applyEmergencyFilterFix(); // Mantido comentado para referência
-    }, 3000);
 
     console.log('✅ Sistema admin inicializado');
 }
@@ -1967,43 +1952,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }, 1000);
-});
-
-// Em js/modules/admin.js - ADICIONAR NO FINAL DO ARQUIVO
-// Função de Detecção de Formulário Vazio
-window.isAdminFormEmpty = function() {
-    const checks = {
-        titulo: !document.getElementById('propTitle').value.trim(),
-        preco: !document.getElementById('propPrice').value.trim(),
-        localizacao: !document.getElementById('propLocation').value.trim(),
-        descricao: !document.getElementById('propDescription').value.trim(),
-        temMidia: !window.selectedMediaFiles || window.selectedMediaFiles.length === 0,
-        temPdfs: !window.selectedPdfFiles || window.selectedPdfFiles.length === 0
-    };
-    
-    const isEditing = window.editingPropertyId !== null;
-    const isTrulyEmpty = checks.titulo && checks.preco && checks.localizacao && 
-                        checks.temMidia && checks.temPdfs && !isEditing;
-    
-    return {
-        isEmpty: isTrulyEmpty,
-        isEditing: isEditing,
-        checks: checks
-    };
-};
-
-// Verificação automática ao carregar formulário
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        const formState = window.isAdminFormEmpty();
-        console.log('🔍 Estado inicial do formulário:', formState);
-        
-        // Se não está vazio, limpar
-        if (!formState.isEmpty && !formState.isEditing) {
-            console.log('⚠️ Formulário não estava vazio inicialmente. Limpando...');
-            window.resetAdminFormToInitialState();
-        }
-    }, 1500);
 });
 
 console.log('✅ admin.js pronto e funcional - SEM ERROS DE SINTAXE');
