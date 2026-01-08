@@ -834,6 +834,75 @@ window.fixFilterVisuals = function() {
     }, 500);
 };
 
+// ========== CONFIGURAÇÃO DEFINITIVA DO UPLOAD DE PDF (APENAS MEDIASYSTEM) ==========
+console.log('🔒 Configurando upload de PDFs: Exclusivamente via MediaSystem');
+
+// 1. Limpar qualquer listener antigo (fazemos clean slate)
+const pdfFileInput = document.getElementById('pdfFileInput');
+const pdfUploadArea = document.getElementById('pdfUploadArea');
+
+if (pdfFileInput && pdfUploadArea) {
+    // Clonar elementos para remover TODOS os listeners
+    const newPdfInput = pdfFileInput.cloneNode(true);
+    const newPdfArea = pdfUploadArea.cloneNode(true);
+    
+    pdfFileInput.parentNode.replaceChild(newPdfInput, pdfFileInput);
+    pdfUploadArea.parentNode.replaceChild(newPdfArea, pdfUploadArea);
+    
+    // Re-obter referências limpas
+    const freshUploadArea = document.getElementById('pdfUploadArea');
+    const freshFileInput = document.getElementById('pdfFileInput');
+    
+    // 2. Configurar APENAS UM listener (100% MediaSystem)
+    let mediaSystemListenerActive = false;
+    
+    freshUploadArea.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (mediaSystemListenerActive) {
+            console.log('⚠️ Listener já ativo, prevenindo duplicação');
+            return;
+        }
+        
+        console.log('🎯 Área de PDF clicada - MediaSystem exclusivo');
+        mediaSystemListenerActive = true;
+        freshFileInput.click();
+        
+        // Reset após processamento
+        setTimeout(() => {
+            mediaSystemListenerActive = false;
+        }, 1000);
+    }, { once: false }); // Permite múltiplos cliques, mas controla duplicação
+    
+    freshFileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            console.log('📄 Arquivo(s) selecionado(s) - Processando via MediaSystem APENAS');
+            
+            // CHAMADA ÚNICA E DIRETA AO MEDIASYSTEM
+            if (window.MediaSystem && typeof MediaSystem.addPdfs === 'function') {
+                MediaSystem.addPdfs(e.target.files);
+            } else {
+                console.error('❌ MediaSystem não disponível!');
+            }
+            
+            // LIMPAR input (permite mesmo arquivo novamente)
+            e.target.value = '';
+        }
+    });
+    
+    // 3. BLOQUEAR QUALQUER outro listener no PdfSystem para upload
+    if (window.PdfSystem && typeof window.PdfSystem.addFiles === 'function') {
+        const originalAddFiles = window.PdfSystem.addFiles;
+        window.PdfSystem.addFiles = function() {
+            console.log('🚫 PdfSystem.addFiles() BLOQUEADA - Use MediaSystem');
+            return 0; // Sempre retorna 0 para indicar "não processado"
+        };
+    }
+    
+    console.log('✅ Upload de PDFs configurado: MediaSystem exclusivo');
+}
+
 // ========== INICIALIZAÇÃO DO SISTEMA ==========
 function initializeAdminSystem() {
     console.log('🚀 Inicializando sistema admin...');
@@ -870,57 +939,8 @@ function initializeAdminSystem() {
     // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
     console.log('🎯 Iniciando correção garantida dos filtros...');
 
-    // ========== CONFIGURAÇÃO DEFINITIVA DO UPLOAD DE PDF (SOMENTE MediaSystem) ==========
-    console.log('🔒 Configurando upload de PDFs: Bloqueando PdfSystem para usar apenas MediaSystem');
-
-    // 1. Garantir que o input de arquivo esteja limpo e sem listeners antigos
-    const pdfFileInput = document.getElementById('pdfFileInput');
-    const pdfUploadArea = document.getElementById('pdfUploadArea');
-
-    if (pdfFileInput && pdfUploadArea) {
-        // Clonar e substituir os elementos para remover QUALQUER listener pré-existente
-        const newPdfInput = pdfFileInput.cloneNode(true);
-        const newPdfArea = pdfUploadArea.cloneNode(true);
-        
-        pdfFileInput.parentNode.replaceChild(newPdfInput, pdfFileInput);
-        pdfUploadArea.parentNode.replaceChild(newPdfArea, pdfUploadArea);
-        
-        // 2. Configurar o NOVO elemento de área para usar APENAS o MediaSystem
-        const freshUploadArea = document.getElementById('pdfUploadArea');
-        const freshFileInput = document.getElementById('pdfFileInput');
-        
-        freshUploadArea.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation(); // Impede qualquer outro handler
-            console.log('🎯 Área de PDF clicada - Redirecionando para MediaSystem');
-            freshFileInput.click();
-        });
-        
-        freshFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                console.log('📄 Arquivo(s) selecionado(s) - Processando via MediaSystem');
-                // Chamada DIRETA e ÚNICA ao MediaSystem
-                if (window.MediaSystem && typeof MediaSystem.addPdfs === 'function') {
-                    MediaSystem.addPdfs(e.target.files);
-                }
-                // LIMPA o input para permitir nova seleção do mesmo arquivo
-                e.target.value = '';
-            }
-        });
-        
-        // 3. BLOQUEAR EXPLICITAMENTE a inicialização do PdfSystem para uploads
-        //    (se essa função for chamada em outro lugar, ela não fará nada)
-        if (typeof window.initPdfSystem === 'function') {
-            const originalInitPdfSystem = window.initPdfSystem;
-            window.initPdfSystem = function() {
-                console.log('🚫 initPdfSystem BLOQUEADA para uploads (uso somente do MediaSystem)');
-                // Não executa a função original, apenas retorna
-                return null;
-            };
-        }
-        
-        console.log('✅ Upload de PDFs configurado para uso exclusivo do MediaSystem');
-    }
+    // A configuração do upload de PDF já foi feita acima globalmente
+    console.log('✅ Configuração de upload PDF já aplicada globalmente');
 
     // Tentativa 1: Imediata (800ms)
     setTimeout(() => {
@@ -1795,7 +1815,24 @@ window.clearProcessedPdfs = function() {
 
 // ========== VERIFICAÇÃO DE FORMULÁRIO VAZIO (MANTER - É ESSENCIAL) ==========
 window.isAdminFormEmpty = function() {
-    // ... (manter código existente, é essencial para UX)
+    const checks = {
+        titulo: !document.getElementById('propTitle').value.trim(),
+        preco: !document.getElementById('propPrice').value.trim(),
+        localizacao: !document.getElementById('propLocation').value.trim(),
+        descricao: !document.getElementById('propDescription').value.trim(),
+        temMidia: !window.selectedMediaFiles || window.selectedMediaFiles.length === 0,
+        temPdfs: !window.selectedPdfFiles || window.selectedPdfFiles.length === 0
+    };
+    
+    const isEditing = window.editingPropertyId !== null;
+    const isTrulyEmpty = checks.titulo && checks.preco && checks.localizacao && 
+                        checks.temMidia && checks.temPdfs && !isEditing;
+    
+    return {
+        isEmpty: isTrulyEmpty,
+        isEditing: isEditing,
+        checks: checks
+    };
 };
 
 // Verificação automática ao carregar formulário
@@ -1812,7 +1849,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500);
 });
 
-console.log('✅ admin.js pronto com funcionalidades essenciais');
+console.log('✅ admin.js pronto e funcional');
 
 // CORREÇÃO DEFINITIVA: Ocultar botão de teste de upload
 function hideMediaTestButtonPermanently() {
