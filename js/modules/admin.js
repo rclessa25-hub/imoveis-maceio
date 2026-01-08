@@ -867,10 +867,61 @@ function initializeAdminSystem() {
     // 4. Adicionar botão sincronização
     addSyncButton();
     
-    // Na função initializeAdminSystem, procure esta parte:
     // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
     console.log('🎯 Iniciando correção garantida dos filtros...');
-    
+
+    // ========== CONFIGURAÇÃO DEFINITIVA DO UPLOAD DE PDF (SOMENTE MediaSystem) ==========
+    console.log('🔒 Configurando upload de PDFs: Bloqueando PdfSystem para usar apenas MediaSystem');
+
+    // 1. Garantir que o input de arquivo esteja limpo e sem listeners antigos
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+
+    if (pdfFileInput && pdfUploadArea) {
+        // Clonar e substituir os elementos para remover QUALQUER listener pré-existente
+        const newPdfInput = pdfFileInput.cloneNode(true);
+        const newPdfArea = pdfUploadArea.cloneNode(true);
+        
+        pdfFileInput.parentNode.replaceChild(newPdfInput, pdfFileInput);
+        pdfUploadArea.parentNode.replaceChild(newPdfArea, pdfUploadArea);
+        
+        // 2. Configurar o NOVO elemento de área para usar APENAS o MediaSystem
+        const freshUploadArea = document.getElementById('pdfUploadArea');
+        const freshFileInput = document.getElementById('pdfFileInput');
+        
+        freshUploadArea.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // Impede qualquer outro handler
+            console.log('🎯 Área de PDF clicada - Redirecionando para MediaSystem');
+            freshFileInput.click();
+        });
+        
+        freshFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                console.log('📄 Arquivo(s) selecionado(s) - Processando via MediaSystem');
+                // Chamada DIRETA e ÚNICA ao MediaSystem
+                if (window.MediaSystem && typeof MediaSystem.addPdfs === 'function') {
+                    MediaSystem.addPdfs(e.target.files);
+                }
+                // LIMPA o input para permitir nova seleção do mesmo arquivo
+                e.target.value = '';
+            }
+        });
+        
+        // 3. BLOQUEAR EXPLICITAMENTE a inicialização do PdfSystem para uploads
+        //    (se essa função for chamada em outro lugar, ela não fará nada)
+        if (typeof window.initPdfSystem === 'function') {
+            const originalInitPdfSystem = window.initPdfSystem;
+            window.initPdfSystem = function() {
+                console.log('🚫 initPdfSystem BLOQUEADA para uploads (uso somente do MediaSystem)');
+                // Não executa a função original, apenas retorna
+                return null;
+            };
+        }
+        
+        console.log('✅ Upload de PDFs configurado para uso exclusivo do MediaSystem');
+    }
+
     // Tentativa 1: Imediata (800ms)
     setTimeout(() => {
         if (typeof window.fixFilterVisuals === 'function') {
@@ -880,7 +931,7 @@ function initializeAdminSystem() {
             console.error('❌ window.fixFilterVisuals não encontrada!');
         }
     }, 800);
-    
+
     // Tentativa 2: Após 2 segundos (backup)
     setTimeout(() => {
         console.log('🔍 Verificando se filtros funcionam...');
@@ -894,13 +945,13 @@ function initializeAdminSystem() {
             }
         }
     }, 2000);
-    
+
     // Tentativa 3: Emergência após 3 segundos
     setTimeout(() => {
         console.log('🆘 Aplicando correção de emergência...');
-//        applyEmergencyFilterFix();
+        // applyEmergencyFilterFix(); // Mantido comentado para referência
     }, 3000);
-    
+
     console.log('✅ Sistema admin inicializado');
 }
 
