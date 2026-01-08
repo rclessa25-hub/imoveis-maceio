@@ -834,65 +834,162 @@ window.fixFilterVisuals = function() {
     }, 500);
 };
 
-// ========== CONFIGURAÇÃO DEFINITIVA DO UPLOAD DE PDF (APENAS MEDIASYSTEM) ==========
-console.log('🔒 Configurando upload de PDFs: Exclusivamente via MediaSystem');
+// ========== CONFIGURAÇÃO CORRIGIDA DO UPLOAD DE PDF ==========
+console.log('🔒 Configurando upload de PDFs: DELEGANDO para MediaSystem');
 
-// ========== REMOVER COMPLETAMENTE A CONFIGURAÇÃO DO UPLOAD DE PDF DO admin.js ==========
-// O MediaSystem já tem sua própria configuração completa
-// Não vamos configurar nada aqui para evitar duplicação
-
-// ========== EM VEZ DISSO, DESATIVAR QUALQUER CONFIGURAÇÃO LOCAL ==========
+// ========== VERIFICAR E AGUARDAR MEDIASYSTEM ANTES DE CONFIGURAR ==========
 setTimeout(() => {
     const pdfFileInput = document.getElementById('pdfFileInput');
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     
     if (pdfFileInput && pdfUploadArea) {
-        // REMOVER todos os event listeners clonando os elementos
+        console.log('🎯 Elementos de PDF encontrados - Configurando...');
+        
+        // 1. REMOVER QUALQUER LISTENER ANTIGO (clonando elementos)
         const cleanPdfInput = pdfFileInput.cloneNode(true);
         const cleanPdfArea = pdfUploadArea.cloneNode(true);
         
         pdfFileInput.parentNode.replaceChild(cleanPdfInput, pdfFileInput);
         pdfUploadArea.parentNode.replaceChild(cleanPdfArea, pdfUploadArea);
         
-        console.log('✅ Elementos de PDF resetados - Sem listeners duplicados');
+        console.log('✅ Elementos resetados - Prontos para MediaSystem');
         
-        // AGORA APENAS DELEGAR PARA O MediaSystem EXISTENTE
-        // O MediaSystem já tem seus próprios listeners configurados em media-unified.js
-        // Não vamos adicionar mais nada aqui
-    }
-}, 1000);
-
-// ========== VERIFICAÇÃO DE DUPLICAÇÃO ==========
-setTimeout(() => {
-    console.log('🔍 VERIFICAÇÃO DE DUPLICAÇÃO DE LISTENERS PDF');
-    
-    const pdfInput = document.getElementById('pdfFileInput');
-    if (pdfInput) {
-        // Tentar verificar se há listeners duplicados
-        try {
-            // Esta verificação só funciona se getEventListeners estiver disponível (Chrome DevTools)
-            if (typeof getEventListeners === 'function') {
-                const listeners = getEventListeners(pdfInput);
-                if (listeners && listeners.change) {
-                    console.log(`⚠️  ${listeners.change.length} listener(s) no pdfFileInput`);
-                    if (listeners.change.length > 1) {
-                        console.warn('❌ DUPLICAÇÃO DETECTADA! Vários listeners no mesmo input');
-                        console.log('🔧 Removendo listeners duplicados...');
-                        
-                        // Clone para remover todos os listeners
-                        const cleanInput = pdfInput.cloneNode(true);
-                        pdfInput.parentNode.replaceChild(cleanInput, pdfInput);
-                        console.log('✅ Input limpo - listeners duplicados removidos');
-                    }
+        // 2. AGORA APENAS CONFIGURAR O BÁSICO - O MediaSystem fará o resto
+        const freshUploadArea = document.getElementById('pdfUploadArea');
+        const freshFileInput = document.getElementById('pdfFileInput');
+        
+        // 3. CONFIGURAR APENAS O CLICK BÁSICO (sem processamento)
+        freshUploadArea.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎯 Área de PDF clicada - Abrindo seletor...');
+            freshFileInput.click();
+        });
+        
+        // 4. DELEGAR 100% PARA MEDIASYSTEM QUANDO ARQUIVO FOR SELECIONADO
+        freshFileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                console.log(`📄 ${e.target.files.length} arquivo(s) selecionado(s)`);
+                
+                // CHAMAR DIRETAMENTE O MEDIASYSTEM
+                if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                    console.log('🔄 Delegando para MediaSystem.addPdfs()');
+                    window.MediaSystem.addPdfs(e.target.files);
+                } else {
+                    console.error('❌ MediaSystem não disponível!');
+                    alert('⚠️ Sistema de upload não está pronto. Recarregue a página.');
                 }
-            } else {
-                console.log('ℹ️ getEventListeners não disponível - continuando normalmente');
+                
+                // Limpar input para permitir mesmo arquivo novamente
+                e.target.value = '';
             }
-        } catch (error) {
-            console.log('ℹ️ Não foi possível verificar listeners:', error.message);
-        }
+        });
+        
+        // 5. CONFIGURAR DRAG & DROP PARA A ÁREA DE PDF
+        freshUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.borderColor = '#3498db';
+            this.style.background = '#e8f4fc';
+            console.log('📄 Drag over área PDF');
+        });
+        
+        freshUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.borderColor = '#ddd';
+            this.style.background = '#fafafa';
+        });
+        
+        freshUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            this.style.borderColor = '#ddd';
+            this.style.background = '#fafafa';
+            
+            if (e.dataTransfer.files.length > 0) {
+                console.log(`📄 ${e.dataTransfer.files.length} arquivo(s) solto(s)`);
+                
+                // CHAMAR DIRETAMENTE O MEDIASYSTEM
+                if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                    window.MediaSystem.addPdfs(e.dataTransfer.files);
+                }
+            }
+        });
+        
+        console.log('✅ Upload de PDFs configurado - MediaSystem responsável pelo processamento');
+        
+    } else {
+        console.warn('⚠️ Elementos de PDF não encontrados no DOM');
     }
-}, 2000);
+}, 1000); // Aguardar 1s para garantir que MediaSystem carregou
+
+// ========== GARANTIR QUE MEDIASYSTEM ESTÁ PRONTO ==========
+function waitForMediaSystem(maxAttempts = 10, interval = 500) {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        
+        const checkInterval = setInterval(() => {
+            attempts++;
+            
+            if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                clearInterval(checkInterval);
+                console.log('✅ MediaSystem pronto após', attempts, 'tentativas');
+                resolve(true);
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('❌ MediaSystem não carregou após', maxAttempts * interval, 'ms');
+                resolve(false);
+            } else {
+                console.log('⏳ Aguardando MediaSystem... tentativa', attempts);
+            }
+        }, interval);
+    });
+}
+
+// ========== FUNÇÃO DE FALLBACK SE MEDIASYSTEM FALHAR ==========
+function setupPdfFallback() {
+    console.log('🔄 Configurando fallback para PDFs...');
+    
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    
+    if (!pdfUploadArea || !pdfFileInput) {
+        console.error('❌ Elementos de PDF não encontrados para fallback');
+        return;
+    }
+    
+    // Configuração básica de fallback
+    pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+    
+    pdfFileInput.addEventListener('change', async function(e) {
+        if (e.target.files.length > 0) {
+            console.log('📄 Fallback: Processando', e.target.files.length, 'PDF(s)');
+            
+            // Tentar MediaSystem primeiro
+            if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                window.MediaSystem.addPdfs(e.target.files);
+            } 
+            // Fallback manual extremo
+            else {
+                alert('⚠️ Sistema de upload em manutenção. Tente novamente em alguns segundos.');
+            }
+        }
+    });
+}
+
+// ========== EXECUTAR VERIFICAÇÃO DE MEDIASYSTEM ==========
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Verificando sistema de mídia...');
+    
+    waitForMediaSystem().then(isReady => {
+        if (!isReady) {
+            console.warn('⚠️ Configurando fallback para PDFs');
+            setupPdfFallback();
+        }
+    });
+});
 
 // ========== INICIALIZAÇÃO DO SISTEMA ==========
 function initializeAdminSystem() {
