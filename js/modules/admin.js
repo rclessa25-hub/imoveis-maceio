@@ -129,301 +129,31 @@ const ADMIN_CONFIG = {
     storageKey: "weberlessa_properties"
 };
 
-// ========== SISTEMA DE LOADING VISUAL ==========
-const LoadingManager = {
-    // Configuração
-    config: {
-        containerId: 'loadingOverlay',
-        minShowTime: 800, // Tempo mínimo que o loading aparece (ms)
-        fadeDuration: 300 // Duração da animação de fade
-    },
+/* ==========================================================
+   INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA
+   ========================================================== */
+
+// Verificar se LoadingManager está disponível, senão carregar fallback
+if (typeof LoadingManager === 'undefined') {
+    console.warn('⚠️ LoadingManager não encontrado. Criando fallback básico...');
     
-    // Criar overlay de loading
-    createOverlay() {
-        // Remover se já existir
-        this.removeOverlay();
-        
-        // Criar elemento
-        const overlay = document.createElement('div');
-        overlay.id = this.config.containerId;
-        overlay.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(255, 255, 255, 0.95);
-                z-index: 99999;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                backdrop-filter: blur(5px);
-                transition: opacity ${this.config.fadeDuration}ms ease;
-            ">
-                <div style="
-                    text-align: center;
-                    max-width: 500px;
-                    padding: 2rem;
-                    background: white;
-                    border-radius: 15px;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-                    border: 2px solid var(--primary);
-                ">
-                    <!-- Spinner animado -->
-                    <div class="loading-spinner" style="
-                        width: 60px;
-                        height: 60px;
-                        margin: 0 auto 1.5rem;
-                        border: 5px solid #f3f3f3;
-                        border-top: 5px solid var(--primary);
-                        border-radius: 50%;
-                        animation: spin 1s linear infinite;
-                    "></div>
-                    
-                    <!-- Texto dinâmico -->
-                    <h3 style="color: var(--primary); margin: 0 0 0.5rem 0;" id="loadingTitle">
-                        Salvando Imóvel...
-                    </h3>
-                    
-                    <p style="color: #666; margin: 0 0 1.5rem 0;" id="loadingMessage">
-                        Processando fotos, vídeos e documentos. Isso pode levar alguns instantes.
-                    </p>
-                    
-                    <!-- Barra de progresso -->
-                    <div style="
-                        width: 100%;
-                        height: 6px;
-                        background: #f0f0f0;
-                        border-radius: 3px;
-                        overflow: hidden;
-                        margin-bottom: 1rem;
-                    ">
-                        <div id="loadingProgressBar" style="
-                            width: 0%;
-                            height: 100%;
-                            background: linear-gradient(90deg, var(--primary), var(--accent));
-                            transition: width 0.5s ease;
-                            border-radius: 3px;
-                        "></div>
-                    </div>
-                    
-                    <!-- Etapas do processo -->
-                    <div style="
-                        font-size: 0.85rem;
-                        color: #888;
-                        text-align: left;
-                        margin-top: 1rem;
-                        padding: 0.5rem;
-                        background: #f9f9f9;
-                        border-radius: 5px;
-                    ">
-                        <div class="loading-step" style="margin-bottom: 0.3rem;">
-                            <span style="color: var(--success);">✓</span> Validando dados...
-                        </div>
-                        <div class="loading-step" style="margin-bottom: 0.3rem;">
-                            <span style="color: #ccc;">⏳</span> Processando fotos e vídeos...
-                        </div>
-                        <div class="loading-step" style="margin-bottom: 0.3rem;">
-                            <span style="color: #ccc;">⏳</span> Enviando documentos PDF...
-                        </div>
-                        <div class="loading-step">
-                            <span style="color: #ccc;">⏳</span> Salvando no banco de dados...
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Adicionar animação CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            
-            @keyframes pulse {
-                0% { opacity: 1; }
-                50% { opacity: 0.7; }
-                100% { opacity: 1; }
-            }
-            
-            .loading-step {
-                transition: all 0.3s ease;
-            }
-            
-            .step-completed {
-                color: var(--success) !important;
-            }
-            
-            .step-active {
-                color: var(--primary) !important;
-                font-weight: 600;
-                animation: pulse 1.5s infinite;
-            }
-        `;
-        overlay.appendChild(style);
-        
-        document.body.appendChild(overlay);
-        return overlay;
-    },
-    
-    // Mostrar loading
-    show(title = 'Salvando Imóvel...', message = 'Processando dados, aguarde...') {
-        console.log('🔄 Mostrando loading...');
-        
-        const overlay = this.createOverlay();
-        const startTime = Date.now();
-        
-        // Atualizar título e mensagem
-        const titleEl = document.getElementById('loadingTitle');
-        const messageEl = document.getElementById('loadingMessage');
-        if (titleEl) titleEl.textContent = title;
-        if (messageEl) messageEl.textContent = message;
-        
-        // Iniciar barra de progresso
-        this.startProgressAnimation();
-        
-        // Controlar etapas visuais
-        this.currentStep = 0;
-        this.updateSteps();
-        
-        return {
-            overlay: overlay,
-            startTime: startTime,
-            hide: () => this.hide(startTime),
-            updateTitle: (newTitle) => {
-                if (titleEl) titleEl.textContent = newTitle;
-            },
-            updateMessage: (newMessage) => {
-                if (messageEl) messageEl.textContent = newMessage;
-            },
-            completeStep: () => this.completeStep(),
-            updateProgress: (percent) => this.updateProgress(percent)
-        };
-    },
-    
-    // Atualizar barra de progresso
-    startProgressAnimation() {
-        const progressBar = document.getElementById('loadingProgressBar');
-        if (!progressBar) return;
-        
-        // Animação sutil de 0 a 80% (os 20% finais são preenchidos quando termina)
-        let progress = 0;
-        const interval = setInterval(() => {
-            if (progress >= 80) {
-                clearInterval(interval);
-                return;
-            }
-            
-            progress += Math.random() * 3 + 1; // Incremento variável
-            if (progress > 80) progress = 80;
-            
-            progressBar.style.width = `${progress}%`;
-        }, 200);
-        
-        this.progressInterval = interval;
-    },
-    
-    // Atualizar progresso específico
-    updateProgress(percent) {
-        const progressBar = document.getElementById('loadingProgressBar');
-        if (progressBar) {
-            progressBar.style.width = `${percent}%`;
+    // Fallback mínimo compatível com a API
+    window.LoadingManager = {
+        show: function(title, message) {
+            console.log(`🔄 [FALLBACK] Loading: ${title}`);
+            return {
+                updateTitle: () => {},
+                updateMessage: () => {},
+                updateProgress: () => {},
+                completeStep: () => {},
+                hide: () => console.log('✅ [FALLBACK] Loading oculto')
+            };
+        },
+        hide: function() {
+            console.log('✅ [FALLBACK] LoadingManager.hide() chamado');
         }
-    },
-    
-    // Controlar etapas visuais
-    updateSteps() {
-        const steps = document.querySelectorAll('.loading-step');
-        steps.forEach((step, index) => {
-            if (index < this.currentStep) {
-                step.innerHTML = `<span style="color: var(--success);">✓</span> ${step.textContent.replace(/[✓⏳]/g, '').trim()}`;
-                step.classList.add('step-completed');
-                step.classList.remove('step-active');
-            } else if (index === this.currentStep) {
-                step.innerHTML = `<span style="color: var(--primary);">⏳</span> ${step.textContent.replace(/[✓⏳]/g, '').trim()}`;
-                step.classList.add('step-active');
-                step.classList.remove('step-completed');
-            } else {
-                step.innerHTML = `<span style="color: #ccc;">⏳</span> ${step.textContent.replace(/[✓⏳]/g, '').trim()}`;
-                step.classList.remove('step-completed', 'step-active');
-            }
-        });
-    },
-    
-    // Completar uma etapa
-    completeStep() {
-        this.currentStep++;
-        this.updateSteps();
-        
-        // Atualizar progresso baseado nas etapas (4 etapas totais)
-        const progressPercent = Math.min(80, (this.currentStep / 4) * 80);
-        this.updateProgress(progressPercent);
-    },
-    
-    // Esconder loading
-    hide(startTime) {
-        console.log('✅ Escondendo loading...');
-        
-        // Garantir tempo mínimo de exibição
-        const elapsedTime = Date.now() - startTime;
-        const minTime = this.config.minShowTime;
-        
-        const hideNow = () => {
-            // Completar barra de progresso
-            this.updateProgress(100);
-            
-            // Parar animação de progresso
-            if (this.progressInterval) {
-                clearInterval(this.progressInterval);
-            }
-            
-            // Completar todas as etapas
-            this.currentStep = 4;
-            this.updateSteps();
-            
-            // Mudar para estado de sucesso
-            const titleEl = document.getElementById('loadingTitle');
-            const messageEl = document.getElementById('loadingMessage');
-            const spinner = document.querySelector('.loading-spinner');
-            
-            if (titleEl) titleEl.textContent = '✅ Concluído!';
-            if (messageEl) messageEl.textContent = 'Imóvel salvo com sucesso!';
-            if (spinner) {
-                spinner.style.borderTopColor = 'var(--success)';
-                spinner.style.animation = 'none';
-                spinner.style.transform = 'rotate(0deg)';
-            }
-            
-            // Fechar após breve delay
-            setTimeout(() => {
-                this.removeOverlay();
-            }, 800);
-        };
-        
-        if (elapsedTime < minTime) {
-            setTimeout(hideNow, minTime - elapsedTime);
-        } else {
-            hideNow();
-        }
-    },
-    
-    // Remover overlay
-    removeOverlay() {
-        const overlay = document.getElementById(this.config.containerId);
-        if (overlay) {
-            overlay.style.opacity = '0';
-            setTimeout(() => {
-                if (overlay.parentNode) {
-                    overlay.parentNode.removeChild(overlay);
-                }
-            }, this.config.fadeDuration);
-        }
-    }
-};
+    };
+}
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
@@ -900,9 +630,15 @@ window.setupForm = function() {
         console.group('🚀 SUBMISSÃO DO FORMULÁRIO ADMIN');
         
         // 1. INICIAR LOADING
-        const loading = LoadingManager.show(
+        const loading = window.LoadingManager.show(
             'Salvando Imóvel...', 
-            'Por favor, aguarde enquanto processamos todos os dados.'
+            'Por favor, aguarde enquanto processamos todos os dados.',
+            [ // Etapas opcionais - mantém compatibilidade
+                'Validando dados do formulário...',
+                'Processando fotos e vídeos...',
+                'Enviando documentos PDF...',
+                'Salvando no banco de dados...'
+            ]
         );
         
         // Desabilitar botão de submit
