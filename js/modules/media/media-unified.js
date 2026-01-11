@@ -48,7 +48,151 @@ const MediaSystem = {
         // Configurar event listeners uma única vez
         this.setupEventListeners();
         
+        // Inicializar sistema de drag & drop
+        setTimeout(() => {
+            this.setupDragAndDrop();
+        }, 500);
+        
         return this;
+    },
+
+    // ========== SISTEMA DE REORDENAÇÃO DRAG & DROP ==========
+    setupDragAndDrop: function() {
+        console.log('🎯 Configurando drag & drop para reordenação...');
+        
+        // Adicionar eventos aos containers
+        const mediaContainer = document.getElementById('uploadPreview');
+        const pdfContainer = document.getElementById('pdfUploadPreview');
+        
+        [mediaContainer, pdfContainer].forEach(container => {
+            if (!container) return;
+            
+            // Tornar arrastável
+            container.setAttribute('draggable', 'false'); // Container não arrastável, mas itens sim
+            
+            // Evento de início do drag
+            container.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('draggable-item')) {
+                    e.dataTransfer.setData('text/plain', e.target.dataset.id);
+                    e.target.style.opacity = '0.4';
+                    console.log('👆 Iniciando drag do item:', e.target.dataset.id);
+                }
+            });
+            
+            // Evento durante o drag
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (e.target.classList.contains('draggable-item')) {
+                    e.target.style.border = '2px dashed var(--accent)';
+                }
+            });
+            
+            // Evento de saída
+            container.addEventListener('dragleave', (e) => {
+                if (e.target.classList.contains('draggable-item')) {
+                    e.target.style.border = '';
+                }
+            });
+            
+            // Evento de soltar
+            container.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const draggedId = e.dataTransfer.getData('text/plain');
+                const targetElement = e.target.closest('.draggable-item');
+                
+                if (!draggedId || !targetElement) return;
+                
+                const targetId = targetElement.dataset.id;
+                if (draggedId === targetId) return;
+                
+                console.log(`🔄 Movendo ${draggedId} para posição de ${targetId}`);
+                this.reorderItems(draggedId, targetId);
+                
+                // Resetar estilos
+                document.querySelectorAll('.draggable-item').forEach(item => {
+                    item.style.opacity = '1';
+                    item.style.border = '';
+                });
+            });
+            
+            // Finalizar drag
+            container.addEventListener('dragend', (e) => {
+                document.querySelectorAll('.draggable-item').forEach(item => {
+                    item.style.opacity = '1';
+                    item.style.border = '';
+                });
+            });
+        });
+    },
+
+    reorderItems: function(draggedId, targetId) {
+        console.log(`🔀 Reordenando: ${draggedId} → ${targetId}`);
+        
+        // Identificar tipo de item (mídia ou PDF)
+        let sourceArray, itemType;
+        
+        if (draggedId.includes('file_') || draggedId.includes('existing_')) {
+            sourceArray = [...this.state.files, ...this.state.existing];
+            itemType = 'media';
+        } else if (draggedId.includes('pdf_') || draggedId.includes('existing_pdf_')) {
+            sourceArray = [...this.state.pdfs, ...this.state.existingPdfs];
+            itemType = 'pdf';
+        } else {
+            console.warn('⚠️ Tipo de item não reconhecido:', draggedId);
+            return;
+        }
+        
+        // Encontrar índices
+        const draggedIndex = sourceArray.findIndex(item => item.id === draggedId);
+        const targetIndex = sourceArray.findIndex(item => item.id === targetId);
+        
+        if (draggedIndex === -1 || targetIndex === -1) {
+            console.error('❌ Índices não encontrados');
+            return;
+        }
+        
+        // Reordenar no array apropriado
+        if (itemType === 'media') {
+            this.reorderArray(this.state.files, draggedId, targetId);
+            this.reorderArray(this.state.existing, draggedId, targetId);
+        } else {
+            this.reorderArray(this.state.pdfs, draggedId, targetId);
+            this.reorderArray(this.state.existingPdfs, draggedId, targetId);
+        }
+        
+        // Atualizar UI
+        this.updateUI();
+        console.log('✅ Reordenação concluída');
+    },
+
+    reorderArray: function(array, draggedId, targetId) {
+        const draggedIndex = array.findIndex(item => item.id === draggedId);
+        const targetIndex = array.findIndex(item => item.id === targetId);
+        
+        if (draggedIndex === -1 || targetIndex === -1) return;
+        
+        const [draggedItem] = array.splice(draggedIndex, 1);
+        array.splice(targetIndex, 0, draggedItem);
+        
+        return array;
+    },
+
+    getOrderedMediaUrls: function() {
+        console.log('📋 Obtendo URLs ordenadas...');
+        
+        // Combinar arquivos novos e existentes mantendo a ordem visual
+        const orderedMedia = [...this.state.existing, ...this.state.files]
+            .filter(item => !item.markedForDeletion)
+            .map(item => item.url || item.preview);
+        
+        const orderedPdfs = [...this.state.existingPdfs, ...this.state.pdfs]
+            .filter(pdf => !pdf.markedForDeletion)
+            .map(pdf => pdf.url);
+        
+        return {
+            images: orderedMedia.join(','),
+            pdfs: orderedPdfs.join(',')
+        };
     },
 
     // ========== GERENCIAMENTO DE ESTADO ==========
@@ -228,14 +372,33 @@ const MediaSystem = {
             // 1. Processar exclusões primeiro
             await this.processDeletions();
             
-            // 2. Upload de fotos/vídeos
-            if (this.state.files.length > 0) {
-                const imageUrls = await this.uploadFiles(
-                    this.state.files.map(f => f.file),
-                    propertyId,
-                    'images'
-                );
-                results.images = imageUrls.join(',');
+            // 2. Upload de fotos/vídeos (usar ordem visual)
+            if (this.state.files.length > 0 || this.state.existing.length > 0) {
+                // Usar ordem atual dos itens
+                const allMedia = [...this.state.existing, ...this.state.files]
+                    .filter(item => !item.markedForDeletion);
+                
+                // Upload apenas dos novos
+                const newFiles = allMedia.filter(item => item.isNew && item.file);
+                if (newFiles.length > 0) {
+                    const imageUrls = await this.uploadFiles(
+                        newFiles.map(f => f.file),
+                        propertyId,
+                        'images'
+                    );
+                    results.images = imageUrls.join(',');
+                }
+                
+                // Adicionar existentes (já ordenados)
+                const existingUrls = allMedia
+                    .filter(item => item.isExisting && item.url && !item.markedForDeletion)
+                    .map(item => item.url);
+                
+                if (existingUrls.length > 0) {
+                    results.images = results.images 
+                        ? `${results.images},${existingUrls.join(',')}`
+                        : existingUrls.join(',');
+                }
             }
             
             // 3. Upload de PDFs
@@ -249,19 +412,9 @@ const MediaSystem = {
             }
             
             // 4. Combinar com arquivos existentes não excluídos
-            const keptExistingImages = this.state.existing
-                .filter(item => !item.markedForDeletion && item.url)
-                .map(item => item.url);
-            
             const keptExistingPdfs = this.state.existingPdfs
                 .filter(item => !item.markedForDeletion && item.url)
                 .map(item => item.url);
-            
-            if (keptExistingImages.length > 0) {
-                results.images = results.images 
-                    ? `${results.images},${keptExistingImages.join(',')}`
-                    : keptExistingImages.join(',');
-            }
             
             if (keptExistingPdfs.length > 0) {
                 results.pdfs = results.pdfs
@@ -472,13 +625,20 @@ const MediaSystem = {
             const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
             
             html += `
-                <div class="media-preview-item" style="position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor}">
+                <div class="media-preview-item draggable-item" 
+                     draggable="true"
+                     data-id="${item.id}"
+                     style="position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
                     ${item.isImage ? 
                         `<img src="${item.preview || item.url}" style="width:100%;height:100%;object-fit:cover" alt="Preview">` :
                         `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
                             <i class="fas fa-video" style="font-size:2rem;color:#ecf0f1;"></i>
                         </div>`
                     }
+                    <!-- Ícone de arrastar -->
+                    <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.6);color:white;padding:2px 5px;border-radius:3px;font-size:0.7rem;">
+                        <i class="fas fa-arrows-alt"></i>
+                    </div>
                     <button onclick="MediaSystem.removeFile('${item.id}')" 
                             style="position:absolute;top:-8px;right:-8px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;">
                         ${isMarked ? '↺' : '×'}
@@ -522,8 +682,15 @@ const MediaSystem = {
             const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
             
             html += `
-                <div class="pdf-preview-container" style="position:relative">
+                <div class="pdf-preview-container draggable-item"
+                     draggable="true"
+                     data-id="${pdf.id}"
+                     style="position:relative;cursor:grab;">
                     <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:0.5rem;width:90px;height:90px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;">
+                        <!-- Ícone de arrastar -->
+                        <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.6);color:white;padding:2px 5px;border-radius:3px;font-size:0.7rem;z-index:5;">
+                            <i class="fas fa-arrows-alt"></i>
+                        </div>
                         <i class="fas fa-file-pdf" style="font-size:1.2rem;color:${borderColor};margin-bottom:0.3rem;"></i>
                         <p style="font-size:0.7rem;margin:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${shortName}</p>
                         <small style="color:#7f8c8d;font-size:0.6rem;">PDF</small>
@@ -596,6 +763,11 @@ const MediaSystem = {
                 }
             });
         }
+        
+        // Inicializar sistema de drag & drop após setup dos containers
+        setTimeout(() => {
+            this.setupDragAndDrop();
+        }, 500);
     },
     
     extractFileName(url) {
@@ -662,7 +834,11 @@ setTimeout(() => {
         'clearAllPdfs',           // Nova
         'loadExistingPdfsForEdit', // Nova
         'getPdfsToSave',          // Nova
-        'getMediaUrlsForProperty' // Nova
+        'getMediaUrlsForProperty', // Nova
+        'getOrderedMediaUrls',    // Nova - para reordenação
+        'setupDragAndDrop',       // Nova - para reordenação
+        'reorderItems',           // Nova - para reordenação
+        'reorderArray'            // Nova - para reordenação
     ];
     
     const missing = [];
