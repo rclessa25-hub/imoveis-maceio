@@ -89,10 +89,31 @@ const MediaSystem = {
             draggable.classList.add('dragging');
             container.classList.add('drag-active');
             
-            // Criar ghost image com preview
+            // Criar ghost image com preview - FUNCIONA PARA NOVOS E EXISTENTES
             if (draggable.querySelector('img')) {
                 const img = draggable.querySelector('img');
-                e.dataTransfer.setDragImage(img, 50, 50);
+                
+                // Verificar se a imagem já está carregada
+                if (img.complete && img.naturalHeight !== 0) {
+                    e.dataTransfer.setDragImage(img, 50, 50);
+                } else {
+                    // Se não estiver carregada, criar uma cópia e forçar carregamento
+                    const dragImg = new Image();
+                    dragImg.src = img.src;
+                    dragImg.onload = () => {
+                        e.dataTransfer.setDragImage(dragImg, 50, 50);
+                    };
+                    // Fallback se demorar muito
+                    setTimeout(() => {
+                        if (!e.dataTransfer.getData('text/plain')) {
+                            // Usar elemento alternativo
+                            e.dataTransfer.setDragImage(draggable, 50, 50);
+                        }
+                    }, 50);
+                }
+            } else {
+                // Para vídeos ou quando não tem imagem, usar o próprio elemento
+                e.dataTransfer.setDragImage(draggable, 50, 50);
             }
             
             console.log('👆 Iniciando drag:', draggable.dataset.id);
