@@ -56,125 +56,290 @@ const MediaSystem = {
         return this;
     },
 
-    // ========== SISTEMA DE REORDENAÇÃO DRAG & DROP ==========
+    // ========== SISTEMA DE REORDENAÇÃO DRAG & DROP CORRIGIDO ==========
     setupDragAndDrop: function() {
-        console.log('🎯 Configurando drag & drop para reordenação...');
+        console.log('🎯 Configurando sistema de drag & drop avançado...');
         
-        // Adicionar eventos aos containers
-        const mediaContainer = document.getElementById('uploadPreview');
-        const pdfContainer = document.getElementById('pdfUploadPreview');
+        // Configurar após pequeno delay para garantir DOM carregado
+        setTimeout(() => {
+            this.setupContainerDragEvents('uploadPreview');
+            this.setupContainerDragEvents('pdfUploadPreview');
+            this.addVisualOrderIndicators();
+        }, 800);
+    },
+
+    setupContainerDragEvents: function(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.warn(`⚠️ Container ${containerId} não encontrado`);
+            return;
+        }
         
-        [mediaContainer, pdfContainer].forEach(container => {
-            if (!container) return;
+        console.log(`🎯 Configurando drag para: ${containerId}`);
+        
+        // Evento de início do drag
+        container.addEventListener('dragstart', (e) => {
+            const draggable = e.target.closest('.draggable-item');
+            if (!draggable) return;
             
-            // Tornar arrastável
-            container.setAttribute('draggable', 'false'); // Container não arrastável, mas itens sim
+            e.dataTransfer.setData('text/plain', draggable.dataset.id);
+            e.dataTransfer.effectAllowed = 'move';
             
-            // Evento de início do drag
-            container.addEventListener('dragstart', (e) => {
-                if (e.target.classList.contains('draggable-item')) {
-                    e.dataTransfer.setData('text/plain', e.target.dataset.id);
-                    e.target.style.opacity = '0.4';
-                    console.log('👆 Iniciando drag do item:', e.target.dataset.id);
-                }
-            });
+            // Adicionar classe de arraste
+            draggable.classList.add('dragging');
+            container.classList.add('drag-active');
             
-            // Evento durante o drag
-            container.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                if (e.target.classList.contains('draggable-item')) {
-                    e.target.style.border = '2px dashed var(--accent)';
-                }
-            });
+            // Criar ghost image com preview
+            if (draggable.querySelector('img')) {
+                const img = draggable.querySelector('img');
+                e.dataTransfer.setDragImage(img, 50, 50);
+            }
             
-            // Evento de saída
-            container.addEventListener('dragleave', (e) => {
-                if (e.target.classList.contains('draggable-item')) {
-                    e.target.style.border = '';
-                }
-            });
+            console.log('👆 Iniciando drag:', draggable.dataset.id);
+        });
+        
+        // Evento durante o drag
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
             
-            // Evento de soltar
-            container.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const draggedId = e.dataTransfer.getData('text/plain');
-                const targetElement = e.target.closest('.draggable-item');
-                
-                if (!draggedId || !targetElement) return;
-                
-                const targetId = targetElement.dataset.id;
-                if (draggedId === targetId) return;
-                
-                console.log(`🔄 Movendo ${draggedId} para posição de ${targetId}`);
-                this.reorderItems(draggedId, targetId);
-                
-                // Resetar estilos
-                document.querySelectorAll('.draggable-item').forEach(item => {
-                    item.style.opacity = '1';
-                    item.style.border = '';
+            const draggable = e.target.closest('.draggable-item');
+            const afterElement = this.getDragAfterElement(container, e.clientY);
+            
+            if (draggable) {
+                draggable.classList.add('drop-target');
+            }
+        });
+        
+        // Evento de saída
+        container.addEventListener('dragleave', (e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                document.querySelectorAll('.drop-target').forEach(el => {
+                    el.classList.remove('drop-target');
                 });
-            });
+            }
+        });
+        
+        // Evento de soltar
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
             
-            // Finalizar drag
-            container.addEventListener('dragend', (e) => {
-                document.querySelectorAll('.draggable-item').forEach(item => {
-                    item.style.opacity = '1';
-                    item.style.border = '';
-                });
-            });
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const draggable = document.querySelector(`[data-id="${draggedId}"]`);
+            const dropTarget = e.target.closest('.draggable-item');
+            
+            if (!draggedId || !dropTarget) {
+                console.log('❌ Drop inválido');
+                this.cleanupDragState();
+                return;
+            }
+            
+            const targetId = dropTarget.dataset.id;
+            
+            if (draggedId === targetId) {
+                console.log('⚠️ Mesmo item, ignorando');
+                this.cleanupDragState();
+                return;
+            }
+            
+            console.log(`🎯 Drop: ${draggedId} → ${targetId}`);
+            
+            // Executar reordenação
+            this.reorderItems(draggedId, targetId);
+            
+            // Limpar estado
+            this.cleanupDragState();
+        });
+        
+        // Finalizar drag
+        container.addEventListener('dragend', () => {
+            this.cleanupDragState();
+        });
+    },
+
+    getDragAfterElement: function(container, y) {
+        const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    },
+
+    cleanupDragState: function() {
+        document.querySelectorAll('.dragging').forEach(el => {
+            el.classList.remove('dragging');
+        });
+        
+        document.querySelectorAll('.drop-target').forEach(el => {
+            el.classList.remove('drop-target');
+        });
+        
+        document.querySelectorAll('.drag-active').forEach(el => {
+            el.classList.remove('drag-active');
         });
     },
 
     reorderItems: function(draggedId, targetId) {
-        console.log(`🔀 Reordenando: ${draggedId} → ${targetId}`);
+        console.group(`🔀 REORDENAÇÃO: ${draggedId} → ${targetId}`);
         
-        // Identificar tipo de item (mídia ou PDF)
-        let sourceArray, itemType;
+        // Determinar qual array está sendo modificado
+        let sourceArray, targetArray;
         
-        if (draggedId.includes('file_') || draggedId.includes('existing_')) {
-            sourceArray = [...this.state.files, ...this.state.existing];
-            itemType = 'media';
-        } else if (draggedId.includes('pdf_') || draggedId.includes('existing_pdf_')) {
-            sourceArray = [...this.state.pdfs, ...this.state.existingPdfs];
-            itemType = 'pdf';
+        if (draggedId.includes('file_')) {
+            sourceArray = this.state.files;
+            console.log('📸 Movendo arquivo NOVO');
+        } else if (draggedId.includes('existing_')) {
+            sourceArray = this.state.existing;
+            console.log('🖼️ Movendo arquivo EXISTENTE');
+        } else if (draggedId.includes('pdf_')) {
+            sourceArray = this.state.pdfs;
+            console.log('📄 Movendo PDF NOVO');
+        } else if (draggedId.includes('existing_pdf_')) {
+            sourceArray = this.state.existingPdfs;
+            console.log('📋 Movendo PDF EXISTENTE');
         } else {
-            console.warn('⚠️ Tipo de item não reconhecido:', draggedId);
+            console.error('❌ Tipo de item não reconhecido:', draggedId);
             return;
         }
         
-        // Encontrar índices
+        // Encontrar índices no array REAL
         const draggedIndex = sourceArray.findIndex(item => item.id === draggedId);
         const targetIndex = sourceArray.findIndex(item => item.id === targetId);
         
+        console.log(`📊 Índices: dragged[${draggedIndex}], target[${targetIndex}]`);
+        
+        // Se não encontrou no array atual, procurar no array correspondente
         if (draggedIndex === -1 || targetIndex === -1) {
-            console.error('❌ Índices não encontrados');
+            console.log('🔍 Item não encontrado no array principal, verificando outro...');
+            
+            // Para mídias, verificar ambos arrays
+            if (draggedId.includes('_') && !draggedId.includes('pdf_')) {
+                const allMedia = [...this.state.files, ...this.state.existing];
+                const draggedIndexAll = allMedia.findIndex(item => item.id === draggedId);
+                const targetIndexAll = allMedia.findIndex(item => item.id === targetId);
+                
+                if (draggedIndexAll !== -1 && targetIndexAll !== -1) {
+                    console.log(`🎯 Reordenando em array combinado: ${draggedIndexAll}→${targetIndexAll}`);
+                    this.reorderCombinedArray(draggedId, targetId);
+                    this.updateUI();
+                    console.groupEnd();
+                    return;
+                }
+            }
+            
+            console.error('❌ Não foi possível encontrar os itens');
+            console.groupEnd();
             return;
         }
         
-        // Reordenar no array apropriado
-        if (itemType === 'media') {
-            this.reorderArray(this.state.files, draggedId, targetId);
-            this.reorderArray(this.state.existing, draggedId, targetId);
-        } else {
-            this.reorderArray(this.state.pdfs, draggedId, targetId);
-            this.reorderArray(this.state.existingPdfs, draggedId, targetId);
-        }
+        // Realizar reordenação NO ARRAY REAL
+        const [draggedItem] = sourceArray.splice(draggedIndex, 1);
+        sourceArray.splice(targetIndex, 0, draggedItem);
         
-        // Atualizar UI
+        console.log(`✅ Reordenado: ${draggedItem.name || draggedItem.id}`);
+        console.log('📋 Novo array:', sourceArray.map(item => item.id));
+        
+        // Atualizar UI IMEDIATAMENTE
         this.updateUI();
-        console.log('✅ Reordenação concluída');
+        
+        // Adicionar índice visual
+        setTimeout(() => {
+            this.addVisualOrderIndicators();
+        }, 100);
+        
+        console.groupEnd();
     },
 
-    reorderArray: function(array, draggedId, targetId) {
-        const draggedIndex = array.findIndex(item => item.id === draggedId);
-        const targetIndex = array.findIndex(item => item.id === targetId);
+    reorderCombinedArray: function(draggedId, targetId) {
+        console.log('🔄 Reordenando array combinado...');
         
-        if (draggedIndex === -1 || targetIndex === -1) return;
+        // Combinar todos os itens visíveis
+        const allItems = [
+            ...this.state.existing.filter(item => !item.markedForDeletion),
+            ...this.state.files,
+            ...this.state.existingPdfs.filter(pdf => !pdf.markedForDeletion),
+            ...this.state.pdfs
+        ];
         
-        const [draggedItem] = array.splice(draggedIndex, 1);
-        array.splice(targetIndex, 0, draggedItem);
+        const draggedIndex = allItems.findIndex(item => item.id === draggedId);
+        const targetIndex = allItems.findIndex(item => item.id === targetId);
         
-        return array;
+        if (draggedIndex === -1 || targetIndex === -1) {
+            console.error('❌ Índices não encontrados no array combinado');
+            return;
+        }
+        
+        // Determinar arrays de origem
+        let draggedArray, targetArray;
+        
+        if (draggedId.includes('file_')) draggedArray = this.state.files;
+        else if (draggedId.includes('existing_')) draggedArray = this.state.existing;
+        else if (draggedId.includes('pdf_')) draggedArray = this.state.pdfs;
+        else if (draggedId.includes('existing_pdf_')) draggedArray = this.state.existingPdfs;
+        
+        if (targetId.includes('file_')) targetArray = this.state.files;
+        else if (targetId.includes('existing_')) targetArray = this.state.existing;
+        else if (targetId.includes('pdf_')) targetArray = this.state.pdfs;
+        else if (targetId.includes('existing_pdf_')) targetArray = this.state.existingPdfs;
+        
+        // Mover entre arrays se necessário
+        if (draggedArray !== targetArray) {
+            console.log(`🔄 Movendo entre arrays diferentes`);
+            
+            // Remover do array de origem
+            const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
+            if (sourceIndex !== -1) {
+                const [movedItem] = draggedArray.splice(sourceIndex, 1);
+                
+                // Adicionar ao array de destino (no final)
+                targetArray.push(movedItem);
+                
+                console.log(`✅ Movido ${movedItem.id} entre arrays`);
+            }
+        }
+        
+        // Atualizar estado para refletir mudanças
+        this.state.files = [...this.state.files];
+        this.state.existing = [...this.state.existing];
+        this.state.pdfs = [...this.state.pdfs];
+        this.state.existingPdfs = [...this.state.existingPdfs];
+    },
+
+    addVisualOrderIndicators: function() {
+        console.log('🔢 Adicionando indicadores visuais de ordem...');
+        
+        // Para mídias
+        const mediaItems = document.querySelectorAll('#uploadPreview .draggable-item');
+        mediaItems.forEach((item, index) => {
+            let indicator = item.querySelector('.order-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'order-indicator';
+                item.appendChild(indicator);
+            }
+            indicator.textContent = index + 1;
+            indicator.style.display = 'flex';
+        });
+        
+        // Para PDFs
+        const pdfItems = document.querySelectorAll('#pdfUploadPreview .draggable-item');
+        pdfItems.forEach((item, index) => {
+            let indicator = item.querySelector('.order-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'order-indicator';
+                item.appendChild(indicator);
+            }
+            indicator.textContent = index + 1;
+            indicator.style.display = 'flex';
+        });
     },
 
     getOrderedMediaUrls: function() {
@@ -628,23 +793,42 @@ const MediaSystem = {
                 <div class="media-preview-item draggable-item" 
                      draggable="true"
                      data-id="${item.id}"
-                     style="position:relative;width:100px;height:100px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
+                     title="Arraste para reordenar"
+                     style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
+                    
                     ${item.isImage ? 
-                        `<img src="${item.preview || item.url}" style="width:100%;height:100%;object-fit:cover" alt="Preview">` :
-                        `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
-                            <i class="fas fa-video" style="font-size:2rem;color:#ecf0f1;"></i>
+                        `<img src="${item.preview || item.url}" 
+                             style="width:100%;height:70px;object-fit:cover;" 
+                             alt="Preview"
+                             onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'width:100%;height:70px;display:flex;align-items:center;justify-content:center;\\'><i class=\\'fas fa-image\\' style=\\'font-size:1.5rem;color:#ccc;\\'></i></div>'">` :
+                        `<div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
+                            <i class="fas fa-video" style="font-size:1.5rem;color:#ecf0f1;"></i>
                         </div>`
                     }
+                    
+                    <!-- Nome do arquivo (cortado) -->
+                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            ${item.name || this.extractFileName(item.url)}
+                        </span>
+                    </div>
+                    
                     <!-- Ícone de arrastar -->
-                    <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.6);color:white;padding:2px 5px;border-radius:3px;font-size:0.7rem;">
+                    <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.7);color:white;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;z-index:10;">
                         <i class="fas fa-arrows-alt"></i>
                     </div>
+                    
+                    <!-- Indicador de ordem -->
+                    <div class="order-indicator" style="display:none;"></div>
+                    
+                    <!-- Botão de remover -->
                     <button onclick="MediaSystem.removeFile('${item.id}')" 
-                            style="position:absolute;top:-8px;right:-8px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;">
+                            style="position:absolute;top:2px;right:2px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;z-index:10;">
                         ${isMarked ? '↺' : '×'}
                     </button>
+                    
                     ${isExisting ? 
-                        `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.6rem;padding:1px 4px;border-radius:3px;">
+                        `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.5rem;padding:1px 3px;border-radius:2px;z-index:10;">
                             ${isMarked ? 'EXCLUIR' : 'Existente'}
                         </div>` : ''
                     }
@@ -830,15 +1014,19 @@ setTimeout(() => {
         'loadExisting',
         'resetState',
         'uploadAll',
-        'processAndSavePdfs',     // Nova
-        'clearAllPdfs',           // Nova
-        'loadExistingPdfsForEdit', // Nova
-        'getPdfsToSave',          // Nova
-        'getMediaUrlsForProperty', // Nova
-        'getOrderedMediaUrls',    // Nova - para reordenação
-        'setupDragAndDrop',       // Nova - para reordenação
-        'reorderItems',           // Nova - para reordenação
-        'reorderArray'            // Nova - para reordenação
+        'processAndSavePdfs',
+        'clearAllPdfs',
+        'loadExistingPdfsForEdit',
+        'getPdfsToSave',
+        'getMediaUrlsForProperty',
+        'getOrderedMediaUrls',
+        'setupDragAndDrop',
+        'setupContainerDragEvents',
+        'getDragAfterElement',
+        'cleanupDragState',
+        'reorderItems',
+        'reorderCombinedArray',
+        'addVisualOrderIndicators'
     ];
     
     const missing = [];
