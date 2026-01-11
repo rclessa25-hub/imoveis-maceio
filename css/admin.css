@@ -490,3 +490,54 @@
         padding: 1.5rem;
     }
 }
+
+/* ========== DRAG & DROP REORDER ========== */
+.draggable-item {
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.draggable-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.draggable-item.drop-target {
+    border: 2px dashed var(--accent) !important;
+    background: rgba(52, 152, 219, 0.1) !important;
+}
+
+.draggable-item .fa-arrows-alt {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.draggable-item:hover .fa-arrows-alt {
+    opacity: 1;
+}
+
+/* Indicador de ordem */
+.order-indicator {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--primary);
+    color: white;
+    font-size: 0.7rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    z-index: 5;
+}
+
+/* Feedback durante drag */
+#uploadPreview.drag-active,
+#pdfUploadPreview.drag-active {
+    background: rgba(52, 152, 219, 0.05);
+    border: 2px dashed var(--accent);
+}
