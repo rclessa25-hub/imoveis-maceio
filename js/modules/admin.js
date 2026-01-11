@@ -725,7 +725,16 @@ window.setupForm = function() {
                 try {
                     if (typeof window.getMediaUrlsForProperty === 'function') {
                         console.log(`🎯 Chamando getMediaUrlsForProperty para ID ${window.editingPropertyId}...`);
-                        const mediaUrls = await window.getMediaUrlsForProperty(window.editingPropertyId, propertyData.title);
+                        
+                        // Usar função com ordenação se disponível
+                        let mediaUrls;
+                        if (window.MediaSystem && typeof window.MediaSystem.getOrderedMediaUrls === 'function') {
+                            const ordered = window.MediaSystem.getOrderedMediaUrls();
+                            mediaUrls = ordered.images;
+                            console.log('🔄 Usando ordem visual personalizada');
+                        } else {
+                            mediaUrls = await window.getMediaUrlsForProperty(window.editingPropertyId, propertyData.title);
+                        }
                         
                         if (mediaUrls !== undefined && mediaUrls !== null) {
                             if (mediaUrls.trim() !== '') {
