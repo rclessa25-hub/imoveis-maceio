@@ -172,6 +172,52 @@ const SharedCore = (function() {
         }
     };
 
+    // ========== VALIDAÇÃO DE DADOS ==========
+    const validateProperty = (propertyData) => {
+        const errors = [];
+        
+        if (!propertyData?.title?.trim()) errors.push('Título é obrigatório');
+        if (!propertyData?.price?.trim()) errors.push('Preço é obrigatório');
+        if (!propertyData?.location?.trim()) errors.push('Localização é obrigatória');
+        
+        return {
+            isValid: errors.length === 0,
+            errors,
+            hasErrors: errors.length > 0
+        };
+    };
+
+    // ========== MANIPULAÇÃO DE ARRAYS ==========
+    const arrayUtils = {
+        // Mover funções que manipulam arrays aqui
+        findDuplicates: (array, key) => {
+            const seen = new Set();
+            const duplicates = [];
+            
+            array.forEach(item => {
+                const value = key ? item[key] : item;
+                if (seen.has(value)) {
+                    duplicates.push(item);
+                } else {
+                    seen.add(value);
+                }
+            });
+            
+            return duplicates;
+        },
+        
+        sortByKey: (array, key, ascending = true) => {
+            return [...array].sort((a, b) => {
+                const aVal = a[key];
+                const bVal = b[key];
+                
+                if (aVal < bVal) return ascending ? -1 : 1;
+                if (aVal > bVal) return ascending ? 1 : -1;
+                return 0;
+            });
+        }
+    };
+
     // ========== API PÚBLICA ==========
     return {
         // Performance
@@ -183,6 +229,7 @@ const SharedCore = (function() {
         isMobileDevice,
         isValidEmail,
         isValidPhone,
+        validateProperty,
         
         // Strings
         formatPrice,
@@ -199,6 +246,9 @@ const SharedCore = (function() {
         // Supabase
         supabaseFetch,
         
+        // Array Utils
+        arrayUtils,
+        
         // Utilitários diversos
         copyToClipboard: async (text) => {
             try {
@@ -214,4 +264,4 @@ const SharedCore = (function() {
 
 // Exportar para escopo global
 window.SharedCore = SharedCore;
-console.log('✅ SharedCore.js pronto - 20 funções utilitárias centralizadas');
+console.log('✅ SharedCore.js pronto - 23 funções utilitárias centralizadas');
