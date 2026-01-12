@@ -413,38 +413,25 @@ window.renderProperties = function(filter = 'todos') {
                 const features = Array.isArray(property.features) ? property.features : 
                                 (property.features ? property.features.split(',') : []);
 
+                // ==========================================================
+                // 📸 CORREÇÃO CRÍTICA: UNIFICAÇÃO DA FUNÇÃO createPropertyGallery
+                // ==========================================================
                 // Gerar HTML da imagem
                 let propertyImageHTML = '';
                 if (typeof window.createPropertyGallery === 'function') {
                     propertyImageHTML = window.createPropertyGallery(property);
                 } else {
-                    // ==========================================================
-                    // 📸 CORREÇÃO CRÍTICA: FALLBACK COM BOTÃO PDF
-                    // ==========================================================
-                    // FALLBACK com botão PDF
                     const imageUrl = property.images ? 
                         property.images.split(',')[0] : 
                         'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
-                    
-                    const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
-                    
+
                     propertyImageHTML = `
                         <div class="property-image" style="position: relative; height: 250px;">
                             <img src="${imageUrl}" 
-                                 style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
+                                 style="width: 100%; height: 100%; object-fit: cover;"
                                  alt="${property.title}"
-                                 onclick="openGallery(${property.id})"
                                  onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                             ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
-                            ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                            
-                            <!-- BOTÃO PDF NO FALLBACK -->
-                            ${hasPdfs ? 
-                                `<button class="pdf-access"
-                                     onclick="handlePdfButtonClick(event, ${property.id})"
-                                     title="Documentos do imóvel (senha: doc123)">
-                                    <i class="fas fa-file-pdf"></i>
-                                </button>` : ''}
                         </div>
                     `;
                 }
@@ -526,7 +513,7 @@ window.setupFilters = function() {
             
             SC.logModule('properties', `🎯 Filtro clicado: "${this.textContent.trim()}"`);
             
-            // PASSO CRÍTICA: REMOVER 'active' e ESTILOS INLINE de TODOS
+            // PASSO CRÍTICO: REMOVER 'active' e ESTILOS INLINE de TODOS
             freshButtons.forEach(btn => {
                 // 1. Remover classe
                 btn.classList.remove('active');
