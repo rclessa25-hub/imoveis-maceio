@@ -1,5 +1,9 @@
 // js/modules/media/media-unified.js - SISTEMA UNIFICADO DE MÍDIA
-console.log('🔄 media-unified.js carregado - Sistema Centralizado');
+
+// ========== CONFIGURAÇÃO SHAREDCORE ==========
+const SC = window.SharedCore;
+
+SC.logModule('media-system', '🔄 media-unified.js carregado - Sistema Centralizado');
 
 /**
  * SISTEMA UNIFICADO DE MÍDIA - VERSÃO OTIMIZADA
@@ -40,7 +44,7 @@ const MediaSystem = {
 
     // ========== INICIALIZAÇÃO ==========
     init(systemName = 'vendas') {
-        console.log(`🔧 Inicializando sistema de mídia para: ${systemName}`);
+        SC.logModule('media-system', `🔧 Inicializando sistema de mídia para: ${systemName}`);
         
         this.config.currentSystem = systemName;
         this.resetState();
@@ -58,7 +62,7 @@ const MediaSystem = {
 
     // ========== SISTEMA DE REORDENAÇÃO DRAG & DROP CORRIGIDO ==========
     setupDragAndDrop: function() {
-        console.log('🎯 Configurando sistema de drag & drop avançado...');
+        SC.logModule('media-drag', '🎯 Configurando sistema de drag & drop avançado...');
         
         // Configurar após pequeno delay para garantir DOM carregado
         setTimeout(() => {
@@ -71,11 +75,11 @@ const MediaSystem = {
     setupContainerDragEvents: function(containerId) {
         const container = document.getElementById(containerId);
         if (!container) {
-            console.warn(`⚠️ Container ${containerId} não encontrado`);
+            SC.logModule('media-drag', `⚠️ Container ${containerId} não encontrado`);
             return;
         }
         
-        console.log(`🎯 Configurando drag para: ${containerId}`);
+        SC.logModule('media-drag', `🎯 Configurando drag para: ${containerId}`);
         
         // Evento de início do drag
         container.addEventListener('dragstart', (e) => {
@@ -95,7 +99,7 @@ const MediaSystem = {
                 e.dataTransfer.setDragImage(img, 50, 50);
             }
             
-            console.log('👆 Iniciando drag:', draggable.dataset.id);
+            SC.logModule('media-drag', `👆 Iniciando drag: ${draggable.dataset.id}`);
         });
         
         // Evento durante o drag
@@ -129,7 +133,7 @@ const MediaSystem = {
             const dropTarget = e.target.closest('.draggable-item');
             
             if (!draggedId || !dropTarget) {
-                console.log('❌ Drop inválido');
+                SC.logModule('media-drag', '❌ Drop inválido');
                 this.cleanupDragState();
                 return;
             }
@@ -137,12 +141,12 @@ const MediaSystem = {
             const targetId = dropTarget.dataset.id;
             
             if (draggedId === targetId) {
-                console.log('⚠️ Mesmo item, ignorando');
+                SC.logModule('media-drag', '⚠️ Mesmo item, ignorando');
                 this.cleanupDragState();
                 return;
             }
             
-            console.log(`🎯 Drop: ${draggedId} → ${targetId}`);
+            SC.logModule('media-drag', `🎯 Drop: ${draggedId} → ${targetId}`);
             
             // Executar reordenação
             this.reorderItems(draggedId, targetId);
@@ -187,25 +191,25 @@ const MediaSystem = {
     },
 
     reorderItems: function(draggedId, targetId) {
-        console.group(`🔀 REORDENAÇÃO: ${draggedId} → ${targetId}`);
+        SC.logModule('media-drag', `🔀 REORDENAÇÃO: ${draggedId} → ${targetId}`);
         
         // Determinar qual array está sendo modificado
         let sourceArray, targetArray;
         
         if (draggedId.includes('file_')) {
             sourceArray = this.state.files;
-            console.log('📸 Movendo arquivo NOVO');
+            SC.logModule('media-drag', '📸 Movendo arquivo NOVO');
         } else if (draggedId.includes('existing_')) {
             sourceArray = this.state.existing;
-            console.log('🖼️ Movendo arquivo EXISTENTE');
+            SC.logModule('media-drag', '🖼️ Movendo arquivo EXISTENTE');
         } else if (draggedId.includes('pdf_')) {
             sourceArray = this.state.pdfs;
-            console.log('📄 Movendo PDF NOVO');
+            SC.logModule('media-drag', '📄 Movendo PDF NOVO');
         } else if (draggedId.includes('existing_pdf_')) {
             sourceArray = this.state.existingPdfs;
-            console.log('📋 Movendo PDF EXISTENTE');
+            SC.logModule('media-drag', '📋 Movendo PDF EXISTENTE');
         } else {
-            console.error('❌ Tipo de item não reconhecido:', draggedId);
+            SC.logModule('media-drag', `❌ Tipo de item não reconhecido: ${draggedId}`);
             return;
         }
         
@@ -213,11 +217,11 @@ const MediaSystem = {
         const draggedIndex = sourceArray.findIndex(item => item.id === draggedId);
         const targetIndex = sourceArray.findIndex(item => item.id === targetId);
         
-        console.log(`📊 Índices: dragged[${draggedIndex}], target[${targetIndex}]`);
+        SC.logModule('media-drag', `📊 Índices: dragged[${draggedIndex}], target[${targetIndex}]`);
         
         // Se não encontrou no array atual, procurar no array correspondente
         if (draggedIndex === -1 || targetIndex === -1) {
-            console.log('🔍 Item não encontrado no array principal, verificando outro...');
+            SC.logModule('media-drag', '🔍 Item não encontrado no array principal, verificando outro...');
             
             // Para mídias, verificar ambos arrays
             if (draggedId.includes('_') && !draggedId.includes('pdf_')) {
@@ -226,16 +230,14 @@ const MediaSystem = {
                 const targetIndexAll = allMedia.findIndex(item => item.id === targetId);
                 
                 if (draggedIndexAll !== -1 && targetIndexAll !== -1) {
-                    console.log(`🎯 Reordenando em array combinado: ${draggedIndexAll}→${targetIndexAll}`);
+                    SC.logModule('media-drag', `🎯 Reordenando em array combinado: ${draggedIndexAll}→${targetIndexAll}`);
                     this.reorderCombinedArray(draggedId, targetId);
                     this.updateUI();
-                    console.groupEnd();
                     return;
                 }
             }
             
-            console.error('❌ Não foi possível encontrar os itens');
-            console.groupEnd();
+            SC.logModule('media-drag', '❌ Não foi possível encontrar os itens');
             return;
         }
         
@@ -243,8 +245,7 @@ const MediaSystem = {
         const [draggedItem] = sourceArray.splice(draggedIndex, 1);
         sourceArray.splice(targetIndex, 0, draggedItem);
         
-        console.log(`✅ Reordenado: ${draggedItem.name || draggedItem.id}`);
-        console.log('📋 Novo array:', sourceArray.map(item => item.id));
+        SC.logModule('media-drag', `✅ Reordenado: ${draggedItem.name || draggedItem.id}`);
         
         // Atualizar UI IMEDIATAMENTE
         this.updateUI();
@@ -253,12 +254,10 @@ const MediaSystem = {
         setTimeout(() => {
             this.addVisualOrderIndicators();
         }, 100);
-        
-        console.groupEnd();
     },
 
     reorderCombinedArray: function(draggedId, targetId) {
-        console.log('🔄 Reordenando array combinado...');
+        SC.logModule('media-drag', '🔄 Reordenando array combinado...');
         
         // Combinar todos os itens visíveis
         const allItems = [
@@ -272,7 +271,7 @@ const MediaSystem = {
         const targetIndex = allItems.findIndex(item => item.id === targetId);
         
         if (draggedIndex === -1 || targetIndex === -1) {
-            console.error('❌ Índices não encontrados no array combinado');
+            SC.logModule('media-drag', '❌ Índices não encontrados no array combinado');
             return;
         }
         
@@ -291,7 +290,7 @@ const MediaSystem = {
         
         // Mover entre arrays se necessário
         if (draggedArray !== targetArray) {
-            console.log(`🔄 Movendo entre arrays diferentes`);
+            SC.logModule('media-drag', '🔄 Movendo entre arrays diferentes');
             
             // Remover do array de origem
             const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
@@ -301,7 +300,7 @@ const MediaSystem = {
                 // Adicionar ao array de destino (no final)
                 targetArray.push(movedItem);
                 
-                console.log(`✅ Movido ${movedItem.id} entre arrays`);
+                SC.logModule('media-drag', `✅ Movido ${movedItem.id} entre arrays`);
             }
         }
         
@@ -313,7 +312,7 @@ const MediaSystem = {
     },
 
     addVisualOrderIndicators: function() {
-        console.log('🔢 Adicionando indicadores visuais de ordem...');
+        SC.logModule('media-drag', '🔢 Adicionando indicadores visuais de ordem...');
         
         // Para mídias
         const mediaItems = document.querySelectorAll('#uploadPreview .draggable-item');
@@ -389,9 +388,9 @@ const MediaSystem = {
             `;
         }
     },
-        
+
     getOrderedMediaUrls: function() {
-        console.log('📋 Obtendo URLs ordenadas...');
+        SC.logModule('media-system', '📋 Obtendo URLs ordenadas...');
         
         // Combinar arquivos novos e existentes mantendo a ordem visual
         const orderedMedia = [...this.state.existing, ...this.state.files]
@@ -410,7 +409,7 @@ const MediaSystem = {
 
     // ========== GERENCIAMENTO DE ESTADO ==========
     resetState() {
-        console.log('🧹 Resetando estado do sistema de mídia');
+        SC.logModule('media-system', '🧹 Resetando estado do sistema de mídia');
         
         // Limpar arrays
         this.state.files.length = 0;
@@ -455,7 +454,7 @@ const MediaSystem = {
             }
         });
         
-        console.log(`📁 ${addedCount}/${filesArray.length} arquivo(s) adicionado(s)`);
+        SC.logModule('media-upload', `📁 ${addedCount}/${filesArray.length} arquivo(s) adicionado(s)`);
         this.updateUI();
         return addedCount;
     },
@@ -520,14 +519,14 @@ const MediaSystem = {
                 // Se é um arquivo existente, marcar para exclusão
                 if (removed.isExisting) {
                     removed.markedForDeletion = true;
-                    console.log(`🗑️ Arquivo existente marcado para exclusão: ${removed.name}`);
+                    SC.logModule('media-delete', `🗑️ Arquivo existente marcado para exclusão: ${removed.name}`);
                 } else {
                     // Se é um arquivo novo, remover e liberar URL
                     if (removed.preview && removed.preview.startsWith('blob:')) {
                         URL.revokeObjectURL(removed.preview);
                     }
                     array.splice(index, 1);
-                    console.log(`🗑️ Arquivo novo removido: ${removed.name}`);
+                    SC.logModule('media-delete', `🗑️ Arquivo novo removido: ${removed.name}`);
                 }
                 
                 this.updateUI();
@@ -560,7 +559,7 @@ const MediaSystem = {
             }
         });
         
-        console.log(`📄 ${addedCount}/${filesArray.length} PDF(s) adicionado(s)`);
+        SC.logModule('media-pdf', `📄 ${addedCount}/${filesArray.length} PDF(s) adicionado(s)`);
         this.updateUI();
         return addedCount;
     },
@@ -569,12 +568,12 @@ const MediaSystem = {
     
     async uploadAll(propertyId, propertyTitle) {
         if (this.state.isUploading) {
-            console.warn('⚠️ Upload já em andamento');
+            SC.logModule('media-upload', '⚠️ Upload já em andamento');
             return { images: '', pdfs: '' };
         }
         
         this.state.isUploading = true;
-        console.group('🚀 UPLOAD UNIFICADO PARA SUPABASE');
+        SC.logModule('media-upload', '🚀 UPLOAD UNIFICADO PARA SUPABASE');
         
         try {
             const results = {
@@ -635,15 +634,14 @@ const MediaSystem = {
                     : keptExistingPdfs.join(',');
             }
             
-            console.log('✅ Upload completo:', results);
+            SC.logModule('media-upload', '✅ Upload completo');
             return results;
             
         } catch (error) {
-            console.error('❌ Erro no upload unificado:', error);
+            SC.logModule('media-upload', `❌ Erro no upload unificado: ${error.message}`);
             return { images: '', pdfs: '' };
         } finally {
             this.state.isUploading = false;
-            console.groupEnd();
         }
     },
 
@@ -651,25 +649,17 @@ const MediaSystem = {
     // ADICIONADAS APÓS uploadAll 
 
     processAndSavePdfs: async function(propertyId, propertyTitle) {
-        console.group(`📄 MediaSystem.processAndSavePdfs CHAMADO para ${propertyId}`);
-        console.log('🔍 Estado atual dos PDFs:');
-        console.log('- PDFs novos:', this.state.pdfs.length);
-        console.log('- PDFs existentes:', this.state.existingPdfs.length);
-        console.log('- PDFs marcados para exclusão:', 
-            this.state.existingPdfs.filter(p => p.markedForDeletion).length);
+        SC.logModule('media-pdf', `📄 MediaSystem.processAndSavePdfs CHAMADO para ${propertyId}`);
         
         const result = await this.uploadAll(propertyId, propertyTitle);
         
-        console.log('📊 Resultado do uploadAll:', {
-            pdfs: result.pdfs ? `${result.pdfs.split(',').length} URL(s)` : 'Nenhum'
-        });
-        console.groupEnd();
+        SC.logModule('media-pdf', `📊 Resultado: ${result.pdfs ? result.pdfs.split(',').length : 0} PDF(s)`);
         
         return result.pdfs;
     },
 
     clearAllPdfs: function() {
-        console.log('🧹 Limpando apenas PDFs');
+        SC.logModule('media-pdf', '🧹 Limpando apenas PDFs');
         this.state.pdfs.length = 0;
         this.state.existingPdfs.length = 0;
         this.updateUI();
@@ -677,7 +667,7 @@ const MediaSystem = {
     },
 
     loadExistingPdfsForEdit: function(property) {
-        console.log('📄 Carregando PDFs existentes para edição');
+        SC.logModule('media-pdf', '📄 Carregando PDFs existentes para edição');
         if (!property) return this;
         this.state.existingPdfs.length = 0;
         if (property.pdfs && property.pdfs !== 'EMPTY') {
@@ -697,19 +687,19 @@ const MediaSystem = {
     },
 
     getPdfsToSave: async function(propertyId) {
-        console.log(`💾 Obtendo PDFs para salvar para ${propertyId}`);
+        SC.logModule('media-pdf', `💾 Obtendo PDFs para salvar para ${propertyId}`);
         const result = await this.uploadAll(propertyId, 'Imóvel');
         return result.pdfs;
     },
 
     getMediaUrlsForProperty: async function(propertyId, propertyTitle) {
-        console.log(`🖼️ Obtendo URLs de mídia para ${propertyId}`);
+        SC.logModule('media-system', `🖼️ Obtendo URLs de mídia para ${propertyId}`);
         const result = await this.uploadAll(propertyId, propertyTitle);
         return result.images;
     },
 
     clearAllMedia: function() {
-        console.log('🧹 LIMPEZA COMPLETA DE MÍDIA E PDFs');
+        SC.logModule('media-system', '🧹 LIMPEZA COMPLETA DE MÍDIA E PDFs');
         return this.resetState();
     },
     
@@ -771,10 +761,10 @@ const MediaSystem = {
                 if (response.ok) {
                     const publicUrl = `${window.SUPABASE_URL}/storage/v1/object/public/${filePath}`;
                     uploadedUrls.push(publicUrl);
-                    console.log(`✅ ${type} enviado: ${file.name}`);
+                    SC.logModule('media-upload', `✅ ${type} enviado: ${file.name}`);
                 }
             } catch (error) {
-                console.error(`❌ Erro ao enviar ${file.name}:`, error);
+                SC.logModule('media-upload', `❌ Erro ao enviar ${file.name}: ${error.message}`);
             }
         }
         
@@ -793,7 +783,7 @@ const MediaSystem = {
             .map(item => item.url);
         
         // TODO: Implementar exclusão do Supabase Storage
-        console.log(`🗑️ ${imagesToDelete.length} imagem(ns) e ${pdfsToDelete.length} PDF(s) marcados para exclusão`);
+        SC.logModule('media-delete', `🗑️ ${imagesToDelete.length} imagem(ns) e ${pdfsToDelete.length} PDF(s) marcados para exclusão`);
         
         // Remover itens marcados dos arrays
         this.state.existing = this.state.existing.filter(item => !item.markedForDeletion);
@@ -838,7 +828,7 @@ const MediaSystem = {
             const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
             
             html += `
-            <div class="media-preview-item draggable-item" 
+                <div class="media-preview-item draggable-item" 
                      draggable="true"
                      data-id="${item.id}"
                      title="Arraste para reordenar"
@@ -935,7 +925,7 @@ const MediaSystem = {
     // ========== UTILITIES ==========
     
     setupEventListeners() {
-        console.log('🔧 Configurando event listeners unificados...');
+        SC.logModule('media-system', '🔧 Configurando event listeners unificados...');
         
         // Configurar upload de mídia
         const uploadArea = document.getElementById('uploadArea');
@@ -1038,16 +1028,14 @@ window.MediaSystem = MediaSystem;
 // Auto-inicialização
 setTimeout(() => {
     window.MediaSystem.init('vendas');
-    console.log('✅ Sistema de mídia unificado pronto');
+    SC.logModule('media-system', '✅ Sistema de mídia unificado pronto');
 }, 1000);
-
-// NO FINAL do media-unified.js - ANTES do console.log final
 
 // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
 
 // Verificar se todas as funções necessárias estão disponíveis
 setTimeout(() => {
-    console.log('🔍 Verificação de integridade do MediaSystem');
+    SC.logModule('media-system', '🔍 Verificação de integridade do MediaSystem');
     
     const requiredFunctions = [
         'addFiles',
@@ -1067,7 +1055,8 @@ setTimeout(() => {
         'cleanupDragState',
         'reorderItems',
         'reorderCombinedArray',
-        'addVisualOrderIndicators'
+        'addVisualOrderIndicators',
+        'getMediaPreviewHTML'
     ];
     
     const missing = [];
@@ -1078,9 +1067,9 @@ setTimeout(() => {
     });
     
     if (missing.length === 0) {
-        console.log('✅ Todas as funções necessárias disponíveis');
+        SC.logModule('media-system', '✅ Todas as funções necessárias disponíveis');
     } else {
-        console.error('❌ Funções faltando:', missing);
+        SC.logModule('media-system', `❌ Funções faltando: ${missing.join(', ')}`);
     }
 }, 2000);
 
@@ -1089,16 +1078,30 @@ setTimeout(() => {
 // Criar fallbacks silenciosos para funções que os módulos de suporte podem procurar
 if (typeof window.initMediaSystem === 'undefined') {
     window.initMediaSystem = function() {
-        console.log('🔧 initMediaSystem chamada (fallback para compatibilidade)');
+        SC.logModule('media-system', '🔧 initMediaSystem chamada (fallback para compatibilidade)');
         return MediaSystem ? MediaSystem.init('vendas') : null;
     };
 }
 
 if (typeof window.updateMediaPreview === 'undefined') {
     window.updateMediaPreview = function() {
-        console.log('🎨 updateMediaPreview chamada (fallback para compatibilidade)');
+        SC.logModule('media-system', '🎨 updateMediaPreview chamada (fallback para compatibilidade)');
         return MediaSystem ? MediaSystem.updateUI() : null;
     };
 }
 
-console.log('✅ Sistema de mídia unificado pronto com compatibilidade total');
+// ========== VERIFICAÇÃO SHAREDCORE ==========
+setTimeout(() => {
+    if (!SC) {
+        SC.logModule('media-system', '❌ SharedCore não carregado no MediaSystem!');
+        // Fallback para funções globais
+        window.SharedCore = window.SharedCore || {
+            debounce: window.debounce,
+            throttle: window.throttle,
+            isMobileDevice: window.isMobileDevice,
+            logModule: (module, msg) => console.log(`[${module}] ${msg}`)
+        };
+    }
+}, 500);
+
+SC.logModule('media-system', '✅ Sistema de mídia unificado pronto com compatibilidade total');
