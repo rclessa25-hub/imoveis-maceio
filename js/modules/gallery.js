@@ -427,24 +427,52 @@ window.handlePdfButtonClick = function(event, propertyId) {
     // Prevenir propagação para não abrir a galeria
     event.stopPropagation();
     event.preventDefault();
+    event.stopImmediatePropagation();
     
-    // Verificar qual sistema PDF está disponível
-    if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-        console.log('🔄 Usando PdfSystem para mostrar PDFs');
-        window.PdfSystem.showModal(propertyId);
-    } 
-    else if (typeof window.showPdfModal === 'function') {
-        console.log('🔄 Usando showPdfModal (compatibilidade)');
-        window.showPdfModal(propertyId);
-    }
-    else if (typeof window.testPdfSystem === 'function') {
-        console.log('🔄 Usando testPdfSystem como fallback');
-        window.testPdfSystem(propertyId);
-    }
-    else {
-        console.error('❌ Nenhum sistema PDF disponível');
-        alert('⚠️ Sistema de PDFs não disponível no momento.');
-    }
+    // Pequeno delay para garantir que eventos não se propaguem
+    setTimeout(() => {
+        // 1. PRIMEIRO: Tentar PdfSystem (wrapper moderno)
+        if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+            console.log('🔄 Usando PdfSystem.showModal()');
+            try {
+                window.PdfSystem.showModal(propertyId);
+                return;
+            } catch (error) {
+                console.error('❌ Erro no PdfSystem:', error);
+            }
+        }
+        
+        // 2. SEGUNDO: Tentar showPdfModal (função antiga)
+        if (typeof window.showPdfModal === 'function') {
+            console.log('🔄 Usando showPdfModal (compatibilidade)');
+            try {
+                window.showPdfModal(propertyId);
+                return;
+            } catch (error) {
+                console.error('❌ Erro no showPdfModal:', error);
+            }
+        }
+        
+        // 3. TERCEIRO: Tentar função de fallback no admin.js
+        if (typeof window.openPdfModalDirectFallback === 'function') {
+            console.log('🔄 Usando openPdfModalDirectFallback (fallback)');
+            try {
+                window.openPdfModalDirectFallback(propertyId);
+                return;
+            } catch (error) {
+                console.error('❌ Erro no fallback:', error);
+            }
+        }
+        
+        // 4. ÚLTIMO RECURSO: Modal manual básico
+        console.log('⚠️ Nenhum sistema PDF disponível, criando modal básico');
+        const password = prompt("🔒 Documentos do Imóvel\n\nDigite a senha para acessar os documentos:");
+        if (password === "doc123") {
+            alert('✅ Senha correta! Os documentos estão disponíveis no painel administrativo.');
+        } else if (password !== null) {
+            alert('❌ Senha incorreta! A senha é: doc123');
+        }
+    }, 10);
 };
 
 // Função para abrir a galeria
