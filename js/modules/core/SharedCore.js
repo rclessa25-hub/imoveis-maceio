@@ -265,3 +265,38 @@ const SharedCore = (function() {
 // Exportar para escopo global
 window.SharedCore = SharedCore;
 console.log('✅ SharedCore.js pronto - 23 funções utilitárias centralizadas');
+
+// ========== WRAPPERS DE COMPATIBILIDADE ==========
+(function createCompatibilityWrappers() {
+    console.group('🔧 CRIANDO WRAPPERS DE COMPATIBILIDADE');
+    
+    // Lista de funções que DEVEM estar apenas no SharedCore
+    const functionsToWrap = ['stringSimilarity', 'runLowPriority'];
+    
+    functionsToWrap.forEach(funcName => {
+        if (window.SharedCore[funcName] && window[funcName]) {
+            // Guardar referência original
+            const originalFunc = window[funcName];
+            
+            // Substituir por wrapper que avisa
+            window[funcName] = function(...args) {
+                console.warn(`⚠️  DEPRECATED: window.${funcName}() chamada diretamente`);
+                console.warn(`   🔧 Use window.SharedCore.${funcName}() em vez disso`);
+                console.trace('Stack trace para localizar chamada');
+                
+                // Executar via SharedCore mas manter compatibilidade
+                return window.SharedCore[funcName](...args);
+            };
+            
+            // Marcar como obsoleta
+            Object.defineProperty(window[funcName], 'deprecated', {
+                value: true,
+                writable: false
+            });
+            
+            console.log(`✅ Wrapper criado para ${funcName}`);
+        }
+    });
+    
+    console.groupEnd();
+})();
