@@ -1,5 +1,25 @@
 // js/modules/admin.js - SISTEMA ADMIN CORRETO E FUNCIONAL
-console.log('🔧 admin.js carregado - Sistema Administrativo');
+
+// Configuração SharedCore
+const SC = window.SharedCore;
+
+if (!SC) {
+    console.warn('⚠️  SharedCore não disponível no admin.js, criando fallback');
+    window.SharedCore = {
+        elementExists: (id) => document.getElementById(id) !== null,
+        logModule: (module, msg, level = 'info') => {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = `[${timestamp}] [${module}]`;
+            if (level === 'error') console.error(`❌ ${prefix} ${msg}`);
+            else if (level === 'warn') console.warn(`⚠️ ${prefix} ${msg}`);
+            else console.log(`✅ ${prefix} ${msg}`);
+        },
+        debounce: window.debounce,
+        throttle: window.throttle
+    };
+}
+
+SC.logModule('admin', 'carregado - Sistema Administrativo');
 
 /* ==========================================================
    INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA (ETAPA 12)
@@ -20,13 +40,13 @@ window.handleNewMediaFiles = function(files) {
 
 // ========== GARANTIR QUE A FUNÇÃO handleNewPdfFiles USA APENAS MEDIASYSTEM ==========
 window.handleNewPdfFiles = function(files) {
-    console.log('📄 handleNewPdfFiles chamada - Delegando APENAS para MediaSystem');
+    SC.logModule('admin', 'handleNewPdfFiles chamada - Delegando APENAS para MediaSystem');
     
     if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
         return MediaSystem.addPdfs(files);
     }
     
-    console.warn('⚠️ MediaSystem não disponível para PDFs');
+    SC.logModule('admin', 'MediaSystem não disponível para PDFs', 'warn');
     return 0;
 };
 
@@ -45,26 +65,26 @@ window.clearMediaSystemComplete = function() {
 // ========== BLOQUEAR QUALQUER OUTRO PROCESSAMENTO DE PDF NO admin.js ==========
 // Sobrescrever funções antigas para evitar processamento duplicado
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    console.log(`📄 processAndSavePdfs REDIRECIONADO para MediaSystem: ${propertyId}`);
+    SC.logModule('admin', `processAndSavePdfs REDIRECIONADO para MediaSystem: ${propertyId}`);
     
     // DELEGAR 100% PARA MEDIASYSTEM
     if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
         try {
             const result = await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
-            console.log(`✅ MediaSystem processou PDFs: ${result ? 'Sucesso' : 'Vazio'}`);
+            SC.logModule('admin', `MediaSystem processou PDFs: ${result ? 'Sucesso' : 'Vazio'}`);
             return result || '';
         } catch (error) {
-            console.error('❌ Erro no MediaSystem:', error);
+            SC.logModule('admin', `Erro no MediaSystem: ${error}`, 'error');
         }
     }
     
     // Fallback
-    console.warn('⚠️ Usando fallback vazio');
+    SC.logModule('admin', 'Usando fallback vazio', 'warn');
     return '';
 };
 
 window.clearAllPdfs = function() {
-    console.log('🧹 admin.js: clearAllPdfs chamado');
+    SC.logModule('admin', 'admin.js: clearAllPdfs chamado');
     
     // Limpar ambos os sistemas para garantir
     if (window.PdfSystem && typeof window.PdfSystem.clearAllPdfs === 'function') {
@@ -79,11 +99,11 @@ window.clearAllPdfs = function() {
     if (window.selectedPdfFiles) window.selectedPdfFiles = [];
     if (window.existingPdfFiles) window.existingPdfFiles = [];
     
-    console.log('✅ PDFs limpos em todos os sistemas');
+    SC.logModule('admin', 'PDFs limpos em todos os sistemas');
 };
 
 window.loadExistingPdfsForEdit = function(property) {
-    console.log('📄 admin.js: loadExistingPdfsForEdit chamado');
+    SC.logModule('admin', 'admin.js: loadExistingPdfsForEdit chamado');
     
     // PRIORIDADE 1: PdfSystem
     if (window.PdfSystem && typeof window.PdfSystem.loadExistingPdfsForEdit === 'function') {
@@ -95,11 +115,11 @@ window.loadExistingPdfsForEdit = function(property) {
         return window.MediaSystem.loadExistingPdfsForEdit(property);
     }
     
-    console.warn('⚠️  Nenhum sistema PDF disponível para carregar existentes');
+    SC.logModule('admin', 'Nenhum sistema PDF disponível para carregar existentes', 'warn');
 };
 
 window.getPdfsToSave = async function(propertyId) {
-    console.log(`💾 admin.js: getPdfsToSave chamado para ${propertyId}`);
+    SC.logModule('admin', `admin.js: getPdfsToSave chamado para ${propertyId}`);
     
     // Redirecionar para processAndSavePdfs (mesma lógica)
     return await window.processAndSavePdfs(propertyId, 'Imóvel');
@@ -135,22 +155,22 @@ const ADMIN_CONFIG = {
 
 // Verificar se LoadingManager está disponível, senão carregar fallback
 if (typeof LoadingManager === 'undefined') {
-    console.warn('⚠️ LoadingManager não encontrado. Criando fallback básico...');
+    SC.logModule('admin', 'LoadingManager não encontrado. Criando fallback básico...', 'warn');
     
     // Fallback mínimo compatível com a API
     window.LoadingManager = {
         show: function(title, message) {
-            console.log(`🔄 [FALLBACK] Loading: ${title}`);
+            SC.logModule('admin', `[FALLBACK] Loading: ${title}`);
             return {
                 updateTitle: () => {},
                 updateMessage: () => {},
                 updateProgress: () => {},
                 completeStep: () => {},
-                hide: () => console.log('✅ [FALLBACK] Loading oculto')
+                hide: () => SC.logModule('admin', '[FALLBACK] Loading oculto')
             };
         },
         hide: function() {
-            console.log('✅ [FALLBACK] LoadingManager.hide() chamado');
+            SC.logModule('admin', '[FALLBACK] LoadingManager.hide() chamado');
         }
     };
 }
@@ -160,12 +180,12 @@ window.editingPropertyId = null;
 
 // ========== FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL ==========
 window.toggleAdminPanel = function() {
-    console.log('🔄 toggleAdminPanel() executada');
+    SC.logModule('admin', 'toggleAdminPanel() executada');
     
     const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha de administrador:");
     
     if (password === null) {
-        console.log('❌ Usuário cancelou o acesso');
+        SC.logModule('admin', 'Usuário cancelou o acesso');
         return;
     }
     
@@ -180,7 +200,7 @@ window.toggleAdminPanel = function() {
             const isVisible = panel.style.display === 'block';
             panel.style.display = isVisible ? 'none' : 'block';
             
-            console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
+            SC.logModule('admin', `Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
             if (!isVisible) {
                 setTimeout(() => {
@@ -188,7 +208,7 @@ window.toggleAdminPanel = function() {
                         behavior: 'smooth', 
                         block: 'start' 
                     });
-                    console.log('📜 Rolando até o painel admin');
+                    SC.logModule('admin', 'Rolando até o painel admin');
                 }, 300);
                 
                 setTimeout(() => {
@@ -206,25 +226,25 @@ window.toggleAdminPanel = function() {
 // ========== FUNÇÕES DO FORMULÁRIO ==========
 // NO admin.js - ATUALIZAR função cancelEdit (linha ~130)
 window.cancelEdit = function() {
-    console.log('❌ Cancelando edição...');
-    console.group('🧹 LIMPEZA COMPLETA DO FORMULÁRIO');
+    SC.logModule('admin', 'Cancelando edição...');
+    SC.logModule('admin', 'LIMPEZA COMPLETA DO FORMULÁRIO', 'info');
     
     // 1. Resetar ID de edição
     window.editingPropertyId = null;
 
     // 2. LIMPAR SISTEMA DE MÍDIA (fotos/vídeos)
     if (typeof MediaSystem !== 'undefined') {
-        console.log('🔄 Limpando sistema de mídia...');
+        SC.logModule('admin', 'Limpando sistema de mídia...');
         MediaSystem.resetState();
     } else {
-        console.log('⚠️ MediaSystem não disponível, limpando manualmente...');
+        SC.logModule('admin', 'MediaSystem não disponível, limpando manualmente...', 'warn');
         if (typeof window.clearMediaSystemComplete === 'function') {
             window.clearMediaSystemComplete();
         }
     }
     
     // 3. LIMPAR SISTEMA DE PDFs
-    console.log('📄 Limpando PDFs...');
+    SC.logModule('admin', 'Limpando PDFs...');
     if (typeof window.clearAllPdfs === 'function') {
         window.clearAllPdfs();
     } else {
@@ -234,7 +254,7 @@ window.cancelEdit = function() {
     }
     
     // 4. ⚠️⚠️⚠️ LIMPAR TODOS OS CAMPOS DE TEXTO DO FORMULÁRIO ⚠️⚠️⚠️
-    console.log('📝 Limpando campos de texto...');
+    SC.logModule('admin', 'Limpando campos de texto...');
     const form = document.getElementById('propertyForm');
     if (form) {
         // Método 1: Reset padrão
@@ -250,7 +270,7 @@ window.cancelEdit = function() {
             const field = document.getElementById(fieldId);
             if (field) {
                 field.value = '';
-                console.log(`   ✅ ${fieldId}: limpo`);
+                SC.logModule('admin', `✅ ${fieldId}: limpo`);
             }
         });
         
@@ -263,15 +283,14 @@ window.cancelEdit = function() {
         if (badgeSelect) badgeSelect.value = 'Novo';
         if (videoCheckbox) videoCheckbox.checked = false;
         
-        console.log('✅ Campos resetados:', { 
-            type: typeSelect ? typeSelect.value : 'n/a',
-            badge: badgeSelect ? badgeSelect.value : 'n/a',
-            hasVideo: videoCheckbox ? videoCheckbox.checked : 'n/a'
-        });
+        SC.logModule('admin', 'Campos resetados:', 'info');
+        SC.logModule('admin', `- type: ${typeSelect ? typeSelect.value : 'n/a'}`);
+        SC.logModule('admin', `- badge: ${badgeSelect ? badgeSelect.value : 'n/a'}`);
+        SC.logModule('admin', `- hasVideo: ${videoCheckbox ? videoCheckbox.checked : 'n/a'}`);
     }
     
     // 5. LIMPAR PREVIEWS VISUAIS (redundante, mas garante)
-    console.log('🎨 Resetando previews visuais...');
+    SC.logModule('admin', 'Resetando previews visuais...');
     setTimeout(() => {
         const mediaPreview = document.getElementById('uploadPreview');
         const pdfPreview = document.getElementById('pdfUploadPreview');
@@ -295,11 +314,11 @@ window.cancelEdit = function() {
             `;
         }
         
-        console.log('✅ Previews resetados');
+        SC.logModule('admin', 'Previews resetados');
     }, 100);
     
     // 6. ATUALIZAR UI DO FORMULÁRIO
-    console.log('🏷️ Atualizando interface...');
+    SC.logModule('admin', 'Atualizando interface...');
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) cancelBtn.style.display = 'none';
     
@@ -313,7 +332,7 @@ window.cancelEdit = function() {
     }
     
     // 7. LIMPAR VARIÁVEIS GLOBAIS
-    console.log('🧼 Limpando variáveis globais...');
+    SC.logModule('admin', 'Limpando variáveis globais...');
     if (typeof window.selectedMediaFiles !== 'undefined') {
         window.selectedMediaFiles = [];
     }
@@ -325,21 +344,19 @@ window.cancelEdit = function() {
     setTimeout(() => {
         const formState = window.isAdminFormEmpty ? window.isAdminFormEmpty() : null;
         if (formState && !formState.isEmpty && formState.isEditing === false) {
-            console.warn('⚠️ Formulário ainda não está vazio após limpeza!');
-            console.log('🔍 Estado:', formState.checks);
+            SC.logModule('admin', 'Formulário ainda não está vazio após limpeza!', 'warn');
             // Forçar limpeza novamente
             form.reset();
         }
     }, 300);
     
-    console.groupEnd();
-    console.log('✅ Edição cancelada e formulário COMPLETAMENTE limpo');
+    SC.logModule('admin', 'Edição cancelada e formulário COMPLETAMENTE limpo');
     return true;
 };
 
 // ADICIONAR TAMBÉM UMA FUNÇÃO DE FORÇAR LIMPEZA
 window.forceFormCleanup = function() {
-    console.log('🧹 FORÇANDO limpeza completa do formulário...');
+    SC.logModule('admin', 'FORÇANDO limpeza completa do formulário...');
     
     // Limpar manualmente cada campo
     const fieldsToClear = [
@@ -356,7 +373,7 @@ window.forceFormCleanup = function() {
         const element = document.getElementById(field.id);
         if (element) {
             element.value = field.defaultValue;
-            console.log(`   ✅ ${field.id} = "${field.defaultValue}"`);
+            SC.logModule('admin', `✅ ${field.id} = "${field.defaultValue}"`);
             
             // Disparar evento change para qualquer listener
             element.dispatchEvent(new Event('change', { bubbles: true }));
@@ -369,15 +386,15 @@ window.forceFormCleanup = function() {
     if (videoCheckbox) {
         videoCheckbox.checked = false;
         videoCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log('   ✅ propHasVideo = false');
+        SC.logModule('admin', '✅ propHasVideo = false');
     }
     
-    console.log('✅ Limpeza forçada completa');
+    SC.logModule('admin', 'Limpeza forçada completa');
     return true;
 };
 
 window.loadPropertyList = function() {
-    console.log('📋 Carregando lista de imóveis...');
+    SC.logModule('admin', 'Carregando lista de imóveis...');
     
     const container = document.getElementById('propertyList');
     const countElement = document.getElementById('propertyCount');
@@ -414,12 +431,12 @@ window.loadPropertyList = function() {
         container.appendChild(item);
     });
     
-    console.log(`✅ ${window.properties.length} imóveis listados`);
+    SC.logModule('admin', `${window.properties.length} imóveis listados`);
 };
 
 // ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA E SCROLL ==========
 window.editProperty = function(id) {
-    console.log(`📝 EDITANDO IMÓVEL ${id} (MediaSystem unificado ativo)`);
+    SC.logModule('admin', `EDITANDO IMÓVEL ${id} (MediaSystem unificado ativo)`);
 
     // Buscar imóvel
     const property = window.properties.find(p => p.id === id);
@@ -434,7 +451,7 @@ window.editProperty = function(id) {
     if (window.MediaSystem) {
         MediaSystem.resetState();
     } else {
-        console.warn('⚠️ MediaSystem não disponível');
+        SC.logModule('admin', 'MediaSystem não disponível', 'warn');
     }
 
     // ==============================
@@ -482,7 +499,7 @@ window.editProperty = function(id) {
     // ==============================
     if (window.MediaSystem) {
         MediaSystem.loadExisting(property);
-        console.log('🖼️ Mídia existente carregada no MediaSystem');
+        SC.logModule('admin', 'Mídia existente carregada no MediaSystem');
     }
 
     // ==============================
@@ -495,12 +512,12 @@ window.editProperty = function(id) {
         // Primeiro garantir que o painel admin está visível
         if (adminPanel && adminPanel.style.display !== 'block') {
             adminPanel.style.display = 'block';
-            console.log('✅ Painel admin aberto automaticamente');
+            SC.logModule('admin', '✅ Painel admin aberto automaticamente');
         }
         
         // Agora rolar suavemente até o formulário
         if (propertyForm) {
-            console.log('📜 Rolando até o formulário de edição...');
+            SC.logModule('admin', 'Rolando até o formulário de edição...');
             
             // Método 1: Usar scrollIntoView com comportamento suave
             propertyForm.scrollIntoView({ 
@@ -518,10 +535,10 @@ window.editProperty = function(id) {
                 propertyForm.style.boxShadow = '';
             }, 2000);
             
-            console.log('✅ Formulário em foco para edição');
+            SC.logModule('admin', 'Formulário em foco para edição');
             
         } else {
-            console.warn('⚠️ Formulário não encontrado para scroll');
+            SC.logModule('admin', 'Formulário não encontrado para scroll', 'warn');
             // Fallback: rolar até o painel admin
             if (adminPanel) {
                 adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -534,20 +551,20 @@ window.editProperty = function(id) {
             if (titleField) {
                 titleField.focus();
                 titleField.select(); // Selecionar texto para fácil edição
-                console.log('🎯 Foco no campo título');
+                SC.logModule('admin', 'Foco no campo título');
             }
         }, 600);
         
     }, 100); // Pequeno delay para garantir que o DOM foi atualizado
 
-    console.log(`✅ Imóvel ${id} pronto para edição`);
+    SC.logModule('admin', `Imóvel ${id} pronto para edição`);
     return true;
 };
 
 // ========== Função de Limpeza do Formulário ==========
 
 window.resetAdminFormToInitialState = function() {
-    console.log('🔄 Resetando formulário admin para estado inicial');
+    SC.logModule('admin', 'Resetando formulário admin para estado inicial');
     
     try {
         // 1. Resetar campos do formulário
@@ -592,22 +609,22 @@ window.resetAdminFormToInitialState = function() {
         const cancelBtn = document.getElementById('cancelEditBtn');
         if (cancelBtn) cancelBtn.style.display = 'none';
         
-        console.log('✅ Formulário resetado completamente para estado inicial');
+        SC.logModule('admin', 'Formulário resetado completamente para estado inicial');
         return true;
         
     } catch (error) {
-        console.error('❌ Erro ao resetar formulário:', error);
+        SC.logModule('admin', `Erro ao resetar formulário: ${error}`, 'error');
         return false;
     }
 };
 
 // ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM SISTEMA DE LOADING ==========
 window.setupForm = function() {
-    console.log('📝 Configurando formulário admin com sistema de mídia integrado...');
+    SC.logModule('admin', 'Configurando formulário admin com sistema de mídia integrado...');
     
     const form = document.getElementById('propertyForm');
     if (!form) {
-        console.error('❌ Formulário propertyForm não encontrado!');
+        SC.logModule('admin', 'Formulário propertyForm não encontrado!', 'error');
         return;
     }
     
@@ -627,7 +644,7 @@ window.setupForm = function() {
     
     freshForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        console.group('🚀 SUBMISSÃO DO FORMULÁRIO ADMIN');
+        SC.logModule('admin', 'SUBMISSÃO DO FORMULÁRIO ADMIN', 'info');
         
         // 1. INICIAR LOADING
         const loading = window.LoadingManager.show(
@@ -662,7 +679,7 @@ window.setupForm = function() {
                 has_video: document.getElementById('propHasVideo')?.checked || false
             };
             
-            console.log('📋 Dados coletados:', propertyData);
+            SC.logModule('admin', `Dados coletados: ${JSON.stringify(propertyData).substring(0, 100)}...`);
             loading.completeStep(); // Etapa 1 completa
             
             // 3. VALIDAÇÃO BÁSICA
@@ -681,18 +698,17 @@ window.setupForm = function() {
                             '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
                     }
                 }, 1500);
-                console.error('❌ Validação falhou: campos obrigatórios vazios');
-                console.groupEnd();
+                SC.logModule('admin', 'Validação falhou: campos obrigatórios vazios', 'error');
                 return;
             }
             
             loading.updateMessage('Validação aprovada, processando...');
-            console.log('✅ Validação básica OK');
+            SC.logModule('admin', 'Validação básica OK');
             
             // 4. PROCESSAMENTO PRINCIPAL
             if (window.editingPropertyId) {
                 // ========== EDIÇÃO DE IMÓVEL EXISTENTE ==========
-                console.log(`🔄 EDITANDO imóvel ID: ${window.editingPropertyId}`);
+                SC.logModule('admin', `EDITANDO imóvel ID: ${window.editingPropertyId}`);
                 loading.updateTitle('Atualizando Imóvel...');
                 
                 // 4.1 Preparar objeto de atualização
@@ -703,18 +719,18 @@ window.setupForm = function() {
                 loading.completeStep(); // Etapa 2 completa
                 
                 if (typeof window.processAndSavePdfs === 'function') {
-                    console.log(`📄 Delegando processamento de PDFs para MediaSystem...`);
+                    SC.logModule('admin', `Delegando processamento de PDFs para MediaSystem...`);
                     const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
                     
                     if (pdfsString && pdfsString.trim() !== '') {
                         updateData.pdfs = pdfsString;
-                        console.log(`✅ PDFs processados pelo MediaSystem: ${pdfsString.substring(0, 60)}...`);
+                        SC.logModule('admin', `PDFs processados pelo MediaSystem: ${pdfsString.substring(0, 60)}...`);
                     } else {
                         updateData.pdfs = '';
-                        console.log('ℹ️ Nenhum PDF para o imóvel (MediaSystem retornou vazio)');
+                        SC.logModule('admin', 'Nenhum PDF para o imóvel (MediaSystem retornou vazio)');
                     }
                 } else {
-                    console.warn('⚠️ Função processAndSavePdfs não disponível');
+                    SC.logModule('admin', 'Função processAndSavePdfs não disponível', 'warn');
                     updateData.pdfs = '';
                 }
                 
@@ -724,14 +740,14 @@ window.setupForm = function() {
                 
                 try {
                     if (typeof window.getMediaUrlsForProperty === 'function') {
-                        console.log(`🎯 Chamando getMediaUrlsForProperty para ID ${window.editingPropertyId}...`);
+                        SC.logModule('admin', `Chamando getMediaUrlsForProperty para ID ${window.editingPropertyId}...`);
                         
                         // Usar função com ordenação se disponível
                         let mediaUrls;
                         if (window.MediaSystem && typeof window.MediaSystem.getOrderedMediaUrls === 'function') {
                             const ordered = window.MediaSystem.getOrderedMediaUrls();
                             mediaUrls = ordered.images;
-                            console.log('🔄 Usando ordem visual personalizada');
+                            SC.logModule('admin', 'Usando ordem visual personalizada');
                         } else {
                             mediaUrls = await window.getMediaUrlsForProperty(window.editingPropertyId, propertyData.title);
                         }
@@ -740,29 +756,24 @@ window.setupForm = function() {
                             if (mediaUrls.trim() !== '') {
                                 updateData.images = mediaUrls;
                                 const urlCount = mediaUrls.split(',').filter(url => url.trim() !== '').length;
-                                console.log(`✅ Mídia processada: ${urlCount} URL(s)`);
-                                console.log(`📝 Amostra: ${mediaUrls.substring(0, 80)}...`);
+                                SC.logModule('admin', `Mídia processada: ${urlCount} URL(s)`);
+                                SC.logModule('admin', `Amostra: ${mediaUrls.substring(0, 80)}...`);
                             } else {
                                 // String vazia - sem mídia
                                 updateData.images = '';
-                                console.log('ℹ️ Nenhuma mídia para salvar');
+                                SC.logModule('admin', 'Nenhuma mídia para salvar');
                             }
                         } else {
-                            console.warn('⚠️  getMediaUrlsForProperty retornou undefined/null');
+                            SC.logModule('admin', 'getMediaUrlsForProperty retornou undefined/null', 'warn');
                             updateData.images = '';
                         }
                     } else {
-                        console.error('❌ Função getMediaUrlsForProperty não disponível!');
-                        console.log('🔍 Verificando window object:', {
-                            hasGetMediaUrls: typeof window.getMediaUrlsForProperty,
-                            mediaConfig: window.MEDIA_CONFIG,
-                            currentSystem: window.currentMediaSystem
-                        });
+                        SC.logModule('admin', 'Função getMediaUrlsForProperty não disponível!', 'error');
                         updateData.images = '';
                     }
                 } catch (mediaError) {
-                    console.error('❌ ERRO CRÍTICO ao processar mídia:', mediaError);
-                    console.log('🔄 Usando fallback: mantendo imagens existentes');
+                    SC.logModule('admin', `ERRO CRÍTICO ao processar mídia: ${mediaError}`, 'error');
+                    SC.logModule('admin', 'Usando fallback: mantendo imagens existentes');
                     // Tenta manter as imagens existentes do imóvel atual
                     const currentProperty = window.properties.find(p => p.id == window.editingPropertyId);
                     updateData.images = currentProperty ? currentProperty.images : '';
@@ -773,11 +784,11 @@ window.setupForm = function() {
                 loading.completeStep(); // Etapa 4 completa
                 
                 if (typeof window.updateProperty === 'function') {
-                    console.log('💾 Enviando atualização para o sistema de propriedades...');
+                    SC.logModule('admin', 'Enviando atualização para o sistema de propriedades...');
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
                     
                     if (success) {
-                        console.log('✅ Imóvel atualizado com sucesso no banco de dados!');
+                        SC.logModule('admin', 'Imóvel atualizado com sucesso no banco de dados!');
                         
                         // Feedback final
                         loading.updateTitle('✅ Concluído!');
@@ -804,13 +815,13 @@ window.setupForm = function() {
                         }, 1500);
                     }
                 } else {
-                    console.error('❌ Função updateProperty não disponível!');
+                    SC.logModule('admin', 'Função updateProperty não disponível!', 'error');
                     alert('❌ Erro: sistema de propriedades não disponível');
                 }
                 
             } else {
                 // ========== CRIAÇÃO DE NOVO IMÓVEL ==========
-                console.log('🆕 CRIANDO novo imóvel...');
+                SC.logModule('admin', 'CRIANDO novo imóvel...');
                 loading.updateTitle('Criando Novo Imóvel...');
                 
                 // 4.5 PROCESSAR MÍDIA PARA NOVO IMÓVEL
@@ -819,7 +830,7 @@ window.setupForm = function() {
                 
                 let mediaUrls = '';
                 if (window.selectedMediaFiles && window.selectedMediaFiles.length > 0) {
-                    console.log(`🖼️ Processando ${window.selectedMediaFiles.length} arquivo(s) de mídia para novo imóvel...`);
+                    SC.logModule('admin', `Processando ${window.selectedMediaFiles.length} arquivo(s) de mídia para novo imóvel...`);
                     
                     try {
                         if (typeof window.getMediaUrlsForProperty === 'function') {
@@ -829,11 +840,11 @@ window.setupForm = function() {
                             
                             if (mediaUrls && mediaUrls.trim() !== '') {
                                 propertyData.images = mediaUrls;
-                                console.log(`✅ Mídia processada para novo imóvel: ${mediaUrls.substring(0, 80)}...`);
+                                SC.logModule('admin', `Mídia processada para novo imóvel: ${mediaUrls.substring(0, 80)}...`);
                             }
                         }
                     } catch (mediaError) {
-                        console.error('❌ Erro ao processar mídia para novo imóvel:', mediaError);
+                        SC.logModule('admin', `Erro ao processar mídia para novo imóvel: ${mediaError}`, 'error');
                     }
                 }
                 
@@ -842,7 +853,7 @@ window.setupForm = function() {
                 loading.completeStep(); // Etapa 3 completa
                 
                 if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
-                    console.log(`📄 Processando ${window.selectedPdfFiles.length} PDF(s) para novo imóvel...`);
+                    SC.logModule('admin', `Processando ${window.selectedPdfFiles.length} PDF(s) para novo imóvel...`);
                     // A lógica de PDFs para novo imóvel já está em addNewProperty
                 }
                 
@@ -851,16 +862,16 @@ window.setupForm = function() {
                 loading.completeStep(); // Etapa 4 completa
                 
                 if (typeof window.addNewProperty === 'function') {
-                    console.log('💾 Chamando addNewProperty com dados:', {
+                    SC.logModule('admin', `Chamando addNewProperty com dados: ${JSON.stringify({
                         title: propertyData.title,
                         hasMedia: !!(propertyData.images),
                         hasPdfs: !!(window.selectedPdfFiles && window.selectedPdfFiles.length > 0)
-                    });
+                    })}`);
                     
                     const newProperty = await window.addNewProperty(propertyData);
                     
                     if (newProperty) {
-                        console.log(`✅ Novo imóvel criado com ID: ${newProperty.id}`);
+                        SC.logModule('admin', `Novo imóvel criado com ID: ${newProperty.id}`);
 
                         // Feedback final
                         loading.updateTitle('✅ Concluído!');
@@ -890,15 +901,14 @@ window.setupForm = function() {
                         }, 1500);
                     }
                 } else {
-                    console.error('❌ Função addNewProperty não disponível!');
+                    SC.logModule('admin', 'Função addNewProperty não disponível!', 'error');
                     alert('❌ Erro: sistema de criação não disponível');
                 }
             }
             
         } catch (error) {
             // 5. TRATAMENTO DE ERROS
-            console.error('❌ ERRO CRÍTICO no processamento do formulário:', error);
-            console.error('🔍 Stack trace:', error.stack);
+            SC.logModule('admin', `ERRO CRÍTICO no processamento do formulário: ${error}`, 'error');
             
             loading.updateTitle('❌ Erro no Processamento');
             loading.updateMessage(error.message || 'Erro desconhecido');
@@ -930,7 +940,7 @@ window.setupForm = function() {
         } finally {
             // 6. LIMPEZA E RESET APÓS SALVAMENTO (SUCESSO OU ERRO)
             setTimeout(() => {
-                console.log('🧹 Executando limpeza automática pós-salvamento...');
+                SC.logModule('admin', 'Executando limpeza automática pós-salvamento...');
                 
                 // Esconder loading
                 loading.hide();
@@ -963,7 +973,7 @@ window.setupForm = function() {
                 if (typeof window.loadPropertyList === 'function') {
                     setTimeout(() => {
                         window.loadPropertyList();
-                        console.log('📋 Lista de imóveis atualizada');
+                        SC.logModule('admin', 'Lista de imóveis atualizada');
                     }, 700);
                 }
                 
@@ -971,26 +981,24 @@ window.setupForm = function() {
                 if (typeof window.renderProperties === 'function') {
                     setTimeout(() => {
                         window.renderProperties('todos');
-                        console.log('🔄 Galeria principal atualizada');
+                        SC.logModule('admin', 'Galeria principal atualizada');
                     }, 1000);
                 }
                 
                 // Feedback visual para usuário
-                console.log('🎯 Formulário limpo e pronto para novo imóvel');
+                SC.logModule('admin', 'Formulário limpo e pronto para novo imóvel');
                 
             }, 1000);
         }
-        
-        console.groupEnd();
     });
     
-    console.log('✅ Formulário admin configurado com sistema de loading visual');
+    SC.logModule('admin', 'Formulário admin configurado com sistema de loading visual');
 };
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
 window.syncWithSupabaseManual = async function() {
     if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
-        console.log('🔄 Iniciando sincronização manual...');
+        SC.logModule('admin', 'Iniciando sincronização manual...');
         
         const syncBtn = document.getElementById('syncButton');
         if (syncBtn) {
@@ -1015,7 +1023,7 @@ window.syncWithSupabaseManual = async function() {
                 alert('❌ Função de sincronização não disponível!');
             }
         } catch (error) {
-            console.error('❌ Erro na sincronização:', error);
+            SC.logModule('admin', `Erro na sincronização: ${error}`, 'error');
             alert('❌ Erro ao sincronizar: ' + error.message);
         } finally {
             if (syncBtn) {
@@ -1059,24 +1067,24 @@ function addSyncButton() {
         panelTitle.parentNode.insertBefore(syncButton, panelTitle.nextSibling);
     }
     
-    console.log('✅ Botão de sincronização adicionado');
+    SC.logModule('admin', 'Botão de sincronização adicionado');
 }
 
 // ========== CORREÇÃO DEFINITIVA DOS FILTROS ==========
 window.fixFilterVisuals = function() {
-    console.log('🎨 CORREÇÃO DEFINITIVA DOS FILTROS VISUAIS');
+    SC.logModule('admin', 'CORREÇÃO DEFINITIVA DOS FILTROS VISUAIS');
     
     const filterButtons = document.querySelectorAll('.filter-btn');
     if (!filterButtons || filterButtons.length === 0) {
-        console.log('⚠️ Nenhum botão de filtro encontrado');
+        SC.logModule('admin', 'Nenhum botão de filtro encontrado', 'warn');
         return;
     }
     
-    console.log(`🔍 Encontrados ${filterButtons.length} botões de filtro`);
+    SC.logModule('admin', `Encontrados ${filterButtons.length} botões de filtro`);
     
     // Para CADA botão, remover e recriar completamente
     filterButtons.forEach((button, index) => {
-        console.log(`   ${index + 1}. Processando: "${button.textContent.trim()}"`);
+        SC.logModule('admin', `${index + 1}. Processando: "${button.textContent.trim()}"`);
         
         // Clonar botão (remove event listeners antigos)
         const newButton = button.cloneNode(true);
@@ -1087,7 +1095,7 @@ window.fixFilterVisuals = function() {
             e.preventDefault();
             e.stopPropagation();
             
-            console.log(`🎯 Filtro clicado: "${this.textContent.trim()}"`);
+            SC.logModule('admin', `Filtro clicado: "${this.textContent.trim()}"`);
             
             // ✅ CRÍTICO: Remover 'active' de TODOS os botões
             const allButtons = document.querySelectorAll('.filter-btn');
@@ -1107,21 +1115,21 @@ window.fixFilterVisuals = function() {
             this.style.color = 'white';
             this.style.borderColor = 'var(--primary)';
             
-            console.log(`   ✅ "active" removido de ${allButtons.length - 1} botões`);
-            console.log(`   ✅ "active" adicionado a: "${this.textContent.trim()}"`);
+            SC.logModule('admin', `✅ "active" removido de ${allButtons.length - 1} botões`);
+            SC.logModule('admin', `✅ "active" adicionado a: "${this.textContent.trim()}"`);
             
             // Executar filtro
             const filterText = this.textContent.trim();
             const filter = filterText === 'Todos' ? 'todos' : filterText;
             
             if (typeof window.renderProperties === 'function') {
-                console.log(`   🚀 Executando filtro: ${filter}`);
+                SC.logModule('admin', `🚀 Executando filtro: ${filter}`);
                 window.renderProperties(filter);
             }
         });
     });
     
-    console.log(`✅ ${filterButtons.length} botões de filtro CORRIGIDOS`);
+    SC.logModule('admin', `${filterButtons.length} botões de filtro CORRIGIDOS`);
     
     // ✅ ATIVAR "Todos" por padrão se nenhum estiver ativo
     setTimeout(() => {
@@ -1134,14 +1142,14 @@ window.fixFilterVisuals = function() {
                 todosBtn.classList.add('active');
                 todosBtn.style.backgroundColor = 'var(--primary)';
                 todosBtn.style.color = 'white';
-                console.log('✅ "Todos" ativado por padrão');
+                SC.logModule('admin', '"Todos" ativado por padrão');
             }
         }
     }, 500);
 };
 
 // ========== CONFIGURAÇÃO CORRIGIDA DO UPLOAD DE PDF ==========
-console.log('🔒 Configurando upload de PDFs: DELEGANDO para MediaSystem');
+SC.logModule('admin', 'Configurando upload de PDFs: DELEGANDO para MediaSystem');
 
 // ========== VERIFICAR E AGUARDAR MEDIASYSTEM ANTES DE CONFIGURAR ==========
 setTimeout(() => {
@@ -1149,7 +1157,7 @@ setTimeout(() => {
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     
     if (pdfFileInput && pdfUploadArea) {
-        console.log('🎯 Elementos de PDF encontrados - Configurando...');
+        SC.logModule('admin', 'Elementos de PDF encontrados - Configurando...');
         
         // 1. REMOVER QUALQUER LISTENER ANTIGO (clonando elementos)
         const cleanPdfInput = pdfFileInput.cloneNode(true);
@@ -1158,7 +1166,7 @@ setTimeout(() => {
         pdfFileInput.parentNode.replaceChild(cleanPdfInput, pdfFileInput);
         pdfUploadArea.parentNode.replaceChild(cleanPdfArea, pdfUploadArea);
         
-        console.log('✅ Elementos resetados - Prontos para MediaSystem');
+        SC.logModule('admin', 'Elementos resetados - Prontos para MediaSystem');
         
         // 2. AGORA APENAS CONFIGURAR O BÁSICO - O MediaSystem fará o resto
         const freshUploadArea = document.getElementById('pdfUploadArea');
@@ -1168,21 +1176,21 @@ setTimeout(() => {
         freshUploadArea.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🎯 Área de PDF clicada - Abrindo seletor...');
+            SC.logModule('admin', 'Área de PDF clicada - Abrindo seletor...');
             freshFileInput.click();
         });
         
         // 4. DELEGAR 100% PARA MEDIASYSTEM QUANDO ARQUIVO FOR SELECIONADO
         freshFileInput.addEventListener('change', function(e) {
             if (e.target.files.length > 0) {
-                console.log(`📄 ${e.target.files.length} arquivo(s) selecionado(s)`);
+                SC.logModule('admin', `${e.target.files.length} arquivo(s) selecionado(s)`);
                 
                 // CHAMAR DIRETAMENTE O MEDIASYSTEM
                 if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
-                    console.log('🔄 Delegando para MediaSystem.addPdfs()');
+                    SC.logModule('admin', 'Delegando para MediaSystem.addPdfs()');
                     window.MediaSystem.addPdfs(e.target.files);
                 } else {
-                    console.error('❌ MediaSystem não disponível!');
+                    SC.logModule('admin', 'MediaSystem não disponível!', 'error');
                     alert('⚠️ Sistema de upload não está pronto. Recarregue a página.');
                 }
                 
@@ -1197,7 +1205,7 @@ setTimeout(() => {
             e.stopPropagation();
             this.style.borderColor = '#3498db';
             this.style.background = '#e8f4fc';
-            console.log('📄 Drag over área PDF');
+            SC.logModule('admin', 'Drag over área PDF');
         });
         
         freshUploadArea.addEventListener('dragleave', function(e) {
@@ -1215,7 +1223,7 @@ setTimeout(() => {
             this.style.background = '#fafafa';
             
             if (e.dataTransfer.files.length > 0) {
-                console.log(`📄 ${e.dataTransfer.files.length} arquivo(s) solto(s)`);
+                SC.logModule('admin', `${e.dataTransfer.files.length} arquivo(s) solto(s)`);
                 
                 // CHAMAR DIRETAMENTE O MEDIASYSTEM
                 if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
@@ -1224,10 +1232,10 @@ setTimeout(() => {
             }
         });
         
-        console.log('✅ Upload de PDFs configurado - MediaSystem responsável pelo processamento');
+        SC.logModule('admin', 'Upload de PDFs configurado - MediaSystem responsável pelo processamento');
         
     } else {
-        console.warn('⚠️ Elementos de PDF não encontrados no DOM');
+        SC.logModule('admin', 'Elementos de PDF não encontrados no DOM', 'warn');
     }
 }, 1000); // Aguardar 1s para garantir que MediaSystem carregou
 
@@ -1241,14 +1249,14 @@ function waitForMediaSystem(maxAttempts = 10, interval = 500) {
             
             if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
                 clearInterval(checkInterval);
-                console.log('✅ MediaSystem pronto após', attempts, 'tentativas');
+                SC.logModule('admin', `MediaSystem pronto após ${attempts} tentativas`);
                 resolve(true);
             } else if (attempts >= maxAttempts) {
                 clearInterval(checkInterval);
-                console.error('❌ MediaSystem não carregou após', maxAttempts * interval, 'ms');
+                SC.logModule('admin', `MediaSystem não carregou após ${maxAttempts * interval}ms`, 'error');
                 resolve(false);
             } else {
-                console.log('⏳ Aguardando MediaSystem... tentativa', attempts);
+                SC.logModule('admin', `Aguardando MediaSystem... tentativa ${attempts}`);
             }
         }, interval);
     });
@@ -1256,13 +1264,13 @@ function waitForMediaSystem(maxAttempts = 10, interval = 500) {
 
 // ========== FUNÇÃO DE FALLBACK SE MEDIASYSTEM FALHAR ==========
 function setupPdfFallback() {
-    console.log('🔄 Configurando fallback para PDFs...');
+    SC.logModule('admin', 'Configurando fallback para PDFs...');
     
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     const pdfFileInput = document.getElementById('pdfFileInput');
     
     if (!pdfUploadArea || !pdfFileInput) {
-        console.error('❌ Elementos de PDF não encontrados para fallback');
+        SC.logModule('admin', 'Elementos de PDF não encontrados para fallback', 'error');
         return;
     }
     
@@ -1271,7 +1279,7 @@ function setupPdfFallback() {
     
     pdfFileInput.addEventListener('change', async function(e) {
         if (e.target.files.length > 0) {
-            console.log('📄 Fallback: Processando', e.target.files.length, 'PDF(s)');
+            SC.logModule('admin', `Fallback: Processando ${e.target.files.length} PDF(s)`);
             
             // Tentar MediaSystem primeiro
             if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
@@ -1287,11 +1295,11 @@ function setupPdfFallback() {
 
 // ========== EXECUTAR VERIFICAÇÃO DE MEDIASYSTEM ==========
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 Verificando sistema de mídia...');
+    SC.logModule('admin', 'Verificando sistema de mídia...');
     
     waitForMediaSystem().then(isReady => {
         if (!isReady) {
-            console.warn('⚠️ Configurando fallback para PDFs');
+            SC.logModule('admin', 'Configurando fallback para PDFs', 'warn');
             setupPdfFallback();
         }
     });
@@ -1299,13 +1307,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ========== INICIALIZAÇÃO DO SISTEMA ==========
 function initializeAdminSystem() {
-    console.log('🚀 Inicializando sistema admin...');
+    SC.logModule('admin', 'Inicializando sistema admin...');
     
     // 1. Esconder painel
     const panel = document.getElementById('adminPanel');
     if (panel) {
         panel.style.display = 'none';
-        console.log('✅ Painel admin oculto');
+        SC.logModule('admin', 'Painel admin oculto');
     }
     
     // 2. Configurar botão admin
@@ -1315,45 +1323,45 @@ function initializeAdminSystem() {
         adminBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🖱️ Botão admin clicado');
+            SC.logModule('admin', 'Botão admin clicado');
             window.toggleAdminPanel();
         });
-        console.log('✅ Botão admin configurado');
+        SC.logModule('admin', 'Botão admin configurado');
     }
     
     // 3. Configurar formulário
     if (typeof window.setupForm === 'function') {
         window.setupForm();
-        console.log('✅ Formulário configurado');
+        SC.logModule('admin', 'Formulário configurado');
     }
     
     // 4. Adicionar botão sincronização
     addSyncButton();
     
     // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
-    console.log('🎯 Iniciando correção garantida dos filtros...');
+    SC.logModule('admin', 'Iniciando correção garantida dos filtros...');
 
     // A configuração do upload de PDF já foi tratada acima
-    console.log('✅ Upload de PDF delegado 100% para MediaSystem');
+    SC.logModule('admin', 'Upload de PDF delegado 100% para MediaSystem');
 
     // Tentativa 1: Imediata (800ms)
     setTimeout(() => {
         if (typeof window.fixFilterVisuals === 'function') {
-            console.log('🔄 Tentativa 1: Aplicando correção de filtros...');
+            SC.logModule('admin', 'Tentativa 1: Aplicando correção de filtros...');
             window.fixFilterVisuals();
         } else {
-            console.error('❌ window.fixFilterVisuals não encontrada!');
+            SC.logModule('admin', 'window.fixFilterVisuals não encontrada!', 'error');
         }
     }, 800);
 
     // Tentativa 2: Após 2 segundos (backup)
     setTimeout(() => {
-        console.log('🔍 Verificando se filtros funcionam...');
+        SC.logModule('admin', 'Verificando se filtros funcionam...');
         
         // Testar se algum filtro tem listener
         const testBtn = document.querySelector('.filter-btn');
         if (testBtn && !testBtn.onclick) {
-            console.log('⚠️ Filtros sem listeners - reaplicando...');
+            SC.logModule('admin', 'Filtros sem listeners - reaplicando...', 'warn');
             if (typeof window.fixFilterVisuals === 'function') {
                 window.fixFilterVisuals();
             }
@@ -1361,14 +1369,14 @@ function initializeAdminSystem() {
     }, 2000);
 
     // 6. VERIFICAR SISTEMA DE LOADING (⭐ NOVA SEÇÃO ⭐)
-    console.log('🔍 Verificando sistema de loading...');
+    SC.logModule('admin', 'Verificando sistema de loading...');
     if (typeof LoadingManager !== 'undefined') {
-        console.log('✅ LoadingManager disponível');
+        SC.logModule('admin', 'LoadingManager disponível');
     } else {
-        console.warn('⚠️ LoadingManager não carregado');
+        SC.logModule('admin', 'LoadingManager não carregado', 'warn');
     }
    
-    console.log('✅ Sistema admin inicializado');
+    SC.logModule('admin', 'Sistema admin inicializado');
 }
 
 // ========== EXECUÇÃO AUTOMÁTICA ==========
@@ -1382,7 +1390,7 @@ if (document.readyState === 'loading') {
 
 // ========== FUNÇÕES PDF BÁSICAS ==========
 window.showPdfModal = function(propertyId) {
-    console.log(`📄 showPdfModal chamado para ID: ${propertyId}`);
+    SC.logModule('admin', `showPdfModal chamado para ID: ${propertyId}`);
     
     // Usar o PdfSystem unificado se disponível (PRIORIDADE 1)
     if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
@@ -1396,7 +1404,7 @@ window.showPdfModal = function(propertyId) {
 
 // ========== FUNÇÃO DE FALLBACK (ATUALIZADA E MELHORADA) ==========
 function openPdfModalDirectFallback(propertyId) {
-    console.log(`📄 Fallback PDF modal para ID: ${propertyId} - Versão Corrigida`);
+    SC.logModule('admin', `Fallback PDF modal para ID: ${propertyId} - Versão Corrigida`);
     
     // 1. Buscar imóvel
     const property = window.properties?.find(p => p.id == propertyId);
@@ -1431,7 +1439,7 @@ function openPdfModalDirectFallback(propertyId) {
     if (!passwordInput || (passwordInput.parentElement && 
         window.getComputedStyle(passwordInput.parentElement).display === 'none')) {
         
-        console.log('⚠️ Campo de senha não encontrado ou oculto. Recriando...');
+        SC.logModule('admin', 'Campo de senha não encontrado ou oculto. Recriando...', 'warn');
         
         // Remover input antigo se existir
         if (passwordInput && passwordInput.parentElement) {
@@ -1464,7 +1472,7 @@ function openPdfModalDirectFallback(propertyId) {
         
         if (previewDiv && buttonContainer && previewDiv.parentNode === buttonContainer.parentNode) {
             previewDiv.parentNode.insertBefore(passwordInput, buttonContainer);
-            console.log('✅ Campo de senha inserido na posição correta');
+            SC.logModule('admin', 'Campo de senha inserido na posição correta');
         } else {
             // Fallback: inserir antes dos botões
             const modalContent = document.querySelector('.pdf-modal-content');
@@ -1472,7 +1480,7 @@ function openPdfModalDirectFallback(propertyId) {
                 const buttons = modalContent.querySelectorAll('button');
                 if (buttons.length > 0) {
                     buttons[0].parentNode.insertBefore(passwordInput, buttons[0]);
-                    console.log('✅ Campo de senha inserido antes dos botões');
+                    SC.logModule('admin', 'Campo de senha inserido antes dos botões');
                 }
             }
         }
@@ -1507,24 +1515,23 @@ function openPdfModalDirectFallback(propertyId) {
         if (passwordInput) {
             passwordInput.focus();
             passwordInput.select();
-            console.log('✅ Modal PDF aberto com campo de senha visível e focado');
+            SC.logModule('admin', 'Modal PDF aberto com campo de senha visível e focado');
             
             // DEBUG: Verificar visibilidade
             const style = window.getComputedStyle(passwordInput);
-            console.log('🔍 DEBUG Campo senha:', {
-                display: style.display,
-                visibility: style.visibility,
-                opacity: style.opacity,
-                parentDisplay: passwordInput.parentElement ? 
-                    window.getComputedStyle(passwordInput.parentElement).display : 'no parent'
-            });
+            SC.logModule('admin', 'DEBUG Campo senha:', 'info');
+            SC.logModule('admin', `- display: ${style.display}`);
+            SC.logModule('admin', `- visibility: ${style.visibility}`);
+            SC.logModule('admin', `- opacity: ${style.opacity}`);
+            SC.logModule('admin', `- parentDisplay: ${passwordInput.parentElement ? 
+                window.getComputedStyle(passwordInput.parentElement).display : 'no parent'}`);
         }
     }, 200);
 }
 
 // ✅ FUNÇÃO AUXILIAR PARA TESTE RÁPIDO
 window.testPdfModalFallback = function(testId = 101) {
-    console.log('🧪 TESTE: Abrindo modal PDF via fallback...');
+    SC.logModule('admin', 'TESTE: Abrindo modal PDF via fallback...');
     openPdfModalDirectFallback(testId);
 };
 
@@ -1532,7 +1539,7 @@ window.testPdfModalFallback = function(testId = 101) {
 function checkPdfPasswordField() {
     const passwordInput = document.getElementById('pdfPassword');
     if (!passwordInput) {
-        console.warn('⚠️ Campo de senha PDF não encontrado no DOM');
+        SC.logModule('admin', 'Campo de senha PDF não encontrado no DOM', 'warn');
         return false;
     }
     
@@ -1541,61 +1548,60 @@ function checkPdfPasswordField() {
                      style.visibility !== 'hidden' && 
                      style.opacity !== '0';
     
-    console.log(`🔍 Status campo senha: ${isVisible ? 'VISÍVEL ✅' : 'OCULTO ❌'}`, {
-        display: style.display,
-        visibility: style.visibility,
-        opacity: style.opacity,
-        hasParent: !!passwordInput.parentElement,
-        parentDisplay: passwordInput.parentElement ? 
-            window.getComputedStyle(passwordInput.parentElement).display : 'no parent'
-    });
+    SC.logModule('admin', `Status campo senha: ${isVisible ? 'VISÍVEL ✅' : 'OCULTO ❌'}`, 'info');
+    SC.logModule('admin', `- display: ${style.display}`, 'info');
+    SC.logModule('admin', `- visibility: ${style.visibility}`, 'info');
+    SC.logModule('admin', `- opacity: ${style.opacity}`, 'info');
+    SC.logModule('admin', `- hasParent: ${!!passwordInput.parentElement}`, 'info');
+    SC.logModule('admin', `- parentDisplay: ${passwordInput.parentElement ? 
+        window.getComputedStyle(passwordInput.parentElement).display : 'no parent'}`, 'info');
     
     return isVisible;
 }
 
 // Executar verificação após carregamento
 setTimeout(() => {
-    console.log('🔍 Verificando integridade do campo de senha PDF...');
+    SC.logModule('admin', 'Verificando integridade do campo de senha PDF...');
     checkPdfPasswordField();
 }, 3000);
 
 // ✅ ADICIONAR ESTA FUNÇÃO PARA TESTAR (opcional):
 window.testPdfModalDirect = function(propertyId) {
-    console.log('🧪 TESTE DIRETO DO MODAL PDF');
+    SC.logModule('admin', 'TESTE DIRETO DO MODAL PDF');
     openPdfModalDirectFallback(propertyId || 101); // Testar com ID 101 ou fornecido
 };
 
 // ========== VERIFICAÇÃO DO SISTEMA PDF UNIFICADO ==========
 setTimeout(() => {
-    console.log('🔍 VERIFICAÇÃO SISTEMA PDF UNIFICADO (pdf-unified.js):');
+    SC.logModule('admin', 'VERIFICAÇÃO SISTEMA PDF UNIFICADO (pdf-unified.js):');
     
     // 1. VERIFICAR SE O ARQUIVO pdf-unified.js FOI CARREGADO
     const hasPdfUnified = Array.from(document.scripts).some(script => 
         script.src && script.src.includes('pdf-unified.js')
     );
     
-    console.log('📦 pdf-unified.js no HTML:', hasPdfUnified ? '✅ Carregado' : '❌ Não encontrado');
+    SC.logModule('admin', `pdf-unified.js no HTML: ${hasPdfUnified ? '✅ Carregado' : '❌ Não encontrado'}`);
     
     // 2. VERIFICAR SE PdfSystem FOI CRIADO
     if (window.PdfSystem) {
-        console.log('✅ PdfSystem disponível');
+        SC.logModule('admin', '✅ PdfSystem disponível');
         
         // Verificar métodos CRÍTICOS
         const criticalMethods = ['showModal', 'processAndSavePdfs', 'clearAllPdfs'];
-        console.log('🎯 Métodos críticos disponíveis:');
+        SC.logModule('admin', 'Métodos críticos disponíveis:');
         criticalMethods.forEach(method => {
-            console.log(`   - ${method}:`, typeof window.PdfSystem[method] === 'function' ? '✅' : '❌');
+            SC.logModule('admin', `- ${method}: ${typeof window.PdfSystem[method] === 'function' ? '✅' : '❌'}`);
         });
     } else {
-        console.warn('⚠️  PdfSystem NÃO disponível');
-        console.log('🔧 Possíveis causas:');
-        console.log('   1. pdf-unified.js não foi carregado corretamente');
-        console.log('   2. Há erro de sintaxe em pdf-unified.js');
-        console.log('   3. O arquivo não exporta window.PdfSystem');
+        SC.logModule('admin', '⚠️  PdfSystem NÃO disponível', 'warn');
+        SC.logModule('admin', 'Possíveis causas:');
+        SC.logModule('admin', '   1. pdf-unified.js não foi carregado corretamente');
+        SC.logModule('admin', '   2. Há erro de sintaxe em pdf-unified.js');
+        SC.logModule('admin', '   3. O arquivo não exporta window.PdfSystem');
     }
     
     // 3. VERIFICAR FUNÇÕES GLOBAIS QUE O admin.js USA
-    console.log('🌐 Funções globais para admin.js:');
+    SC.logModule('admin', 'Funções globais para admin.js:');
     const adminFunctions = [
         'showPdfModal',
         'accessPdfDocuments', 
@@ -1607,25 +1613,25 @@ setTimeout(() => {
     ];
     
     adminFunctions.forEach(func => {
-        console.log(`   - ${func}:`, typeof window[func] === 'function' ? '✅' : '❌');
+        SC.logModule('admin', `- ${func}: ${typeof window[func] === 'function' ? '✅' : '❌'}`);
     });
     
     // 4. CONCLUSÃO
     const systemReady = window.PdfSystem && typeof window.PdfSystem.showModal === 'function';
-    console.log(systemReady ? '🎉 Sistema PDF unificado PRONTO!' : '⚠️  Sistema PDF precisa de ajustes');
+    SC.logModule('admin', systemReady ? '🎉 Sistema PDF unificado PRONTO!' : '⚠️  Sistema PDF precisa de ajustes');
     
 }, 2000);
 
 // ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
 window.accessPdfDocuments = function() {
-    console.log('🔓 accessPdfDocuments chamada - Versão Corrigida');
+    SC.logModule('admin', 'accessPdfDocuments chamada - Versão Corrigida');
     
     // 1. Obter elementos CRÍTICOS
     const passwordInput = document.getElementById('pdfPassword');
     const modalTitle = document.getElementById('pdfModalTitle');
     
     if (!passwordInput) {
-        console.error('❌ Campo de senha PDF não encontrado!');
+        SC.logModule('admin', 'Campo de senha PDF não encontrado!', 'error');
         // Recriar dinamicamente se necessário
         recreatePdfPasswordField();
         setTimeout(() => window.accessPdfDocuments(), 100);
@@ -1649,7 +1655,7 @@ window.accessPdfDocuments = function() {
         return;
     }
     
-    console.log('✅ Senha válida! Processando documentos...');
+    SC.logModule('admin', 'Senha válida! Processando documentos...');
     
     // 4. Obter ID do imóvel de múltiplas fontes (robustez)
     const propertyId = 
@@ -1659,7 +1665,7 @@ window.accessPdfDocuments = function() {
          document.querySelector('.property-card.active').dataset.propertyId);
     
     if (!propertyId) {
-        console.error('❌ Não foi possível identificar o imóvel');
+        SC.logModule('admin', 'Não foi possível identificar o imóvel', 'error');
         alert('⚠️ Não foi possível identificar o imóvel. Tente novamente.');
         return;
     }
@@ -1690,7 +1696,7 @@ window.accessPdfDocuments = function() {
         return;
     }
     
-    console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
+    SC.logModule('admin', `${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
     
     // 8. Fechar modal de senha e abrir modal de seleção
     closePdfModal();
@@ -1699,7 +1705,7 @@ window.accessPdfDocuments = function() {
 
 // Função auxiliar para recriar campo de senha se necessário
 function recreatePdfPasswordField() {
-    console.log('🔧 Recriando campo de senha PDF...');
+    SC.logModule('admin', 'Recriando campo de senha PDF...');
     
     const modal = document.getElementById('pdfModal');
     if (!modal) return;
@@ -1726,14 +1732,14 @@ function recreatePdfPasswordField() {
         const previewDiv = document.getElementById('pdfPreview');
         if (previewDiv && previewDiv.parentNode) {
             previewDiv.parentNode.insertBefore(passwordInput, previewDiv.nextSibling);
-            console.log('✅ Campo de senha recriado');
+            SC.logModule('admin', 'Campo de senha recriado');
         }
     }
 }
 
 // ✅ 5. FUNÇÃO PARA MOSTRAR LISTA DE SELEÇÃO DE PDFs
 function showPdfSelectionList(propertyId, propertyTitle, pdfUrls) {
-    console.log('📋 Criando lista de seleção de PDFs...');
+    SC.logModule('admin', 'Criando lista de seleção de PDFs...');
     
     // Fechar modal de senha primeiro
     closePdfModal();
@@ -1877,18 +1883,18 @@ function showPdfSelectionList(propertyId, propertyTitle, pdfUrls) {
     `;
     
     selectionModal.style.display = 'flex';
-    console.log('✅ Lista de PDFs exibida para seleção');
+    SC.logModule('admin', 'Lista de PDFs exibida para seleção');
 }
 
 // ✅ 6. FUNÇÃO PARA ABRIR PDF EM NOVA ABA
 window.openPdfInNewTab = function(url) {
-    console.log('🔗 Abrindo PDF:', url.substring(0, 80) + '...');
+    SC.logModule('admin', `Abrindo PDF: ${url.substring(0, 80)}...`);
     window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 // ✅ 7. FUNÇÃO PARA BAIXAR TODOS OS PDFs
 window.downloadAllPdfs = async function(urls) {
-    console.log(`📥 Iniciando download de ${urls.length} PDF(s)...`);
+    SC.logModule('admin', `Iniciando download de ${urls.length} PDF(s)...`);
     
     let successCount = 0;
     
@@ -1904,13 +1910,13 @@ window.downloadAllPdfs = async function(urls) {
             document.body.removeChild(tempAnchor);
             
             successCount++;
-            console.log(`✅ Download iniciado: ${fileName}`);
+            SC.logModule('admin', `Download iniciado: ${fileName}`);
             
             // Pequena pausa entre downloads
             await new Promise(resolve => setTimeout(resolve, 300));
             
         } catch (error) {
-            console.error(`❌ Erro ao baixar ${url}:`, error);
+            SC.logModule('admin', `Erro ao baixar ${url}: ${error}`, 'error');
         }
     }
     
@@ -1925,13 +1931,13 @@ window.closePdfSelectionModal = function() {
     if (modal) {
         modal.style.display = 'none';
         modal.remove(); // Remove completamente do DOM
-        console.log('✅ Modal de seleção de PDFs fechado');
+        SC.logModule('admin', 'Modal de seleção de PDFs fechado');
     }
 };
 
 // ✅ FUNÇÃO DE TESTE DIRETO (adicionar após accessPdfDocuments)
 window.testPdfAccessDirect = function(propertyId) {
-    console.log('🧪 TESTE DIRETO DE ACESSO A PDFs');
+    SC.logModule('admin', 'TESTE DIRETO DE ACESSO A PDFs');
     
     if (!propertyId) {
         propertyId = window.currentPropertyId || 101; // Usar ID 101 como teste
@@ -1943,14 +1949,14 @@ window.testPdfAccessDirect = function(propertyId) {
         return;
     }
     
-    console.log(`📊 Imóvel ${propertyId}: "${property.title}"`);
-    console.log(`📄 PDFs: ${property.pdfs || 'Nenhum'}`);
+    SC.logModule('admin', `Imóvel ${propertyId}: "${property.title}"`);
+    SC.logModule('admin', `PDFs: ${property.pdfs || 'Nenhum'}`);
     
     // Abrir PDFs diretamente (pular validação de senha)
     if (property.pdfs && property.pdfs !== 'EMPTY') {
         const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
         pdfUrls.forEach(url => {
-            console.log(`🔗 Abrindo: ${url.substring(0, 80)}...`);
+            SC.logModule('admin', `Abrindo: ${url.substring(0, 80)}...`);
             window.open(url, '_blank');
         });
         alert(`✅ ${pdfUrls.length} PDF(s) aberto(s) diretamente!`);
@@ -1964,7 +1970,7 @@ window.ensurePdfModalExists = function(forceComplete = false) {
     let modal = document.getElementById('pdfModal');
     
     if (!modal || forceComplete) {
-        console.log('🔄 Criando/Atualizando modal PDF completo...');
+        SC.logModule('admin', 'Criando/Atualizando modal PDF completo...');
         
         // Remover modal existente se incompleto
         if (modal && forceComplete) {
@@ -2019,7 +2025,7 @@ window.ensurePdfModalExists = function(forceComplete = false) {
             `;
             
             document.body.appendChild(modal);
-            console.log('✅ Modal PDF completo criado');
+            SC.logModule('admin', 'Modal PDF completo criado');
         }
     }
     
@@ -2029,7 +2035,7 @@ window.ensurePdfModalExists = function(forceComplete = false) {
 // Verificação automática na inicialização
 setTimeout(() => {
     if (!document.getElementById('pdfModal')) {
-        console.log('⚠️ Modal PDF não encontrado. Criando automaticamente...');
+        SC.logModule('admin', 'Modal PDF não encontrado. Criando automaticamente...', 'warn');
         window.ensurePdfModalExists();
     }
 }, 1000);
@@ -2076,7 +2082,7 @@ setTimeout(() => {
         };
         
         document.body.appendChild(emergencyBtn);
-        console.log('🆘 Botão de emergência criado');
+        SC.logModule('admin', 'Botão de emergência criado');
     }
 }, 3000);
 
@@ -2103,16 +2109,16 @@ setTimeout(() => {
         `;
         
         testBtn.onclick = function() {
-            console.group('🧪 TESTE COMPLETO DO SISTEMA DE MÍDIA');
+            SC.logModule('admin', 'TESTE COMPLETO DO SISTEMA DE MÍDIA', 'info');
             
             // 1. Testar conexão básica
-            console.log('1️⃣ Testando conexão entre módulos...');
-            console.log('- handleNewMediaFiles:', typeof window.handleNewMediaFiles);
-            console.log('- updateMediaPreview:', typeof window.updateMediaPreview);
+            SC.logModule('admin', '1️⃣ Testando conexão entre módulos...');
+            SC.logModule('admin', `- handleNewMediaFiles: ${typeof window.handleNewMediaFiles}`);
+            SC.logModule('admin', `- updateMediaPreview: ${typeof window.updateMediaPreview}`);
             
             // 2. Testar com arquivo simulado
             if (typeof window.handleNewMediaFiles === 'function') {
-                console.log('2️⃣ Simulando upload de arquivo...');
+                SC.logModule('admin', '2️⃣ Simulando upload de arquivo...');
                 
                 // Criar arquivo de teste em memória
                 const blob = new Blob(['dummy image data'], { type: 'image/jpeg' });
@@ -2129,48 +2135,46 @@ setTimeout(() => {
                 };
                 
                 window.handleNewMediaFiles(fileList);
-                console.log('✅ Arquivo de teste enviado para processamento');
+                SC.logModule('admin', 'Arquivo de teste enviado para processamento');
             } else {
-                console.error('❌ handleNewMediaFiles não disponível!');
+                SC.logModule('admin', 'handleNewMediaFiles não disponível!', 'error');
             }
             
             // 3. Verificar preview
             setTimeout(() => {
-                console.log('3️⃣ Verificando preview...');
+                SC.logModule('admin', '3️⃣ Verificando preview...');
                 const preview = document.getElementById('uploadPreview');
                 if (preview) {
-                    console.log('✅ Preview container encontrado');
-                    console.log('📸 Conteúdo:', preview.innerHTML.length, 'caracteres');
+                    SC.logModule('admin', '✅ Preview container encontrado');
+                    SC.logModule('admin', `📸 Conteúdo: ${preview.innerHTML.length} caracteres`);
                     
                     if (preview.innerHTML.includes('test_foto')) {
-                        console.log('🎉 ARQUIVO DE TESTE APARECE NO PREVIEW!');
+                        SC.logModule('admin', '🎉 ARQUIVO DE TESTE APARECE NO PREVIEW!');
                         alert('✅ SISTEMA FUNCIONANDO!\n\nArquivo de teste apareceu no preview.');
                    } else {
-                        console.log('⚠️ Preview não mostra arquivo de teste');
-                        console.log('🔍 HTML do preview:', preview.innerHTML.substring(0, 200));
+                        SC.logModule('admin', '⚠️ Preview não mostra arquivo de teste', 'warn');
+                        SC.logModule('admin', `🔍 HTML do preview: ${preview.innerHTML.substring(0, 200)}`);
                     }
                 } else {
-                    console.error('❌ Preview container NÃO encontrado!');
+                    SC.logModule('admin', '❌ Preview container NÃO encontrado!', 'error');
                 }
             }, 500);
-            
-            console.groupEnd();
         };
         
         document.body.appendChild(testBtn);
-        console.log('🧪 Botão de teste de mídia criado');
+        SC.logModule('admin', 'Botão de teste de mídia criado');
     }
 }, 2000);
 
 // ========== SOLUÇÃO FINAL - OBSERVADOR DE FILTROS ==========
 (function startFilterObserver() {
-    console.log('👁️ Iniciando observador de filtros...');
+    SC.logModule('admin', 'Iniciando observador de filtros...');
     
     // Observar quando os filtros forem clicados
     document.addEventListener('click', function(e) {
         const clickedFilter = e.target.closest('.filter-btn');
         if (clickedFilter) {
-            console.log('🎯 Filtro clicado via observer:', clickedFilter.textContent.trim());
+            SC.logModule('admin', `Filtro clicado via observer: ${clickedFilter.textContent.trim()}`);
             
             // Forçar remoção de 'active' de todos (SEM ESTILO INLINE)
             document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -2190,17 +2194,17 @@ setTimeout(() => {
         }
     });
     
-    console.log('✅ Observador de filtros ativo');
+    SC.logModule('admin', 'Observador de filtros ativo');
 })();
 
 // Limpar PDFs processados após salvamento
 window.clearProcessedPdfs = function() {
-    console.log('🧹 Limpando PDFs processados...');
+    SC.logModule('admin', 'Limpando PDFs processados...');
     
     // Manter apenas PDFs NÃO processados
     window.selectedPdfFiles = window.selectedPdfFiles.filter(pdf => !pdf.processed);
     
-    console.log(`📊 Após limpeza: ${window.selectedPdfFiles.length} PDF(s) não processados`);
+    SC.logModule('admin', `Após limpeza: ${window.selectedPdfFiles.length} PDF(s) não processados`);
     
     // Atualizar preview
     if (typeof window.updatePdfPreview === 'function') {
@@ -2239,7 +2243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasLocation = document.getElementById('propLocation')?.value.trim();
         
         if ((hasTitle || hasPrice || hasLocation) && !window.editingPropertyId) {
-            console.warn('⚠️ Formulário carregado com dados! Limpando automaticamente...');
+            SC.logModule('admin', 'Formulário carregado com dados! Limpando automaticamente...', 'warn');
             window.forceFormCleanup();
         }
     }, 500);
@@ -2249,27 +2253,27 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         const formState = window.isAdminFormEmpty();
-        console.log('🔍 Estado inicial do formulário:', formState);
+        SC.logModule('admin', `Estado inicial do formulário: ${JSON.stringify(formState)}`);
         
         // Se não está vazio, limpar
         if (!formState.isEmpty && !formState.isEditing) {
-            console.log('⚠️ Formulário não estava vazio inicialmente. Limpando...');
+            SC.logModule('admin', 'Formulário não estava vazio inicialmente. Limpando...', 'warn');
             window.resetAdminFormToInitialState();
         }
     }, 1500);
 });
 
-console.log('✅ admin.js pronto e funcional');
+SC.logModule('admin', 'pronto e funcional');
 
 // CORREÇÃO DEFINITIVA: Ocultar botão de teste de upload
 function hideMediaTestButtonPermanently() {
-    console.log('🔧 Ocultando botão de teste de mídia definitivamente...');
+    SC.logModule('admin', 'Ocultando botão de teste de mídia definitivamente...');
     
     // Método 1: Remover completamente o elemento
     const testBtn = document.getElementById('media-test-btn');
     if (testBtn) {
         testBtn.remove();
-        console.log('✅ Botão de teste REMOVIDO completamente');
+        SC.logModule('admin', 'Botão de teste REMOVIDO completamente');
         return;
     }
     
@@ -2282,7 +2286,7 @@ function hideMediaTestButtonPermanently() {
                     const btn = document.getElementById('media-test-btn');
                     if (btn) {
                         btn.remove();
-                        console.log('✅ Botão de teste detectado e removido via observer');
+                        SC.logModule('admin', 'Botão de teste detectado e removido via observer');
                         observer.disconnect();
                     }
                 }
@@ -2303,12 +2307,12 @@ function hideMediaTestButtonPermanently() {
             btn.style.opacity = '0';
             btn.style.position = 'absolute';
             btn.style.left = '-9999px';
-            console.log('✅ Botão de teste ocultado via fallback');
+            SC.logModule('admin', 'Botão de teste ocultado via fallback');
             clearInterval(checkInterval);
         }
         if (attempts > 20) { // 10 segundos (20 * 500ms)
             clearInterval(checkInterval);
-            console.log('⚠️  Botão de teste não encontrado após 10s');
+            SC.logModule('admin', 'Botão de teste não encontrado após 10s', 'warn');
         }
     }, 500);
 }
@@ -2323,20 +2327,20 @@ setTimeout(() => {
     const testBtn = document.getElementById('media-test-btn');
     if (testBtn) {
         testBtn.style.display = 'none';
-        console.log('🚫 Botão de teste de mídia ocultado');
+        SC.logModule('admin', 'Botão de teste de mídia ocultado');
     }
     
     // Ocultar botão de emergência (opcional - mantém funcionalidade mas esconde)
     const emergencyBtn = document.getElementById('emergency-admin-btn');
     if (emergencyBtn) {
         emergencyBtn.style.display = 'none';
-        console.log('🚫 Botão de emergência ocultado');
+        SC.logModule('admin', 'Botão de emergência ocultado');
     }
 }, 3000);
 
 // NO FINAL DO admin.js - ADICIONAR verificação de integridade
 setTimeout(() => {
-    console.log('🔍 VERIFICAÇÃO DE INTEGRIDADE DO SISTEMA PDF');
+    SC.logModule('admin', 'VERIFICAÇÃO DE INTEGRIDADE DO SISTEMA PDF');
     
     // Verificar se elementos críticos existem
     const criticalElements = [
@@ -2348,23 +2352,23 @@ setTimeout(() => {
     let allExist = true;
     criticalElements.forEach(el => {
         const exists = document.getElementById(el.id);
-        console.log(`${exists ? '✅' : '❌'} ${el.desc}: ${exists ? 'OK' : 'FALTANDO'}`);
+        SC.logModule('admin', `${exists ? '✅' : '❌'} ${el.desc}: ${exists ? 'OK' : 'FALTANDO'}`);
         if (!exists) allExist = false;
     });
     
     if (!allExist) {
-        console.log('⚠️  Elementos PDF faltando. Recriando sistema...');
+        SC.logModule('admin', 'Elementos PDF faltando. Recriando sistema...', 'warn');
         window.ensurePdfModalExists(true);
     }
     
     // Teste funcional (apenas em debug)
     if (window.location.search.includes('debug=true')) {
-        console.log('🧪 Teste funcional do sistema PDF disponível');
-        console.log('💡 Use: testPdfAccessDirect(101) para testar com imóvel ID 101');
+        SC.logModule('admin', 'Teste funcional do sistema PDF disponível');
+        SC.logModule('admin', '💡 Use: testPdfAccessDirect(101) para testar com imóvel ID 101');
     }
 }, 3000);
 
-console.log('✅ admin.js pronto e funcional');
+SC.logModule('admin', 'pronto e funcional');
 
 // 🔧 PATCH TEMPORÁRIO: Corrigir checkbox "Tem vídeo" na edição
 document.addEventListener('DOMContentLoaded', function() {
@@ -2373,7 +2377,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (videoCheckbox) {
             // Garantir que o evento change funcione
             videoCheckbox.addEventListener('change', function() {
-                console.log('✅ Checkbox "Tem vídeo" alterado:', this.checked);
+                SC.logModule('admin', `Checkbox "Tem vídeo" alterado: ${this.checked}`);
             });
         }
     }, 1000);
@@ -2470,9 +2474,9 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(extraStyles);
     
-    console.log('🎨 Estilos de loading visual aplicados');
+    SC.logModule('admin', 'Estilos de loading visual aplicados');
 });
 
-console.log('✅ Sistema de loading visual adicionado ao admin.js');
+SC.logModule('admin', 'Sistema de loading visual adicionado ao admin.js');
 
-console.log('✅ admin.js pronto e funcional - SEM ERROS DE SINTAXE');
+SC.logModule('admin', 'pronto e funcional - SEM ERROS DE SINTAXE');
