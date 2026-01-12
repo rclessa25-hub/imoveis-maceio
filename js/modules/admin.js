@@ -1399,7 +1399,12 @@ window.showPdfModal = function(propertyId) {
     }
     
     // Fallback robusto que GARANTE campo de senha
-    openPdfModalDirectFallback(propertyId);
+    if (typeof window.openPdfModalDirectFallback === 'function') {
+        window.openPdfModalDirectFallback(propertyId);
+    } else {
+        // Último recurso: modal manual básico
+        alert('Sistema de documentos temporariamente indisponível. Tente novamente em alguns instantes.');
+    }
 };
 
 // ========== FUNÇÃO DE FALLBACK (ATUALIZADA E MELHORADA) ==========
@@ -1622,9 +1627,9 @@ setTimeout(() => {
     
 }, 2000);
 
-// ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
+// ========== FUNÇÃO accessPdfDocuments CORRIGIDA COM VISUALIZAÇÃO DE PDFs ==========
 window.accessPdfDocuments = function() {
-    SC.logModule('admin', 'accessPdfDocuments chamada - Versão Corrigida');
+    SC.logModule('admin', 'accessPdfDocuments chamada - VERSÃO CORRIGIDA COM VISUALIZAÇÃO');
     
     // 1. Obter elementos CRÍTICOS
     const passwordInput = document.getElementById('pdfPassword');
@@ -1632,9 +1637,7 @@ window.accessPdfDocuments = function() {
     
     if (!passwordInput) {
         SC.logModule('admin', 'Campo de senha PDF não encontrado!', 'error');
-        // Recriar dinamicamente se necessário
-        recreatePdfPasswordField();
-        setTimeout(() => window.accessPdfDocuments(), 100);
+        alert('Erro: sistema de documentos não está disponível. Recarregue a página.');
         return;
     }
     
@@ -1655,18 +1658,26 @@ window.accessPdfDocuments = function() {
         return;
     }
     
-    SC.logModule('admin', 'Senha válida! Processando documentos...');
+    SC.logModule('admin', '✅ Senha válida! Buscando documentos...');
     
-    // 4. Obter ID do imóvel de múltiplas fontes (robustez)
-    const propertyId = 
-        window.currentPropertyId || 
-        (modalTitle && modalTitle.dataset.propertyId) || 
-        (document.querySelector('.property-card.active') && 
-         document.querySelector('.property-card.active').dataset.propertyId);
+    // 4. Obter ID do imóvel
+    let propertyId = null;
+    
+    // Tentar obter de múltiplas fontes
+    if (window.currentPropertyId) {
+        propertyId = window.currentPropertyId;
+    } else if (modalTitle && modalTitle.dataset.propertyId) {
+        propertyId = modalTitle.dataset.propertyId;
+    } else {
+        // Tentar extrair do título
+        const titleText = modalTitle ? modalTitle.textContent : '';
+        const match = titleText.match(/ID[:\s]*(\d+)/i);
+        if (match) propertyId = match[1];
+    }
     
     if (!propertyId) {
         SC.logModule('admin', 'Não foi possível identificar o imóvel', 'error');
-        alert('⚠️ Não foi possível identificar o imóvel. Tente novamente.');
+        alert('⚠️ Não foi possível identificar o imóvel. Clique novamente no botão PDF.');
         return;
     }
     
@@ -1674,14 +1685,14 @@ window.accessPdfDocuments = function() {
     const property = window.properties.find(p => p.id == propertyId);
     if (!property) {
         alert('❌ Imóvel não encontrado!');
-        closePdfModal();
+        window.closePdfModal();
         return;
     }
     
     // 6. Verificar se tem PDFs
     if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
         alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
-        closePdfModal();
+        window.closePdfModal();
         return;
     }
     
@@ -1692,18 +1703,253 @@ window.accessPdfDocuments = function() {
     
     if (pdfUrls.length === 0) {
         alert('ℹ️ Nenhum documento PDF disponível.');
-        closePdfModal();
+        window.closePdfModal();
         return;
     }
     
     SC.logModule('admin', `${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
     
-    // 8. Fechar modal de senha e abrir modal de seleção
-    closePdfModal();
-    showPdfSelectionList(propertyId, property.title, pdfUrls);
+    // 8. Fechar modal de senha
+    window.closePdfModal();
+    
+    // 9. Mostrar lista de documentos COM OPÇÃO DE VISUALIZAÇÃO
+    showPdfDocumentList(propertyId, property.title, pdfUrls);
 };
 
-// Função auxiliar para recriar campo de senha se necessário
+// Função para mostrar a lista de documentos (ADICIONAR SE NÃO EXISTIR)
+function showPdfDocumentList(propertyId, propertyTitle, pdfUrls) {
+    SC.logModule('admin', 'Mostrando lista de documentos PDF...');
+    
+    // Criar modal de seleção
+    let selectionModal = document.getElementById('pdfDocumentListModal');
+    
+    if (!selectionModal) {
+        selectionModal = document.createElement('div');
+        selectionModal.id = 'pdfDocumentListModal';
+        selectionModal.className = 'pdf-modal';
+        selectionModal.style.cssText = `
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        
+        document.body.appendChild(selectionModal);
+    }
+    
+    // Gerar lista de documentos com botões de ação
+    const pdfListHtml = pdfUrls.map((url, index) => {
+        const fileName = url.split('/').pop() || `Documento ${index + 1}.pdf`;
+        const displayName = fileName.length > 40 ? 
+            fileName.substring(0, 37) + '...' : fileName;
+        
+        return `
+            <div class="pdf-document-item" style="
+                background: white;
+                border-radius: 10px;
+                padding: 1.2rem;
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                border-left: 5px solid var(--primary);
+            ">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.8rem;"></i>
+                        <div>
+                            <strong style="display: block; color: #2c3e50; font-size: 1.1rem;">
+                                ${displayName}
+                            </strong>
+                            <small style="color: #7f8c8d;">
+                                PDF • ${(index + 1)}/${pdfUrls.length} • Clique para visualizar
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="window.open('${url}', '_blank')" 
+                            style="
+                                background: var(--primary);
+                                color: white;
+                                border: none;
+                                padding: 0.7rem 1.5rem;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.background='#154060'"
+                            onmouseout="this.style.background='var(--primary)'">
+                        <i class="fas fa-eye"></i> Visualizar
+                    </button>
+                    <button onclick="downloadPdfFile('${url}', '${fileName}')" 
+                            style="
+                                background: #27ae60;
+                                color: white;
+                                border: none;
+                                padding: 0.7rem 1.5rem;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                transition: all 0.3s ease;
+                            "
+                            onmouseover="this.style.background='#219653'"
+                            onmouseout="this.style.background='#27ae60'">
+                        <i class="fas fa-download"></i> Baixar
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    selectionModal.innerHTML = `
+        <div style="
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        ">
+            <button onclick="closePdfDocumentList()" 
+                    style="
+                        position: absolute;
+                        top: 15px;
+                        right: 15px;
+                        background: #e74c3c;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 35px;
+                        height: 35px;
+                        cursor: pointer;
+                        font-size: 1.2rem;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">
+                ×
+            </button>
+            
+            <h3 style="color: var(--primary); margin: 0 0 1.5rem 0; font-size: 1.5rem;">
+                <i class="fas fa-file-pdf"></i> Documentos do Imóvel
+            </h3>
+            
+            <div style="margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <p style="margin: 0; color: #2c3e50; font-weight: 600;">
+                    <i class="fas fa-home"></i> ${propertyTitle}
+                </p>
+                <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.9rem;">
+                    <i class="fas fa-info-circle"></i> ${pdfUrls.length} documento(s) disponível(is)
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                ${pdfListHtml}
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; border-top: 1px solid #eee;">
+                <small style="color: #95a5a6;">
+                    <i class="fas fa-info-circle"></i> Os documentos abrem em nova aba para visualização
+                </small>
+                <button onclick="downloadAllPdfs(${JSON.stringify(pdfUrls)})" 
+                        style="
+                            background: var(--accent);
+                            color: white;
+                            border: none;
+                            padding: 0.8rem 1.8rem;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        ">
+                    <i class="fas fa-download"></i> Baixar Todos
+                </button>
+            </div>
+        </div>
+    `;
+    
+    selectionModal.style.display = 'flex';
+    SC.logModule('admin', 'Lista de documentos PDF exibida');
+}
+
+// Função para fechar a lista de documentos
+window.closePdfDocumentList = function() {
+    const modal = document.getElementById('pdfDocumentListModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.remove();
+        SC.logModule('admin', 'Lista de documentos fechada');
+    }
+};
+
+// Função para download individual
+window.downloadPdfFile = function(url, fileName) {
+    try {
+        const tempAnchor = document.createElement('a');
+        tempAnchor.href = url;
+        tempAnchor.download = fileName;
+        tempAnchor.style.display = 'none';
+        document.body.appendChild(tempAnchor);
+        tempAnchor.click();
+        document.body.removeChild(tempAnchor);
+        
+        SC.logModule('admin', `✅ Download iniciado: ${fileName}`);
+        return true;
+    } catch (error) {
+        SC.logModule('admin', `❌ Erro ao baixar: ${error}`, 'error');
+        alert('Erro ao baixar o arquivo. Tente clicar em "Visualizar" e salvar manualmente.');
+        return false;
+    }
+};
+
+// Manter a função downloadAllPdfs existente
+window.downloadAllPdfs = async function(urls) {
+    SC.logModule('admin', `Iniciando download de ${urls.length} PDF(s)...`);
+    
+    let successCount = 0;
+    
+    for (const [index, url] of urls.entries()) {
+        try {
+            const fileName = url.split('/').pop() || `documento_${index + 1}.pdf`;
+            await new Promise(resolve => {
+                setTimeout(() => {
+                    window.downloadPdfFile(url, fileName);
+                    successCount++;
+                    resolve();
+                }, index * 300); // Pequeno delay entre downloads
+            });
+        } catch (error) {
+            SC.logModule('admin', `Erro ao baixar ${url}: ${error}`, 'error');
+        }
+    }
+    
+    if (successCount > 0) {
+        alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
+    }
+};
+
+// ✅ FUNÇÃO AUXILIAR PARA RECRIAR CAMPO DE SENHA SE NECESSÁRIO
 function recreatePdfPasswordField() {
     SC.logModule('admin', 'Recriando campo de senha PDF...');
     
@@ -1736,194 +1982,6 @@ function recreatePdfPasswordField() {
         }
     }
 }
-
-// ✅ 5. FUNÇÃO PARA MOSTRAR LISTA DE SELEÇÃO DE PDFs
-function showPdfSelectionList(propertyId, propertyTitle, pdfUrls) {
-    SC.logModule('admin', 'Criando lista de seleção de PDFs...');
-    
-    // Fechar modal de senha primeiro
-    closePdfModal();
-    
-    // Criar modal de seleção
-    let selectionModal = document.getElementById('pdfSelectionModal');
-    
-    if (!selectionModal) {
-        selectionModal = document.createElement('div');
-        selectionModal.id = 'pdfSelectionModal';
-        selectionModal.className = 'pdf-modal';
-        selectionModal.style.cssText = `
-            display: flex;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 10001;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        `;
-        
-        document.body.appendChild(selectionModal);
-    }
-    
-    // Gerar HTML da lista
-    const pdfListHtml = pdfUrls.map((url, index) => {
-        const fileName = url.split('/').pop() || `Documento ${index + 1}`;
-        const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
-        const fileSize = 'PDF Document'; // Poderia extrair tamanho se disponível
-        
-        return `
-            <div class="pdf-list-item" style="
-                background: white;
-                border-radius: 8px;
-                padding: 1rem;
-                margin-bottom: 0.8rem;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-                transition: all 0.3s ease;
-                cursor: pointer;
-                border-left: 4px solid var(--primary);
-            ">
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.5rem;"></i>
-                        <div>
-                            <strong style="display: block; color: #2c3e50;">${displayName}</strong>
-                            <small style="color: #7f8c8d;">${fileSize} • Documento ${index + 1}/${pdfUrls.length}</small>
-                        </div>
-                    </div>
-                </div>
-                <button onclick="openPdfInNewTab('${url}')" 
-                        style="
-                            background: var(--primary);
-                            color: white;
-                            border: none;
-                            padding: 0.6rem 1.2rem;
-                            border-radius: 5px;
-                            cursor: pointer;
-                            font-weight: 600;
-                            display: flex;
-                            align-items: center;
-                            gap: 5px;
-                            transition: all 0.3s ease;
-                        "
-                        onmouseover="this.style.background='#154060'"
-                        onmouseout="this.style.background='var(--primary)'">
-                    <i class="fas fa-eye"></i> Visualizar
-                </button>
-            </div>
-        `;
-    }).join('');
-    
-    selectionModal.innerHTML = `
-        <div style="
-            background: white;
-            border-radius: 10px;
-            padding: 2rem;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            position: relative;
-        ">
-            <button onclick="closePdfSelectionModal()" 
-                    style="
-                        position: absolute;
-                        top: 10px;
-                        right: 10px;
-                        background: #e74c3c;
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        width: 30px;
-                        height: 30px;
-                        cursor: pointer;
-                        font-size: 1rem;
-                    ">
-                ×
-            </button>
-            
-            <h3 style="color: var(--primary); margin: 0 0 1.5rem 0;">
-                <i class="fas fa-file-pdf"></i> Documentos do Imóvel
-            </h3>
-            
-            <p style="color: #666; margin-bottom: 1.5rem;">
-                <strong>${propertyTitle}</strong><br>
-                Selecione o documento que deseja visualizar:
-            </p>
-            
-            <div style="margin-bottom: 1.5rem;">
-                ${pdfListHtml}
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <small style="color: #95a5a6;">
-                    <i class="fas fa-info-circle"></i> Clique em "Visualizar" para abrir em nova aba
-                </small>
-                <button onclick="downloadAllPdfs([${pdfUrls.map(url => `'${url}'`).join(',')}])" 
-                        style="
-                            background: var(--success);
-                            color: white;
-                            border: none;
-                            padding: 0.6rem 1.2rem;
-                            border-radius: 5px;
-                            cursor: pointer;
-                            display: flex;
-                            align-items: center;
-                            gap: 5px;
-                        ">
-                    <i class="fas fa-download"></i> Baixar Todos
-                </button>
-            </div>
-        </div>
-    `;
-    
-    selectionModal.style.display = 'flex';
-    SC.logModule('admin', 'Lista de PDFs exibida para seleção');
-}
-
-// ✅ 6. FUNÇÃO PARA ABRIR PDF EM NOVA ABA
-window.openPdfInNewTab = function(url) {
-    SC.logModule('admin', `Abrindo PDF: ${url.substring(0, 80)}...`);
-    window.open(url, '_blank', 'noopener,noreferrer');
-};
-
-// ✅ 7. FUNÇÃO PARA BAIXAR TODOS OS PDFs
-window.downloadAllPdfs = async function(urls) {
-    SC.logModule('admin', `Iniciando download de ${urls.length} PDF(s)...`);
-    
-    let successCount = 0;
-    
-    for (const [index, url] of urls.entries()) {
-        try {
-            const fileName = url.split('/').pop() || `documento_${index + 1}.pdf`;
-            const tempAnchor = document.createElement('a');
-            tempAnchor.href = url;
-            tempAnchor.download = fileName;
-            tempAnchor.style.display = 'none';
-            document.body.appendChild(tempAnchor);
-            tempAnchor.click();
-            document.body.removeChild(tempAnchor);
-            
-            successCount++;
-            SC.logModule('admin', `Download iniciado: ${fileName}`);
-            
-            // Pequena pausa entre downloads
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-        } catch (error) {
-            SC.logModule('admin', `Erro ao baixar ${url}: ${error}`, 'error');
-        }
-    }
-    
-    if (successCount > 0) {
-        alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
-    }
-};
 
 // ✅ 8. FUNÇÃO PARA FECHAR MODAL DE SELEÇÃO
 window.closePdfSelectionModal = function() {
