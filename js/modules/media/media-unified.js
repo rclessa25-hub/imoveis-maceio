@@ -293,7 +293,7 @@ const MediaSystem = {
             SC.logModule('media-drag', '🔄 Movendo entre arrays diferentes');
             
             // Remover do array de origem
-            const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
+                const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
             if (sourceIndex !== -1) {
                 const [movedItem] = draggedArray.splice(sourceIndex, 1);
                 
@@ -1103,5 +1103,22 @@ setTimeout(() => {
         };
     }
 }, 500);
+
+// ADICIONAR NO FINAL do media-unified.js (após linha 1107)
+setTimeout(() => {
+    // Garantir que MediaSystem está disponível globalmente
+    if (typeof window.MediaSystem === 'undefined') {
+        console.error('❌ MediaSystem não foi criado! Recriando...');
+        window.MediaSystem = {
+            init: function() { 
+                console.log('🔄 MediaSystem fallback inicializado'); 
+                return this; 
+            },
+            resetState: function() { console.log('🔄 Reset fallback'); }
+        };
+    } else {
+        console.log('✅ MediaSystem disponível globalmente');
+    }
+}, 2000);
 
 SC.logModule('media-system', '✅ Sistema de mídia unificado pronto com compatibilidade total');
