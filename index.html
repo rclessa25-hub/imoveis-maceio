@@ -553,6 +553,31 @@
         console.log('🚀 [SUPORTE] Site principal em modo produção - sem módulos de suporte');
     }
 })();
+
+// ADICIONAR no index.html, no carregamento condicional (após linha 555)
+console.log('🔍 Verificando ordem de carregamento dos módulos...');
+
+// Verificar se módulos essenciais carregaram
+setTimeout(() => {
+    const modulesStatus = {
+        'MediaSystem': typeof window.MediaSystem !== 'undefined',
+        'PdfSystem': typeof window.PdfSystem !== 'undefined',
+        'SharedCore': typeof window.SharedCore !== 'undefined',
+        'handlePdfButtonClick': typeof window.handlePdfButtonClick === 'function'
+    };
+    
+    console.table(modulesStatus);
+    
+    // Se MediaSystem não carregou, tentar recarregar
+    if (!modulesStatus.MediaSystem && !window.location.search.includes('debug=true')) {
+        console.log('⚠️ MediaSystem não carregou. Verificando se o arquivo existe...');
+        const script = document.createElement('script');
+        script.src = 'js/modules/media/media-unified.js';
+        script.onload = () => console.log('✅ media-unified.js recarregado');
+        script.onerror = () => console.error('❌ Falha ao recarregar media-unified.js');
+        document.head.appendChild(script);
+    }
+}, 3000);
 </script>
     
 <!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
