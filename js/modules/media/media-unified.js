@@ -1,1107 +1,901 @@
-// js/modules/media/media-unified.js - SISTEMA UNIFICADO DE MÍDIA
+// js/modules/reader/pdf-unified.js - SISTEMA UNIFICADO DE PDF READER
 
 // ========== CONFIGURAÇÃO SHAREDCORE ==========
 const SC = window.SharedCore;
 
-SC.logModule('media-system', '🔄 media-unified.js carregado - Sistema Centralizado');
+SC.logModule('pdf-system', '🔄 pdf-unified.js carregado - Sistema Centralizado PDF');
 
 /**
- * SISTEMA UNIFICADO DE MÍDIA - VERSÃO OTIMIZADA
- * Responsabilidade única: Gerenciar todo o estado e operações de mídia
- * Dependências: Supabase, utils.js
+ * SISTEMA UNIFICADO DE PDF READER - VERSÃO OTIMIZADA
+ * Responsabilidade única: Gerenciar visualização, zoom e interação com PDFs
  */
 
-const MediaSystem = {
+const PdfSystem = {
     // ========== CONFIGURAÇÃO ==========
     config: {
-        currentSystem: 'vendas', // 'vendas' ou 'aluguel'
-        buckets: {
-            vendas: 'properties',
-            aluguel: 'rentals'
-        },
-        limits: {
-            maxFiles: 10,
-            maxSize: 5 * 1024 * 1024, // 5MB
-            maxPdfs: 5,
-            maxPdfSize: 10 * 1024 * 1024 // 10MB
-        },
-        allowedTypes: {
-            images: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-            videos: ['video/mp4', 'video/quicktime'],
-            pdfs: ['application/pdf']
-        }
+        zoomLevels: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0],
+        defaultZoom: 1.0,
+        maxZoom: 3.0,
+        minZoom: 0.25,
+        pdfWorkerSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+        pdfJsSrc: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
     },
 
     // ========== ESTADO GLOBAL ==========
     state: {
-        files: [],           // Arquivos selecionados (novos)
-        existing: [],        // Arquivos existentes (do banco)
-        pdfs: [],            // PDFs selecionados (novos)
-        existingPdfs: [],    // PDFs existentes (do banco)
-        isUploading: false,
+        currentPdfUrl: null,
+        currentPdfDoc: null,
+        currentPage: 1,
+        totalPages: 0,
+        zoomLevel: 1.0,
+        isRendering: false,
+        isInitialized: false,
+        pdfViewer: null,
         currentPropertyId: null
     },
 
     // ========== INICIALIZAÇÃO ==========
-    init(systemName = 'vendas') {
-        SC.logModule('media-system', `🔧 Inicializando sistema de mídia para: ${systemName}`);
+    init() {
+        SC.logModule('pdf-system', '🔧 Inicializando sistema de PDF Reader');
         
-        this.config.currentSystem = systemName;
-        this.resetState();
-        
-        // Configurar event listeners uma única vez
-        this.setupEventListeners();
-        
-        // Inicializar sistema de drag & drop
-        setTimeout(() => {
-            this.setupDragAndDrop();
-        }, 500);
-        
-        return this;
-    },
-
-    // ========== SISTEMA DE REORDENAÇÃO DRAG & DROP CORRIGIDO ==========
-    setupDragAndDrop: function() {
-        SC.logModule('media-drag', '🎯 Configurando sistema de drag & drop avançado...');
-        
-        // Configurar após pequeno delay para garantir DOM carregado
-        setTimeout(() => {
-            this.setupContainerDragEvents('uploadPreview');
-            this.setupContainerDragEvents('pdfUploadPreview');
-            this.addVisualOrderIndicators();
-        }, 800);
-    },
-
-    setupContainerDragEvents: function(containerId) {
-        const container = document.getElementById(containerId);
-        if (!container) {
-            SC.logModule('media-drag', `⚠️ Container ${containerId} não encontrado`);
-            return;
+        if (this.state.isInitialized) {
+            SC.logModule('pdf-system', '⚠️ PdfSystem já inicializado');
+            return this;
         }
         
-        SC.logModule('media-drag', `🎯 Configurando drag para: ${containerId}`);
-        
-        // Evento de início do drag
-        container.addEventListener('dragstart', (e) => {
-            const draggable = e.target.closest('.draggable-item');
-            if (!draggable) return;
-            
-            e.dataTransfer.setData('text/plain', draggable.dataset.id);
-            e.dataTransfer.effectAllowed = 'move';
-            
-            // Adicionar classe de arraste
-            draggable.classList.add('dragging');
-            container.classList.add('drag-active');
-            
-            // Criar ghost image com preview
-            if (draggable.querySelector('img')) {
-                const img = draggable.querySelector('img');
-                e.dataTransfer.setDragImage(img, 50, 50);
-            }
-            
-            SC.logModule('media-drag', `👆 Iniciando drag: ${draggable.dataset.id}`);
-        });
-        
-        // Evento durante o drag
-        container.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            
-            const draggable = e.target.closest('.draggable-item');
-            const afterElement = this.getDragAfterElement(container, e.clientY);
-            
-            if (draggable) {
-                draggable.classList.add('drop-target');
-            }
-        });
-        
-        // Evento de saída
-        container.addEventListener('dragleave', (e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) {
-                document.querySelectorAll('.drop-target').forEach(el => {
-                    el.classList.remove('drop-target');
-                });
-            }
-        });
-        
-        // Evento de soltar
-        container.addEventListener('drop', (e) => {
-            e.preventDefault();
-            
-            const draggedId = e.dataTransfer.getData('text/plain');
-            const draggable = document.querySelector(`[data-id="${draggedId}"]`);
-            const dropTarget = e.target.closest('.draggable-item');
-            
-            if (!draggedId || !dropTarget) {
-                SC.logModule('media-drag', '❌ Drop inválido');
-                this.cleanupDragState();
-                return;
-            }
-            
-            const targetId = dropTarget.dataset.id;
-            
-            if (draggedId === targetId) {
-                SC.logModule('media-drag', '⚠️ Mesmo item, ignorando');
-                this.cleanupDragState();
-                return;
-            }
-            
-            SC.logModule('media-drag', `🎯 Drop: ${draggedId} → ${targetId}`);
-            
-            // Executar reordenação
-            this.reorderItems(draggedId, targetId);
-            
-            // Limpar estado
-            this.cleanupDragState();
-        });
-        
-        // Finalizar drag
-        container.addEventListener('dragend', () => {
-            this.cleanupDragState();
-        });
-    },
-
-    getDragAfterElement: function(container, y) {
-        const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
-        
-        return draggableElements.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else {
-                return closest;
-            }
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-    },
-
-    cleanupDragState: function() {
-        document.querySelectorAll('.dragging').forEach(el => {
-            el.classList.remove('dragging');
-        });
-        
-        document.querySelectorAll('.drop-target').forEach(el => {
-            el.classList.remove('drop-target');
-        });
-        
-        document.querySelectorAll('.drag-active').forEach(el => {
-            el.classList.remove('drag-active');
-        });
-    },
-
-    reorderItems: function(draggedId, targetId) {
-        SC.logModule('media-drag', `🔀 REORDENAÇÃO: ${draggedId} → ${targetId}`);
-        
-        // Determinar qual array está sendo modificado
-        let sourceArray, targetArray;
-        
-        if (draggedId.includes('file_')) {
-            sourceArray = this.state.files;
-            SC.logModule('media-drag', '📸 Movendo arquivo NOVO');
-        } else if (draggedId.includes('existing_')) {
-            sourceArray = this.state.existing;
-            SC.logModule('media-drag', '🖼️ Movendo arquivo EXISTENTE');
-        } else if (draggedId.includes('pdf_')) {
-            sourceArray = this.state.pdfs;
-            SC.logModule('media-drag', '📄 Movendo PDF NOVO');
-        } else if (draggedId.includes('existing_pdf_')) {
-            sourceArray = this.state.existingPdfs;
-            SC.logModule('media-drag', '📋 Movendo PDF EXISTENTE');
+        // Carregar PDF.js dinamicamente se não estiver disponível
+        if (typeof window.pdfjsLib === 'undefined') {
+            SC.logModule('pdf-system', '📦 Carregando PDF.js dinamicamente...');
+            this.loadPdfJs().then(() => {
+                this.finishInitialization();
+            }).catch(error => {
+                SC.logModule('pdf-system', `❌ Erro ao carregar PDF.js: ${error.message}`);
+                this.setupFallbackMode();
+            });
         } else {
-            SC.logModule('media-drag', `❌ Tipo de item não reconhecido: ${draggedId}`);
-            return;
+            this.finishInitialization();
         }
-        
-        // Encontrar índices no array REAL
-        const draggedIndex = sourceArray.findIndex(item => item.id === draggedId);
-        const targetIndex = sourceArray.findIndex(item => item.id === targetId);
-        
-        SC.logModule('media-drag', `📊 Índices: dragged[${draggedIndex}], target[${targetIndex}]`);
-        
-        // Se não encontrou no array atual, procurar no array correspondente
-        if (draggedIndex === -1 || targetIndex === -1) {
-            SC.logModule('media-drag', '🔍 Item não encontrado no array principal, verificando outro...');
-            
-            // Para mídias, verificar ambos arrays
-            if (draggedId.includes('_') && !draggedId.includes('pdf_')) {
-                const allMedia = [...this.state.files, ...this.state.existing];
-                const draggedIndexAll = allMedia.findIndex(item => item.id === draggedId);
-                const targetIndexAll = allMedia.findIndex(item => item.id === targetId);
-                
-                if (draggedIndexAll !== -1 && targetIndexAll !== -1) {
-                    SC.logModule('media-drag', `🎯 Reordenando em array combinado: ${draggedIndexAll}→${targetIndexAll}`);
-                    this.reorderCombinedArray(draggedId, targetId);
-                    this.updateUI();
-                    return;
-                }
-            }
-            
-            SC.logModule('media-drag', '❌ Não foi possível encontrar os itens');
-            return;
-        }
-        
-        // Realizar reordenação NO ARRAY REAL
-        const [draggedItem] = sourceArray.splice(draggedIndex, 1);
-        sourceArray.splice(targetIndex, 0, draggedItem);
-        
-        SC.logModule('media-drag', `✅ Reordenado: ${draggedItem.name || draggedItem.id}`);
-        
-        // Atualizar UI IMEDIATAMENTE
-        this.updateUI();
-        
-        // Adicionar índice visual
-        setTimeout(() => {
-            this.addVisualOrderIndicators();
-        }, 100);
-    },
-
-    reorderCombinedArray: function(draggedId, targetId) {
-        SC.logModule('media-drag', '🔄 Reordenando array combinado...');
-        
-        // Combinar todos os itens visíveis
-        const allItems = [
-            ...this.state.existing.filter(item => !item.markedForDeletion),
-            ...this.state.files,
-            ...this.state.existingPdfs.filter(pdf => !pdf.markedForDeletion),
-            ...this.state.pdfs
-        ];
-        
-        const draggedIndex = allItems.findIndex(item => item.id === draggedId);
-        const targetIndex = allItems.findIndex(item => item.id === targetId);
-        
-        if (draggedIndex === -1 || targetIndex === -1) {
-            SC.logModule('media-drag', '❌ Índices não encontrados no array combinado');
-            return;
-        }
-        
-        // Determinar arrays de origem
-        let draggedArray, targetArray;
-        
-        if (draggedId.includes('file_')) draggedArray = this.state.files;
-        else if (draggedId.includes('existing_')) draggedArray = this.state.existing;
-        else if (draggedId.includes('pdf_')) draggedArray = this.state.pdfs;
-        else if (draggedId.includes('existing_pdf_')) draggedArray = this.state.existingPdfs;
-        
-        if (targetId.includes('file_')) targetArray = this.state.files;
-        else if (targetId.includes('existing_')) targetArray = this.state.existing;
-        else if (targetId.includes('pdf_')) targetArray = this.state.pdfs;
-        else if (targetId.includes('existing_pdf_')) targetArray = this.state.existingPdfs;
-        
-        // Mover entre arrays se necessário
-        if (draggedArray !== targetArray) {
-            SC.logModule('media-drag', '🔄 Movendo entre arrays diferentes');
-            
-            // Remover do array de origem
-            const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
-            if (sourceIndex !== -1) {
-                const [movedItem] = draggedArray.splice(sourceIndex, 1);
-                
-                // Adicionar ao array de destino (no final)
-                targetArray.push(movedItem);
-                
-                SC.logModule('media-drag', `✅ Movido ${movedItem.id} entre arrays`);
-            }
-        }
-        
-        // Atualizar estado para refletir mudanças
-        this.state.files = [...this.state.files];
-        this.state.existing = [...this.state.existing];
-        this.state.pdfs = [...this.state.pdfs];
-        this.state.existingPdfs = [...this.state.existingPdfs];
-    },
-
-    addVisualOrderIndicators: function() {
-        SC.logModule('media-drag', '🔢 Adicionando indicadores visuais de ordem...');
-        
-        // Para mídias
-        const mediaItems = document.querySelectorAll('#uploadPreview .draggable-item');
-        mediaItems.forEach((item, index) => {
-            let indicator = item.querySelector('.order-indicator');
-            if (!indicator) {
-                indicator = document.createElement('div');
-                indicator.className = 'order-indicator';
-                item.appendChild(indicator);
-            }
-            indicator.textContent = index + 1;
-            indicator.style.display = 'flex';
-        });
-        
-        // Para PDFs
-        const pdfItems = document.querySelectorAll('#pdfUploadPreview .draggable-item');
-        pdfItems.forEach((item, index) => {
-            let indicator = item.querySelector('.order-indicator');
-            if (!indicator) {
-                indicator = document.createElement('div');
-                indicator.className = 'order-indicator';
-                item.appendChild(indicator);
-            }
-            indicator.textContent = index + 1;
-            indicator.style.display = 'flex';
-        });
-    },
-
-    getMediaPreviewHTML: function(item) {
-        // Determinar se é imagem ou vídeo baseado no tipo ou extensão
-        const isImage = item.isImage || 
-                       (item.type && item.type.includes('image')) ||
-                       (item.url && this.getFileTypeFromUrl(item.url) === 'image');
-        
-        const isVideo = item.isVideo ||
-                       (item.type && item.type.includes('video')) ||
-                       (item.url && this.getFileTypeFromUrl(item.url) === 'video');
-        
-        const mediaUrl = item.preview || item.url;
-        
-        if (isImage && mediaUrl) {
-            // Para imagens, mostrar preview
-            return `
-                <img src="${mediaUrl}" 
-                     style="width:100%;height:70px;object-fit:cover;" 
-                     alt="Preview"
-                     onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;\\'><i class=\\'fas fa-image\\' style=\\'font-size:1.5rem;color:#ccc;\\'></i></div>'">
-            `;
-        } else if (isVideo && mediaUrl) {
-            // Para vídeos, mostrar ícone com possível thumbnail
-            // Muitos vídeos no Supabase podem ter thumbnails com sufixo _thumbnail
-            const thumbnailUrl = mediaUrl.replace(/\.(mp4|mov|avi)$/i, '_thumbnail.jpg');
-            
-            return `
-                <div style="width:100%;height:70px;position:relative;">
-                    <div style="width:100%;height:100%;background:#2c3e50;display:flex;align-items:center;justify-content:center;">
-                        <i class="fas fa-video" style="font-size:1.5rem;color:#ecf0f1;"></i>
-                    </div>
-                    <!-- Tentar carregar thumbnail se existir -->
-                    <img src="${thumbnailUrl}" 
-                         style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:none;"
-                         alt="Thumbnail"
-                         onload="this.style.display='block'; this.nextElementSibling.style.display='none';"
-                         onerror="this.style.display='none';">
-                </div>
-            `;
-        } else {
-            // Fallback para tipo desconhecido
-            return `
-                <div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
-                    <i class="fas fa-file" style="font-size:1.5rem;color:#ccc;"></i>
-                </div>
-            `;
-        }
-    },
-
-    getOrderedMediaUrls: function() {
-        SC.logModule('media-system', '📋 Obtendo URLs ordenadas...');
-        
-        // Combinar arquivos novos e existentes mantendo a ordem visual
-        const orderedMedia = [...this.state.existing, ...this.state.files]
-            .filter(item => !item.markedForDeletion)
-            .map(item => item.url || item.preview);
-        
-        const orderedPdfs = [...this.state.existingPdfs, ...this.state.pdfs]
-            .filter(pdf => !pdf.markedForDeletion)
-            .map(pdf => pdf.url);
-        
-        return {
-            images: orderedMedia.join(','),
-            pdfs: orderedPdfs.join(',')
-        };
-    },
-
-    // ========== GERENCIAMENTO DE ESTADO ==========
-    resetState() {
-        SC.logModule('media-system', '🧹 Resetando estado do sistema de mídia');
-        
-        // Limpar arrays
-        this.state.files.length = 0;
-        this.state.existing.length = 0;
-        this.state.pdfs.length = 0;
-        this.state.existingPdfs.length = 0;
-        
-        // Resetar flags
-        this.state.isUploading = false;
-        this.state.currentPropertyId = null;
-        
-        // Liberar URLs de preview para evitar memory leaks
-        this.revokeAllPreviewUrls();
         
         return this;
     },
 
-    // ========== API PÚBLICA - FOTOS/VIDEOS ==========
-    
-    // Adicionar novos arquivos
-    addFiles(fileList) {
-        if (!fileList || fileList.length === 0) return 0;
-        
-        const filesArray = Array.from(fileList);
-        let addedCount = 0;
-        
-        filesArray.forEach(file => {
-            if (this.validateFile(file)) {
-                this.state.files.push({
-                    file: file,
-                    id: `file_${Date.now()}_${Math.random()}`,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    preview: URL.createObjectURL(file),
-                    isImage: this.config.allowedTypes.images.includes(file.type),
-                    isVideo: this.config.allowedTypes.videos.includes(file.type),
-                    isNew: true,
-                    uploaded: false
-                });
-                addedCount++;
-            }
-        });
-        
-        SC.logModule('media-upload', `📁 ${addedCount}/${filesArray.length} arquivo(s) adicionado(s)`);
-        this.updateUI();
-        return addedCount;
-    },
-
-    // Carregar arquivos existentes
-    loadExisting(property) {
-        if (!property) return;
-        
-        this.state.currentPropertyId = property.id;
-        
-        // Carregar fotos/vídeos existentes
-        if (property.images && property.images !== 'EMPTY') {
-            const urls = property.images.split(',')
-                .map(url => url.trim())
-                .filter(url => url && url !== 'EMPTY');
-            
-            this.state.existing = urls.map((url, index) => ({
-                url: url,
-                id: `existing_${property.id}_${index}`,
-                name: this.extractFileName(url),
-                type: this.getFileTypeFromUrl(url),
-                isExisting: true,
-                markedForDeletion: false,
-                isVisible: true
-            }));
-        }
-        
-        // Carregar PDFs existentes
-        if (property.pdfs && property.pdfs !== 'EMPTY') {
-            const pdfUrls = property.pdfs.split(',')
-                .map(url => url.trim())
-                .filter(url => url && url !== 'EMPTY');
-            
-            this.state.existingPdfs = pdfUrls.map((url, index) => ({
-                url: url,
-                id: `existing_pdf_${property.id}_${index}`,
-                name: this.extractFileName(url),
-                isExisting: true,
-                markedForDeletion: false
-            }));
-        }
-        
-        this.updateUI();
-        return this;
-    },
-
-    // Remover arquivo
-    removeFile(fileId) {
-        // Buscar em todos os arrays
-        const allArrays = [
-            { name: 'files', array: this.state.files },
-            { name: 'existing', array: this.state.existing },
-            { name: 'pdfs', array: this.state.pdfs },
-            { name: 'existingPdfs', array: this.state.existingPdfs }
-        ];
-        
-        for (const { name, array } of allArrays) {
-            const index = array.findIndex(item => item.id === fileId);
-            if (index !== -1) {
-                const removed = array[index];
-                
-                // Se é um arquivo existente, marcar para exclusão
-                if (removed.isExisting) {
-                    removed.markedForDeletion = true;
-                    SC.logModule('media-delete', `🗑️ Arquivo existente marcado para exclusão: ${removed.name}`);
+    async loadPdfJs() {
+        return new Promise((resolve, reject) => {
+            // Carregar script principal
+            const script = document.createElement('script');
+            script.src = this.config.pdfJsSrc;
+            script.onload = () => {
+                // Configurar worker
+                if (window.pdfjsLib) {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = this.config.pdfWorkerSrc;
+                    SC.logModule('pdf-system', '✅ PDF.js carregado com sucesso');
+                    resolve();
                 } else {
-                    // Se é um arquivo novo, remover e liberar URL
-                    if (removed.preview && removed.preview.startsWith('blob:')) {
-                        URL.revokeObjectURL(removed.preview);
-                    }
-                    array.splice(index, 1);
-                    SC.logModule('media-delete', `🗑️ Arquivo novo removido: ${removed.name}`);
+                    reject(new Error('PDF.js não carregou corretamente'));
                 }
-                
-                this.updateUI();
-                return true;
-            }
-        }
-        
-        return false;
-    },
-
-    // ========== API PÚBLICA - PDFs ==========
-    
-    addPdfs(fileList) {
-        if (!fileList || fileList.length === 0) return 0;
-        
-        const filesArray = Array.from(fileList);
-        let addedCount = 0;
-        
-        filesArray.forEach(file => {
-            if (this.validatePdf(file)) {
-                this.state.pdfs.push({
-                    file: file,
-                    id: `pdf_${Date.now()}_${Math.random()}`,
-                    name: file.name,
-                    size: file.size,
-                    isNew: true,
-                    uploaded: false
-                });
-                addedCount++;
-            }
+            };
+            script.onerror = () => reject(new Error('Falha ao carregar PDF.js'));
+            document.head.appendChild(script);
         });
-        
-        SC.logModule('media-pdf', `📄 ${addedCount}/${filesArray.length} PDF(s) adicionado(s)`);
-        this.updateUI();
-        return addedCount;
     },
 
-    // ========== UPLOAD PARA SUPABASE ==========
+    finishInitialization() {
+        SC.logModule('pdf-system', '🎯 Finalizando inicialização do PDF System');
+        
+        this.state.isInitialized = true;
+        this.setupEventListeners();
+        this.createPdfViewer();
+        
+        // Inicialização independente - SEM DEPENDER DE MEDIASYSTEM
+        setTimeout(() => {
+            this.checkPdfElements();
+        }, 100);
+        
+        SC.logModule('pdf-system', '✅ PdfSystem inicializado independentemente');
+    },
+
+    setupFallbackMode() {
+        SC.logModule('pdf-system', '🔄 Configurando modo fallback para PDF');
+        
+        this.state.isInitialized = true;
+        
+        // Fallback básico para visualização
+        window.PdfSystem = {
+            showModal: function(propertyId, pdfUrl = null) {
+                if (pdfUrl) {
+                    window.open(pdfUrl, '_blank');
+                } else {
+                    alert('Sistema PDF em manutenção. Tente novamente em instantes.');
+                }
+            },
+            loadPdf: function() {
+                alert('Funcionalidade PDF temporariamente indisponível.');
+            }
+        };
+        
+        SC.logModule('pdf-system', '✅ Modo fallback ativado');
+    },
+
+    // ========== INICIALIZAÇÃO INDEPENDENTE ==========
     
-    async uploadAll(propertyId, propertyTitle) {
-        if (this.state.isUploading) {
-            SC.logModule('media-upload', '⚠️ Upload já em andamento');
-            return { images: '', pdfs: '' };
+    // Inicialização independente (NÃO depende mais de MediaSystem)
+    if (!window.pdfSystemInitialized) {
+        window.pdfSystemInitialized = false;
+        
+        const initPdfSystem = function() {
+            if (window.pdfSystemInitialized) return;
+            if (typeof window.PdfSystem !== 'undefined') {
+                try {
+                    window.PdfSystem.init();
+                    window.pdfSystemInitialized = true;
+                    SC.logModule('pdf', '✅ PdfSystem inicializado independentemente');
+                } catch (error) {
+                    SC.logModule('pdf', `❌ Erro na inicialização: ${error.message}`);
+                    // Forçar inicialização básica
+                    window.PdfSystem = window.PdfSystem || {
+                        showModal: function(propertyId) {
+                            alert('Sistema PDF em manutenção. Tente novamente em instantes.');
+                        }
+                    };
+                }
+            }
+        };
+        
+        // Inicializar independentemente - SEM DEPENDER DE MEDIASYSTEM
+        setTimeout(initPdfSystem, 100);
+    }
+
+    // ========== GERENCIAMENTO DE PDFs ==========
+    
+    showModal(propertyId, pdfUrl = null) {
+        SC.logModule('pdf-modal', `📄 Abrindo modal para propriedade: ${propertyId}`);
+        
+        this.state.currentPropertyId = propertyId;
+        
+        if (pdfUrl) {
+            this.state.currentPdfUrl = pdfUrl;
+        } else {
+            // Buscar PDFs da propriedade
+            this.loadPropertyPdfs(propertyId);
         }
         
-        this.state.isUploading = true;
-        SC.logModule('media-upload', '🚀 UPLOAD UNIFICADO PARA SUPABASE');
+        this.openPdfModal();
+        return this;
+    },
+
+    async loadPropertyPdfs(propertyId) {
+        try {
+            SC.logModule('pdf-load', `📚 Carregando PDFs da propriedade: ${propertyId}`);
+            
+            // Buscar dados da propriedade
+            const response = await fetch(`/api/properties/${propertyId}`);
+            if (!response.ok) throw new Error('Falha ao buscar propriedade');
+            
+            const property = await response.json();
+            
+            if (property.pdfs && property.pdfs !== 'EMPTY') {
+                const pdfUrls = property.pdfs.split(',')
+                    .map(url => url.trim())
+                    .filter(url => url && url !== 'EMPTY');
+                
+                if (pdfUrls.length > 0) {
+                    this.state.currentPdfUrl = pdfUrls[0];
+                    this.populatePdfList(pdfUrls);
+                }
+            }
+        } catch (error) {
+            SC.logModule('pdf-load', `❌ Erro ao carregar PDFs: ${error.message}`);
+        }
+    },
+
+    populatePdfList(pdfUrls) {
+        const pdfList = document.getElementById('pdfList');
+        if (!pdfList) return;
+        
+        pdfList.innerHTML = '';
+        
+        pdfUrls.forEach((url, index) => {
+            const fileName = this.extractFileName(url);
+            const listItem = document.createElement('div');
+            listItem.className = 'pdf-list-item';
+            listItem.innerHTML = `
+                <i class="fas fa-file-pdf"></i>
+                <span>${fileName}</span>
+                <button onclick="PdfSystem.loadPdfFromUrl('${url}')">
+                    Abrir
+                </button>
+            `;
+            pdfList.appendChild(listItem);
+        });
+    },
+
+    async loadPdfFromUrl(pdfUrl) {
+        SC.logModule('pdf-load', `📥 Carregando PDF: ${pdfUrl.substring(0, 50)}...`);
         
         try {
-            const results = {
-                images: '',
-                pdfs: ''
-            };
+            this.state.currentPdfUrl = pdfUrl;
+            this.state.isRendering = true;
             
-            // 1. Processar exclusões primeiro
-            await this.processDeletions();
+            // Mostrar loader
+            this.showLoader();
             
-            // 2. Upload de fotos/vídeos (usar ordem visual)
-            if (this.state.files.length > 0 || this.state.existing.length > 0) {
-                // Usar ordem atual dos itens
-                const allMedia = [...this.state.existing, ...this.state.files]
-                    .filter(item => !item.markedForDeletion);
-                
-                // Upload apenas dos novos
-                const newFiles = allMedia.filter(item => item.isNew && item.file);
-                if (newFiles.length > 0) {
-                    const imageUrls = await this.uploadFiles(
-                        newFiles.map(f => f.file),
-                        propertyId,
-                        'images'
-                    );
-                    results.images = imageUrls.join(',');
-                }
-                
-                // Adicionar existentes (já ordenados)
-                const existingUrls = allMedia
-                    .filter(item => item.isExisting && item.url && !item.markedForDeletion)
-                    .map(item => item.url);
-                
-                if (existingUrls.length > 0) {
-                    results.images = results.images 
-                        ? `${results.images},${existingUrls.join(',')}`
-                        : existingUrls.join(',');
-                }
-            }
+            // Carregar documento PDF
+            const loadingTask = window.pdfjsLib.getDocument(pdfUrl);
+            const pdfDoc = await loadingTask.promise;
             
-            // 3. Upload de PDFs
-            if (this.state.pdfs.length > 0) {
-                const pdfUrls = await this.uploadFiles(
-                    this.state.pdfs.map(p => p.file),
-                    propertyId,
-                    'pdfs'
-                );
-                results.pdfs = pdfUrls.join(',');
-            }
+            this.state.currentPdfDoc = pdfDoc;
+            this.state.totalPages = pdfDoc.numPages;
+            this.state.currentPage = 1;
             
-            // 4. Combinar com arquivos existentes não excluídos
-            const keptExistingPdfs = this.state.existingPdfs
-                .filter(item => !item.markedForDeletion && item.url)
-                .map(item => item.url);
+            SC.logModule('pdf-load', `✅ PDF carregado: ${this.state.totalPages} páginas`);
             
-            if (keptExistingPdfs.length > 0) {
-                results.pdfs = results.pdfs
-                    ? `${results.pdfs},${keptExistingPdfs.join(',')}`
-                    : keptExistingPdfs.join(',');
-            }
+            // Renderizar primeira página
+            await this.renderPage(1);
             
-            SC.logModule('media-upload', '✅ Upload completo');
-            return results;
+            // Atualizar controles
+            this.updateControls();
             
         } catch (error) {
-            SC.logModule('media-upload', `❌ Erro no upload unificado: ${error.message}`);
-            return { images: '', pdfs: '' };
+            SC.logModule('pdf-load', `❌ Erro ao carregar PDF: ${error.message}`);
+            alert('Erro ao carregar PDF. Verifique se o arquivo está acessível.');
         } finally {
-            this.state.isUploading = false;
+            this.state.isRendering = false;
+            this.hideLoader();
         }
     },
 
-    // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
-    // ADICIONADAS APÓS uploadAll 
-
-    processAndSavePdfs: async function(propertyId, propertyTitle) {
-        SC.logModule('media-pdf', `📄 MediaSystem.processAndSavePdfs CHAMADO para ${propertyId}`);
+    async renderPage(pageNumber) {
+        if (!this.state.currentPdfDoc || this.state.isRendering) return;
         
-        const result = await this.uploadAll(propertyId, propertyTitle);
-        
-        SC.logModule('media-pdf', `📊 Resultado: ${result.pdfs ? result.pdfs.split(',').length : 0} PDF(s)`);
-        
-        return result.pdfs;
-    },
-
-    clearAllPdfs: function() {
-        SC.logModule('media-pdf', '🧹 Limpando apenas PDFs');
-        this.state.pdfs.length = 0;
-        this.state.existingPdfs.length = 0;
-        this.updateUI();
-        return this;
-    },
-
-    loadExistingPdfsForEdit: function(property) {
-        SC.logModule('media-pdf', '📄 Carregando PDFs existentes para edição');
-        if (!property) return this;
-        this.state.existingPdfs.length = 0;
-        if (property.pdfs && property.pdfs !== 'EMPTY') {
-            const pdfUrls = property.pdfs.split(',')
-                .map(url => url.trim())
-                .filter(url => url && url !== 'EMPTY');
-            this.state.existingPdfs = pdfUrls.map((url, index) => ({
-                url: url,
-                id: `existing_pdf_${property.id}_${index}`,
-                name: this.extractFileName(url),
-                isExisting: true,
-                markedForDeletion: false
-            }));
+        try {
+            this.state.isRendering = true;
+            this.state.currentPage = Math.max(1, Math.min(pageNumber, this.state.totalPages));
+            
+            const page = await this.state.currentPdfDoc.getPage(this.state.currentPage);
+            
+            // Configurar viewport com zoom
+            const viewport = page.getViewport({ scale: this.state.zoomLevel });
+            
+            // Configurar canvas
+            const canvas = document.getElementById('pdfCanvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            // Renderizar página
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+            
+            SC.logModule('pdf-render', `🖼️ Página ${this.state.currentPage}/${this.state.totalPages} renderizada`);
+            
+        } catch (error) {
+            SC.logModule('pdf-render', `❌ Erro ao renderizar página: ${error.message}`);
+        } finally {
+            this.state.isRendering = false;
         }
-        this.updateUI();
-        return this;
     },
 
-    getPdfsToSave: async function(propertyId) {
-        SC.logModule('media-pdf', `💾 Obtendo PDFs para salvar para ${propertyId}`);
-        const result = await this.uploadAll(propertyId, 'Imóvel');
-        return result.pdfs;
-    },
-
-    getMediaUrlsForProperty: async function(propertyId, propertyTitle) {
-        SC.logModule('media-system', `🖼️ Obtendo URLs de mídia para ${propertyId}`);
-        const result = await this.uploadAll(propertyId, propertyTitle);
-        return result.images;
-    },
-
-    clearAllMedia: function() {
-        SC.logModule('media-system', '🧹 LIMPEZA COMPLETA DE MÍDIA E PDFs');
-        return this.resetState();
-    },
+    // ========== CONTROLES DE NAVEGAÇÃO ==========
     
-    // ===== RESTANTE DAS FUNÇÕES (UI, validação, utilidades) FUNÇÕES PRIVADAS ======
-    
-    validateFile(file) {
-        const isImage = this.config.allowedTypes.images.includes(file.type);
-        const isVideo = this.config.allowedTypes.videos.includes(file.type);
-        
-        if (!isImage && !isVideo) {
-            alert(`❌ "${file.name}" - Tipo não suportado!`);
-            return false;
+    zoomIn() {
+        const currentIndex = this.config.zoomLevels.indexOf(this.state.zoomLevel);
+        if (currentIndex < this.config.zoomLevels.length - 1) {
+            this.state.zoomLevel = this.config.zoomLevels[currentIndex + 1];
+            this.applyZoom();
         }
-        
-        if (file.size > this.config.limits.maxSize) {
-            alert(`❌ "${file.name}" - Arquivo muito grande!`);
-            return false;
-        }
-        
-        return true;
     },
-    
-    validatePdf(file) {
-        if (!this.config.allowedTypes.pdfs.includes(file.type)) {
-            alert(`❌ "${file.name}" - Não é um PDF válido!`);
-            return false;
+
+    zoomOut() {
+        const currentIndex = this.config.zoomLevels.indexOf(this.state.zoomLevel);
+        if (currentIndex > 0) {
+            this.state.zoomLevel = this.config.zoomLevels[currentIndex - 1];
+            this.applyZoom();
         }
-        
-        if (file.size > this.config.limits.maxPdfSize) {
-            alert(`❌ "${file.name}" - PDF muito grande!`);
-            return false;
-        }
-        
-        return true;
     },
-    
-    async uploadFiles(files, propertyId, type = 'images') {
-        const bucket = this.config.buckets[this.config.currentSystem];
-        const uploadedUrls = [];
+
+    applyZoom() {
+        SC.logModule('pdf-zoom', `🔍 Aplicando zoom: ${this.state.zoomLevel}x`);
         
-        for (const file of files) {
-            try {
-                const fileName = this.generateFileName(file, propertyId, type);
-                const filePath = `${bucket}/${fileName}`;
-                
-                const response = await fetch(
-                    `${window.SUPABASE_URL}/storage/v1/object/${filePath}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                            'apikey': window.SUPABASE_KEY,
-                            'Content-Type': file.type
-                        },
-                        body: file
-                    }
-                );
-                
-                if (response.ok) {
-                    const publicUrl = `${window.SUPABASE_URL}/storage/v1/object/public/${filePath}`;
-                    uploadedUrls.push(publicUrl);
-                    SC.logModule('media-upload', `✅ ${type} enviado: ${file.name}`);
-                }
-            } catch (error) {
-                SC.logModule('media-upload', `❌ Erro ao enviar ${file.name}: ${error.message}`);
+        const canvas = document.getElementById('pdfCanvas');
+        if (canvas && this.state.currentPdfDoc) {
+            // Re-renderizar página com novo zoom
+            this.renderPage(this.state.currentPage);
+        }
+        
+        // Atualizar indicador de zoom
+        const zoomIndicator = document.getElementById('pdfZoomLevel');
+        if (zoomIndicator) {
+            zoomIndicator.textContent = `${Math.round(this.state.zoomLevel * 100)}%`;
+        }
+    },
+
+    nextPage() {
+        if (this.state.currentPage < this.state.totalPages) {
+            this.renderPage(this.state.currentPage + 1);
+            this.updateControls();
+        }
+    },
+
+    prevPage() {
+        if (this.state.currentPage > 1) {
+            this.renderPage(this.state.currentPage - 1);
+            this.updateControls();
+        }
+    },
+
+    goToPage(pageNumber) {
+        const page = parseInt(pageNumber);
+        if (!isNaN(page) && page >= 1 && page <= this.state.totalPages) {
+            this.renderPage(page);
+            this.updateControls();
+        }
+    },
+
+    updateControls() {
+        // Atualizar página atual
+        const pageInput = document.getElementById('pdfCurrentPage');
+        if (pageInput) {
+            pageInput.value = this.state.currentPage;
+            pageInput.max = this.state.totalPages;
+        }
+        
+        // Atualizar total de páginas
+        const totalPages = document.getElementById('pdfTotalPages');
+        if (totalPages) {
+            totalPages.textContent = this.state.totalPages;
+        }
+        
+        // Atualizar botões de navegação
+        const prevBtn = document.getElementById('pdfPrevPage');
+        const nextBtn = document.getElementById('pdfNextPage');
+        
+        if (prevBtn) prevBtn.disabled = this.state.currentPage <= 1;
+        if (nextBtn) nextBtn.disabled = this.state.currentPage >= this.state.totalPages;
+    },
+
+    // ========== UI E MODAL ==========
+    
+    openPdfModal() {
+        // Criar modal se não existir
+        if (!document.getElementById('pdfModal')) {
+            this.createPdfModal();
+        }
+        
+        const modal = document.getElementById('pdfModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Se já temos um PDF, carregá-lo
+            if (this.state.currentPdfUrl) {
+                setTimeout(() => {
+                    this.loadPdfFromUrl(this.state.currentPdfUrl);
+                }, 100);
             }
         }
-        
-        return uploadedUrls;
     },
-    
-    async processDeletions() {
-        // Processar exclusões de fotos/vídeos
-        const imagesToDelete = this.state.existing
-            .filter(item => item.markedForDeletion && item.url)
-            .map(item => item.url);
-        
-        // Processar exclusões de PDFs
-        const pdfsToDelete = this.state.existingPdfs
-            .filter(item => item.markedForDeletion && item.url)
-            .map(item => item.url);
-        
-        // TODO: Implementar exclusão do Supabase Storage
-        SC.logModule('media-delete', `🗑️ ${imagesToDelete.length} imagem(ns) e ${pdfsToDelete.length} PDF(s) marcados para exclusão`);
-        
-        // Remover itens marcados dos arrays
-        this.state.existing = this.state.existing.filter(item => !item.markedForDeletion);
-        this.state.existingPdfs = this.state.existingPdfs.filter(item => !item.markedForDeletion);
-    },
-    
-    // ========== UI UPDATES ==========
-    
-    updateUI() {
-        // Debounce para evitar múltiplas renderizações
-        if (this._updateTimeout) clearTimeout(this._updateTimeout);
-        
-        this._updateTimeout = setTimeout(() => {
-            this.renderMediaPreview();
-            this.renderPdfPreview();
-        }, 50);
-    },
-    
-    renderMediaPreview() {
-        const container = document.getElementById('uploadPreview');
-        if (!container) return;
-        
-        const allFiles = [...this.state.existing, ...this.state.files];
-        
-        if (allFiles.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
-                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
-                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
-                </div>
-            `;
-            return;
+
+    closePdfModal() {
+        const modal = document.getElementById('pdfModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
         }
         
-        let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
+        // Limpar estado
+        this.state.currentPdfDoc = null;
+        this.state.currentPdfUrl = null;
+        this.state.currentPage = 1;
+        this.state.totalPages = 0;
         
-        allFiles.forEach(item => {
-            const isMarked = item.markedForDeletion;
-            const isExisting = item.isExisting;
-            const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
-            const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
-            
-            html += `
-                <div class="media-preview-item draggable-item" 
-                     draggable="true"
-                     data-id="${item.id}"
-                     title="Arraste para reordenar"
-                     style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
-                    
-                    <!-- PREVIEW DE IMAGEM OU VÍDEO -->
-                    ${this.getMediaPreviewHTML(item)}
-                    
-                    <!-- Nome do arquivo (cortado) -->
-                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                            ${item.name || this.extractFileName(item.url)}
-                        </span>
-                    </div>
-                    
-                    <!-- Ícone de arrastar -->
-                    <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.7);color:white;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;z-index:10;">
-                        <i class="fas fa-arrows-alt"></i>
-                    </div>
-                    
-                    <!-- Indicador de ordem -->
-                    <div class="order-indicator" style="display:none;"></div>
-                    
-                    <!-- Botão de remover -->
-                    <button onclick="MediaSystem.removeFile('${item.id}')" 
-                            style="position:absolute;top:2px;right:2px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;z-index:10;">
-                        ${isMarked ? '↺' : '×'}
-                    </button>
-                    
-                    ${isExisting ? 
-                        `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.5rem;padding:1px 3px;border-radius:2px;z-index:10;">
-                            ${isMarked ? 'EXCLUIR' : 'Existente'}
-                        </div>` : ''
-                    }
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-        container.innerHTML = html;
-    },
-    
-    renderPdfPreview() {
-        const container = document.getElementById('pdfUploadPreview');
-        if (!container) return;
-        
-        const allPdfs = [...this.state.existingPdfs, ...this.state.pdfs];
-        
-        if (allPdfs.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                    <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
-                </div>
-            `;
-            return;
+        // Limpar canvas
+        const canvas = document.getElementById('pdfCanvas');
+        if (canvas) {
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
         }
-        
-        let html = '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
-        
-        allPdfs.forEach(pdf => {
-            const isMarked = pdf.markedForDeletion;
-            const isExisting = pdf.isExisting;
-            const shortName = pdf.name.length > 15 ? pdf.name.substring(0, 12) + '...' : pdf.name;
-            const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
-            const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
-            
-            html += `
-                <div class="pdf-preview-container draggable-item"
-                     draggable="true"
-                     data-id="${pdf.id}"
-                     style="position:relative;cursor:grab;">
-                    <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:0.5rem;width:90px;height:90px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;">
-                        <!-- Ícone de arrastar -->
-                        <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.6);color:white;padding:2px 5px;border-radius:3px;font-size:0.7rem;z-index:5;">
-                            <i class="fas fa-arrows-alt"></i>
+    },
+
+    createPdfModal() {
+        const modalHTML = `
+            <div id="pdfModal" class="pdf-modal" style="display:none;">
+                <div class="pdf-modal-content">
+                    <div class="pdf-modal-header">
+                        <h3>
+                            <i class="fas fa-file-pdf"></i>
+                            Visualizador de PDF
+                        </h3>
+                        <button class="pdf-modal-close" onclick="PdfSystem.closePdfModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="pdf-modal-body">
+                        <div class="pdf-toolbar">
+                            <div class="pdf-toolbar-group">
+                                <button id="pdfPrevPage" onclick="PdfSystem.prevPage()">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                
+                                <div class="pdf-page-info">
+                                    <input type="number" id="pdfCurrentPage" 
+                                           min="1" 
+                                           onchange="PdfSystem.goToPage(this.value)">
+                                    <span>/</span>
+                                    <span id="pdfTotalPages">1</span>
+                                </div>
+                                
+                                <button id="pdfNextPage" onclick="PdfSystem.nextPage()">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="pdf-toolbar-group">
+                                <button onclick="PdfSystem.zoomOut()">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <span id="pdfZoomLevel">100%</span>
+                                <button onclick="PdfSystem.zoomIn()">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="pdf-toolbar-group">
+                                <button onclick="window.open(PdfSystem.state.currentPdfUrl, '_blank')">
+                                    <i class="fas fa-external-link-alt"></i> Abrir em nova aba
+                                </button>
+                                <button onclick="PdfSystem.downloadPdf()">
+                                    <i class="fas fa-download"></i> Download
+                                </button>
+                            </div>
                         </div>
-                        <i class="fas fa-file-pdf" style="font-size:1.2rem;color:${borderColor};margin-bottom:0.3rem;"></i>
-                        <p style="font-size:0.7rem;margin:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${shortName}</p>
-                        <small style="color:#7f8c8d;font-size:0.6rem;">PDF</small>
+                        
+                        <div class="pdf-viewer-container">
+                            <div class="pdf-loader" id="pdfLoader">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Carregando PDF...</p>
+                            </div>
+                            
+                            <canvas id="pdfCanvas"></canvas>
+                        </div>
+                        
+                        <div class="pdf-sidebar" id="pdfSidebar">
+                            <h4><i class="fas fa-list"></i> PDFs Disponíveis</h4>
+                            <div id="pdfList" class="pdf-list">
+                                <p class="pdf-empty">Nenhum PDF disponível</p>
+                            </div>
+                        </div>
                     </div>
-                    <button onclick="MediaSystem.removeFile('${pdf.id}')" 
-                            style="position:absolute;top:-5px;right:-5px;background:${borderColor};color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:16px;cursor:pointer;">
-                        ×
-                    </button>
                 </div>
-            `;
-        });
+            </div>
+        `;
         
-        html += '</div>';
-        container.innerHTML = html;
+        // Adicionar estilos CSS
+        this.addPdfStyles();
+        
+        // Adicionar modal ao body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
     },
-    
+
+    addPdfStyles() {
+        const styleId = 'pdf-system-styles';
+        if (document.getElementById(styleId)) return;
+        
+        const styles = `
+            <style id="${styleId}">
+                .pdf-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.85);
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    animation: fadeIn 0.3s ease;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                .pdf-modal-content {
+                    background: white;
+                    border-radius: 12px;
+                    width: 95%;
+                    height: 90%;
+                    max-width: 1400px;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                }
+                
+                .pdf-modal-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 1rem 1.5rem;
+                    background: #2c3e50;
+                    color: white;
+                }
+                
+                .pdf-modal-header h3 {
+                    margin: 0;
+                    font-size: 1.2rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+                
+                .pdf-modal-close {
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 1.5rem;
+                    cursor: pointer;
+                    padding: 5px;
+                    border-radius: 50%;
+                    width: 40px;
+                    height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: background 0.2s;
+                }
+                
+                .pdf-modal-close:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+                
+                .pdf-modal-body {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+                
+                .pdf-toolbar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0.8rem 1.5rem;
+                    background: #f8f9fa;
+                    border-bottom: 1px solid #dee2e6;
+                    flex-wrap: wrap;
+                    gap: 1rem;
+                }
+                
+                .pdf-toolbar-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                
+                .pdf-toolbar button {
+                    background: white;
+                    border: 1px solid #ced4da;
+                    padding: 0.4rem 0.8rem;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.4rem;
+                    font-size: 0.9rem;
+                    transition: all 0.2s;
+                }
+                
+                .pdf-toolbar button:hover {
+                    background: #e9ecef;
+                    border-color: #adb5bd;
+                }
+                
+                .pdf-toolbar button:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+                
+                .pdf-page-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.3rem;
+                    font-size: 0.9rem;
+                }
+                
+                #pdfCurrentPage {
+                    width: 60px;
+                    padding: 0.3rem;
+                    border: 1px solid #ced4da;
+                    border-radius: 4px;
+                    text-align: center;
+                }
+                
+                .pdf-viewer-container {
+                    flex: 1;
+                    position: relative;
+                    overflow: auto;
+                    display: flex;
+                    justify-content: center;
+                    align-items: flex-start;
+                    padding: 2rem;
+                    background: #4a5568;
+                }
+                
+                .pdf-loader {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                    color: white;
+                    z-index: 10;
+                }
+                
+                .pdf-loader i {
+                    font-size: 2rem;
+                    margin-bottom: 1rem;
+                }
+                
+                #pdfCanvas {
+                    max-width: 100%;
+                    height: auto;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                    background: white;
+                }
+                
+                .pdf-sidebar {
+                    width: 300px;
+                    background: #f8f9fa;
+                    border-left: 1px solid #dee2e6;
+                    padding: 1rem;
+                    overflow-y: auto;
+                    display: none;
+                }
+                
+                .pdf-sidebar h4 {
+                    margin-top: 0;
+                    margin-bottom: 1rem;
+                    color: #2c3e50;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
+                
+                .pdf-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+                
+                .pdf-list-item {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 0.7rem;
+                    background: white;
+                    border: 1px solid #dee2e6;
+                    border-radius: 6px;
+                    transition: all 0.2s;
+                }
+                
+                .pdf-list-item:hover {
+                    border-color: #3498db;
+                    background: #e8f4fc;
+                }
+                
+                .pdf-list-item i {
+                    color: #e74c3c;
+                    margin-right: 0.5rem;
+                }
+                
+                .pdf-list-item span {
+                    flex: 1;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    font-size: 0.9rem;
+                }
+                
+                .pdf-list-item button {
+                    background: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 0.3rem 0.6rem;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                }
+                
+                .pdf-empty {
+                    text-align: center;
+                    color: #95a5a6;
+                    font-style: italic;
+                    padding: 1rem;
+                }
+                
+                @media (min-width: 1200px) {
+                    .pdf-modal-body {
+                        flex-direction: row;
+                    }
+                    
+                    .pdf-sidebar {
+                        display: block;
+                    }
+                }
+                
+                @media (max-width: 768px) {
+                    .pdf-toolbar {
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    
+                    .pdf-toolbar-group {
+                        justify-content: center;
+                    }
+                    
+                    .pdf-viewer-container {
+                        padding: 1rem;
+                    }
+                }
+            </style>
+        `;
+        
+        document.head.insertAdjacentHTML('beforeend', styles);
+    },
+
+    createPdfViewer() {
+        SC.logModule('pdf-system', '🎨 Criando visualizador de PDF');
+        
+        // Apenas cria elementos básicos, o modal será criado sob demanda
+    },
+
+    showLoader() {
+        const loader = document.getElementById('pdfLoader');
+        if (loader) loader.style.display = 'flex';
+    },
+
+    hideLoader() {
+        const loader = document.getElementById('pdfLoader');
+        if (loader) loader.style.display = 'none';
+    },
+
     // ========== UTILITIES ==========
     
-    setupEventListeners() {
-        SC.logModule('media-system', '🔧 Configurando event listeners unificados...');
-        
-        // Configurar upload de mídia
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        
-        if (uploadArea && fileInput) {
-            // Clique na área
-            uploadArea.addEventListener('click', () => fileInput.click());
-            
-            // Drag & drop
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = '#3498db';
-                uploadArea.style.background = '#e8f4fc';
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.borderColor = '#ddd';
-                uploadArea.style.background = '#fafafa';
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = '#ddd';
-                uploadArea.style.background = '#fafafa';
-                
-                if (e.dataTransfer.files.length > 0) {
-                    this.addFiles(e.dataTransfer.files);
-                }
-            });
-            
-            // Change no input
-            fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    this.addFiles(e.target.files);
-                }
-            });
-        }
-        
-        // Configurar upload de PDFs
-        const pdfUploadArea = document.getElementById('pdfUploadArea');
-        const pdfFileInput = document.getElementById('pdfFileInput');
-        
-        if (pdfUploadArea && pdfFileInput) {
-            pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
-            
-            pdfFileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    this.addPdfs(e.target.files);
-                }
-            });
-        }
-        
-        // Inicializar sistema de drag & drop após setup dos containers
-        setTimeout(() => {
-            this.setupDragAndDrop();
-        }, 500);
-    },
-    
     extractFileName(url) {
-        if (!url) return 'Arquivo';
+        if (!url) return 'Documento PDF';
         const parts = url.split('/');
-        let fileName = parts[parts.length - 1] || 'Arquivo';
+        let fileName = parts[parts.length - 1] || 'documento.pdf';
         try { fileName = decodeURIComponent(fileName); } catch (e) {}
-        return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
+        fileName = fileName.replace(/\.[^/.]+$/, ''); // Remover extensão
+        return fileName.length > 30 ? fileName.substring(0, 27) + '...' : fileName;
     },
-    
-    getFileTypeFromUrl(url) {
-        if (!url) return 'file';
-        const ext = url.split('.').pop().toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
-        if (['mp4', 'mov', 'avi'].includes(ext)) return 'video';
-        if (ext === 'pdf') return 'pdf';
-        return 'file';
-    },
-    
-    generateFileName(file, propertyId, type) {
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 10);
-        const safeName = file.name
-            .replace(/[^a-zA-Z0-9.-]/g, '_')
-            .substring(0, 40);
+
+    downloadPdf() {
+        if (!this.state.currentPdfUrl) return;
         
-        const prefix = type === 'pdfs' ? 'pdf' : 'media';
-        return `${prefix}_${propertyId}_${timestamp}_${random}_${safeName}`;
+        const link = document.createElement('a');
+        link.href = this.state.currentPdfUrl;
+        link.download = this.extractFileName(this.state.currentPdfUrl) + '.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     },
-    
-    revokeAllPreviewUrls() {
-        [...this.state.files, ...this.state.pdfs].forEach(item => {
-            if (item.preview && item.preview.startsWith('blob:')) {
-                URL.revokeObjectURL(item.preview);
+
+    checkPdfElements() {
+        SC.logModule('pdf-system', '🔍 Verificando elementos PDF na página...');
+        
+        // Verificar botões de visualização PDF
+        const pdfButtons = document.querySelectorAll('[data-pdf-preview]');
+        pdfButtons.forEach(button => {
+            if (!button.dataset.pdfListenerAdded) {
+                const propertyId = button.dataset.propertyId || button.closest('[data-property-id]')?.dataset.propertyId;
+                const pdfUrl = button.dataset.pdfUrl;
+                
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showModal(propertyId, pdfUrl);
+                });
+                
+                button.dataset.pdfListenerAdded = 'true';
+                SC.logModule('pdf-system', `✅ Listener adicionado ao botão PDF: ${propertyId}`);
+            }
+        });
+    },
+
+    setupEventListeners() {
+        SC.logModule('pdf-system', '🔧 Configurando event listeners...');
+        
+        // Verificar elementos periodicamente
+        setInterval(() => {
+            this.checkPdfElements();
+        }, 2000);
+        
+        // Configurar teclas de navegação
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('pdfModal');
+            if (!modal || modal.style.display !== 'flex') return;
+            
+            switch(e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    this.prevPage();
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    this.nextPage();
+                    break;
+                case 'Escape':
+                    this.closePdfModal();
+                    break;
+                case '+':
+                case '=':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        this.zoomIn();
+                    }
+                    break;
+                case '-':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        this.zoomOut();
+                    }
+                    break;
+            }
+        });
+        
+        // Configurar clique fora do modal para fechar
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('pdfModal');
+            if (modal && modal.style.display === 'flex' && e.target === modal) {
+                this.closePdfModal();
             }
         });
     }
 };
 
 // Exportar para window
-window.MediaSystem = MediaSystem;
+window.PdfSystem = PdfSystem;
 
-// Auto-inicialização
+// ========== AUTO-INICIALIZAÇÃO ==========
 setTimeout(() => {
-    window.MediaSystem.init('vendas');
-    SC.logModule('media-system', '✅ Sistema de mídia unificado pronto');
-}, 1000);
-
-// ========== VERIFICAÇÃO DE INTEGRIDADE ==========
-
-// Verificar se todas as funções necessárias estão disponíveis
-setTimeout(() => {
-    SC.logModule('media-system', '🔍 Verificação de integridade do MediaSystem');
-    
-    const requiredFunctions = [
-        'addFiles',
-        'addPdfs', 
-        'loadExisting',
-        'resetState',
-        'uploadAll',
-        'processAndSavePdfs',
-        'clearAllPdfs',
-        'loadExistingPdfsForEdit',
-        'getPdfsToSave',
-        'getMediaUrlsForProperty',
-        'getOrderedMediaUrls',
-        'setupDragAndDrop',
-        'setupContainerDragEvents',
-        'getDragAfterElement',
-        'cleanupDragState',
-        'reorderItems',
-        'reorderCombinedArray',
-        'addVisualOrderIndicators',
-        'getMediaPreviewHTML'
-    ];
-    
-    const missing = [];
-    requiredFunctions.forEach(func => {
-        if (typeof MediaSystem[func] !== 'function') {
-            missing.push(func);
+    if (!window.pdfSystemInitialized && window.PdfSystem) {
+        try {
+            window.PdfSystem.init();
+            window.pdfSystemInitialized = true;
+            SC.logModule('pdf', '✅ PdfSystem auto-inicializado');
+        } catch (error) {
+            SC.logModule('pdf', `❌ Erro na auto-inicialização: ${error.message}`);
         }
-    });
-    
-    if (missing.length === 0) {
-        SC.logModule('media-system', '✅ Todas as funções necessárias disponíveis');
-    } else {
-        SC.logModule('media-system', `❌ Funções faltando: ${missing.join(', ')}`);
     }
-}, 2000);
+}, 500);
 
-// ========== COMPATIBILIDADE COM MÓDULOS DE SUPORTE ==========
+// ========== COMPATIBILIDADE ==========
 
-// Criar fallbacks silenciosos para funções que os módulos de suporte podem procurar
-if (typeof window.initMediaSystem === 'undefined') {
-    window.initMediaSystem = function() {
-        SC.logModule('media-system', '🔧 initMediaSystem chamada (fallback para compatibilidade)');
-        return MediaSystem ? MediaSystem.init('vendas') : null;
-    };
-}
-
-if (typeof window.updateMediaPreview === 'undefined') {
-    window.updateMediaPreview = function() {
-        SC.logModule('media-system', '🎨 updateMediaPreview chamada (fallback para compatibilidade)');
-        return MediaSystem ? MediaSystem.updateUI() : null;
+// Função de compatibilidade para módulos antigos
+if (typeof window.showPdfModal === 'undefined') {
+    window.showPdfModal = function(propertyId, pdfUrl) {
+        SC.logModule('pdf-compat', '🔌 showPdfModal chamada (compatibilidade)');
+        return PdfSystem ? PdfSystem.showModal(propertyId, pdfUrl) : null;
     };
 }
 
 // ========== VERIFICAÇÃO SHAREDCORE ==========
 setTimeout(() => {
     if (!SC) {
-        SC.logModule('media-system', '❌ SharedCore não carregado no MediaSystem!');
-        // Fallback para funções globais
+        console.warn('❌ SharedCore não carregado no PdfSystem!');
         window.SharedCore = window.SharedCore || {
-            debounce: window.debounce,
-            throttle: window.throttle,
-            isMobileDevice: window.isMobileDevice,
             logModule: (module, msg) => console.log(`[${module}] ${msg}`)
         };
     }
-}, 500);
+}, 1000);
 
-SC.logModule('media-system', '✅ Sistema de mídia unificado pronto com compatibilidade total');
+SC.logModule('pdf-system', '✅ Sistema de PDF unificado pronto com inicialização independente');
