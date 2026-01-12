@@ -46,8 +46,27 @@ const SharedCore = (function() {
 
     // ========== MANIPULAÇÃO DE STRINGS ==========
     const formatPrice = (price) => {
-        if (!price) return 'R$ 0,00';
-        return price.toString().replace('.', ',');
+        if (!price && price !== 0) return 'R$ 0,00';
+        
+        // Remover qualquer formatação existente
+        let cleanPrice = String(price)
+            .replace('R$', '')
+            .replace('.', '')
+            .replace(',', '.')
+            .trim();
+        
+        // Converter para número
+        const numericPrice = parseFloat(cleanPrice);
+        
+        if (isNaN(numericPrice)) return 'R$ 0,00';
+        
+        // Formatar para moeda brasileira
+        return numericPrice.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
     };
 
     const truncateText = (text, maxLength = 100) => {
@@ -268,33 +287,48 @@ console.log('✅ SharedCore.js pronto - 23 funções utilitárias centralizadas'
 
 // ========== WRAPPERS DE COMPATIBILIDADE ==========
 (function createCompatibilityWrappers() {
-    console.group('🔧 CRIANDO WRAPPERS DE COMPATIBILIDADE');
+    console.group('🔧 CRIANDO WRAPPERS DE COMPATIBILIDADE (CORRIGIDO)');
     
     // Lista de funções que DEVEM estar apenas no SharedCore
-    const functionsToWrap = ['stringSimilarity', 'runLowPriority'];
+    const functionsToWrap = [
+        'stringSimilarity', 
+        'runLowPriority',
+        'debounce',
+        'throttle',
+        'formatPrice',
+        'isMobileDevice',
+        'elementExists',
+        'logModule',
+        'supabaseFetch'
+    ];
     
     functionsToWrap.forEach(funcName => {
-        if (window.SharedCore[funcName] && window[funcName]) {
-            // Guardar referência original
-            const originalFunc = window[funcName];
+        // Verificar se a função existe no SharedCore
+        if (window.SharedCore && typeof window.SharedCore[funcName] === 'function') {
             
-            // Substituir por wrapper que avisa
-            window[funcName] = function(...args) {
-                console.warn(`⚠️  DEPRECATED: window.${funcName}() chamada diretamente`);
-                console.warn(`   🔧 Use window.SharedCore.${funcName}() em vez disso`);
-                console.trace('Stack trace para localizar chamada');
+            // Se já existe no window e é diferente do SharedCore
+            if (window[funcName] && window[funcName] !== window.SharedCore[funcName]) {
+                console.log(`🔧 Criando wrapper para ${funcName}...`);
                 
-                // Executar via SharedCore mas manter compatibilidade
-                return window.SharedCore[funcName](...args);
-            };
-            
-            // Marcar como obsoleta
-            Object.defineProperty(window[funcName], 'deprecated', {
-                value: true,
-                writable: false
-            });
-            
-            console.log(`✅ Wrapper criado para ${funcName}`);
+                // Guardar referência original para fallback
+                const originalFunc = window[funcName];
+                const sharedFunc = window.SharedCore[funcName];
+                
+                // Criar wrapper transparente
+                window[funcName] = function(...args) {
+                    // Executar via SharedCore
+                    return sharedFunc.apply(this, args);
+                };
+                
+                // Copiar propriedades se existirem
+                Object.keys(originalFunc).forEach(key => {
+                    if (!window[funcName][key]) {
+                        window[funcName][key] = originalFunc[key];
+                    }
+                });
+                
+                console.log(`✅ Wrapper criado para ${funcName}`);
+            }
         }
     });
     
