@@ -331,40 +331,43 @@ window.createPropertyGallery = function(property) {
     // Se tem múltiplas imagens, criar galeria
     return `
         <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-            <div class="property-gallery-container" onclick="openGallery(${property.id})">
-                <img src="${firstImageUrl}" 
-                     class="property-gallery-image"
-                     alt="${property.title}"
-                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                
-                <!-- Indicador de galeria MOBILE -->
-                <div class="gallery-indicator-mobile">
-                    <i class="fas fa-images"></i>
-                    <span>${imageUrls.length}</span>
-                </div>
-                
-                <!-- Pontos indicadores -->
-                <div class="gallery-controls">
-                    ${imageUrls.map((_, index) => `
-                        <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
-                             data-index="${index}"
-                             onclick="event.stopPropagation(); event.preventDefault(); showGalleryImage(${property.id}, ${index})"></div>
-                    `).join('')}
-                </div>
-                
-                <!-- Ícone de expansão -->
-                <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
-                    <i class="fas fa-expand"></i>
+            <div class="property-gallery-container">
+                <div class="gallery-click-area" onclick="openGallery(${property.id})" style="width:100%;height:100%;position:absolute;top:0;left:0;z-index:5;">
+                    <img src="${firstImageUrl}" 
+                         class="property-gallery-image"
+                         alt="${property.title}"
+                         style="width:100%;height:100%;object-fit:cover;cursor:pointer;"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                    
+                    <!-- Indicador de galeria MOBILE -->
+                    <div class="gallery-indicator-mobile">
+                        <i class="fas fa-images"></i>
+                        <span>${imageUrls.length}</span>
+                    </div>
+                    
+                    <!-- Pontos indicadores -->
+                    <div class="gallery-controls">
+                        ${imageUrls.map((_, index) => `
+                            <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
+                                 data-index="${index}"
+                                 onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Ícone de expansão -->
+                    <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
+                        <i class="fas fa-expand"></i>
+                    </div>
                 </div>
             </div>
             
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-            <!-- Botão PDF CORRIGIDO - SEM CONFLITO DE EVENTOS -->
+            <!-- Botão PDF ISOLADO - Z-INDEX MAIOR E STOPPROPAGATION -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
-                    onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id});"
+                    onclick="handlePdfButtonClick(event, ${property.id})"
                     title="Documentos do imóvel (senha: doc123)">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
