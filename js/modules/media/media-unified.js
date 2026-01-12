@@ -77,7 +77,7 @@ const MediaSystem = {
         
         console.log(`🎯 Configurando drag para: ${containerId}`);
         
-        // Evento de início do drag
+        // Evento de início do drag - VERSÃO COM GHOST PERSONALIZADO
         container.addEventListener('dragstart', (e) => {
             const draggable = e.target.closest('.draggable-item');
             if (!draggable) return;
@@ -89,36 +89,46 @@ const MediaSystem = {
             draggable.classList.add('dragging');
             container.classList.add('drag-active');
             
-            // Criar ghost image com preview - FUNCIONA PARA NOVOS E EXISTENTES
-            if (draggable.querySelector('img')) {
-                const img = draggable.querySelector('img');
-                
-                // Verificar se a imagem já está carregada
-                if (img.complete && img.naturalHeight !== 0) {
-                    e.dataTransfer.setDragImage(img, 50, 50);
-                } else {
-                    // Se não estiver carregada, criar uma cópia e forçar carregamento
-                    const dragImg = new Image();
-                    dragImg.src = img.src;
-                    dragImg.onload = () => {
-                        e.dataTransfer.setDragImage(dragImg, 50, 50);
-                    };
-                    // Fallback se demorar muito
-                    setTimeout(() => {
-                        if (!e.dataTransfer.getData('text/plain')) {
-                            // Usar elemento alternativo
-                            e.dataTransfer.setDragImage(draggable, 50, 50);
-                        }
-                    }, 50);
-                }
-            } else {
-                // Para vídeos ou quando não tem imagem, usar o próprio elemento
-                e.dataTransfer.setDragImage(draggable, 50, 50);
-            }
-            
             console.log('👆 Iniciando drag:', draggable.dataset.id);
-        });
-        
+            
+            // NÃO usar setDragImage() - criar nosso próprio visual
+            // Para garantir que o drag funciona, usamos um elemento transparente
+            const dragImage = document.createElement('div');
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            dragImage.style.left = '-1000px';
+            dragImage.style.width = '0';
+            dragImage.style.height = '0';
+            document.body.appendChild(dragImage);
+            e.dataTransfer.setDragImage(dragImage, 0, 0);
+            
+            // Criar elemento fantasma personalizado que segue o mouse
+            setTimeout(() => {
+                const ghost = this.createCustomGhost(draggable, e.clientX, e.clientY);
+                document.body.appendChild(ghost);
+                
+                // Mover o fantasma com o mouse
+                const moveGhost = (moveEvent) => {
+                    ghost.style.left = (moveEvent.clientX + 10) + 'px';
+                    ghost.style.top = (moveEvent.clientY + 10) + 'px';
+                };
+                
+                // Remover o fantasma quando soltar
+                const cleanup = () => {
+                    document.removeEventListener('dragover', moveGhost);
+                    document.removeEventListener('dragend', cleanup);
+                    document.removeEventListener('drop', cleanup);
+                    if (ghost.parentNode) {
+                        ghost.parentNode.removeChild(ghost);
+                    }
+                };
+                
+                document.addEventListener('dragover', moveGhost);
+                document.addEventListener('dragend', cleanup);
+                document.addEventListener('drop', cleanup);
+            }, 10);
+        });        
+
         // Evento durante o drag
         container.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -207,6 +217,56 @@ const MediaSystem = {
         });
     },
 
+    createCustomGhost: function(sourceElement, x, y) {
+        const ghost = document.createElement('div');
+        ghost.id = 'custom-drag-ghost';
+        ghost.style.position = 'fixed';
+        ghost.style.left = (x + 10) + 'px';
+        ghost.style.top = (y + 10) + 'px';
+        ghost.style.width = '100px';
+        ghost.style.height = '100px';
+        ghost.style.zIndex = '9999';
+        ghost.style.pointerEvents = 'none';
+        ghost.style.borderRadius = '8px';
+        ghost.style.overflow = 'hidden';
+        ghost.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        ghost.style.border = '2px solid #3498db';
+        ghost.style.backgroundColor = 'white';
+        
+        // Tentar copiar a imagem
+        const img = sourceElement.querySelector('img');
+        if (img && img.src) {
+            const ghostImg = document.createElement('img');
+            ghostImg.src = img.src;
+            ghostImg.style.width = '100%';
+            ghostImg.style.height = '100%';
+            ghostImg.style.objectFit = 'cover';
+            ghost.appendChild(ghostImg);
+        } else {
+            // Se não tiver imagem, mostrar ícone
+            const icon = document.createElement('div');
+            icon.style.width = '100%';
+            icon.style.height = '100%';
+            icon.style.display = 'flex';
+            icon.style.alignItems = 'center';
+            icon.style.justifyContent = 'center';
+            
+            // Verificar se é vídeo
+            if (sourceElement.querySelector('.fa-video')) {
+                icon.innerHTML = '<i class="fas fa-video" style="font-size: 2rem; color: #3498db;"></i>';
+            } else if (sourceElement.querySelector('.fa-file-pdf')) {
+                // Se for PDF
+                icon.innerHTML = '<i class="fas fa-file-pdf" style="font-size: 2rem; color: #e74c3c;"></i>';
+            } else {
+                icon.innerHTML = '<i class="fas fa-image" style="font-size: 2rem; color: #3498db;"></i>';
+            }
+            
+            ghost.appendChild(icon);
+        }
+        
+        return ghost;
+    },
+    
     reorderItems: function(draggedId, targetId) {
         console.group(`🔀 REORDENAÇÃO: ${draggedId} → ${targetId}`);
         
