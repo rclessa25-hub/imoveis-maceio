@@ -127,9 +127,9 @@ window.initializeProperties = async function () {
         // ==========================================================
         console.log('🔄 Tentando com supabaseFetch (fallback)...');
 
-        if (window.supabaseFetch) {
+        if (window.SharedCore.supabaseFetch) {
             try {
-                const result = await window.supabaseFetch('/properties?select=*&order=id.desc');
+                const result = await window.SharedCore.supabaseFetch('/properties?select=*&order=id.desc');
 
                 if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
                     const formattedData = result.data.map(item => ({
