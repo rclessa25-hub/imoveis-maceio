@@ -1,5 +1,12 @@
 // js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - CORRIGIDA
-console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.3 (Cliente UI)');
+
+// Configuração SharedCore
+const SC = window.SharedCore || {
+    elementExists: (id) => document.getElementById(id) !== null,
+    logModule: (module, msg) => console.log(`[${module}] ${msg}`)
+};
+
+SC.logModule('pdf', '📄 pdf-unified.js - Sistema PDF Refatorado V1.3 (Cliente UI)');
 
 const PdfSystem = (function() {
     // ========== CONFIGURAÇÃO LEVE ==========
@@ -17,7 +24,7 @@ const PdfSystem = (function() {
     const api = {
         // INICIALIZAÇÃO LEVE
         init() {
-            console.log('🔧 PdfSystem.init() - Inicializando como cliente UI');
+            SC.logModule('pdf', '🔧 PdfSystem.init() - Inicializando como cliente UI');
             this.ensureModalExists();
             return this;
         },
@@ -26,27 +33,27 @@ const PdfSystem = (function() {
         
         // Adicionar PDFs: Delegar ao MediaSystem
         addFiles(fileList) {
-            console.log('📄 PdfSystem.addFiles() - Delegando ao MediaSystem');
+            SC.logModule('pdf', '📄 PdfSystem.addFiles() - Delegando ao MediaSystem');
             if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
                 return window.MediaSystem.addPdfs(fileList);
             }
-            console.warn('⚠️ MediaSystem não disponível para adicionar PDFs');
+            SC.logModule('pdf', '⚠️ MediaSystem não disponível para adicionar PDFs');
             return 0;
         },
         
         // Upload: Delegar ao MediaSystem
         async uploadAll(propertyId, propertyTitle) {
-            console.log(`📄 PdfSystem.uploadAll() - Delegando ao MediaSystem para ${propertyId}`);
+            SC.logModule('pdf', `📄 PdfSystem.uploadAll() - Delegando ao MediaSystem para ${propertyId}`);
             if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
                 return await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
             }
-            console.warn('⚠️ MediaSystem não disponível para upload');
+            SC.logModule('pdf', '⚠️ MediaSystem não disponível para upload');
             return '';
         },
         
         // Reset state: Delegar ao MediaSystem
         resetState() {
-            console.log('🧹 PdfSystem.resetState() - Delegando ao MediaSystem');
+            SC.logModule('pdf', '🧹 PdfSystem.resetState() - Delegando ao MediaSystem');
             if (window.MediaSystem && typeof window.MediaSystem.clearAllPdfs === 'function') {
                 window.MediaSystem.clearAllPdfs();
             }
@@ -55,7 +62,7 @@ const PdfSystem = (function() {
         
         // Clear all PDFs: Delegar ao MediaSystem
         clearAllPdfs() {
-            console.log('🧹 PdfSystem.clearAllPdfs() - Delegando ao MediaSystem');
+            SC.logModule('pdf', '🧹 PdfSystem.clearAllPdfs() - Delegando ao MediaSystem');
             if (window.MediaSystem && typeof window.MediaSystem.clearAllPdfs === 'function') {
                 window.MediaSystem.clearAllPdfs();
             }
@@ -64,7 +71,7 @@ const PdfSystem = (function() {
         
         // Load existing: Delegar ao MediaSystem
         loadExistingPdfsForEdit(property) {
-            console.log('📄 PdfSystem.loadExistingPdfsForEdit() - Delegando ao MediaSystem');
+            SC.logModule('pdf', '📄 PdfSystem.loadExistingPdfsForEdit() - Delegando ao MediaSystem');
             if (window.MediaSystem && typeof window.MediaSystem.loadExistingPdfsForEdit === 'function') {
                 return window.MediaSystem.loadExistingPdfsForEdit(property);
             }
@@ -75,11 +82,11 @@ const PdfSystem = (function() {
         
         // Modal de visualização (função principal)
         showModal(propertyId) {
-            console.log(`📄 PdfSystem.showModal(${propertyId}) - Função UI principal`);
+            SC.logModule('pdf', `📄 PdfSystem.showModal(${propertyId}) - Função UI principal`);
             // 1. Buscar imóvel
             const property = window.properties?.find(p => p.id == propertyId);
             if (!property) {
-                console.error('❌ Imóvel não encontrado:', propertyId);
+                SC.logModule('pdf', '❌ Imóvel não encontrado:', propertyId);
                 alert('❌ Imóvel não encontrado!');
                 return;
             }
@@ -88,8 +95,8 @@ const PdfSystem = (function() {
             let modal = document.getElementById('pdfModal');
             
             // Se não existe ou está incompleto, recriar COMPLETAMENTE
-            if (!modal || !document.getElementById('pdfPassword')) {
-                console.log('🔄 Criando modal PDF completo (campo de senha ausente)...');
+            if (!modal || !SC.elementExists('pdfPassword')) {
+                SC.logModule('pdf', '🔄 Criando modal PDF completo (campo de senha ausente)...');
                 
                 // Remover modal antigo se existir
                 if (modal) {
@@ -212,7 +219,7 @@ const PdfSystem = (function() {
                 `;
                 
                 document.body.appendChild(modal);
-                console.log('✅ Modal PDF criado com campo de senha VISÍVEL');
+                SC.logModule('pdf', '✅ Modal PDF criado com campo de senha VISÍVEL');
             }
         
             // 3. Configurar título e armazenar propertyId
@@ -243,7 +250,7 @@ const PdfSystem = (function() {
                     passwordInput.parentElement.style.display = 'block';
                 }
             } else {
-                console.error('❌ Campo de senha NÃO encontrado após criação!');
+                SC.logModule('pdf', '❌ Campo de senha NÃO encontrado após criação!');
                 alert('Erro: campo de senha não disponível. Recarregue a página.');
                 return;
             }
@@ -256,11 +263,11 @@ const PdfSystem = (function() {
                 if (passwordInput) {
                     passwordInput.focus();
                     passwordInput.select();
-                    console.log('✅ Modal aberto com foco no campo de senha');
+                    SC.logModule('pdf', '✅ Modal aberto com foco no campo de senha');
                     
                     // DEBUG: Verificar visibilidade final
                     const style = window.getComputedStyle(passwordInput);
-                    console.log('🔍 VERIFICAÇÃO FINAL - Campo senha:', {
+                    SC.logModule('pdf', '🔍 VERIFICAÇÃO FINAL - Campo senha:', {
                         display: style.display,
                         visibility: style.visibility,
                         opacity: style.opacity,
@@ -275,7 +282,7 @@ const PdfSystem = (function() {
 
         // Validação de senha (UI)
         validatePasswordAndShowList() {
-            console.log('🔓 PdfSystem.validatePasswordAndShowList() - Função UI');
+            SC.logModule('pdf', '🔓 PdfSystem.validatePasswordAndShowList() - Função UI');
             const passwordInput = document.getElementById('pdfPassword');
             if (!passwordInput) {
                 alert('Erro: campo de senha não disponível');
@@ -297,7 +304,7 @@ const PdfSystem = (function() {
                 return;
             }
             
-            console.log('✅ Senha válida! Buscando documentos...');
+            SC.logModule('pdf', '✅ Senha válida! Buscando documentos...');
             
             // Buscar imóvel atual
             const propertyId = state.currentPropertyId;
@@ -331,7 +338,7 @@ const PdfSystem = (function() {
         
         // Fechar modal (UI)
         closeModal() {
-            console.log('❌ PdfSystem.closeModal() - Função UI');
+            SC.logModule('pdf', '❌ PdfSystem.closeModal() - Função UI');
             const modal = document.getElementById('pdfModal');
             if (modal) modal.style.display = 'none';
             return this;
@@ -339,7 +346,7 @@ const PdfSystem = (function() {
         
         // Lista de seleção (UI)
         showDocumentList(propertyId, propertyTitle, pdfUrls) {
-            console.log('📋 PdfSystem.showDocumentList() - Função UI');
+            SC.logModule('pdf', '📋 PdfSystem.showDocumentList() - Função UI');
             // Criar modal de seleção
             let selectionModal = document.getElementById('pdfSelectionModal');
             
@@ -478,7 +485,7 @@ const PdfSystem = (function() {
         
         // Download (UI)
         downloadAllPdfs(urls) {
-            console.log(`📥 PdfSystem.downloadAllPdfs() - Função UI para ${urls.length} PDF(s)`);
+            SC.logModule('pdf', `📥 PdfSystem.downloadAllPdfs() - Função UI para ${urls.length} PDF(s)`);
             let successCount = 0;
             
             urls.forEach((url, index) => {
@@ -493,10 +500,10 @@ const PdfSystem = (function() {
                     document.body.removeChild(tempAnchor);
                     
                     successCount++;
-                    console.log(`✅ Download iniciado: ${fileName}`);
+                    SC.logModule('pdf', `✅ Download iniciado: ${fileName}`);
                     
                 } catch (error) {
-                    console.error(`❌ Erro ao baixar ${url}:`, error);
+                    SC.logModule('pdf', `❌ Erro ao baixar ${url}:`, error);
                 }
             });
             
@@ -550,13 +557,13 @@ const PdfSystem = (function() {
         
         // Wrapper para getPdfsToSave
         async getPdfsToSave(propertyId) {
-            console.log(`💾 PdfSystem.getPdfsToSave() - Wrapper para MediaSystem`);
+            SC.logModule('pdf', `💾 PdfSystem.getPdfsToSave() - Wrapper para MediaSystem`);
             return await this.uploadAll(propertyId, 'Imóvel');
         },
         
         // Wrapper para processAndSavePdfs
         async processAndSavePdfs(propertyId, propertyTitle) {
-            console.log(`📄 PdfSystem.processAndSavePdfs() - Wrapper para MediaSystem`);
+            SC.logModule('pdf', `📄 PdfSystem.processAndSavePdfs() - Wrapper para MediaSystem`);
             return await this.uploadAll(propertyId, propertyTitle);
         }
     };
@@ -576,7 +583,7 @@ if (!window.pdfSystemInitialized) {
         if (typeof window.PdfSystem !== 'undefined') {
             window.PdfSystem.init();
             window.pdfSystemInitialized = true;
-            console.log('✅ PdfSystem refatorado inicializado como cliente UI');
+            SC.logModule('pdf', '✅ PdfSystem refatorado inicializado como cliente UI');
         }
     };
     
@@ -585,7 +592,7 @@ if (!window.pdfSystemInitialized) {
         if (window.MediaSystem) {
             initPdfSystem();
         } else {
-            console.log('⏳ Aguardando MediaSystem para inicializar PdfSystem...');
+            SC.logModule('pdf', '⏳ Aguardando MediaSystem para inicializar PdfSystem...');
             setTimeout(initPdfSystem, 1000);
         }
     }, 1500);
