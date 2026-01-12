@@ -574,26 +574,29 @@ const PdfSystem = (function() {
 // Exportação global (mantém compatibilidade)
 window.PdfSystem = PdfSystem;
 
-// Inicialização única (compatibilidade)
+// Inicialização independente (NÃO depende mais de MediaSystem)
 if (!window.pdfSystemInitialized) {
     window.pdfSystemInitialized = false;
     
     const initPdfSystem = function() {
         if (window.pdfSystemInitialized) return;
         if (typeof window.PdfSystem !== 'undefined') {
-            window.PdfSystem.init();
-            window.pdfSystemInitialized = true;
-            SC.logModule('pdf', '✅ PdfSystem refatorado inicializado como cliente UI');
+            try {
+                window.PdfSystem.init();
+                window.pdfSystemInitialized = true;
+                SC.logModule('pdf', '✅ PdfSystem inicializado independentemente');
+            } catch (error) {
+                SC.logModule('pdf', `❌ Erro na inicialização: ${error.message}`);
+                // Forçar inicialização básica
+                window.PdfSystem = window.PdfSystem || {
+                    showModal: function(propertyId) {
+                        alert('Sistema PDF em manutenção. Tente novamente em instantes.');
+                    }
+                };
+            }
         }
     };
     
-    // Inicializar após MediaSystem (CRÍTICO)
-    setTimeout(() => {
-        if (window.MediaSystem) {
-            initPdfSystem();
-        } else {
-            SC.logModule('pdf', '⏳ Aguardando MediaSystem para inicializar PdfSystem...');
-            setTimeout(initPdfSystem, 1000);
-        }
-    }, 1500);
+    // Inicializar independentemente - SEM DEPENDER DE MEDIASYSTEM
+    setTimeout(initPdfSystem, 100);
 }
