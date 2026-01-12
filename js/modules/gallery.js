@@ -224,6 +224,38 @@ window.galleryStyles = `
         transform: scale(1.1);
     }
     
+    /* Botão PDF na galeria */
+    .pdf-access {
+        position: absolute;
+        bottom: 50px;
+        right: 10px;
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        border: 2px solid white;
+    }
+    
+    .pdf-access:hover {
+        background: #dc3545;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    
+    .pdf-access:active {
+        transform: scale(0.95);
+    }
+    
     /* Para Desktop - ajustes */
     @media (min-width: 768px) {
         .gallery-indicator-mobile {
@@ -261,6 +293,14 @@ window.galleryStyles = `
             font-size: 1rem;
             padding: 8px 16px;
         }
+        
+        .pdf-access {
+            bottom: 60px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
+        }
     }
     
     /* Animações */
@@ -275,7 +315,8 @@ window.galleryStyles = `
     
     /* Melhorias de acessibilidade */
     .gallery-modal-btn:focus,
-    .gallery-modal-close:focus {
+    .gallery-modal-close:focus,
+    .pdf-access:focus {
         outline: 2px solid var(--accent);
         outline-offset: 2px;
     }
@@ -306,24 +347,33 @@ window.createPropertyGallery = function(property) {
         imageUrls[0] : 
         'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
     
+    // Verificar se há PDFs
+    const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
+    
+    // Criar botão PDF se houver
+    const pdfButtonHtml = hasPdfs ? 
+        `<button class="pdf-access"
+             onclick="handlePdfButtonClick(event, ${property.id})"
+             title="Documentos do imóvel (senha: doc123)">
+            <i class="fas fa-file-pdf"></i>
+        </button>` : '';
+    
     // Se só tem uma imagem, mostrar imagem estática
     if (imageUrls.length <= 1) {
         return `
             <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
                 <img src="${firstImageUrl}" 
-                     style="width: 100%; height: 100%; object-fit: cover;"
+                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
                      alt="${property.title}"
+                     onclick="openGallery(${property.id})"
                      onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
                 
-                ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-                    `<button class="pdf-access" 
-                            onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})" 
-                            title="Documentos do imóvel (senha: doc123)">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>` : ''}
+                <!-- BOTÃO PDF PARA IMAGEM ÚNICA -->
+                ${pdfButtonHtml}
             </div>
         `;
     }
@@ -364,15 +414,37 @@ window.createPropertyGallery = function(property) {
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-            <!-- Botão PDF ISOLADO - Z-INDEX MAIOR E STOPPROPAGATION -->
-            ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-                `<button class="pdf-access"
-                    onclick="handlePdfButtonClick(event, ${property.id})"
-                    title="Documentos do imóvel (senha: doc123)">
-                    <i class="fas fa-file-pdf"></i>
-                </button>` : ''}
+            <!-- BOTÃO PDF PARA MÚLTIPLAS IMAGENS -->
+            ${pdfButtonHtml}
         </div>
     `;
+};
+
+// ========== FUNÇÃO PARA MANIPULAR CLIQUE NO BOTÃO PDF ==========
+window.handlePdfButtonClick = function(event, propertyId) {
+    console.log('📄 PDF button clicked for property:', propertyId);
+    
+    // Prevenir propagação para não abrir a galeria
+    event.stopPropagation();
+    event.preventDefault();
+    
+    // Verificar qual sistema PDF está disponível
+    if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        console.log('🔄 Usando PdfSystem para mostrar PDFs');
+        window.PdfSystem.showModal(propertyId);
+    } 
+    else if (typeof window.showPdfModal === 'function') {
+        console.log('🔄 Usando showPdfModal (compatibilidade)');
+        window.showPdfModal(propertyId);
+    }
+    else if (typeof window.testPdfSystem === 'function') {
+        console.log('🔄 Usando testPdfSystem como fallback');
+        window.testPdfSystem(propertyId);
+    }
+    else {
+        console.error('❌ Nenhum sistema PDF disponível');
+        alert('⚠️ Sistema de PDFs não disponível no momento.');
+    }
 };
 
 // Função para abrir a galeria
@@ -711,7 +783,8 @@ window.validateGalleryModule = function() {
     const basicChecks = {
         'openGallery': typeof window.openGallery === 'function',
         'closeGallery': typeof window.closeGallery === 'function',
-        'currentGalleryImages': Array.isArray(window.currentGalleryImages)
+        'currentGalleryImages': Array.isArray(window.currentGalleryImages),
+        'handlePdfButtonClick': typeof window.handlePdfButtonClick === 'function'
     };
     
     const allValid = Object.values(basicChecks).every(check => check === true);
