@@ -1,121 +1,25 @@
-// js/modules/utils.js - VERSÃO OTIMIZADA
-console.log('⚡ utils.js carregado - Versão Otimizada do Core');
+// js/modules/utils.js - VERSÃO LEVE (remover funções movidas)
+console.log('⚡ utils.js carregado - Versão Leve Pós-SharedCore');
 
-// ========== CONSTANTES ESSENCIAIS (12 itens) ==========
+// ========== CONSTANTES ESSENCIAIS APENAS ==========
 window.SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
 window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
 window.ADMIN_PASSWORD = "wl654";
 window.PDF_PASSWORD = "doc123";
 
-// ========== FUNÇÕES DE PERFORMANCE ESSENCIAIS (2 funções) ==========
-window.debounce = function(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+// ========== FUNÇÕES RESTANTES (não movidas para SharedCore) ==========
+
+// Apenas funções muito específicas do site atual
+window.validatePropertyData = function(propertyData) {
+    // Validação específica de imóveis (não genérica)
+    const errors = [];
+    if (!propertyData.title?.trim()) errors.push('Título é obrigatório');
+    if (!propertyData.price?.trim()) errors.push('Preço é obrigatório');
+    if (!propertyData.location?.trim()) errors.push('Localização é obrigatória');
+    return errors;
 };
 
-window.throttle = function(func, limit) {
-    let inThrottle;
-    return function() {
-        const args = arguments;
-        const context = this;
-        if (!inThrottle) {
-            func.apply(context, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
-        }
-    };
-};
-
-// ========== FUNÇÕES UTILITÁRIAS ESSENCIAIS (10 funções) ==========
-window.isMobileDevice = function() {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
-
-window.logModule = function(moduleName, message) {
-    const timestamp = new Date().toLocaleTimeString();
-    console.log(`[${timestamp}] [${moduleName}] ${message}`);
-};
-
-window.elementExists = function(id) {
-    return document.getElementById(id) !== null;
-};
-
-window.formatPrice = function(price) {
-    if (!price) return 'R$ 0,00';
-    return price.toString().replace('.', ',');
-};
-
-window.isValidEmail = function(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-};
-
-window.isValidPhone = function(phone) {
-    const re = /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/;
-    return re.test(phone);
-};
-
-window.copyToClipboard = async function(text) {
-    try {
-        await navigator.clipboard.writeText(text);
-        return true;
-    } catch (err) {
-        console.error('❌ Erro ao copiar:', err);
-        return false;
-    }
-};
-
-// ========== SUPABASE FETCH ESSENCIAL ==========
-window.supabaseFetch = async function(endpoint, options = {}) {
-    try {
-        const proxyUrl = 'https://corsproxy.io/?';
-        const targetUrl = `${window.SUPABASE_URL}/rest/v1${endpoint}`;
-        const finalUrl = proxyUrl + encodeURIComponent(targetUrl);
-        
-        const response = await fetch(finalUrl, {
-            method: options.method || 'GET',
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        });
-        
-        if (!response.ok) {
-            return { 
-                ok: false, 
-                data: [], 
-                error: `HTTP ${response.status}: ${response.statusText}` 
-            };
-        }
-        
-        const data = await response.json();
-        
-        return { 
-            ok: true, 
-            data: data,
-            count: Array.isArray(data) ? data.length : 1
-        };
-        
-    } catch (error) {
-        return { 
-            ok: false, 
-            data: [], 
-            error: error.message
-        };
-    }
-};
-
-// ========== FALLBACKS MÍNIMOS (apenas em produção) ==========
+// FALLBACKS MÍNIMOS (mantidos por compatibilidade)
 (function() {
     // Apenas cria fallbacks se os módulos de suporte não carregarem
     setTimeout(() => {
@@ -146,4 +50,4 @@ window.supabaseFetch = async function(endpoint, options = {}) {
     }, 5000);
 })();
 
-console.log('✅ utils.js otimizado - apenas funções essenciais mantidas');
+console.log('✅ utils.js otimizado - apenas constantes e funções específicas mantidas');
