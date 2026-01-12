@@ -342,6 +342,54 @@ const MediaSystem = {
         });
     },
 
+    getMediaPreviewHTML: function(item) {
+        // Determinar se é imagem ou vídeo baseado no tipo ou extensão
+        const isImage = item.isImage || 
+                       (item.type && item.type.includes('image')) ||
+                       (item.url && this.getFileTypeFromUrl(item.url) === 'image');
+        
+        const isVideo = item.isVideo ||
+                       (item.type && item.type.includes('video')) ||
+                       (item.url && this.getFileTypeFromUrl(item.url) === 'video');
+        
+        const mediaUrl = item.preview || item.url;
+        
+        if (isImage && mediaUrl) {
+            // Para imagens, mostrar preview
+            return `
+                <img src="${mediaUrl}" 
+                     style="width:100%;height:70px;object-fit:cover;" 
+                     alt="Preview"
+                     onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;\\'><i class=\\'fas fa-image\\' style=\\'font-size:1.5rem;color:#ccc;\\'></i></div>'">
+            `;
+        } else if (isVideo && mediaUrl) {
+            // Para vídeos, mostrar ícone com possível thumbnail
+            // Muitos vídeos no Supabase podem ter thumbnails com sufixo _thumbnail
+            const thumbnailUrl = mediaUrl.replace(/\.(mp4|mov|avi)$/i, '_thumbnail.jpg');
+            
+            return `
+                <div style="width:100%;height:70px;position:relative;">
+                    <div style="width:100%;height:100%;background:#2c3e50;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-video" style="font-size:1.5rem;color:#ecf0f1;"></i>
+                    </div>
+                    <!-- Tentar carregar thumbnail se existir -->
+                    <img src="${thumbnailUrl}" 
+                         style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:none;"
+                         alt="Thumbnail"
+                         onload="this.style.display='block'; this.nextElementSibling.style.display='none';"
+                         onerror="this.style.display='none';">
+                </div>
+            `;
+        } else {
+            // Fallback para tipo desconhecido
+            return `
+                <div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
+                    <i class="fas fa-file" style="font-size:1.5rem;color:#ccc;"></i>
+                </div>
+            `;
+        }
+    },
+        
     getOrderedMediaUrls: function() {
         console.log('📋 Obtendo URLs ordenadas...');
         
@@ -790,21 +838,14 @@ const MediaSystem = {
             const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
             
             html += `
-                <div class="media-preview-item draggable-item" 
+            <div class="media-preview-item draggable-item" 
                      draggable="true"
                      data-id="${item.id}"
                      title="Arraste para reordenar"
                      style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
                     
-                    ${item.isImage ? 
-                        `<img src="${item.preview || item.url}" 
-                             style="width:100%;height:70px;object-fit:cover;" 
-                             alt="Preview"
-                             onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'width:100%;height:70px;display:flex;align-items:center;justify-content:center;\\'><i class=\\'fas fa-image\\' style=\\'font-size:1.5rem;color:#ccc;\\'></i></div>'">` :
-                        `<div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
-                            <i class="fas fa-video" style="font-size:1.5rem;color:#ecf0f1;"></i>
-                        </div>`
-                    }
+                    <!-- PREVIEW DE IMAGEM OU VÍDEO -->
+                    ${this.getMediaPreviewHTML(item)}
                     
                     <!-- Nome do arquivo (cortado) -->
                     <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
