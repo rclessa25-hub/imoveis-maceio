@@ -1474,3 +1474,67 @@ setTimeout(() => {
     
     console.groupEnd();
 }, 1000);
+
+// FUNÇÃO DE EMERGÊNCIA: Forçar correção dos filtros
+window.fixFiltersEmergency = function() {
+    console.group('🚨 CORREÇÃO DE EMERGÊNCIA DOS FILTROS');
+    
+    // 1. Remover TODOS os estilos inline
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.removeAttribute('style');
+        btn.classList.remove('active');
+    });
+    
+    // 2. Recriar listeners do zero
+    if (typeof window.setupFilters === 'function') {
+        window.setupFilters();
+    }
+    
+    // 3. Verificar CSS está carregado
+    const hasFilterCSS = Array.from(document.styleSheets).some(sheet => {
+        try {
+            return sheet.cssRules && Array.from(sheet.cssRules).some(rule => 
+                rule.selectorText && rule.selectorText.includes('.filter-btn')
+            );
+        } catch(e) {
+            return false;
+        }
+    });
+    
+    console.log(`✅ CSS carregado: ${hasFilterCSS ? 'SIM' : 'NÃO'}`);
+    console.log(`🎯 Botões encontrados: ${document.querySelectorAll('.filter-btn').length}`);
+    
+    // 4. Testar automaticamente
+    setTimeout(() => {
+        const buttons = document.querySelectorAll('.filter-btn');
+        if (buttons.length > 0) {
+            // Simular clique no primeiro
+            buttons[0].click();
+            
+            setTimeout(() => {
+                const activeAfterClick = document.querySelectorAll('.filter-btn.active').length;
+                console.log(`✅ Após clique: ${activeAfterClick} botão(s) ativo(s)`);
+                
+                if (activeAfterClick === 1) {
+                    console.log('🎉 CORREÇÃO BEM-SUCEDIDA!');
+                    alert('✅ Filtros corrigidos com sucesso!');
+                } else {
+                    console.error(`❌ ERRO: ${activeAfterClick} botões ativos (deveria ser 1)`);
+                    alert('⚠️ Ainda há problema com os filtros. Recarregue a página.');
+                }
+            }, 200);
+        }
+    }, 500);
+    
+    console.groupEnd();
+};
+
+// Executar correção automaticamente após 3 segundos
+setTimeout(() => {
+    // Verificar se há múltiplos botões ativos
+    const activeButtons = document.querySelectorAll('.filter-btn.active');
+    if (activeButtons.length > 1) {
+        console.warn(`⚠️ Detectado ${activeButtons.length} botões ativos simultaneamente`);
+        window.fixFiltersEmergency();
+    }
+}, 3000);
