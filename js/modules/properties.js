@@ -413,6 +413,9 @@ window.renderProperties = function(filter = 'todos') {
                 const features = Array.isArray(property.features) ? property.features : 
                                 (property.features ? property.features.split(',') : []);
 
+                // ==========================================================
+                // 📸 CORREÇÃO CRÍTICA: UNIFICAÇÃO DA FUNÇÃO createPropertyGallery
+                // ==========================================================
                 // Gerar HTML da imagem
                 let propertyImageHTML = '';
                 if (typeof window.createPropertyGallery === 'function') {
