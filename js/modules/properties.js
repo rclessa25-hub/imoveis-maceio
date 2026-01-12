@@ -484,7 +484,7 @@ window.renderProperties = function(filter = 'todos') {
 
 // ========== FUNÇÃO 5: Configurar Filtros ==========
 window.setupFilters = function() {
-    SC.logModule('properties', 'Configurando filtros...');
+    SC.logModule('properties', '🔧 Configurando filtros - VERSÃO CORRIGIDA');
     
     const filterButtons = document.querySelectorAll('.filter-btn');
     if (!filterButtons || filterButtons.length === 0) {
@@ -492,42 +492,82 @@ window.setupFilters = function() {
         return;
     }
     
-    // Ativar "Todos" automaticamente
-    const todosBtn = Array.from(filterButtons).find(btn => 
-        btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
-    );
-    
-    if (todosBtn && !todosBtn.classList.contains('active')) {
-        todosBtn.classList.add('active');
-    }
-    
-    // Configurar eventos
+    // 1. REMOVER TODOS OS EVENT LISTENERS ANTIGOS (importante)
     filterButtons.forEach(button => {
-        // Remover event listeners antigos
+        // Clonar o botão para remover listeners antigos
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
-        
-        newButton.addEventListener('click', function() {
-            // Remover active de todos
-            filterButtons.forEach(btn => btn.classList.remove('active'));
+    });
+    
+    // 2. PEGAR OS NOVOS BOTÕES (após clonagem)
+    const freshButtons = document.querySelectorAll('.filter-btn');
+    
+    // 3. CONFIGURAR NOVOS EVENT LISTENERS CORRETAMENTE
+    freshButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
             
-            // Adicionar active ao clicado
+            SC.logModule('properties', `🎯 Filtro clicado: "${this.textContent.trim()}"`);
+            
+            // PASSO CRÍTICO: REMOVER 'active' e ESTILOS INLINE de TODOS
+            freshButtons.forEach(btn => {
+                // 1. Remover classe
+                btn.classList.remove('active');
+                
+                // 2. REMOVER QUALQUER ESTILO INLINE que possa estar causando o bug
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+                btn.style.borderColor = '';
+                btn.style.fontWeight = '';
+                btn.style.boxShadow = '';
+                
+                // 3. Resetar qualquer atributo de estilo
+                btn.removeAttribute('style'); // REMOVE TODOS os estilos inline
+            });
+            
+            // PASSO CRÍTICO: ADICIONAR 'active' APENAS ao clicado (SEM estilo inline)
             this.classList.add('active');
+            // NÃO adicionar style inline - deixar o CSS cuidar disso
             
             // Obter filtro
             const filterText = this.textContent.trim();
             const filter = filterText === 'Todos' ? 'todos' : filterText;
             
-            SC.logModule('properties', `Filtrando por: ${filter}`);
+            SC.logModule('properties', `🚀 Aplicando filtro: ${filter}`);
             
-            // Renderizar
+            // Executar filtro
             if (typeof window.renderProperties === 'function') {
                 window.renderProperties(filter);
             }
+            
+            // DEBUG: Verificar estado
+            setTimeout(() => {
+                const activeCount = document.querySelectorAll('.filter-btn.active').length;
+                SC.logModule('properties', `✅ Filtro aplicado. Ativos: ${activeCount}`);
+                
+                if (activeCount !== 1) {
+                    SC.logModule('properties', `⚠️ ALERTA: ${activeCount} botões ativos (deveria ser 1)`, 'warn');
+                }
+            }, 50);
         });
     });
     
-    SC.logModule('properties', 'Filtros configurados');
+    // 4. ATIVAR "Todos" por padrão se nenhum estiver ativo
+    setTimeout(() => {
+        const activeButtons = document.querySelectorAll('.filter-btn.active');
+        if (activeButtons.length === 0) {
+            const todosBtn = Array.from(freshButtons).find(btn => 
+                btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
+            );
+            if (todosBtn) {
+                todosBtn.classList.add('active');
+                SC.logModule('properties', '"Todos" ativado por padrão');
+            }
+        }
+    }, 100);
+    
+    SC.logModule('properties', `✅ ${freshButtons.length} filtros configurados corretamente`);
 };
 
 // ========== FUNÇÃO 6: Contactar Agente ==========
