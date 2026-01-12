@@ -418,6 +418,14 @@ window.renderProperties = function(filter = 'todos') {
                 // ==========================================================
                 // Gerar HTML da imagem
                 let propertyImageHTML = '';
+                
+                // DEBUG: Verificar qual função está sendo usada
+                console.log('🔍 RENDER PROPERTIES DEBUG:');
+                console.log('- createPropertyGallery disponível?', typeof window.createPropertyGallery === 'function');
+                console.log('- property.id:', property.id);
+                console.log('- property.pdfs:', property.pdfs);
+                console.log('- property.images:', property.images ? property.images.split(',').length + ' imagens' : 'nenhuma');
+                
                 if (typeof window.createPropertyGallery === 'function') {
                     propertyImageHTML = window.createPropertyGallery(property);
                 } else {
