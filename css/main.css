@@ -530,3 +530,65 @@ body {
         text-fill-color: white !important;
     }
 }
+
+/* ========== CORREÇÃO DEFINITIVA DOS FILTROS ========== */
+/* REMOVER QUALQUER ESTILO INLINE QUE ESTÁ CAUSANDO O BUG */
+.filter-btn {
+    /* RESET COMPLETO - remover qualquer estilo inline */
+    background: #f8f9fa !important;
+    color: #2c3e50 !important;
+    border: 2px solid #e0e0e0 !important;
+    padding: 0.7rem 1.5rem !important;
+    border-radius: 30px !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+}
+
+/* ESTADO ATIVO - SOMENTE quando tem a classe .active */
+.filter-btn.active {
+    background: #1a5276 !important; /* var(--primary) */
+    border-color: #1a5276 !important;
+    color: white !important !important; /* FORÇAR branco */
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3) !important;
+}
+
+/* Garantir que o hover não sobrescreva o estado ativo */
+.filter-btn:hover {
+    background: #e9ecef !important;
+    border-color: #3498db !important; /* var(--accent) */
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* Botão ativo NÃO deve mudar no hover */
+.filter-btn.active:hover {
+    background: #154060 !important; /* Tom mais escuro */
+    border-color: #154060 !important;
+    color: white !important !important; /* Manter branco */
+}
+
+/* Correção para Firefox/Safari */
+@supports (-webkit-appearance: none) or (-moz-appearance: none) {
+    .filter-btn.active {
+        -webkit-text-fill-color: white !important;
+        -moz-text-fill-color: white !important;
+        text-fill-color: white !important;
+    }
+}
+
+/* PREVENIR que JavaScript adicione estilos inline */
+.filter-btn[style] {
+    /* Sobrescrever QUALQUER estilo inline */
+    background: #f8f9fa !important;
+    color: #2c3e50 !important;
+    border: 2px solid #e0e0e0 !important;
+}
+
+.filter-btn.active[style] {
+    background: #1a5276 !important;
+    border-color: #1a5276 !important;
+    color: white !important !important;
+}
