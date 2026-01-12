@@ -22,7 +22,29 @@ if (!SC) {
         supabaseFetch: window.supabaseFetch,
         logModule: (module, msg) => console.log(`[${module}] ${msg}`),
         formatPrice: window.formatPrice,
-        runLowPriority: window.runLowPriority
+        runLowPriority: function(task) {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(task, { timeout: 1000 });
+            } else {
+                setTimeout(task, 100);
+            }
+        },
+        stringSimilarity: function(str1, str2) {
+            if (!str1 || !str2) return 0;
+            
+            str1 = str1.toLowerCase();
+            str2 = str2.toLowerCase();
+            
+            if (str1 === str2) return 1;
+            if (str1.length < 2 || str2.length < 2) return 0;
+            
+            let match = 0;
+            for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+                if (str1[i] === str2[i]) match++;
+            }
+            
+            return match / Math.max(str1.length, str2.length);
+        }
     };
 }
 
@@ -870,24 +892,6 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// Função auxiliar para similaridade de strings (adicionar após a função updateProperty)
-function stringSimilarity(str1, str2) {
-    if (!str1 || !str2) return 0;
-    
-    str1 = str1.toLowerCase();
-    str2 = str2.toLowerCase();
-    
-    if (str1 === str2) return 1;
-    if (str1.length < 2 || str2.length < 2) return 0;
-    
-    let match = 0;
-    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
-        if (str1[i] === str2[i]) match++;
-    }
-    
-    return match / Math.max(str1.length, str2.length);
-}
-
 // ========== FUNÇÃO 10: EXCLUIR IMÓVEL (COM SUPABASE E CACHE INTELIGENTE) ==========
 window.deleteProperty = async function(id) {
     SC.logModule('properties', `Iniciando exclusão COMPLETA do imóvel ${id}...`);
@@ -1217,14 +1221,14 @@ window.testSupabaseConnectionSimple = async function() {
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 SC.logModule('properties', 'carregado com 10 funções principais');
 
-// Função utilitária para executar tarefas em baixa prioridade
-function runLowPriority(task) {
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(task, { timeout: 1000 });
-    } else {
-        setTimeout(task, 100);
-    }
-}
+// Função utilitária para executar tarefas em baixa prioridade (AGORA REMOVIDA - USAR SC.runLowPriority)
+// function runLowPriority(task) {
+//     if ('requestIdleCallback' in window) {
+//         requestIdleCallback(task, { timeout: 1000 });
+//     } else {
+//         setTimeout(task, 100);
+//     }
+// }
 
 // Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
@@ -1408,3 +1412,25 @@ async function saveWithFetchDirect(propertyData) {
         return { success: false, error: error.message };
     }
 }
+
+// Script de verificação automática das funções críticas
+setTimeout(() => {
+    console.group('🔍 VERIFICAÇÃO DAS 4 FUNÇÕES CRÍTICAS');
+    
+    // Verificar se funções estão no SharedCore
+    const criticalFunctions = ['stringSimilarity', 'runLowPriority'];
+    criticalFunctions.forEach(func => {
+        const inSharedCore = window.SharedCore && typeof window.SharedCore[func] === 'function';
+        const inGlobal = typeof window[func] === 'function';
+        
+        console.log(`${func}:`);
+        console.log(`  SharedCore: ${inSharedCore ? '✅' : '❌'}`);
+        console.log(`  Global: ${inGlobal ? '⚠️  (DEVE ser removida)' : '✅'}`);
+        
+        if (inGlobal && inSharedCore) {
+            console.warn(`  🔧 MIGRAR: Substituir window.${func}() por SharedCore.${func}()`);
+        }
+    });
+    
+    console.groupEnd();
+}, 1000);
