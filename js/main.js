@@ -56,4 +56,28 @@ window.initializeWeberLessaSystem = async function() {
         console.error('❌ Erro na inicialização:', error);
     }
 };
+
+// ========== FUNÇÃO PARA MANIPULAR CLIQUE NO BOTÃO PDF ==========
+window.handlePdfButtonClick = function(event, propertyId) {
+    console.log('📄 Botão PDF clicado para imóvel:', propertyId);
+    
+    // 1. Parar propagação IMEDIATAMENTE
+    event.stopPropagation();
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    
+    // 2. Pequeno delay para garantir que o evento não se propague
+    setTimeout(() => {
+        // 3. Verificar se PdfSystem está disponível
+        if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+            console.log('✅ Chamando PdfSystem.showModal()');
+            window.PdfSystem.showModal(propertyId);
+        } else {
+            console.error('❌ PdfSystem não disponível');
+            alert('Sistema de documentos temporariamente indisponível. Tente novamente em alguns instantes.');
+        }
+    }, 10);
+    
+    return false;
+};
 console.log('✅ main.js pronto para inicializar o sistema');
