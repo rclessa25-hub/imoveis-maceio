@@ -293,7 +293,7 @@ const MediaSystem = {
             SC.logModule('media-drag', '🔄 Movendo entre arrays diferentes');
             
             // Remover do array de origem
-                const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
+            const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
             if (sourceIndex !== -1) {
                 const [movedItem] = draggedArray.splice(sourceIndex, 1);
                 
@@ -1025,11 +1025,154 @@ const MediaSystem = {
 // Exportar para window
 window.MediaSystem = MediaSystem;
 
-// Auto-inicialização
+// ========== CORREÇÃO PARA PDFSYSTEM - GARANTIR COMPATIBILIDADE ==========
+SC.logModule('media-system', '🔧 Garantindo compatibilidade com PdfSystem...');
+
+// Função para verificar e expor showPdfModal
+window.ensurePdfSystemReady = function() {
+    SC.logModule('media-system', '📄 Verificando PdfSystem...');
+    
+    // Se showPdfModal já existe, tudo ok
+    if (typeof window.showPdfModal === 'function') {
+        SC.logModule('media-system', '✅ showPdfModal já disponível');
+        return true;
+    }
+    
+    // Se PdfSystem existe e tem showModal, expor globalmente
+    if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        window.showPdfModal = function(propertyId) {
+            return window.PdfSystem.showModal(propertyId);
+        };
+        SC.logModule('media-system', '✅ showPdfModal exposto via PdfSystem');
+        return true;
+    }
+    
+    // Criar fallback se não existir
+    if (!window.showPdfModal) {
+        window.showPdfModal = function(propertyId) {
+            SC.logModule('media-system', '📄 showPdfModal (fallback) chamado para:', propertyId);
+            
+            // Buscar imóvel
+            const property = window.properties?.find(p => p.id == propertyId);
+            if (!property) {
+                alert('❌ Imóvel não encontrado!');
+                return;
+            }
+            
+            if (!property.pdfs || property.pdfs === 'EMPTY') {
+                alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
+                return;
+            }
+            
+            // Modal simples de senha
+            const password = prompt("🔒 Documentos do Imóvel\n\nDigite a senha para acessar os documentos:");
+            if (password === "doc123") {
+                const pdfUrls = property.pdfs.split(',')
+                    .map(url => url.trim())
+                    .filter(url => url && url !== 'EMPTY');
+                
+                if (pdfUrls.length > 0) {
+                    if (pdfUrls.length === 1) {
+                        window.open(pdfUrls[0], '_blank');
+                    } else {
+                        const choice = prompt(`Escolha um documento (1-${pdfUrls.length}):\n\n` +
+                            pdfUrls.map((url, i) => `${i + 1}. ${url.split('/').pop()}`).join('\n'));
+                        const index = parseInt(choice) - 1;
+                        
+                        if (index >= 0 && index < pdfUrls.length) {
+                            window.open(pdfUrls[index], '_blank');
+                        }
+                    }
+                }
+            } else if (password !== null) {
+                alert('❌ Senha incorreta! A senha é: doc123');
+            }
+        };
+        SC.logModule('media-system', '✅ showPdfModal (fallback) criado');
+    }
+    
+    return false;
+};
+
+// Inicialização aprimorada que inclui suporte a PDF
+window.initMediaSystemWithPdf = function() {
+    SC.logModule('media-system', '🚀 Inicializando MediaSystem com suporte a PDF...');
+    
+    // Inicializar MediaSystem
+    if (window.MediaSystem) {
+        window.MediaSystem.init('vendas');
+    }
+    
+    // Garantir que showPdfModal esteja disponível
+    window.ensurePdfSystemReady();
+    
+    // Se PdfSystem existir, tentar inicializar
+    if (window.PdfSystem && typeof window.PdfSystem.init === 'function') {
+        try {
+            window.PdfSystem.init('vendas');
+            SC.logModule('media-system', '✅ PdfSystem inicializado via MediaSystem');
+        } catch (error) {
+            SC.logModule('media-system', `⚠️ PdfSystem já inicializado ou erro: ${error.message}`);
+        }
+    }
+    
+    SC.logModule('media-system', '✅ Sistemas de mídia e PDF configurados');
+};
+
+// Auto-inicialização aprimorada
 setTimeout(() => {
-    window.MediaSystem.init('vendas');
-    SC.logModule('media-system', '✅ Sistema de mídia unificado pronto');
-}, 1000);
+    window.initMediaSystemWithPdf();
+    SC.logModule('media-system', '✅ Sistema de mídia unificado pronto com suporte a PDF');
+}, 500);
+
+// Verificação periódica para garantir compatibilidade
+setInterval(() => {
+    // Garantir que showPdfModal esteja sempre disponível
+    if (!window.showPdfModal && window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        window.showPdfModal = window.PdfSystem.showModal;
+        SC.logModule('media-system', '🔄 showPdfModal configurado via PdfSystem (verificação periódica)');
+    }
+}, 3000);
+
+// Função de teste
+window.testPdfFromMedia = function(propertyId) {
+    SC.logModule('media-system', '🧪 Testando acesso a PDFs do MediaSystem...');
+    
+    if (!propertyId && window.properties && window.properties.length > 0) {
+        propertyId = window.properties[0].id;
+    }
+    
+    if (typeof window.showPdfModal === 'function') {
+        window.showPdfModal(propertyId);
+        return true;
+    }
+    
+    SC.logModule('media-system', '❌ showPdfModal não disponível');
+    return false;
+};
+
+// Adicionar suporte para click do botão PDF (para compatibilidade reversa)
+if (!window.handlePdfButtonClick) {
+    window.handlePdfButtonClick = function(event, propertyId) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        
+        if (typeof window.showPdfModal === 'function') {
+            window.showPdfModal(propertyId);
+        } else if (window.PdfSystem && window.PdfSystem.showModal) {
+            window.PdfSystem.showModal(propertyId);
+        } else {
+            SC.logModule('media-system', '⏳ PDF System carregando...');
+            setTimeout(() => {
+                if (typeof window.showPdfModal === 'function') {
+                    window.showPdfModal(propertyId);
+                }
+            }, 500);
+        }
+    };
+}
 
 // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
 
@@ -1104,21 +1247,4 @@ setTimeout(() => {
     }
 }, 500);
 
-// ADICIONAR NO FINAL do media-unified.js (após linha 1107)
-setTimeout(() => {
-    // Garantir que MediaSystem está disponível globalmente
-    if (typeof window.MediaSystem === 'undefined') {
-        console.error('❌ MediaSystem não foi criado! Recriando...');
-        window.MediaSystem = {
-            init: function() { 
-                console.log('🔄 MediaSystem fallback inicializado'); 
-                return this; 
-            },
-            resetState: function() { console.log('🔄 Reset fallback'); }
-        };
-    } else {
-        console.log('✅ MediaSystem disponível globalmente');
-    }
-}, 2000);
-
-SC.logModule('media-system', '✅ Sistema de mídia unificado pronto com compatibilidade total');
+console.log('✅ media-unified.js com suporte a PDF completamente carregado');
