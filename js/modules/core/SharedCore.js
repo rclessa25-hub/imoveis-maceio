@@ -334,3 +334,44 @@ console.log('✅ SharedCore.js pronto - 23 funções utilitárias centralizadas'
     
     console.groupEnd();
 })();
+
+// ========== VERIFICAÇÃO E PREVENÇÃO DE DUPLICAÇÕES ==========
+(function preventDuplicates() {
+    console.log('🔍 Verificando duplicações de módulos...');
+    
+    // Lista de sistemas que NÃO devem ser duplicados
+    const criticalSystems = ['MediaSystem', 'PdfSystem', 'ValidationSystem', 'EmergencySystem'];
+    
+    criticalSystems.forEach(systemName => {
+        if (window[systemName] && window[`_original_${systemName}`]) {
+            console.warn(`⚠️  ${systemName} já existe! Usando instância original.`);
+            // Restaurar instância original
+            window[systemName] = window[`_original_${systemName}`];
+        } else if (window[systemName]) {
+            // Armazenar primeira instância como original
+            window[`_original_${systemName}`] = window[systemName];
+        }
+    });
+    
+    // Prevenir duplicação de funções específicas
+    const criticalFunctions = ['processAndSavePdfs', 'clearAllPdfs', 'loadExistingPdfsForEdit'];
+    
+    criticalFunctions.forEach(funcName => {
+        if (window[funcName] && typeof window[funcName] === 'function') {
+            console.log(`✅ ${funcName} disponível no escopo global`);
+            
+            // Se também existe no MediaSystem, garantir consistência
+            if (window.MediaSystem && typeof window.MediaSystem[funcName] === 'function') {
+                console.log(`🔗 ${funcName} também disponível no MediaSystem`);
+                
+                // Forçar uso do MediaSystem como fonte da verdade
+                window[`_fallback_${funcName}`] = window[funcName];
+                window[funcName] = function(...args) {
+                    return window.MediaSystem[funcName].apply(window.MediaSystem, args);
+                };
+            }
+        }
+    });
+    
+    console.log('✅ Prevenção de duplicações configurada');
+})();
