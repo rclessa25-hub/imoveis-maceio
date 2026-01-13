@@ -34,8 +34,7 @@
             isInitialized: false,
             currentProperty: null,
             selectedPdfs: [],
-            isUploading: false,
-            modalCreated: false
+            isUploading: false
         },
         
         // ========== INICIALIZAÇÃO ==========
@@ -48,14 +47,16 @@
             this.config.currentSystem = system;
             this.state.isInitialized = true;
             
-            // IMPORTANTE: NÃO criar modal automaticamente
-            // Apenas preparar o sistema
+            // Adicionar estilos
+            this.addStyles();
             
             // Configurar eventos se for admin
             if (this.config.isAdmin) {
                 this.setupAdminEvents();
                 SC.logModule('pdf', '🔧 PdfSystem inicializado no modo ADMIN');
             } else {
+                // Modo cliente - configurar modal de visualização
+                this.setupClientModal();
                 SC.logModule('pdf', '👁️ PdfSystem inicializado no modo CLIENTE');
             }
             
@@ -69,233 +70,257 @@
         },
         
         // ========== MODO CLIENTE - VISUALIZAÇÃO ==========
-        createModalIfNeeded: function() {
-            // Verificar se o modal já existe
-            if (document.getElementById('pdfViewerModal')) {
-                this.state.modalCreated = true;
-                return true;
-            }
-            
-            SC.logModule('pdf', '🔄 Criando modal de visualização de PDFs...');
-            
-            // Criar modal apenas quando necessário
-            const modalHTML = `
-                <div id="pdfViewerModal" class="pdf-modal" style="display:none;">
-                    <div class="pdf-modal-content">
-                        <div class="pdf-modal-header">
-                            <h3 id="pdfModalTitle">Documentos do Imóvel</h3>
-                            <button class="pdf-modal-close" onclick="PdfSystem.closeModal()">&times;</button>
-                        </div>
-                        <div class="pdf-modal-body">
-                            <div id="pdfPasswordSection">
-                                <div class="password-input-group">
-                                    <label for="pdfPassword">Senha de acesso:</label>
-                                    <input type="password" id="pdfPassword" placeholder="Digite a senha" />
-                                    <button onclick="PdfSystem.checkPassword()">Acessar</button>
-                                </div>
-                                <p class="password-hint">Senha padrão: <code>doc123</code></p>
+        setupClientModal: function() {
+            // Criar modal de visualização de PDFs se não existir
+            if (!document.getElementById('pdfViewerModal')) {
+                const modalHTML = `
+                    <div id="pdfViewerModal" class="pdf-modal" style="display:none;">
+                        <div class="pdf-modal-content">
+                            <div class="pdf-modal-header">
+                                <h3 id="pdfModalTitle">Documentos do Imóvel</h3>
+                                <button class="pdf-modal-close" onclick="PdfSystem.closeModal()">&times;</button>
                             </div>
-                            <div id="pdfListSection" style="display:none;">
-                                <div class="pdf-list">
-                                    <!-- PDFs serão listados aqui -->
+                            <div class="pdf-modal-body">
+                                <div id="pdfPasswordSection">
+                                    <div class="password-input-group">
+                                        <label for="pdfPassword">Senha de acesso:</label>
+                                        <input type="password" id="pdfPassword" placeholder="Digite a senha" />
+                                        <button onclick="PdfSystem.checkPassword()">Acessar</button>
+                                    </div>
+                                    <p class="password-hint">Senha padrão: <code>doc123</code></p>
+                                </div>
+                                <div id="pdfListSection" style="display:none;">
+                                    <div class="pdf-list">
+                                        <!-- PDFs serão listados aqui -->
+                                    </div>
+                                </div>
+                                <div id="pdfErrorSection" style="display:none;color:#e74c3c;text-align:center;padding:2rem;">
+                                    <i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:1rem;"></i>
+                                    <p>Nenhum documento disponível para este imóvel.</p>
                                 </div>
                             </div>
-                            <div id="pdfErrorSection" style="display:none;color:#e74c3c;text-align:center;padding:2rem;">
-                                <i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:1rem;"></i>
-                                <p>Nenhum documento disponível para este imóvel.</p>
+                            <div class="pdf-modal-footer">
+                                <button onclick="PdfSystem.closeModal()">Fechar</button>
                             </div>
-                        </div>
-                        <div class="pdf-modal-footer">
-                            <button onclick="PdfSystem.closeModal()">Fechar</button>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            // Adicionar estilos (versão compacta similar à antiga)
-            const styles = `
-                .pdf-modal {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0,0,0,0.85);
-                    z-index: 10000;
-                    display: none;
-                    align-items: center;
-                    justify-content: center;
-                    animation: fadeIn 0.3s ease;
-                }
+                `;
                 
-                .pdf-modal-content {
-                    background: white;
-                    border-radius: 8px;
-                    width: 90%;
-                    max-width: 500px;
-                    max-height: 80vh;
-                    overflow: hidden;
-                    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-                }
+                // Adicionar estilos
+                const styles = `
+                    .pdf-modal {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0,0,0,0.85);
+                        z-index: 10000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        animation: fadeIn 0.3s ease;
+                    }
+                    
+                    .pdf-modal-content {
+                        background: white;
+                        border-radius: 12px;
+                        width: 90%;
+                        max-width: 600px;
+                        max-height: 80vh;
+                        overflow: hidden;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                    }
+                    
+                    .pdf-modal-header {
+                        background: #2c3e50;
+                        color: white;
+                        padding: 1.5rem;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    
+                    .pdf-modal-header h3 {
+                        margin: 0;
+                        font-size: 1.2rem;
+                    }
+                    
+                    .pdf-modal-close {
+                        background: none;
+                        border: none;
+                        color: white;
+                        font-size: 2rem;
+                        cursor: pointer;
+                        line-height: 1;
+                        padding: 0;
+                        width: 30px;
+                        height: 30px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    
+                    .pdf-modal-body {
+                        padding: 2rem;
+                        max-height: 50vh;
+                        overflow-y: auto;
+                    }
+                    
+                    .password-input-group {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1rem;
+                        margin-bottom: 1rem;
+                    }
+                    
+                    .password-input-group label {
+                        font-weight: 600;
+                        color: #2c3e50;
+                    }
+                    
+                    .password-input-group input {
+                        padding: 12px;
+                        border: 2px solid #ddd;
+                        border-radius: 6px;
+                        font-size: 1rem;
+                    }
+                    
+                    .password-input-group button {
+                        background: #3498db;
+                        color: white;
+                        border: none;
+                        padding: 12px;
+                        border-radius: 6px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: background 0.3s;
+                    }
+                    
+                    .password-input-group button:hover {
+                        background: #2980b9;
+                    }
+                    
+                    .password-hint {
+                        text-align: center;
+                        color: #7f8c8d;
+                        font-size: 0.9rem;
+                        margin-top: 1rem;
+                    }
+                    
+                    .pdf-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1rem;
+                    }
+                    
+                    .pdf-item {
+                        display: flex;
+                        align-items: center;
+                        padding: 1rem;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        border: 1px solid #e9ecef;
+                        transition: all 0.3s;
+                        cursor: pointer;
+                    }
+                    
+                    .pdf-item:hover {
+                        background: #e3f2fd;
+                        border-color: #3498db;
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+                    }
+                    
+                    .pdf-icon {
+                        background: #e74c3c;
+                        color: white;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 1.2rem;
+                        margin-right: 1rem;
+                        flex-shrink: 0;
+                    }
+                    
+                    .pdf-info {
+                        flex: 1;
+                    }
+                    
+                    .pdf-name {
+                        font-weight: 600;
+                        color: #2c3e50;
+                        margin-bottom: 0.25rem;
+                    }
+                    
+                    .pdf-size {
+                        font-size: 0.85rem;
+                        color: #7f8c8d;
+                    }
+                    
+                    .pdf-download-btn {
+                        background: #27ae60;
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 6px;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        transition: background 0.3s;
+                    }
+                    
+                    .pdf-download-btn:hover {
+                        background: #219653;
+                    }
+                    
+                    .pdf-modal-footer {
+                        padding: 1.5rem;
+                        background: #f8f9fa;
+                        border-top: 1px solid #e9ecef;
+                        text-align: right;
+                    }
+                    
+                    .pdf-modal-footer button {
+                        background: #95a5a6;
+                        color: white;
+                        border: none;
+                        padding: 10px 24px;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                    }
+                    
+                    .pdf-modal-footer button:hover {
+                        background: #7f8c8d;
+                    }
+                    
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    
+                    @media (max-width: 768px) {
+                        .pdf-modal-content {
+                            width: 95%;
+                        }
+                        
+                        .pdf-modal-body {
+                            padding: 1rem;
+                        }
+                        
+                        .password-input-group {
+                            flex-direction: column;
+                        }
+                    }
+                `;
                 
-                .pdf-modal-header {
-                    background: #2c3e50;
-                    color: white;
-                    padding: 15px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                
-                .pdf-modal-header h3 {
-                    margin: 0;
-                    font-size: 16px;
-                }
-                
-                .pdf-modal-close {
-                    background: none;
-                    border: none;
-                    color: white;
-                    font-size: 24px;
-                    cursor: pointer;
-                    line-height: 1;
-                }
-                
-                .pdf-modal-body {
-                    padding: 20px;
-                    max-height: 400px;
-                    overflow-y: auto;
-                }
-                
-                .password-input-group {
-                    margin-bottom: 15px;
-                }
-                
-                .password-input-group label {
-                    display: block;
-                    margin-bottom: 5px;
-                    font-weight: 600;
-                    color: #2c3e50;
-                }
-                
-                .password-input-group input {
-                    width: 100%;
-                    padding: 10px;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    margin-bottom: 10px;
-                    box-sizing: border-box;
-                }
-                
-                .password-input-group button {
-                    width: 100%;
-                    background: #3498db;
-                    color: white;
-                    border: none;
-                    padding: 10px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                }
-                
-                .password-hint {
-                    text-align: center;
-                    color: #7f8c8d;
-                    font-size: 12px;
-                    margin-top: 10px;
-                }
-                
-                .pdf-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                }
-                
-                .pdf-item {
-                    display: flex;
-                    align-items: center;
-                    padding: 10px;
-                    background: #f8f9fa;
-                    border-radius: 6px;
-                    border: 1px solid #e9ecef;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                
-                .pdf-item:hover {
-                    background: #e3f2fd;
-                    border-color: #3498db;
-                }
-                
-                .pdf-icon {
-                    background: #e74c3c;
-                    color: white;
-                    width: 30px;
-                    height: 30px;
-                    border-radius: 4px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin-right: 10px;
-                }
-                
-                .pdf-info {
-                    flex: 1;
-                }
-                
-                .pdf-name {
-                    font-weight: 600;
-                    color: #2c3e50;
-                    font-size: 14px;
-                }
-                
-                .pdf-size {
-                    font-size: 12px;
-                    color: #7f8c8d;
-                }
-                
-                .pdf-download-btn {
-                    background: #27ae60;
-                    color: white;
-                    border: none;
-                    padding: 6px 12px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    cursor: pointer;
-                }
-                
-                .pdf-modal-footer {
-                    padding: 15px;
-                    background: #f8f9fa;
-                    border-top: 1px solid #e9ecef;
-                    text-align: right;
-                }
-                
-                .pdf-modal-footer button {
-                    background: #95a5a6;
-                    color: white;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                }
-                
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-            `;
-            
-            // Adicionar estilos
-            const styleElement = document.createElement('style');
-            styleElement.textContent = styles;
-            document.head.appendChild(styleElement);
-            
-            // Adicionar modal ao body
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-            this.state.modalCreated = true;
-            
-            SC.logModule('pdf', '✅ Modal criado (estilo compacto)');
-            return true;
+                document.head.insertAdjacentHTML('beforeend', `<style>${styles}</style>`);
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            }
         },
         
         // ========== API PÚBLICA - MODO CLIENTE ==========
@@ -314,13 +339,8 @@
             // Verificar se há PDFs
             const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY';
             if (!hasPdfs) {
-                alert('ℹ️ Este imóvel não possui documentos disponíveis.');
+                this.showError('Este imóvel não possui documentos disponíveis.');
                 return;
-            }
-            
-            // Criar modal se necessário
-            if (!this.state.modalCreated) {
-                this.createModalIfNeeded();
             }
             
             // Mostrar modal
@@ -329,21 +349,16 @@
                 modal.style.display = 'flex';
                 document.getElementById('pdfModalTitle').textContent = `Documentos - ${property.title}`;
                 
-                // Resetar seções
+                // Mostrar seção de senha
                 document.getElementById('pdfPasswordSection').style.display = 'block';
                 document.getElementById('pdfListSection').style.display = 'none';
                 document.getElementById('pdfErrorSection').style.display = 'none';
                 
-                // Limpar senha anterior
-                const passwordInput = document.getElementById('pdfPassword');
-                if (passwordInput) passwordInput.value = '';
-                
                 // Focar no input de senha
                 setTimeout(() => {
+                    const passwordInput = document.getElementById('pdfPassword');
                     if (passwordInput) passwordInput.focus();
                 }, 100);
-                
-                SC.logModule('pdf', '✅ Modal exibido corretamente');
             } else {
                 // Fallback se modal não existir
                 this.showPasswordPrompt(property);
@@ -370,12 +385,9 @@
             if (password === this.config.defaultPassword) {
                 this.showPdfList();
             } else {
-                // CORREÇÃO: Remover o alert que mostra a senha
-                alert('❌ Senha incorreta!');
-                if (passwordInput) {
-                    passwordInput.focus();
-                    passwordInput.select();
-                }
+                alert('❌ Senha incorreta! A senha padrão é: doc123');
+                passwordInput.focus();
+                passwordInput.select();
             }
         },
         
@@ -401,6 +413,7 @@
             if (pdfList) {
                 pdfList.innerHTML = pdfUrls.map((url, index) => {
                     const fileName = this.extractFileName(url);
+                    const fileSize = this.formatFileSize(0); // Tamanho não disponível
                     
                     return `
                         <div class="pdf-item" onclick="PdfSystem.openPdf('${url}')">
@@ -412,14 +425,12 @@
                                 <div class="pdf-size">Documento PDF</div>
                             </div>
                             <button class="pdf-download-btn" onclick="event.stopPropagation(); window.open('${url}', '_blank')">
-                                <i class="fas fa-external-link-alt"></i> Abrir
+                                <i class="fas fa-download"></i> Abrir
                             </button>
                         </div>
                     `;
                 }).join('');
             }
-            
-            SC.logModule('pdf', `📄 Mostrando ${pdfUrls.length} PDF(s)`);
         },
         
         openPdf: function(url) {
@@ -464,7 +475,7 @@
                     }
                 }
             } else if (password !== null) {
-                alert('❌ Senha incorreta!');
+                alert('❌ Senha incorreta! A senha é: doc123');
             }
         },
         
@@ -534,15 +545,17 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+        
+        addStyles: function() {
+            // Estilos já adicionados em setupClientModal
         }
     };
 
-    // ========== INICIALIZAÇÃO IMEDIATA CORRIGIDA ==========
-    // NÃO inicializar automaticamente - apenas preparar
+    // ========== INICIALIZAÇÃO IMEDIATA ==========
     if (!window.pdfSystemInitialized) {
         window.pdfSystemInitialized = false;
         
-        // Função de inicialização segura
         const initPdfSystem = function() {
             if (window.pdfSystemInitialized) return;
             
@@ -550,33 +563,37 @@
                 window.PdfSystem.init('vendas');
                 window.pdfSystemInitialized = true;
                 
-                SC.logModule('pdf', '✅ PdfSystem inicializado (sem criar modal)');
+                // Expor função global para galeria
+                if (!window.showPdfModal) {
+                    window.showPdfModal = function(propertyId) {
+                        return window.PdfSystem.showModal(propertyId);
+                    };
+                }
+                
+                SC.logModule('pdf', '✅ PdfSystem inicializado IMEDIATAMENTE');
             } catch (error) {
                 SC.logModule('pdf', `❌ Erro na inicialização: ${error.message}`);
             }
         };
         
-        // Inicializar apenas quando necessário
-        // NÃO criar modal automaticamente
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(initPdfSystem, 500);
-        });
+        // Inicializar quando DOM estiver pronto
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPdfSystem);
+        } else {
+            initPdfSystem();
+        }
         
-        // Fallback
-        setTimeout(initPdfSystem, 1000);
+        // Tentar após 300ms para garantir
+        setTimeout(initPdfSystem, 300);
     }
 
     // ========== EXPOR FUNÇÕES GLOBAIS ==========
-    // Garantir que showPdfModal esteja disponível
+    // Garantir que showPdfModal esteja disponível mesmo se inicialização falhar
     if (!window.showPdfModal) {
         window.showPdfModal = function(propertyId) {
-            SC.logModule('pdf', '📄 showPdfModal (global) chamado');
+            SC.logModule('pdf', '📄 showPdfModal (fallback global) chamado');
             
-            if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-                return window.PdfSystem.showModal(propertyId);
-            }
-            
-            // Fallback básico
+            // Buscar imóvel
             const property = window.properties?.find(p => p.id == propertyId);
             if (!property) {
                 alert('❌ Imóvel não encontrado!');
@@ -588,6 +605,12 @@
                 return;
             }
             
+            // Usar PdfSystem se disponível
+            if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+                return window.PdfSystem.showModal(propertyId);
+            }
+            
+            // Fallback básico
             const password = prompt("🔒 Documentos do Imóvel\n\nDigite a senha para acessar os documentos:");
             if (password === "doc123") {
                 const pdfUrls = property.pdfs.split(',')
@@ -598,29 +621,12 @@
                     window.open(pdfUrls[0], '_blank');
                 }
             } else if (password !== null) {
-                alert('❌ Senha incorreta!');
+                alert('❌ Senha incorreta! A senha é: doc123');
             }
         };
-    }
-
-    // ========== COMPATIBILIDADE COM GALLERY.JS ==========
-    window.handlePdfButtonClick = function(event, propertyId) {
-        if (event) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
         
-        if (typeof window.showPdfModal === 'function') {
-            window.showPdfModal(propertyId);
-        } else {
-            alert('📄 Carregando documentos...');
-            setTimeout(() => {
-                if (typeof window.showPdfModal === 'function') {
-                    window.showPdfModal(propertyId);
-                }
-            }, 500);
-        }
-    };
+        SC.logModule('pdf', '✅ showPdfModal (fallback) criado globalmente');
+    }
 
     // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
     setTimeout(() => {
@@ -630,11 +636,36 @@
             'PdfSystem': typeof window.PdfSystem === 'object',
             'showModal (global)': typeof window.showPdfModal === 'function',
             'showModal (PdfSystem)': typeof window.PdfSystem?.showModal === 'function',
-            'modalCriado': window.PdfSystem?.state?.modalCreated || false
+            'initialized': window.pdfSystemInitialized === true
         };
         
         SC.logModule('pdf', '📊 Status:', checks);
+        
+        if (checks['showModal (global)']) {
+            SC.logModule('pdf', '✅ Galeria pode acessar PDFs via showPdfModal()');
+        }
     }, 1500);
 
-    SC.logModule('pdf', '✅ Sistema PDF corrigido e pronto');
+    // ========== COMPATIBILIDADE COM GALLERY.JS ==========
+    // Criar função de compatibilidade que a galeria pode chamar
+    window.handlePdfButtonClick = function(event, propertyId) {
+        if (event) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        
+        if (typeof window.showPdfModal === 'function') {
+            window.showPdfModal(propertyId);
+        } else if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+            window.PdfSystem.showModal(propertyId);
+        } else {
+            alert('📄 Carregando documentos...');
+            // Tentar novamente após 500ms
+            setTimeout(() => {
+                if (typeof window.showPdfModal === 'function') {
+                    window.showPdfModal(propertyId);
+                }
+            }, 500);
+        }
+    };
 })();
