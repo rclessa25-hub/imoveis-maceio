@@ -195,15 +195,15 @@
 
         cleanupDragState: function() {
             document.querySelectorAll('.dragging').forEach(el => {
-                el.classList.remove('.dragging');
+                el.classList.remove('dragging');
             });
             
             document.querySelectorAll('.drop-target').forEach(el => {
-                el.classList.remove('.drop-target');
+                el.classList.remove('drop-target');
             });
             
             document.querySelectorAll('.drag-active').forEach(el => {
-                el.classList.remove('.drag-active');
+                el.classList.remove('drag-active');
             });
         },
 
@@ -1253,39 +1253,13 @@
         if (typeof window.MediaSystem === 'undefined') {
             SC.logModule('media-system', '⚠️ CRÍTICO: MediaSystem não carregado após 5 segundos', 'error');
             
-            // Criar fallback mínimo SIMPLIFICADO (sem referências a EmergencySystem)
+            // Criar fallback mínimo
             window.MediaSystem = {
-                init: function() { 
-                    console.log('⚠️ MediaSystem fallback - sistema não carregado'); 
-                    return this; 
-                },
-                addFiles: function() { 
-                    alert('Sistema de mídia não disponível. Recarregue a página.'); 
-                    return 0; 
-                },
-                addPdfs: function() { 
-                    alert('Sistema de PDFs não disponível. Recarregue a página.'); 
-                    return 0; 
-                },
-                resetState: function() { 
-                    console.log('MediaSystem fallback - resetState'); 
-                },
-                loadExisting: function() { 
-                    console.log('MediaSystem fallback - loadExisting'); 
-                },
-                // ADICIONAR: Funções ausentes que outros módulos podem chamar
-                getOrderedMediaUrls: function() {
-                    return { images: '', pdfs: '' };
-                },
-                processAndSavePdfs: async function() {
-                    return '';
-                },
-                clearAllPdfs: function() {
-                    console.log('MediaSystem fallback - PDFs limpos');
-                },
-                loadExistingPdfsForEdit: function() {
-                    console.log('MediaSystem fallback - carregando PDFs existentes');
-                }
+                init: function() { console.log('⚠️ MediaSystem fallback - sistema não carregado'); return this; },
+                addFiles: function() { alert('Sistema de mídia não disponível. Recarregue a página.'); return 0; },
+                addPdfs: function() { alert('Sistema de PDFs não disponível. Recarregue a página.'); return 0; },
+                resetState: function() { console.log('MediaSystem fallback - resetState'); },
+                loadExisting: function() { console.log('MediaSystem fallback - loadExisting'); }
             };
             
             SC.logModule('media-system', '⚠️ Fallback mínimo do MediaSystem criado', 'warn');
