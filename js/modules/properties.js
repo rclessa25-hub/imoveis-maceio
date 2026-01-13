@@ -1051,7 +1051,7 @@ window.deleteProperty = async function(id) {
 
     // ✅ 9. Feedback ao usuário
     if (supabaseSuccess) {
-        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
+        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor não voltará a aparecer.`);
         SC.logModule('properties', `Imóvel ${id} excluído completamente (online + local)`);
 
         // ✅ 10. Excluir PDFs relacionados (opcional)
@@ -1284,15 +1284,6 @@ window.testSupabaseConnectionSimple = async function() {
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 SC.logModule('properties', 'carregado com 10 funções principais');
-
-// Função utilitária para executar tarefas em baixa prioridade (AGORA REMOVIDA - USAR SC.runLowPriority)
-// function runLowPriority(task) {
-//     if ('requestIdleCallback' in window) {
-//         requestIdleCallback(task, { timeout: 1000 });
-//     } else {
-//         setTimeout(task, 100);
-//     }
-// }
 
 // Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
