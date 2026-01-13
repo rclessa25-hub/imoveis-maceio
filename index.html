@@ -463,97 +463,6 @@
 
 <!-- ========== ADMIN (DEPENDE DO SISTEMA DE MÍDIA) ========== -->
 <script src="js/modules/admin.js" defer></script>
-
-<!-- ========== CARREGAMENTO CONDICIONAL DE MÓDULOS DE SUPORTE ========== -->
-<script>
-(() => {
-    // DEBUG: Marcar início da execução apenas em debug/test/local
-    const shouldLoadSupport = 
-        window.location.search.includes('debug=true') || 
-        window.location.search.includes('test=true') ||
-        window.location.hostname.includes('localhost') ||
-        window.location.hostname.includes('127.0.0.1');
-
-    // Debouncing para evitar múltiplos carregamentos
-    if (!window.supportModulesLoaded) {
-        window.supportModulesLoaded = false;
-    }
-
-    if (window.supportModulesLoaded) {
-        if (shouldLoadSupport) console.log('⚡ [SUPORTE] Módulos já carregados, ignorando repetição');
-        return;
-    }
-
-    if (shouldLoadSupport) {
-        console.log('🔧 [SUPORTE] Carregando módulos do repositório de suporte...');
-        window.supportModulesLoaded = true;
-
-        // Array de módulos a carregar
-        const supportModules = [
-            'debug/diagnostics.js',
-            'debug/function-verifier.js',
-            'debug/media-logger.js',
-            'debug/media-recovery.js', 
-            'debug/pdf-logger.js',
-            'debug/duplication-checker.js',
-            'debug/emergency-recovery.js',
-            'debug/simple-checker.js',
-            'debug/validation.js',
-            'debug/validation-essentials.js',    
-            'debug/core-optimizer.js',
-            'performance/optimizer.js',
-            'debug/media-migration-check.js' 
-       ];
-
-        const baseUrl = 'https://rclessa25-hub.github.io/weberlessa-support/';
-        let loadedCount = 0;
-
-        supportModules.forEach(modulePath => {
-            const fullUrl = baseUrl + modulePath;
-            console.log(`🔧 [SUPORTE] Tentando carregar: ${fullUrl}`);
-
-            const script = document.createElement('script');
-            script.src = fullUrl;
-            script.defer = true;
-
-            script.onload = () => {
-                loadedCount++;
-                console.log(`✅ [SUPORTE] ${modulePath} carregado (${loadedCount}/${supportModules.length})`);
-
-                if (loadedCount === supportModules.length) {
-                    console.log('🎉 [SUPORTE] TODOS os módulos carregados com sucesso!');
-
-                    // Executar verificações automáticas
-                    setTimeout(() => {
-                        if (typeof window.runSupportChecks === 'function') {
-                            window.runSupportChecks();
-                        } else {
-                            if (typeof window.verifySystemFunctions === 'function') {
-                                window.verifySystemFunctions();
-                            }
-                            if (typeof window.checkModuleDuplications === 'function') {
-                                window.checkModuleDuplications();
-                            }
-                        }
-                    }, 1000);
-                }
-            };
-
-            script.onerror = (error) => {
-                console.error(`❌ [SUPORTE] Falha ao carregar: ${modulePath}`, error);
-                console.error(`❌ [SUPORTE] URL falhou: ${fullUrl}`);
-            };
-
-            document.head.appendChild(script);
-        });
-
-        console.log(`📦 [SUPORTE] Total de módulos: ${supportModules.length}`);
-        console.log('🔗 [SUPORTE] Repositório: https://github.com/rclessa25-hub/weberlessa-support');
-    } else {
-        console.log('🚀 [SUPORTE] Site principal em modo produção - sem módulos de suporte');
-    }
-})();
-</script>
     
 <!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
 <script>
@@ -574,6 +483,273 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('✅ Sistema Weber Lessa inicializado');
     }, 1000);
 });
+</script>
+
+<!-- ========== CARREGAMENTO CONDICIONAL INTELIGENTE OTIMIZADO ========== -->
+<script>
+(function() {
+    // 1. AGUARDAR Core System carregar COMPLETAMENTE
+    const waitForCoreSystem = setInterval(() => {
+        const coreReady = 
+            typeof window.SharedCore !== 'undefined' &&
+            typeof window.MediaSystem !== 'undefined' &&
+            typeof window.PdfSystem !== 'undefined' &&
+            typeof window.properties !== 'undefined';
+        
+        if (coreReady) {
+            clearInterval(waitForCoreSystem);
+            console.log('✅ Core System completamente carregado');
+            
+            // 2. VERIFICAR SE DEVE CARREGAR SUPORTE (modos otimizados)
+            const shouldLoadSupport = 
+                window.location.search.includes('debug=true') || 
+                window.location.search.includes('test=true') ||
+                window.location.search.includes('diagnostics=true') ||
+                window.location.hostname.includes('localhost') ||
+                window.location.hostname.includes('127.0.0.1');
+            
+            if (shouldLoadSupport) {
+                console.log('🔧 Iniciando carregamento SEGURO do Support System...');
+                loadSupportSystemSafely();
+            } else {
+                console.log('🚀 Modo produção - Support System não carregado');
+            }
+        }
+    }, 500);
+    
+    // Timeout de segurança: 10 segundos
+    setTimeout(() => {
+        clearInterval(waitForCoreSystem);
+        console.log('⚠️ Timeout do Core System - continuando sem Support');
+    }, 10000);
+    
+    // 3. FUNÇÃO PRINCIPAL PARA CARREGAR SUPORTE COM CATEGORIZAÇÃO
+    function loadSupportSystemSafely() {
+        if (window.supportSystemLoaded) {
+            console.log('⚠️ Support System já carregado anteriormente');
+            return;
+        }
+        
+        // Marcar como carregando
+        window.supportSystemLoaded = 'loading';
+        
+        // MÓDULOS POR CATEGORIA E PRIORIDADE
+        const supportModules = {
+            // FASE 1: DIAGNÓSTICO CRÍTICO (ALTA PRIORIDADE)
+            critical: [
+                'debug/function-verifier.js',       // Verificação de funções ESSENCIAL
+                'debug/diagnostics.js',             // Diagnóstico completo com painel
+                'debug/validation-essentials.js'    // Validações essenciais do sistema
+            ],
+            
+            // FASE 2: PERFORMANCE E OTIMIZAÇÃO (MÉDIA PRIORIDADE)
+            performance: [
+                'debug/core-optimizer.js',          // Otimizações específicas do core
+                'performance/optimizer.js'          // Cache e monitoramento de performance
+            ],
+            
+            // FASE 3: VERIFICAÇÃO E RECUPERAÇÃO (MÉDIA PRIORIDADE)
+            verification: [
+                'debug/duplication-checker.js',     // Verificação de duplicações IMPORTANTE
+                'debug/emergency-recovery.js'       // Sistema de recuperação CRÍTICO
+            ],
+            
+            // FASE 4: LOGGING (BAIXA PRIORIDADE - CARREGAR EM BACKGROUND)
+            logging: [
+                'debug/media-logger.js',            // Logs de mídia (opcional)
+                'debug/pdf-logger.js'               // Logs de PDF (opcional)
+            ],
+            
+            // FASE 5: MÓDULOS TEMPORÁRIOS/LEGACY (SÓ SE NECESSÁRIO)
+            temporary: [
+                'debug/media-migration-check.js',   // Verificação de migração (temporário)
+                'debug/simple-checker.js',          // Verificação básica (redundante)
+                'debug/media-recovery.js',          // Recuperação de mídia (redundante)
+                'debug/validation.js'               // Validação simplificada (redundante)
+            ]
+        };
+        
+        // Determinar quais módulos carregar baseado no modo específico
+        const debugMode = window.location.search.includes('debug=true');
+        const diagnosticsMode = window.location.search.includes('diagnostics=true');
+        const pdfDebugMode = window.location.search.includes('debug=pdf');
+        const fullDebugMode = window.location.search.includes('full-debug=true');
+        
+        let modulesToLoad = [...supportModules.critical];
+        
+        // Adicionar módulos baseado no modo específico
+        if (debugMode || diagnosticsMode) {
+            modulesToLoad = [
+                ...modulesToLoad,
+                ...supportModules.performance,
+                ...supportModules.verification
+            ];
+        }
+        
+        if (debugMode) {
+            modulesToLoad = [...modulesToLoad, ...supportModules.logging];
+        }
+        
+        // Carregar em fases com delays estratégicos
+        loadModulesInPhases(modulesToLoad, fullDebugMode ? supportModules.temporary : []);
+    }
+    
+    // 4. CARREGAMENTO EM FASES OTIMIZADO
+    function loadModulesInPhases(primaryModules, secondaryModules = []) {
+        console.log(`📦 Carregando ${primaryModules.length} módulos primários em fases...`);
+        
+        // Fase 1: Módulos críticos (sequencialmente para evitar conflitos)
+        loadModulesSequentially(primaryModules.slice(0, 3), function() {
+            console.log('✅ Módulos críticos carregados');
+            
+            // Executar verificações imediatas do sistema
+            setTimeout(() => {
+                if (typeof window.verifySystemFunctions === 'function') {
+                    window.verifySystemFunctions();
+                }
+                if (typeof window.runDiagnostics === 'function') {
+                    window.runDiagnostics();
+                }
+            }, 500);
+            
+            // Fase 2: Restante dos primários (paralelo com delay)
+            setTimeout(() => {
+                if (primaryModules.length > 3) {
+                    loadModulesInParallel(primaryModules.slice(3), function() {
+                        console.log('✅ Todos os módulos primários carregados');
+                        
+                        // Marcar como carregado
+                        window.supportSystemLoaded = true;
+                        
+                        // Executar otimizações após carregamento completo
+                        setTimeout(() => {
+                            if (typeof window.optimizeCoreSystem === 'function') {
+                                window.optimizeCoreSystem();
+                            }
+                        }, 1000);
+                        
+                        // Fase 3: Módulos secundários em background (apenas se solicitado)
+                        if (secondaryModules.length > 0) {
+                            setTimeout(() => {
+                                loadModulesInBackground(secondaryModules);
+                            }, 2000);
+                        }
+                    });
+                } else {
+                    window.supportSystemLoaded = true;
+                }
+            }, 1000);
+        });
+    }
+    
+    // 5. FUNÇÕES AUXILIARES DE CARREGAMENTO OTIMIZADAS
+    function loadModulesSequentially(modules, callback) {
+        let index = 0;
+        
+        function loadNext() {
+            if (index >= modules.length) {
+                if (callback) callback();
+                return;
+            }
+            
+            const modulePath = modules[index];
+            loadModule(modulePath, function(success) {
+                if (success) {
+                    console.log(`✅ ${modulePath} carregado (${index + 1}/${modules.length})`);
+                }
+                index++;
+                setTimeout(loadNext, 250); // Delay otimizado entre módulos
+            });
+        }
+        
+        loadNext();
+    }
+    
+    function loadModulesInParallel(modules, callback) {
+        let loaded = 0;
+        const total = modules.length;
+        
+        if (total === 0) {
+            if (callback) callback();
+            return;
+        }
+        
+        console.log(`📥 Carregando ${total} módulos em paralelo...`);
+        
+        modules.forEach(modulePath => {
+            loadModule(modulePath, function(success) {
+                loaded++;
+                if (loaded === total && callback) {
+                    callback();
+                }
+            });
+        });
+    }
+    
+    function loadModulesInBackground(modules) {
+        if (modules.length === 0) return;
+        
+        console.log(`📥 Carregando ${modules.length} módulos secundários em background...`);
+        
+        modules.forEach(modulePath => {
+            const script = document.createElement('script');
+            script.src = `https://rclessa25-hub.github.io/weberlessa-support/${modulePath}`;
+            script.async = true;
+            script.defer = true;
+            
+            script.onload = function() {
+                console.log(`✅ ${modulePath} carregado em background`);
+            };
+            
+            script.onerror = function() {
+                console.warn(`⚠️ ${modulePath} falhou em background (não crítico)`);
+            };
+            
+            document.head.appendChild(script);
+        });
+    }
+    
+    function loadModule(modulePath, onComplete) {
+        const fullUrl = `https://rclessa25-hub.github.io/weberlessa-support/${modulePath}`;
+        
+        const script = document.createElement('script');
+        script.src = fullUrl;
+        
+        script.onload = function() {
+            if (onComplete) onComplete(true);
+        };
+        
+        script.onerror = function(error) {
+            console.error(`❌ Falha ao carregar ${modulePath}:`, error);
+            if (onComplete) onComplete(false);
+        };
+        
+        document.head.appendChild(script);
+    }
+    
+    // 6. VERIFICAÇÃO DE ORDEM DE CARREGAMENTO (adicionada da recomendação anterior)
+    setTimeout(() => {
+        const modulesStatus = {
+            'MediaSystem': typeof window.MediaSystem !== 'undefined',
+            'PdfSystem': typeof window.PdfSystem !== 'undefined',
+            'SharedCore': typeof window.SharedCore !== 'undefined',
+            'handlePdfButtonClick': typeof window.handlePdfButtonClick === 'function',
+            'SupportSystem': window.supportSystemLoaded === true
+        };
+        
+        console.table(modulesStatus);
+        
+        // Se MediaSystem não carregou, tentar recarregar (apenas em produção)
+        if (!modulesStatus.MediaSystem && !window.location.search.includes('debug=true')) {
+            console.log('⚠️ MediaSystem não carregou. Tentando recarregar...');
+            const script = document.createElement('script');
+            script.src = 'js/modules/media/media-unified.js';
+            script.onload = () => console.log('✅ media-unified.js recarregado');
+            script.onerror = () => console.error('❌ Falha ao recarregar media-unified.js');
+            document.head.appendChild(script);
+        }
+    }, 3000);
+})();
 </script>
     
 </body>
