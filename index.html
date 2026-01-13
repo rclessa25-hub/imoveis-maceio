@@ -463,6 +463,97 @@
 
 <!-- ========== ADMIN (DEPENDE DO SISTEMA DE MÍDIA) ========== -->
 <script src="js/modules/admin.js" defer></script>
+
+<!-- ========== CARREGAMENTO CONDICIONAL DE MÓDULOS DE SUPORTE ========== -->
+<script>
+(() => {
+    // DEBUG: Marcar início da execução apenas em debug/test/local
+    const shouldLoadSupport = 
+        window.location.search.includes('debug=true') || 
+        window.location.search.includes('test=true') ||
+        window.location.hostname.includes('localhost') ||
+        window.location.hostname.includes('127.0.0.1');
+
+    // Debouncing para evitar múltiplos carregamentos
+    if (!window.supportModulesLoaded) {
+        window.supportModulesLoaded = false;
+    }
+
+    if (window.supportModulesLoaded) {
+        if (shouldLoadSupport) console.log('⚡ [SUPORTE] Módulos já carregados, ignorando repetição');
+        return;
+    }
+
+    if (shouldLoadSupport) {
+        console.log('🔧 [SUPORTE] Carregando módulos do repositório de suporte...');
+        window.supportModulesLoaded = true;
+
+        // Array de módulos a carregar
+        const supportModules = [
+            'debug/diagnostics.js',
+            'debug/function-verifier.js',
+            'debug/media-logger.js',
+            'debug/media-recovery.js', 
+            'debug/pdf-logger.js',
+            'debug/duplication-checker.js',
+            'debug/emergency-recovery.js',
+            'debug/simple-checker.js',
+            'debug/validation.js',
+            'debug/validation-essentials.js',    
+            'debug/core-optimizer.js',
+            'performance/optimizer.js',
+            'debug/media-migration-check.js' 
+       ];
+
+        const baseUrl = 'https://rclessa25-hub.github.io/weberlessa-support/';
+        let loadedCount = 0;
+
+        supportModules.forEach(modulePath => {
+            const fullUrl = baseUrl + modulePath;
+            console.log(`🔧 [SUPORTE] Tentando carregar: ${fullUrl}`);
+
+            const script = document.createElement('script');
+            script.src = fullUrl;
+            script.defer = true;
+
+            script.onload = () => {
+                loadedCount++;
+                console.log(`✅ [SUPORTE] ${modulePath} carregado (${loadedCount}/${supportModules.length})`);
+
+                if (loadedCount === supportModules.length) {
+                    console.log('🎉 [SUPORTE] TODOS os módulos carregados com sucesso!');
+
+                    // Executar verificações automáticas
+                    setTimeout(() => {
+                        if (typeof window.runSupportChecks === 'function') {
+                            window.runSupportChecks();
+                        } else {
+                            if (typeof window.verifySystemFunctions === 'function') {
+                                window.verifySystemFunctions();
+                            }
+                            if (typeof window.checkModuleDuplications === 'function') {
+                                window.checkModuleDuplications();
+                            }
+                        }
+                    }, 1000);
+                }
+            };
+
+            script.onerror = (error) => {
+                console.error(`❌ [SUPORTE] Falha ao carregar: ${modulePath}`, error);
+                console.error(`❌ [SUPORTE] URL falhou: ${fullUrl}`);
+            };
+
+            document.head.appendChild(script);
+        });
+
+        console.log(`📦 [SUPORTE] Total de módulos: ${supportModules.length}`);
+        console.log('🔗 [SUPORTE] Repositório: https://github.com/rclessa25-hub/weberlessa-support');
+    } else {
+        console.log('🚀 [SUPORTE] Site principal em modo produção - sem módulos de suporte');
+    }
+})();
+</script>
     
 <!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
 <script>
@@ -483,155 +574,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('✅ Sistema Weber Lessa inicializado');
     }, 1000);
 });
-</script>
-
-<!-- ========== CARREGAMENTO CONDICIONAL INTELIGENTE ========== -->
-<!-- AGORA: Support System carrega APÓS Core, EVITANDO CONFLITOS -->
-<script>
-(function() {
-    // 1. AGUARDAR Core System carregar COMPLETAMENTE
-    const waitForCoreSystem = setInterval(() => {
-        // Verificar se módulos ESSENCIAIS do Core já carregaram
-        const coreReady = 
-            typeof window.SharedCore !== 'undefined' &&
-            typeof window.MediaSystem !== 'undefined' &&
-            typeof window.PdfSystem !== 'undefined' &&
-            typeof window.properties !== 'undefined';
-        
-        if (coreReady) {
-            clearInterval(waitForCoreSystem);
-            console.log('✅ Core System completamente carregado');
-            
-            // 2. SÓ AGORA verificar se precisa carregar Support
-            const shouldLoadSupport = 
-                window.location.search.includes('debug=true') || 
-                window.location.search.includes('test=true');
-            
-            if (shouldLoadSupport) {
-                console.log('🔧 Iniciando carregamento SEGURO do Support System...');
-                loadSupportSystemSafely();
-            } else {
-                console.log('🚀 Modo produção - Support System não carregado');
-            }
-        }
-    }, 500); // Verificar a cada 500ms
-    
-    // Timeout de segurança: 10 segundos
-    setTimeout(() => {
-        clearInterval(waitForCoreSystem);
-        console.log('⚠️ Timeout do Core System - continuando sem Support');
-    }, 10000);
-    
-    // 3. FUNÇÃO SEGURA para carregar Support System
-    function loadSupportSystemSafely() {
-        // Verificar se já foi carregado
-        if (window.supportSystemLoaded) {
-            console.log('⚠️ Support System já carregado anteriormente');
-            return;
-        }
-        
-        // Marcar como carregando
-        window.supportSystemLoaded = 'loading';
-        
-        // ORDEM CRÍTICA: Carregar diagnóstico PRIMEIRO
-        const essentialSupportModules = [
-            'debug/function-verifier.js',    // Verifica funções ANTES
-            'debug/diagnostics.js',          // Diagnóstico principal
-            'debug/validation-essentials.js' // Validação básica
-        ];
-        
-        console.log(`📦 Carregando ${essentialSupportModules.length} módulos essenciais primeiro...`);
-        
-        // Carregar módulos essenciais sequencialmente
-        loadModulesSequentially(essentialSupportModules, function() {
-            console.log('✅ Módulos essenciais do Support carregados');
-            
-            // AGORA verificar compatibilidade
-            if (window.functionVerifier && typeof window.functionVerifier === 'function') {
-                window.functionVerifier();
-            }
-            
-            // Marcar como carregado
-            window.supportSystemLoaded = true;
-            
-            // Carregar módulos adicionais em background (baixa prioridade)
-            setTimeout(() => {
-                const additionalModules = [
-                    'debug/media-logger.js',
-                    'debug/pdf-logger.js',
-                    'debug/duplication-checker.js',
-                    'debug/emergency-recovery.js',
-                    'debug/simple-checker.js',
-                    'debug/validation.js',
-                    'debug/core-optimizer.js',
-                    'performance/optimizer.js',
-                    'debug/media-migration-check.js'
-                ];
-                
-                loadModulesInBackground(additionalModules);
-            }, 2000); // 2 segundos depois
-        });
-    }
-    
-    // 4. Função para carregar sequencialmente (evita conflitos)
-    function loadModulesSequentially(modules, callback) {
-        let index = 0;
-        
-        function loadNext() {
-            if (index >= modules.length) {
-                if (callback) callback();
-                return;
-            }
-            
-            const modulePath = modules[index];
-            const fullUrl = `https://rclessa25-hub.github.io/weberlessa-support/${modulePath}`;
-            
-            console.log(`📥 [${index + 1}/${modules.length}] Carregando: ${modulePath}`);
-            
-            const script = document.createElement('script');
-            script.src = fullUrl;
-            
-            script.onload = function() {
-                console.log(`✅ ${modulePath} carregado`);
-                index++;
-                setTimeout(loadNext, 300); // Pequeno delay entre carregamentos
-            };
-            
-            script.onerror = function(error) {
-                console.error(`❌ Falha ao carregar ${modulePath}:`, error);
-                index++;
-                setTimeout(loadNext, 300); // Continuar mesmo com erro
-            };
-            
-            document.head.appendChild(script);
-        }
-        
-        loadNext();
-    }
-    
-    // 5. Função para carregar em background (baixa prioridade)
-    function loadModulesInBackground(modules) {
-        console.log(`📥 Carregando ${modules.length} módulos adicionais em background...`);
-        
-        modules.forEach(modulePath => {
-            const fullUrl = `https://rclessa25-hub.github.io/weberlessa-support/${modulePath}`;
-            
-            const script = document.createElement('script');
-            script.src = fullUrl;
-            script.async = true; // Carregar assincronamente
-            
-            script.onload = function() {
-                console.log(`✅ ${modulePath} carregado em background`);
-            };
-            
-            script.onerror = function(error) {
-                console.warn(`⚠️ ${modulePath} falhou em background:`, error);
-            };
-            
-            document.head.appendChild(script);
-        });
-    }
-})();
 </script>
     
 </body>
