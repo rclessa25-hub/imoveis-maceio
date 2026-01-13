@@ -224,7 +224,6 @@ window.toggleAdminPanel = function() {
 };
 
 // ========== FUNÇÕES DO FORMULÁRIO ==========
-// NO admin.js - ATUALIZAR função cancelEdit (linha ~130)
 window.cancelEdit = function() {
     SC.logModule('admin', 'Cancelando edição...');
     SC.logModule('admin', 'LIMPEZA COMPLETA DO FORMULÁRIO', 'info');
@@ -253,7 +252,7 @@ window.cancelEdit = function() {
         if (window.existingPdfFiles) window.existingPdfFiles = [];
     }
     
-    // 4. ⚠️⚠️⚠️ LIMPAR TODOS OS CAMPOS DE TEXTO DO FORMULÁRIO ⚠️⚠️⚠️
+    // 4. LIMPAR TODOS OS CAMPOS DE TEXTO DO FORMULÁRIO
     SC.logModule('admin', 'Limpando campos de texto...');
     const form = document.getElementById('propertyForm');
     if (form) {
@@ -1368,7 +1367,7 @@ function initializeAdminSystem() {
         }
     }, 2000);
 
-    // 6. VERIFICAR SISTEMA DE LOADING (⭐ NOVA SEÇÃO ⭐)
+    // 6. VERIFICAR SISTEMA DE LOADING
     SC.logModule('admin', 'Verificando sistema de loading...');
     if (typeof LoadingManager !== 'undefined') {
         SC.logModule('admin', 'LoadingManager disponível');
@@ -2321,8 +2320,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500);
 });
 
-SC.logModule('admin', 'pronto e funcional');
-
 // CORREÇÃO DEFINITIVA: Ocultar botão de teste de upload
 function hideMediaTestButtonPermanently() {
     SC.logModule('admin', 'Ocultando botão de teste de mídia definitivamente...');
@@ -2537,4 +2534,142 @@ document.addEventListener('DOMContentLoaded', function() {
 
 SC.logModule('admin', 'Sistema de loading visual adicionado ao admin.js');
 
-SC.logModule('admin', 'pronto e funcional - SEM ERROS DE SINTAXE');
+// ========== ADICIONAR INTEGRAÇÃO COMPLETA COM PDFSYSTEM ==========
+// ✅ VERIFICAÇÃO DE INICIALIZAÇÃO DO PdfSystem
+setTimeout(() => {
+    SC.logModule('admin', '🔍 Verificando integração com PdfSystem...');
+    
+    if (window.PdfSystem && typeof window.PdfSystem.init === 'function') {
+        try {
+            window.PdfSystem.init('vendas');
+            SC.logModule('admin', '✅ PdfSystem inicializado via admin.js');
+        } catch (error) {
+            SC.logModule('admin', `⚠️ PdfSystem já inicializado ou erro: ${error.message}`);
+        }
+    }
+    
+    // Garantir que showPdfModal está disponível globalmente
+    if (!window.showPdfModal && window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        window.showPdfModal = function(propertyId) {
+            return window.PdfSystem.showModal(propertyId);
+        };
+        SC.logModule('admin', '✅ showPdfModal configurado via PdfSystem');
+    }
+    
+    // Verificar se a função handlePdfButtonClick existe para galeria
+    if (!window.handlePdfButtonClick && typeof window.showPdfModal === 'function') {
+        window.handlePdfButtonClick = function(event, propertyId) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            window.showPdfModal(propertyId);
+        };
+        SC.logModule('admin', '✅ handlePdfButtonClick configurado para galeria');
+    }
+}, 1500);
+
+// ✅ EXPORT DE FUNÇÕES ESSENCIAIS PARA GALLERY.JS
+// Garantir que as funções que a galeria precisa estão disponíveis
+if (typeof window.ensurePdfModalExists !== 'function') {
+    window.ensurePdfModalExists = function(forceComplete = false) {
+        // Criar modal básico se não existir
+        let modal = document.getElementById('pdfModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'pdfModal';
+            modal.className = 'pdf-modal';
+            modal.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                z-index: 10000;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            modal.innerHTML = `
+                <div class="pdf-modal-content" style="background: white; border-radius: 10px; padding: 2rem; max-width: 400px; width: 90%; text-align: center;">
+                    <h3 id="pdfModalTitle" style="color: var(--primary); margin: 0 0 1rem 0;">
+                        <i class="fas fa-file-pdf"></i> Documentos do Imóvel
+                    </h3>
+                    <input type="password" id="pdfPassword" placeholder="Digite a senha para acessar" 
+                           style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; margin: 1rem 0;">
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button onclick="accessPdfDocuments()" 
+                                style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                            <i class="fas fa-lock-open"></i> Acessar
+                        </button>
+                        <button onclick="closePdfModal()" 
+                                style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        return modal;
+    };
+}
+
+// ✅ FUNÇÃO DE FALLBACK ULTIMATE SE NENHUM SISTEMA PDF FUNCIONAR
+if (!window.showPdfModal) {
+    window.showPdfModal = function(propertyId) {
+        SC.logModule('admin', '📄 showPdfModal (FALLBACK ULTIMATE) chamado');
+        
+        // Buscar imóvel
+        const property = window.properties?.find(p => p.id == propertyId);
+        if (!property) {
+            alert('❌ Imóvel não encontrado!');
+            return;
+        }
+        
+        if (!property.pdfs || property.pdfs === 'EMPTY') {
+            alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
+            return;
+        }
+        
+        const password = prompt("🔒 Documentos do Imóvel\n\nDigite a senha para acessar os documentos:");
+        if (password === "doc123") {
+            const pdfUrls = property.pdfs.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            
+            if (pdfUrls.length > 0) {
+                window.open(pdfUrls[0], '_blank');
+            }
+        } else if (password !== null) {
+            alert('❌ Senha incorreta! A senha é: doc123');
+        }
+    };
+    SC.logModule('admin', '✅ showPdfModal (fallback ultimate) criado');
+}
+
+// ✅ TESTE DE INTEGRAÇÃO APÓS 3 SEGUNDOS
+setTimeout(() => {
+    SC.logModule('admin', '🧪 TESTE DE INTEGRAÇÃO DO SISTEMA COMPLETO');
+    SC.logModule('admin', `- MediaSystem: ${window.MediaSystem ? '✅ Disponível' : '❌ Ausente'}`);
+    SC.logModule('admin', `- PdfSystem: ${window.PdfSystem ? '✅ Disponível' : '❌ Ausente'}`);
+    SC.logModule('admin', `- showPdfModal: ${typeof window.showPdfModal === 'function' ? '✅ Funcional' : '❌ Falha'}`);
+    
+    // Se tiver um imóvel para testar
+    if (window.properties && window.properties.length > 0) {
+        const testProperty = window.properties[0];
+        SC.logModule('admin', `📊 Imóvel de teste disponível: ID ${testProperty.id} - "${testProperty.title}"`);
+        SC.logModule('admin', `📄 PDFs: ${testProperty.pdfs && testProperty.pdfs !== 'EMPTY' ? '✅ Disponível' : '❌ Sem PDFs'}`);
+        
+        // Teste de funcionalidade
+        if (testProperty.pdfs && testProperty.pdfs !== 'EMPTY' && 
+            typeof window.showPdfModal === 'function') {
+            SC.logModule('admin', '🧪 Sistema PDF pronto para uso na galeria!');
+        }
+    }
+}, 3000);
+
+SC.logModule('admin', '✅ Sistema admin completamente integrado com MediaSystem e PdfSystem');
