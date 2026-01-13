@@ -280,7 +280,7 @@ const PdfSystem = (function() {
             return modal;
         },
 
-        // Validação de senha (UI)
+        // Validação de senha (UI) - VERSÃO CORRIGIDA
         validatePasswordAndShowList() {
             SC.logModule('pdf', '🔓 PdfSystem.validatePasswordAndShowList() - Função UI');
             const passwordInput = document.getElementById('pdfPassword');
@@ -331,9 +331,10 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // Abrir primeiro PDF
-            window.open(pdfUrls[0], '_blank');
+            // ✅ CORREÇÃO: Em vez de abrir apenas o primeiro PDF,
+            // mostrar a lista de documentos para o usuário escolher
             this.closeModal();
+            this.showDocumentList(propertyId, property.title, pdfUrls);
         },
         
         // Fechar modal (UI)
@@ -574,29 +575,26 @@ const PdfSystem = (function() {
 // Exportação global (mantém compatibilidade)
 window.PdfSystem = PdfSystem;
 
-// Inicialização independente (NÃO depende mais de MediaSystem)
+// Inicialização única (compatibilidade)
 if (!window.pdfSystemInitialized) {
     window.pdfSystemInitialized = false;
     
     const initPdfSystem = function() {
         if (window.pdfSystemInitialized) return;
         if (typeof window.PdfSystem !== 'undefined') {
-            try {
-                window.PdfSystem.init();
-                window.pdfSystemInitialized = true;
-                SC.logModule('pdf', '✅ PdfSystem inicializado independentemente');
-            } catch (error) {
-                SC.logModule('pdf', `❌ Erro na inicialização: ${error.message}`);
-                // Forçar inicialização básica
-                window.PdfSystem = window.PdfSystem || {
-                    showModal: function(propertyId) {
-                        alert('Sistema PDF em manutenção. Tente novamente em instantes.');
-                    }
-                };
-            }
+            window.PdfSystem.init();
+            window.pdfSystemInitialized = true;
+            SC.logModule('pdf', '✅ PdfSystem refatorado inicializado como cliente UI');
         }
     };
     
-    // Inicializar independentemente - SEM DEPENDER DE MEDIASYSTEM
-    setTimeout(initPdfSystem, 100);
+    // Inicializar após MediaSystem (CRÍTICO)
+    setTimeout(() => {
+        if (window.MediaSystem) {
+            initPdfSystem();
+        } else {
+            SC.logModule('pdf', '⏳ Aguardando MediaSystem para inicializar PdfSystem...');
+            setTimeout(initPdfSystem, 1000);
+        }
+    }, 1500);
 }
