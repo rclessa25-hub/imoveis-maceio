@@ -877,7 +877,7 @@
                                     let successMessage = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
                                     if (newProperty.images && newProperty.images !== 'EMPTY') {
                                         const imageCount = newProperty.images.split(',').filter(url => url.trim() !== '').length;
-                                        successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) incluída(s)`;
+                                        successMessage += `\n📸 ${imageCount} foto(s)/vídeos incluída(s)`;
                                     }
                                     if (newProperty.pdfs && newProperty.pdfs !== 'EMPTY') {
                                         const pdfCount = newProperty.pdfs.split(',').filter(url => url.trim() !== '').length;
@@ -2372,20 +2372,8 @@
             setTimeout(hideMediaTestButtonPermanently, 100);
             document.addEventListener('DOMContentLoaded', hideMediaTestButtonPermanently);
 
-            // ========== REMOVER REFERÊNCIAS A SISTEMAS INEXISTENTES ==========
-            // REMOVER COMPLETAMENTE as referências a EmergencySystem e PdfLogger
-            // Substituir por verificação segura
-
-            // Função auxiliar para verificar sistemas sem gerar erros
-            window.safeCheckSystem = function(systemName) {
-                try {
-                    return typeof window[systemName] !== 'undefined';
-                } catch (error) {
-                    return false;
-                }
-            };
-
-            // Ocultar botão de teste de mídia (MANTIDO)
+            // Em js/modules/admin.js - ADICIONAR NO FINAL DO ARQUIVO (antes do último console.log)
+            // Ocultar botão de teste de mídia
             setTimeout(() => {
                 const testBtn = document.getElementById('media-test-btn');
                 if (testBtn) {
@@ -2393,27 +2381,11 @@
                     SC.logModule('admin', 'Botão de teste de mídia ocultado');
                 }
                 
-                // Ocultar botão de emergência (MANTIDO)
+                // Ocultar botão de emergência (opcional - mantém funcionalidade mas esconde)
                 const emergencyBtn = document.getElementById('emergency-admin-btn');
                 if (emergencyBtn) {
                     emergencyBtn.style.display = 'none';
                     SC.logModule('admin', 'Botão de emergência ocultado');
-                }
-                
-                // VERIFICAÇÃO SEGURA: Não tentar acessar sistemas inexistentes
-                const missingSystems = [];
-                
-                // Verificar apenas sistemas que REALMENTE existem
-                const requiredSystems = ['MediaSystem', 'PdfSystem', 'ValidationSystem', 'SharedCore'];
-                
-                requiredSystems.forEach(sys => {
-                    if (!window.safeCheckSystem(sys)) {
-                        missingSystems.push(sys);
-                    }
-                });
-                
-                if (missingSystems.length > 0) {
-                    SC.logModule('admin', `⚠️ Sistemas ausentes: ${missingSystems.join(', ')}`);
                 }
             }, 3000);
 
