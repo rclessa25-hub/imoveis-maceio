@@ -224,32 +224,32 @@ window.galleryStyles = `
         transform: scale(1.1);
     }
     
-    /* Botão PDF na galeria - CORRIGIDO */
+    /* Botão PDF na galeria - VERSÃO ORIGINAL */
     .pdf-access {
         position: absolute;
-        bottom: 50px;
+        bottom: 10px;
         right: 10px;
-        background: rgba(220, 53, 69, 0.95);
+        background: rgba(26, 82, 118, 0.9); /* Azul original */
         color: white;
         border: none;
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1rem;
+        font-size: 0.9rem;
         cursor: pointer;
-        z-index: 15;
+        z-index: 10;
         transition: all 0.3s ease;
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         border: 2px solid white;
     }
     
     .pdf-access:hover {
-        background: #dc3545;
+        background: #1a5276; /* Azul escuro no hover */
         transform: scale(1.1);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     
     .pdf-access:active {
@@ -295,11 +295,11 @@ window.galleryStyles = `
         }
         
         .pdf-access {
-            bottom: 60px;
+            bottom: 15px;
             right: 15px;
-            width: 44px;
-            height: 44px;
-            font-size: 1.1rem;
+            width: 40px;
+            height: 40px;
+            font-size: 1rem;
         }
     }
     
@@ -330,7 +330,7 @@ window.galleryStyles = `
 
 // ========== FUNÇÕES BÁSICAS DA GALERIA ==========
 
-// Função para criar a galeria no card do imóvel - VERSÃO CORRIGIDA
+// Função para criar a galeria no card do imóvel - VERSÃO ORIGINAL
 window.createPropertyGallery = function(property) {
     console.log('🖼️ Criando galeria para:', property.title);
     
@@ -347,9 +347,6 @@ window.createPropertyGallery = function(property) {
         imageUrls[0] : 
         'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
     
-    // Verificar se há PDFs
-    const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
-    
     // Se só tem uma imagem, mostrar imagem estática
     if (imageUrls.length <= 1) {
         return `
@@ -364,10 +361,10 @@ window.createPropertyGallery = function(property) {
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
                 
-                <!-- BOTÃO PDF PARA IMAGEM ÚNICA - CORRIGIDO -->
-                ${hasPdfs ? 
+                <!-- BOTÃO PDF PARA IMAGEM ÚNICA - VERSÃO ORIGINAL -->
+                ${property.pdfs && property.pdfs !== 'EMPTY' ? 
                     `<button class="pdf-access"
-                         onclick="handlePdfButtonClick(event, ${property.id})"
+                         onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})"
                          title="Documentos do imóvel (senha: doc123)">
                         <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
@@ -408,82 +405,15 @@ window.createPropertyGallery = function(property) {
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-            <!-- BOTÃO PDF PARA MÚLTIPLAS IMAGENS - CORRIGIDO -->
-            ${hasPdfs ? 
+            <!-- BOTÃO PDF PARA MÚLTIPLAS IMAGENS - VERSÃO ORIGINAL -->
+            ${property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
-                     onclick="handlePdfButtonClick(event, ${property.id})"
+                     onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})"
                      title="Documentos do imóvel (senha: doc123)">
                     <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
         </div>
     `;
-};
-
-// ========== FUNÇÃO PARA MANIPULAR CLIQUE NO BOTÃO PDF - VERSÃO CORRIGIDA ==========
-window.handlePdfButtonClick = function(event, propertyId) {
-    console.log('📄 PDF button clicked for property:', propertyId);
-    
-    // Prevenir propagação para não abrir a galeria
-    if (event) {
-        event.stopPropagation();
-        event.preventDefault();
-        event.stopImmediatePropagation();
-    }
-    
-    // Pequeno delay para garantir que eventos não se propaguem
-    setTimeout(() => {
-        // Usar o PdfSystem refatorado
-        if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-            console.log('🔄 Usando PdfSystem.showModal() do pdf-unified.js');
-            try {
-                window.PdfSystem.showModal(propertyId);
-                return;
-            } catch (error) {
-                console.error('❌ Erro no PdfSystem:', error);
-            }
-        }
-        
-        // Fallback para função global
-        if (typeof window.showPdfModal === 'function') {
-            console.log('🔄 Usando showPdfModal (compatibilidade)');
-            try {
-                window.showPdfModal(propertyId);
-                return;
-            } catch (error) {
-                console.error('❌ Erro no showPdfModal:', error);
-            }
-        }
-        
-        // Último recurso: modal manual básico
-        console.log('⚠️ Nenhum sistema PDF disponível, criando modal básico');
-        const password = prompt("🔒 Documentos do Imóvel\n\nDigite a senha para acessar os documentos:");
-        if (password === "doc123") {
-            // Buscar imóvel
-            const property = window.properties?.find(p => p.id == propertyId);
-            if (property && property.pdfs && property.pdfs !== 'EMPTY') {
-                const pdfUrls = property.pdfs.split(',')
-                    .map(url => url.trim())
-                    .filter(url => url && url !== 'EMPTY');
-                
-                if (pdfUrls.length > 0) {
-                    // Mostrar opções
-                    const docList = pdfUrls.map((url, i) => `${i + 1}. ${url.split('/').pop()}`).join('\n');
-                    const choice = prompt(`Escolha um documento (1-${pdfUrls.length}):\n\n${docList}`);
-                    const index = parseInt(choice) - 1;
-                    
-                    if (index >= 0 && index < pdfUrls.length) {
-                        window.open(pdfUrls[index], '_blank');
-                    } else if (pdfUrls.length === 1) {
-                        window.open(pdfUrls[0], '_blank');
-                    }
-                }
-            }
-        } else if (password !== null) {
-            alert('❌ Senha incorreta! A senha é: doc123');
-        }
-    }, 10);
-    
-    return false;
 };
 
 // Função para abrir a galeria
@@ -798,7 +728,7 @@ window.optimizeGalleryForMobile = function() {
     });
     
     // Ajustar botões para touch
-    const galleryButtons = document.querySelectorAll('.gallery-modal-btn, .gallery-modal-close, .pdf-access');
+    const galleryButtons = document.querySelectorAll('.gallery-modal-btn, .gallery-modal-close');
     galleryButtons.forEach(button => {
         button.style.minWidth = '50px';
         button.style.minHeight = '50px';
@@ -822,8 +752,7 @@ window.validateGalleryModule = function() {
     const basicChecks = {
         'openGallery': typeof window.openGallery === 'function',
         'closeGallery': typeof window.closeGallery === 'function',
-        'currentGalleryImages': Array.isArray(window.currentGalleryImages),
-        'handlePdfButtonClick': typeof window.handlePdfButtonClick === 'function'
+        'currentGalleryImages': Array.isArray(window.currentGalleryImages)
     };
     
     const allValid = Object.values(basicChecks).every(check => check === true);
@@ -860,8 +789,3 @@ window.initializeGalleryModule = function() {
 
 // ========== EXPORT DO MÓDULO ==========
 console.log('✅ gallery.js completamente carregado e pronto');
-
-// Inicialização automática (opcional)
-setTimeout(() => {
-    window.initializeGalleryModule();
-}, 500);
