@@ -322,9 +322,8 @@
 
     // Função para criar a galeria no card do imóvel - USANDO showPdfModal
     window.createPropertyGallery = function(property) {
-        SC.logModule('gallery', `🖼️ Criando galeria para: ${property.title}`);
+        console.log('🖼️ Criando galeria para:', property.title);
         
-        // Verificar se há imagens
         const hasImages = property.images && 
                          property.images.length > 0 && 
                          property.images !== 'EMPTY';
@@ -346,16 +345,15 @@
                          alt="${property.title}"
                          onclick="openGallery(${property.id})"
                          onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                    
                     ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                     ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                     ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
                     
-                    <!-- BOTÃO PDF PARA IMAGEM ÚNICA - USANDO showPdfModal -->
+                    <!-- BOTÃO PDF CORRIGIDO -->
                     ${property.pdfs && property.pdfs !== 'EMPTY' ? 
-                        `<button class="pdf-access"
-                             onclick="event.stopPropagation(); event.preventDefault(); window.showPdfModal(${property.id})"
-                             title="Documentos do imóvel (senha: doc123)">
+                        `<button class="pdf-access" 
+                                onclick="event.stopPropagation(); event.preventDefault(); if (typeof window.showPdfModal === 'function') { window.showPdfModal(${property.id}); } else { alert('Sistema de documentos carregando...'); }" 
+                                title="Documentos do imóvel (senha: doc123)">
                             <i class="fas fa-file-pdf"></i>
                         </button>` : ''}
                 </div>
@@ -382,7 +380,7 @@
                         ${imageUrls.map((_, index) => `
                             <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
                                  data-index="${index}"
-                                 onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
+                                 onclick="event.stopPropagation(); event.preventDefault(); showGalleryImage(${property.id}, ${index})"></div>
                         `).join('')}
                     </div>
                     
@@ -395,13 +393,13 @@
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 
-                <!-- BOTÃO PDF PARA MÚLTIPLAS IMAGENS - USANDO showPdfModal -->
+                <!-- BOTÃO PDF CORRIGIDO -->
                 ${property.pdfs && property.pdfs !== 'EMPTY' ? 
                     `<button class="pdf-access"
-                         onclick="event.stopPropagation(); event.preventDefault(); window.showPdfModal(${property.id})"
+                         onclick="event.stopPropagation(); event.preventDefault(); if (typeof window.showPdfModal === 'function') { window.showPdfModal(${property.id}); } else { alert('Sistema de documentos carregando...'); }"
                          title="Documentos do imóvel (senha: doc123)">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>` : ''}
+                    <i class="fas fa-file-pdf"></i>
+                </button>` : ''}
             </div>
         `;
     };
