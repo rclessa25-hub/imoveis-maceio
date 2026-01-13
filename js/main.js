@@ -80,4 +80,44 @@ window.handlePdfButtonClick = function(event, propertyId) {
     
     return false;
 };
+
+// ========== VERIFICAÇÃO DE SISTEMA SAUDÁVEL ==========
+setTimeout(() => {
+    console.group('🏥 VERIFICAÇÃO DE SAÚDE DO SISTEMA');
+    
+    // 1. Verificar sistemas essenciais
+    const essentialSystems = {
+        'SharedCore': typeof window.SharedCore,
+        'MediaSystem': typeof window.MediaSystem,
+        'PdfSystem': typeof window.PdfSystem,
+        'properties (array)': Array.isArray(window.properties),
+        'showPdfModal (função)': typeof window.showPdfModal
+    };
+    
+    console.table(essentialSystems);
+    
+    // 2. Verificar duplicações
+    const duplicateCheck = {};
+    
+    // Verificar funções duplicadas
+    ['processAndSavePdfs', 'clearAllPdfs'].forEach(func => {
+        const inGlobal = typeof window[func];
+        const inMediaSystem = window.MediaSystem && typeof window.MediaSystem[func];
+        duplicateCheck[func] = `Global: ${inGlobal}, MediaSystem: ${inMediaSystem}`;
+    });
+    
+    console.log('🔍 Verificação de duplicações:', duplicateCheck);
+    
+    // 3. Recomendações
+    const allEssentialOk = Object.values(essentialSystems).every(v => v !== 'undefined');
+    
+    if (allEssentialOk) {
+        console.log('✅ SISTEMA SAUDÁVEL - Todos os módulos essenciais carregados');
+    } else {
+        console.warn('⚠️  ALGUNS MÓDULOS FALTANDO - Verificar ordem de carregamento');
+    }
+    
+    console.groupEnd();
+}, 3000); // Após 3 segundos
+
 console.log('✅ main.js pronto para inicializar o sistema');
