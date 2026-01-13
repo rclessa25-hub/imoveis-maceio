@@ -320,7 +320,7 @@
 
     // ========== FUNÇÕES BÁSICAS DA GALERIA ==========
 
-    // Função para criar a galeria no card do imóvel - USANDO showPdfModal - FUNÇÃO CORRIGIDA
+    // Função para criar a galeria no card do imóvel - USANDO showPdfModal
     window.createPropertyGallery = function(property) {
         console.log('🖼️ Criando galeria para:', property.title);
         
@@ -398,8 +398,8 @@
                     `<button class="pdf-access"
                          onclick="event.stopPropagation(); event.preventDefault(); if (typeof window.showPdfModal === 'function') { window.showPdfModal(${property.id}); } else { alert('Sistema de documentos carregando...'); }"
                          title="Documentos do imóvel (senha: doc123)">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>` : ''}
+                    <i class="fas fa-file-pdf"></i>
+                </button>` : ''}
             </div>
         `;
     };
