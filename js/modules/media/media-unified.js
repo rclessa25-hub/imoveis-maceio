@@ -1,6 +1,23 @@
 // js/modules/media/media-unified.js - SISTEMA UNIFICADO DE MÍDIA
 
-// ========== CONFIGURAÇÃO SHAREDCORE ==========
+// ========== CONFIGURAÇÃO SHAREDCORE COM VERIFICAÇÃO ==========
+// Verificar se SC já foi declarado para evitar conflito
+if (typeof window.SharedCore === 'undefined') {
+    // Se SharedCore não existe, criar um básico
+    window.SharedCore = {
+        logModule: (mod, msg, level) => {
+            const prefix = `[${mod}]`;
+            if (level === 'error') console.error(`❌ ${prefix} ${msg}`);
+            else if (level === 'warn') console.warn(`⚠️ ${prefix} ${msg}`);
+            else console.log(`✅ ${prefix} ${msg}`);
+        },
+        elementExists: (id) => document.getElementById(id) !== null,
+        debounce: window.debounce || ((func, wait) => func),
+        throttle: window.throttle || ((func, wait) => func)
+    };
+}
+
+// Usar window.SharedCore para evitar conflito de variável
 const SC = window.SharedCore;
 
 SC.logModule('media-system', '🔄 media-unified.js carregado - Sistema Centralizado');
@@ -42,8 +59,14 @@ const MediaSystem = {
         currentPropertyId: null
     },
 
-    // ========== INICIALIZAÇÃO ==========
+    // ========== INICIALIZAÇÃO SEGURA (evitando duplicação) ==========
     init(systemName = 'vendas') {
+        // Verificar se já foi inicializado para evitar duplicação
+        if (this._initialized) {
+            SC.logModule('media-system', `⚠️ MediaSystem já inicializado para: ${systemName}`);
+            return this;
+        }
+        
         SC.logModule('media-system', `🔧 Inicializando sistema de mídia para: ${systemName}`);
         
         this.config.currentSystem = systemName;
@@ -51,6 +74,9 @@ const MediaSystem = {
         
         // Configurar event listeners uma única vez
         this.setupEventListeners();
+        
+        // Marcar como inicializado
+        this._initialized = true;
         
         // Inicializar sistema de drag & drop
         setTimeout(() => {
@@ -853,7 +879,7 @@ const MediaSystem = {
                     <div class="order-indicator" style="display:none;"></div>
                     
                     <!-- Botão de remover -->
-                    <button onclick="MediaSystem.removeFile('${item.id}')" 
+                    <button onclick="window.MediaSystem.removeFile('${item.id}')" 
                             style="position:absolute;top:2px;right:2px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;z-index:10;">
                         ${isMarked ? '↺' : '×'}
                     </button>
@@ -910,7 +936,7 @@ const MediaSystem = {
                         <p style="font-size:0.7rem;margin:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${shortName}</p>
                         <small style="color:#7f8c8d;font-size:0.6rem;">PDF</small>
                     </div>
-                    <button onclick="MediaSystem.removeFile('${pdf.id}')" 
+                    <button onclick="window.MediaSystem.removeFile('${pdf.id}')" 
                             style="position:absolute;top:-5px;right:-5px;background:${borderColor};color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:16px;cursor:pointer;">
                         ×
                     </button>
@@ -1022,8 +1048,14 @@ const MediaSystem = {
     }
 };
 
-// Exportar para window
-window.MediaSystem = MediaSystem;
+// ========== EXPORTAÇÃO SEGURA PARA WINDOW ==========
+// Verificar se MediaSystem já existe para evitar sobrescrita
+if (typeof window.MediaSystem === 'undefined') {
+    window.MediaSystem = MediaSystem;
+    SC.logModule('media-system', '✅ MediaSystem exportado para window');
+} else {
+    SC.logModule('media-system', '⚠️ MediaSystem já existe em window, usando existente', 'warn');
+}
 
 // ========== CORREÇÃO PARA PDFSYSTEM - GARANTIR COMPATIBILIDADE ==========
 SC.logModule('media-system', '🔧 Garantindo compatibilidade com PdfSystem...');
@@ -1099,7 +1131,7 @@ window.initMediaSystemWithPdf = function() {
     SC.logModule('media-system', '🚀 Inicializando MediaSystem com suporte a PDF...');
     
     // Inicializar MediaSystem
-    if (window.MediaSystem) {
+    if (window.MediaSystem && typeof window.MediaSystem.init === 'function') {
         window.MediaSystem.init('vendas');
     }
     
@@ -1119,11 +1151,38 @@ window.initMediaSystemWithPdf = function() {
     SC.logModule('media-system', '✅ Sistemas de mídia e PDF configurados');
 };
 
-// Auto-inicialização aprimorada
-setTimeout(() => {
-    window.initMediaSystemWithPdf();
-    SC.logModule('media-system', '✅ Sistema de mídia unificado pronto com suporte a PDF');
-}, 500);
+// ========== INICIALIZAÇÃO APÓS CARREGAMENTO DO DOM ==========
+// Função de inicialização segura
+function safeInitializeMediaSystem() {
+    try {
+        // Verificar se MediaSystem existe
+        if (typeof window.MediaSystem !== 'undefined') {
+            // Inicializar MediaSystem com atraso para garantir DOM carregado
+            setTimeout(() => {
+                if (window.MediaSystem && typeof window.MediaSystem.init === 'function') {
+                    window.MediaSystem.init('vendas');
+                    SC.logModule('media-system', '✅ MediaSystem inicializado com sucesso');
+                }
+            }, 1000);
+            
+            // Configurar PdfSystem também
+            window.initMediaSystemWithPdf();
+        } else {
+            SC.logModule('media-system', '❌ MediaSystem não definido no window', 'error');
+        }
+    } catch (error) {
+        SC.logModule('media-system', `❌ Erro na inicialização: ${error.message}`, 'error');
+    }
+}
+
+// Inicializar quando DOM estiver pronto
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(safeInitializeMediaSystem, 500);
+    });
+} else {
+    setTimeout(safeInitializeMediaSystem, 500);
+}
 
 // Verificação periódica para garantir compatibilidade
 setInterval(() => {
@@ -1132,47 +1191,13 @@ setInterval(() => {
         window.showPdfModal = window.PdfSystem.showModal;
         SC.logModule('media-system', '🔄 showPdfModal configurado via PdfSystem (verificação periódica)');
     }
-}, 3000);
-
-// Função de teste
-window.testPdfFromMedia = function(propertyId) {
-    SC.logModule('media-system', '🧪 Testando acesso a PDFs do MediaSystem...');
     
-    if (!propertyId && window.properties && window.properties.length > 0) {
-        propertyId = window.properties[0].id;
+    // Garantir que MediaSystem esteja disponível globalmente
+    if (typeof window.MediaSystem === 'undefined' && typeof MediaSystem !== 'undefined') {
+        window.MediaSystem = MediaSystem;
+        SC.logModule('media-system', '🔄 MediaSystem exportado para window (verificação periódica)');
     }
-    
-    if (typeof window.showPdfModal === 'function') {
-        window.showPdfModal(propertyId);
-        return true;
-    }
-    
-    SC.logModule('media-system', '❌ showPdfModal não disponível');
-    return false;
-};
-
-// Adicionar suporte para click do botão PDF (para compatibilidade reversa)
-if (!window.handlePdfButtonClick) {
-    window.handlePdfButtonClick = function(event, propertyId) {
-        if (event) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
-        
-        if (typeof window.showPdfModal === 'function') {
-            window.showPdfModal(propertyId);
-        } else if (window.PdfSystem && window.PdfSystem.showModal) {
-            window.PdfSystem.showModal(propertyId);
-        } else {
-            SC.logModule('media-system', '⏳ PDF System carregando...');
-            setTimeout(() => {
-                if (typeof window.showPdfModal === 'function') {
-                    window.showPdfModal(propertyId);
-                }
-            }, 500);
-        }
-    };
-}
+}, 5000);
 
 // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
 
@@ -1214,37 +1239,40 @@ setTimeout(() => {
     } else {
         SC.logModule('media-system', `❌ Funções faltando: ${missing.join(', ')}`);
     }
-}, 2000);
+}, 3000);
 
-// ========== COMPATIBILIDADE COM MÓDULOS DE SUPORTE ==========
-
-// Criar fallbacks silenciosos para funções que os módulos de suporte podem procurar
+// ========== EXPORTAÇÃO DE FUNÇÕES GLOBAIS PARA COMPATIBILIDADE ==========
+// Garantir que funções que outros módulos esperam estão disponíveis
 if (typeof window.initMediaSystem === 'undefined') {
     window.initMediaSystem = function() {
         SC.logModule('media-system', '🔧 initMediaSystem chamada (fallback para compatibilidade)');
-        return MediaSystem ? MediaSystem.init('vendas') : null;
+        return window.MediaSystem ? window.MediaSystem.init('vendas') : null;
     };
 }
 
 if (typeof window.updateMediaPreview === 'undefined') {
     window.updateMediaPreview = function() {
         SC.logModule('media-system', '🎨 updateMediaPreview chamada (fallback para compatibilidade)');
-        return MediaSystem ? MediaSystem.updateUI() : null;
+        return window.MediaSystem ? window.MediaSystem.updateUI() : null;
     };
 }
 
-// ========== VERIFICAÇÃO SHAREDCORE ==========
+// ========== SOLUÇÃO DE EMERGÊNCIA SE MEDIASYSTEM NÃO CARREGAR ==========
 setTimeout(() => {
-    if (!SC) {
-        SC.logModule('media-system', '❌ SharedCore não carregado no MediaSystem!');
-        // Fallback para funções globais
-        window.SharedCore = window.SharedCore || {
-            debounce: window.debounce,
-            throttle: window.throttle,
-            isMobileDevice: window.isMobileDevice,
-            logModule: (module, msg) => console.log(`[${module}] ${msg}`)
+    if (typeof window.MediaSystem === 'undefined') {
+        SC.logModule('media-system', '⚠️ CRÍTICO: MediaSystem não carregado após 5 segundos', 'error');
+        
+        // Criar fallback mínimo
+        window.MediaSystem = {
+            init: function() { console.log('⚠️ MediaSystem fallback - sistema não carregado'); return this; },
+            addFiles: function() { alert('Sistema de mídia não disponível. Recarregue a página.'); return 0; },
+            addPdfs: function() { alert('Sistema de PDFs não disponível. Recarregue a página.'); return 0; },
+            resetState: function() { console.log('MediaSystem fallback - resetState'); },
+            loadExisting: function() { console.log('MediaSystem fallback - loadExisting'); }
         };
+        
+        SC.logModule('media-system', '⚠️ Fallback mínimo do MediaSystem criado', 'warn');
     }
-}, 500);
+}, 5000);
 
-console.log('✅ media-unified.js com suporte a PDF completamente carregado');
+SC.logModule('media-system', '✅ Sistema de mídia unificado carregado com segurança');
