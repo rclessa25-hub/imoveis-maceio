@@ -1,5 +1,19 @@
 /* css/admin.css - Estilos do Painel Administrativo */
 
+/* ========== PREVENÇÃO DE CONFLITOS CSS ========== */
+/* Garantir que nossos estilos tenham prioridade */
+.pdf-modal-content {
+    z-index: 10001 !important; /* Maior que qualquer outro */
+}
+
+/* Desativar estilos conflitantes do Support System */
+body.debug-mode .pdf-modal-content,
+body.test-mode .pdf-modal-content {
+    /* Herdar nossos estilos, não sobrescrever */
+    all: unset;
+    z-index: 10001 !important;
+}
+
 /* ========== ESTILOS DO PAINEL ADMIN ========== */
 .admin-panel {
     background: #f8f9fa;
