@@ -1,83 +1,594 @@
-// js/main.js - SISTEMA DE INICIALIZAÇÃO
-console.log('🚀 main.js carregado - Sistema de Inicialização');
+/* css/main.css - ESTILOS GERAIS DO SITE WEBER LESSA */
 
-window.initializeWeberLessaSystem = async function() {
-    console.log('⚙️ Inicializando Sistema Weber Lessa...');
-    
-    try {
-        // 1. Carregar imóveis
-        if (typeof window.initializeProperties === 'function') {
-            console.log('🏠 Carregando imóveis...');
-            await window.initializeProperties();
-            console.log('✅ Imóveis carregados');
-        } else {
-            console.error('❌ initializeProperties() não encontrado!');
-        }
-        
-        // 2. Configurar filtros
-        if (typeof window.setupFilters === 'function') {
-            console.log('🎛️ Configurando filtros...');
-            window.setupFilters();
-            console.log('✅ Filtros configurados');
-        }
-        
-        // 3. Configurar admin
-        if (typeof window.setupForm === 'function') {
-            console.log('📝 Configurando formulário admin...');
-            window.setupForm();
-            console.log('✅ Formulário admin configurado');
-        }
-        
-        // 4. Configurar galeria
-        if (typeof window.setupGalleryEvents === 'function') {
-            console.log('🎮 Configurando eventos da galeria...');
-            window.setupGalleryEvents();
-            console.log('✅ Galeria configurada');
-        }
-        
-        console.log('✅ Sistema Weber Lessa completamente carregado!');
-        
-        // TESTE DE INTEGRAÇÃO
-        setTimeout(() => {
-            console.log('🧪 TESTE DE INTEGRAÇÃO:');
-            const testResults = {
-                'Imóveis carregados': !!window.properties && window.properties.length > 0,
-                'Número de imóveis': window.properties ? window.properties.length : 0,
-                'Container encontrado': !!document.getElementById('properties-container'),
-                'Filtros ativos': document.querySelectorAll('.filter-btn').length > 0,
-                'Função renderProperties': typeof window.renderProperties === 'function',
-                'Função setupFilters': typeof window.setupFilters === 'function'
-            };
-            
-            console.table(testResults);
-        }, 500);
-        
-    } catch (error) {
-        console.error('❌ Erro na inicialização:', error);
+/* ========== VARIÁVEIS GLOBAIS ========== */
+:root {
+    --primary: #1a5276;
+    --secondary: #2980b9;
+    --accent: #3498db;
+    --gold: #f39c12;
+    --green: #27ae60;
+    --text: #2c3e50;
+    --light: #ecf0f1;
+    --dark: #2c3e50;
+    --success: #27ae60;
+}
+
+/* ========== RESET E ESTILOS GERAIS ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: var(--text);
+    background: linear-gradient(135deg, #1a5276 0%, #2980b9 100%);
+    min-height: 100vh;
+}
+
+/* ========== HERO SECTION ========== */
+.hero {
+    background: linear-gradient(rgba(26, 82, 118, 0.8), rgba(41, 128, 185, 0.8)), url('https://images.unsplash.com/photo-1544984243-ec57ea16fe25?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    text-align: center;
+    padding: 4rem 1rem;
+}
+
+.hero h1 {
+    font-size: 2.8rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.hero p {
+    font-size: 1.3rem;
+    max-width: 700px;
+    margin: 0 auto 2rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.cta-button {
+    display: inline-block;
+    background: var(--gold);
+    color: white;
+    padding: 0.9rem 2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+}
+
+/* ========== SERVIÇOS SECTION ========== */
+.services {
+    background: white;
+    padding: 4rem 1rem;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.section-title h2 {
+    font-size: 2.2rem;
+    color: var(--primary);
+    margin-bottom: 1rem;
+}
+
+.section-title p {
+    color: var(--dark);
+    max-width: 700px;
+    margin: 0 auto;
+    font-size: 1.1rem;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.service-card {
+    background: var(--light);
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.service-icon {
+    font-size: 2.5rem;
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+}
+
+.service-card h3 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    color: var(--primary);
+}
+
+.service-card p {
+    color: var(--dark);
+}
+
+/* ========== IMÓVEIS SECTION ========== */
+.properties {
+    padding: 4rem 1rem;
+    background: #f8f9fa;
+}
+
+.filters {
+    background: white;
+    padding: 1.5rem;
+    margin: 0 auto 2rem;
+    max-width: 1200px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.filter-options {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.filter-btn {
+    background: #f8f9fa; /* Fundo mais claro para contraste */
+    border: 2px solid #e0e0e0;
+    padding: 0.7rem 1.5rem;
+    border-radius: 30px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #2c3e50; /* Cor escura para melhor leitura */
+    font-weight: 600; /* Texto mais forte */
+}
+
+.filter-btn:hover {
+    background: #e9ecef;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.filter-btn.active {
+    background: var(--primary); /* #1a5276 */
+    border-color: var(--primary);
+    color: white !important; /* Forçar cor branca */
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3);
+}
+
+/* Adicionar estilo específico para garantir contraste */
+.filter-btn.active:hover {
+    background: #154060; /* Tom mais escuro do primary */
+    border-color: #154060;
+}
+
+.property-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.property-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.property-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+
+.property-image {
+    width: 100%;
+    height: 250px;
+    background: linear-gradient(45deg, var(--accent), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.rural-image {
+    background: linear-gradient(45deg, var(--green), #2ecc71);
+}
+
+.property-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: var(--gold);
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.rural-badge {
+    background: var(--green);
+}
+
+.property-content {
+    padding: 1.5rem;
+}
+
+.property-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.property-title {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+}
+
+.property-location {
+    color: #666;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.property-features {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.feature-tag {
+    background: var(--accent);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.rural-tag {
+    background: var(--green);
+}
+
+.contact-btn {
+    background: linear-gradient(45deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.contact-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
+}
+
+.video-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ========== SOBRE SECTION ========== */
+.about {
+    background: white;
+    padding: 4rem 1rem;
+}
+
+.about-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: center;
+}
+
+.about-text h2 {
+    font-size: 2.2rem;
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+}
+
+.about-text p {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+.about-image {
+    background: linear-gradient(45deg, var(--accent), var(--secondary));
+    height: 400px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+/* ========== FOOTER ========== */
+.footer {
+    background: var(--dark);
+    color: white;
+    padding: 3rem 1rem;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-section h3 {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    color: var(--gold);
+}
+
+.footer-section p, .footer-section a {
+    color: #bbb;
+    margin-bottom: 0.8rem;
+    display: block;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-section a:hover {
+    color: white;
+}
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+    margin-top: 1rem;
+}
+
+.social-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+    background: var(--accent);
+    transform: translateY(-3px);
+}
+
+.copyright {
+    text-align: center;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    color: #999;
+}
+
+/* ========== ESTILOS PARA PDFs ========== */
+.pdf-file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.8rem;
+    margin: 0.5rem 0;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+}
+
+.pdf-file-item:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Correção para elementos de upload */
+#pdfUploadArea * {
+    pointer-events: none;
+}
+
+#pdfUploadArea {
+    pointer-events: auto;
+}
+
+.delete-image-btn {
+    pointer-events: auto;
+}
+
+.image-preview-container {
+    pointer-events: auto;
+}
+
+/* ========== RESPONSIVIDADE GERAL ========== */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
     }
-};
+    
+    .contact-info {
+        text-align: center;
+    }
+    
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+    
+    .about-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .property-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-options {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .filter-btn {
+        width: 100%;
+        max-width: 250px;
+    }
+    
+    .property-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
 
-// ========== FUNÇÃO PARA MANIPULAR CLIQUE NO BOTÃO PDF ==========
-window.handlePdfButtonClick = function(event, propertyId) {
-    console.log('📄 Botão PDF clicado para imóvel:', propertyId);
-    
-    // 1. Parar propagação IMEDIATAMENTE
-    event.stopPropagation();
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    
-    // 2. Pequeno delay para garantir que o evento não se propague
-    setTimeout(() => {
-        // 3. Verificar se PdfSystem está disponível
-        if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-            console.log('✅ Chamando PdfSystem.showModal()');
-            window.PdfSystem.showModal(propertyId);
-        } else {
-            console.error('❌ PdfSystem não disponível');
-            alert('Sistema de documentos temporariamente indisponível. Tente novamente em alguns instantes.');
-        }
-    }, 10);
-    
-    return false;
-};
-console.log('✅ main.js pronto para inicializar o sistema');
+/* ========== CORREÇÃO DEFINITIVA DOS FILTROS ========== */
+/* Remover qualquer estilo inline que possa estar sobrescrevendo */
+
+.filter-btn[style*="color:"] {
+    color: #2c3e50 !important; /* Corrigir caso tenha estilo inline */
+}
+
+.filter-btn.active[style*="color:"] {
+    color: white !important; /* Forçar branco quando ativo */
+}
+
+/* Garantir que JavaScript não sobrescreva cores erradas */
+.filter-btn {
+    color: #2c3e50 !important;
+}
+
+.filter-btn.active {
+    color: white !important;
+}
+
+/* Prevenir transparência indesejada */
+.filter-btn.active {
+    opacity: 1 !important;
+}
+
+/* Correção para Firefox e Safari */
+@supports (-webkit-appearance: none) or (-moz-appearance: none) {
+    .filter-btn.active {
+        -webkit-text-fill-color: white !important;
+        text-fill-color: white !important;
+    }
+}
+
+/* ========== CORREÇÃO DEFINITIVA DOS FILTROS ========== */
+/* REMOVER QUALQUER ESTILO INLINE QUE ESTÁ CAUSANDO O BUG */
+.filter-btn {
+    /* RESET COMPLETO - remover qualquer estilo inline */
+    background: #f8f9fa !important;
+    color: #2c3e50 !important;
+    border: 2px solid #e0e0e0 !important;
+    padding: 0.7rem 1.5rem !important;
+    border-radius: 30px !important;
+    font-size: 1rem !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+}
+
+/* ESTADO ATIVO - SOMENTE quando tem a classe .active */
+.filter-btn.active {
+    background: #1a5276 !important; /* var(--primary) */
+    border-color: #1a5276 !important;
+    color: white !important !important; /* FORÇAR branco */
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3) !important;
+}
+
+/* Garantir que o hover não sobrescreva o estado ativo */
+.filter-btn:hover {
+    background: #e9ecef !important;
+    border-color: #3498db !important; /* var(--accent) */
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* Botão ativo NÃO deve mudar no hover */
+.filter-btn.active:hover {
+    background: #154060 !important; /* Tom mais escuro */
+    border-color: #154060 !important;
+    color: white !important !important; /* Manter branco */
+}
+
+/* Correção para Firefox/Safari */
+@supports (-webkit-appearance: none) or (-moz-appearance: none) {
+    .filter-btn.active {
+        -webkit-text-fill-color: white !important;
+        -moz-text-fill-color: white !important;
+        text-fill-color: white !important;
+    }
+}
+
+/* PREVENIR que JavaScript adicione estilos inline */
+.filter-btn[style] {
+    /* Sobrescrever QUALQUER estilo inline */
+    background: #f8f9fa !important;
+    color: #2c3e50 !important;
+    border: 2px solid #e0e0e0 !important;
+}
+
+.filter-btn.active[style] {
+    background: #1a5276 !important;
+    border-color: #1a5276 !important;
+    color: white !important !important;
+}
