@@ -746,5 +746,54 @@ window.initializeGalleryModule = function() {
     console.log('✅ Módulo da galeria inicializado');
 };
 
+// NO FINAL do gallery.js, adicione:
+
+// Função de fallback para PDF se PdfSystem não estiver pronto
+window.showPdfModal = function(propertyId) {
+    console.log('📄 showPdfModal chamado para:', propertyId);
+    
+    // Tentar PdfSystem primeiro
+    if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        return window.PdfSystem.showModal(propertyId);
+    }
+    
+    // Fallback: criar modal manualmente
+    const property = window.properties?.find(p => p.id == propertyId);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        return;
+    }
+    
+    if (!property.pdfs || property.pdfs === 'EMPTY') {
+        alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
+        return;
+    }
+    
+    const password = prompt("🔒 Documentos do Imóvel\n\nDigite a senha para acessar os documentos:");
+    if (password === "doc123") {
+        const pdfUrls = property.pdfs.split(',')
+            .map(url => url.trim())
+            .filter(url => url && url !== 'EMPTY');
+        
+        if (pdfUrls.length > 0) {
+            window.open(pdfUrls[0], '_blank');
+        }
+    } else if (password !== null) {
+        alert('❌ Senha incorreta! A senha é: doc123');
+    }
+};
+
+// Verificar se PdfSystem existe e expor showModal
+setTimeout(() => {
+    if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        if (!window.showPdfModal) {
+            window.showPdfModal = function(propertyId) {
+                return window.PdfSystem.showModal(propertyId);
+            };
+            console.log('✅ showPdfModal configurado via PdfSystem');
+        }
+    }
+}, 2000);
+
 // ========== EXPORT DO MÓDULO ==========
 console.log('✅ gallery.js completamente carregado e pronto');
