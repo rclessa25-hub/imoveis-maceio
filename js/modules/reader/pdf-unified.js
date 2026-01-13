@@ -1,11 +1,13 @@
-// js/modules/pdf/pdf-unified.js - SISTEMA DE PDF UNIFICADO (VERSÃO CORRIGIDA)
+// js/modules/pdf/pdf-unified.js - SISTEMA DE PDF UNIFICADO (ADMIN + CLIENTE) - VERSÃO CORRIGIDA
 (function() {
     'use strict';
     
     // ========== VERIFICAÇÃO SEGURA DE SHAREDCORE ==========
     if (typeof window.SharedCore === 'undefined') {
         console.error('❌ ERRO CRÍTICO: SharedCore não está disponível!');
-        // Criar fallback mínimo
+        console.error('💡 Certifique-se que SharedCore.js é carregado ANTES deste arquivo');
+        
+        // Criar fallback mínimo apenas para evitar erros
         window.SharedCore = {
             logModule: (mod, msg) => console.log(`[${mod}] ${msg}`),
             warn: (msg) => console.warn(msg),
@@ -13,11 +15,13 @@
         };
     }
     
+    // Usar SharedCore existente SEM criar nova variável global
     const SC = window.SharedCore;
-    SC.logModule('pdf', '📄 pdf-unified.js carregado - Sistema de PDF Corrigido');
+    SC.logModule('pdf', '📄 pdf-unified.js carregado - Sistema de PDF Unificado');
 
     // ========== CONFIGURAÇÃO DO SISTEMA ==========
     window.PdfSystem = {
+        // Configurações
         config: {
             isAdmin: window.location.pathname.includes('/admin/'),
             currentSystem: 'vendas',
@@ -25,6 +29,7 @@
             defaultPassword: 'doc123'
         },
         
+        // Estado
         state: {
             isInitialized: false,
             currentProperty: null,
@@ -33,7 +38,7 @@
             modalCreated: false
         },
         
-        // ========== INICIALIZAÇÃO SEGURA ==========
+        // ========== INICIALIZAÇÃO ==========
         init: function(system = 'vendas') {
             if (this.state.isInitialized) {
                 SC.logModule('pdf', '⚠️ PdfSystem já inicializado');
@@ -52,6 +57,12 @@
                 SC.logModule('pdf', '🔧 PdfSystem inicializado no modo ADMIN');
             } else {
                 SC.logModule('pdf', '👁️ PdfSystem inicializado no modo CLIENTE');
+            }
+            
+            // Expor showModal globalmente
+            if (!window.showPdfModal) {
+                window.showPdfModal = (propertyId) => this.showModal(propertyId);
+                SC.logModule('pdf', '✅ showPdfModal exposto globalmente');
             }
             
             return this;
@@ -461,6 +472,51 @@
         setupAdminEvents: function() {
             // Configurações específicas do admin
             SC.logModule('pdf', '⚙️ Configurando eventos do modo admin');
+            
+            // Adicionar estilos específicos do admin
+            const adminStyles = `
+                .pdf-admin-preview {
+                    border: 2px dashed #3498db;
+                    padding: 1.5rem;
+                    border-radius: 8px;
+                    background: #f8f9fa;
+                    margin-top: 1rem;
+                }
+                
+                .pdf-admin-list {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 1rem;
+                    margin-top: 1rem;
+                }
+                
+                .pdf-admin-item {
+                    background: white;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 1rem;
+                    width: 150px;
+                    text-align: center;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    position: relative;
+                }
+                
+                .pdf-admin-item .remove-btn {
+                    position: absolute;
+                    top: -8px;
+                    right: -8px;
+                    background: #e74c3c;
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 24px;
+                    height: 24px;
+                    font-size: 14px;
+                    cursor: pointer;
+                }
+            `;
+            
+            document.head.insertAdjacentHTML('beforeend', `<style>${adminStyles}</style>`);
         },
         
         // ========== UTILIDADES ==========
