@@ -224,38 +224,6 @@ window.galleryStyles = `
         transform: scale(1.1);
     }
     
-    /* Botão PDF na galeria - VERSÃO ORIGINAL */
-    .pdf-access {
-        position: absolute;
-        bottom: 10px;
-        right: 10px;
-        background: rgba(26, 82, 118, 0.9); /* Azul original */
-        color: white;
-        border: none;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        cursor: pointer;
-        z-index: 10;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        border: 2px solid white;
-    }
-    
-    .pdf-access:hover {
-        background: #1a5276; /* Azul escuro no hover */
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    
-    .pdf-access:active {
-        transform: scale(0.95);
-    }
-    
     /* Para Desktop - ajustes */
     @media (min-width: 768px) {
         .gallery-indicator-mobile {
@@ -293,14 +261,6 @@ window.galleryStyles = `
             font-size: 1rem;
             padding: 8px 16px;
         }
-        
-        .pdf-access {
-            bottom: 15px;
-            right: 15px;
-            width: 40px;
-            height: 40px;
-            font-size: 1rem;
-        }
     }
     
     /* Animações */
@@ -315,8 +275,7 @@ window.galleryStyles = `
     
     /* Melhorias de acessibilidade */
     .gallery-modal-btn:focus,
-    .gallery-modal-close:focus,
-    .pdf-access:focus {
+    .gallery-modal-close:focus {
         outline: 2px solid var(--accent);
         outline-offset: 2px;
     }
