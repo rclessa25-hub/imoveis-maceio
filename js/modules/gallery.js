@@ -224,32 +224,32 @@ window.galleryStyles = `
         transform: scale(1.1);
     }
     
-    /* Botão PDF na galeria */
+    /* Botão PDF na galeria - CORRIGIDO */
     .pdf-access {
         position: absolute;
         bottom: 50px;
         right: 10px;
-        background: rgba(220, 53, 69, 0.9);
+        background: rgba(220, 53, 69, 0.95);
         color: white;
         border: none;
-        width: 36px;
-        height: 36px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.9rem;
+        font-size: 1rem;
         cursor: pointer;
-        z-index: 10;
+        z-index: 15;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
         border: 2px solid white;
     }
     
     .pdf-access:hover {
         background: #dc3545;
         transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     }
     
     .pdf-access:active {
@@ -297,9 +297,9 @@ window.galleryStyles = `
         .pdf-access {
             bottom: 60px;
             right: 15px;
-            width: 40px;
-            height: 40px;
-            font-size: 1rem;
+            width: 44px;
+            height: 44px;
+            font-size: 1.1rem;
         }
     }
     
@@ -350,14 +350,6 @@ window.createPropertyGallery = function(property) {
     // Verificar se há PDFs
     const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
     
-    // Criar botão PDF se houver
-    const pdfButtonHtml = hasPdfs ? 
-        `<button class="pdf-access"
-             onclick="handlePdfButtonClick(event, ${property.id})"
-             title="Documentos do imóvel (senha: doc123)">
-            <i class="fas fa-file-pdf"></i>
-        </button>` : '';
-    
     // Se só tem uma imagem, mostrar imagem estática
     if (imageUrls.length <= 1) {
         return `
@@ -372,8 +364,13 @@ window.createPropertyGallery = function(property) {
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
                 
-                <!-- BOTÃO PDF PARA IMAGEM ÚNICA -->
-                ${pdfButtonHtml}
+                <!-- BOTÃO PDF PARA IMAGEM ÚNICA - CORRIGIDO -->
+                ${hasPdfs ? 
+                    `<button class="pdf-access"
+                         onclick="handlePdfButtonClick(event, ${property.id})"
+                         title="Documentos do imóvel (senha: doc123)">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>` : ''}
             </div>
         `;
     }
@@ -381,59 +378,63 @@ window.createPropertyGallery = function(property) {
     // Se tem múltiplas imagens, criar galeria
     return `
         <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-            <div class="property-gallery-container">
-                <div class="gallery-click-area" onclick="openGallery(${property.id})" style="width:100%;height:100%;position:absolute;top:0;left:0;z-index:5;">
-                    <img src="${firstImageUrl}" 
-                         class="property-gallery-image"
-                         alt="${property.title}"
-                         style="width:100%;height:100%;object-fit:cover;cursor:pointer;"
-                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                    
-                    <!-- Indicador de galeria MOBILE -->
-                    <div class="gallery-indicator-mobile">
-                        <i class="fas fa-images"></i>
-                        <span>${imageUrls.length}</span>
-                    </div>
-                    
-                    <!-- Pontos indicadores -->
-                    <div class="gallery-controls">
-                        ${imageUrls.map((_, index) => `
-                            <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
-                                 data-index="${index}"
-                                 onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
-                        `).join('')}
-                    </div>
-                    
-                    <!-- Ícone de expansão -->
-                    <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
-                        <i class="fas fa-expand"></i>
-                    </div>
+            <div class="property-gallery-container" onclick="openGallery(${property.id})">
+                <img src="${firstImageUrl}" 
+                     class="property-gallery-image"
+                     alt="${property.title}"
+                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                
+                <!-- Indicador de galeria MOBILE -->
+                <div class="gallery-indicator-mobile">
+                    <i class="fas fa-images"></i>
+                    <span>${imageUrls.length}</span>
+                </div>
+                
+                <!-- Pontos indicadores -->
+                <div class="gallery-controls">
+                    ${imageUrls.map((_, index) => `
+                        <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
+                             data-index="${index}"
+                             onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
+                    `).join('')}
+                </div>
+                
+                <!-- Ícone de expansão -->
+                <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
+                    <i class="fas fa-expand"></i>
                 </div>
             </div>
             
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-            <!-- BOTÃO PDF PARA MÚLTIPLAS IMAGENS -->
-            ${pdfButtonHtml}
+            <!-- BOTÃO PDF PARA MÚLTIPLAS IMAGENS - CORRIGIDO -->
+            ${hasPdfs ? 
+                `<button class="pdf-access"
+                     onclick="handlePdfButtonClick(event, ${property.id})"
+                     title="Documentos do imóvel (senha: doc123)">
+                    <i class="fas fa-file-pdf"></i>
+                </button>` : ''}
         </div>
     `;
 };
 
-// ========== FUNÇÃO PARA MANIPULAR CLIQUE NO BOTÃO PDF ==========
+// ========== FUNÇÃO PARA MANIPULAR CLIQUE NO BOTÃO PDF - VERSÃO CORRIGIDA ==========
 window.handlePdfButtonClick = function(event, propertyId) {
     console.log('📄 PDF button clicked for property:', propertyId);
     
     // Prevenir propagação para não abrir a galeria
-    event.stopPropagation();
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }
     
     // Pequeno delay para garantir que eventos não se propaguem
     setTimeout(() => {
-        // 1. PRIMEIRO: Tentar PdfSystem (wrapper moderno)
+        // Usar o PdfSystem refatorado
         if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-            console.log('🔄 Usando PdfSystem.showModal()');
+            console.log('🔄 Usando PdfSystem.showModal() do pdf-unified.js');
             try {
                 window.PdfSystem.showModal(propertyId);
                 return;
@@ -442,7 +443,7 @@ window.handlePdfButtonClick = function(event, propertyId) {
             }
         }
         
-        // 2. SEGUNDO: Tentar showPdfModal (função antiga)
+        // Fallback para função global
         if (typeof window.showPdfModal === 'function') {
             console.log('🔄 Usando showPdfModal (compatibilidade)');
             try {
@@ -453,26 +454,36 @@ window.handlePdfButtonClick = function(event, propertyId) {
             }
         }
         
-        // 3. TERCEIRO: Tentar função de fallback no admin.js
-        if (typeof window.openPdfModalDirectFallback === 'function') {
-            console.log('🔄 Usando openPdfModalDirectFallback (fallback)');
-            try {
-                window.openPdfModalDirectFallback(propertyId);
-                return;
-            } catch (error) {
-                console.error('❌ Erro no fallback:', error);
-            }
-        }
-        
-        // 4. ÚLTIMO RECURSO: Modal manual básico
+        // Último recurso: modal manual básico
         console.log('⚠️ Nenhum sistema PDF disponível, criando modal básico');
         const password = prompt("🔒 Documentos do Imóvel\n\nDigite a senha para acessar os documentos:");
         if (password === "doc123") {
-            alert('✅ Senha correta! Os documentos estão disponíveis no painel administrativo.');
+            // Buscar imóvel
+            const property = window.properties?.find(p => p.id == propertyId);
+            if (property && property.pdfs && property.pdfs !== 'EMPTY') {
+                const pdfUrls = property.pdfs.split(',')
+                    .map(url => url.trim())
+                    .filter(url => url && url !== 'EMPTY');
+                
+                if (pdfUrls.length > 0) {
+                    // Mostrar opções
+                    const docList = pdfUrls.map((url, i) => `${i + 1}. ${url.split('/').pop()}`).join('\n');
+                    const choice = prompt(`Escolha um documento (1-${pdfUrls.length}):\n\n${docList}`);
+                    const index = parseInt(choice) - 1;
+                    
+                    if (index >= 0 && index < pdfUrls.length) {
+                        window.open(pdfUrls[index], '_blank');
+                    } else if (pdfUrls.length === 1) {
+                        window.open(pdfUrls[0], '_blank');
+                    }
+                }
+            }
         } else if (password !== null) {
             alert('❌ Senha incorreta! A senha é: doc123');
         }
     }, 10);
+    
+    return false;
 };
 
 // Função para abrir a galeria
@@ -787,7 +798,7 @@ window.optimizeGalleryForMobile = function() {
     });
     
     // Ajustar botões para touch
-    const galleryButtons = document.querySelectorAll('.gallery-modal-btn, .gallery-modal-close');
+    const galleryButtons = document.querySelectorAll('.gallery-modal-btn, .gallery-modal-close, .pdf-access');
     galleryButtons.forEach(button => {
         button.style.minWidth = '50px';
         button.style.minHeight = '50px';
@@ -849,3 +860,8 @@ window.initializeGalleryModule = function() {
 
 // ========== EXPORT DO MÓDULO ==========
 console.log('✅ gallery.js completamente carregado e pronto');
+
+// Inicialização automática (opcional)
+setTimeout(() => {
+    window.initializeGalleryModule();
+}, 500);
