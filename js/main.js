@@ -120,4 +120,46 @@ setTimeout(() => {
     console.groupEnd();
 }, 3000); // Após 3 segundos
 
+// ========== FUNÇÃO ÚNICA E SIMPLES PARA BOTÃO PDF ==========
+window.pdfButtonHandler = function(event, propertyId) {
+    // 1. Parar propagação IMEDIATAMENTE
+    event.stopPropagation();
+    event.preventDefault();
+    
+    // 2. Log para debug
+    console.log('📄 PDF clicado para imóvel:', propertyId);
+    
+    // 3. Buscar imóvel
+    const property = window.properties?.find(p => p.id == propertyId);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        return false;
+    }
+    
+    // 4. Verificar se tem PDFs
+    if (!property.pdfs || property.pdfs === 'EMPTY') {
+        alert('ℹ️ Este imóvel não tem documentos disponíveis.');
+        return false;
+    }
+    
+    // 5. Senha simplificada (1 linha)
+    const password = prompt("🔒 Digite a senha para acessar os documentos:\n\nSenha: doc123", "");
+    
+    if (password === "doc123") {
+        // 6. Abrir PDFs (primeiro ou todos)
+        const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+        if (pdfUrls.length === 1) {
+            window.open(pdfUrls[0], '_blank');
+        } else {
+            pdfUrls.forEach((url, index) => {
+                setTimeout(() => window.open(url, '_blank'), index * 100);
+            });
+        }
+    } else if (password !== null) {
+        alert('❌ Senha incorreta!\n\nA senha é: doc123');
+    }
+    
+    return false;
+};
+
 console.log('✅ main.js pronto para inicializar o sistema');
