@@ -328,18 +328,25 @@
         SC.logModule('gallery', `🖼️ Criando galeria para: ${property.title}`);
         
         // Verificar se há imagens
-        const hasImages = property.images && 
-                         property.images.length > 0 && 
-                         property.images !== 'EMPTY';
+        const hasImages = property.images && property.images.trim() !== '' && property.images !== 'EMPTY';
+        const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
+        const firstImageUrl = imageUrls[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa';
         
-        const imageUrls = hasImages ? 
-            property.images.split(',').filter(url => url.trim() !== '') : [];
+        // 🔴 CORREÇÃO CRÍTICA: Verificação SIMPLIFICADA de PDFs
+        const hasPdfs = property.pdfs && 
+                       property.pdfs.trim() !== '' && 
+                       property.pdfs !== 'EMPTY' &&
+                       property.pdfs !== 'null' &&
+                       property.pdfs !== 'undefined';
         
-        const firstImageUrl = imageUrls.length > 0 ? 
-            imageUrls[0] : 
-            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
-        
-        const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY';
+        // 🔴 CORREÇÃO: Botão PDF com evento DIRETO e SIMPLES
+        const pdfButtonHtml = hasPdfs ? `
+            <button class="pdf-access" 
+                    onclick="event.stopPropagation(); window.pdfButtonHandler && window.pdfButtonHandler(${property.id})"
+                    title="Documentos do imóvel">
+                <i class="fas fa-file-pdf"></i>
+            </button>
+        ` : '';
         
         // Se só tem uma imagem, mostrar imagem estática
         if (imageUrls.length <= 1) {
@@ -361,12 +368,7 @@
                         </div>` : ''}
                     
                     <!-- BOTÃO PDF CORRIGIDO -->
-                    ${hasImages && hasPdfs ? 
-                        `<button class="pdf-access" 
-                                onclick="window.pdfButtonHandler(event, ${property.id})" 
-                                title="Documentos do imóvel (senha: doc123)">
-                            <i class="fas fa-file-pdf"></i>
-                        </button>` : ''}
+                    ${pdfButtonHtml}
                 </div>
             `;
         }
@@ -391,12 +393,7 @@
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 
                 <!-- BOTÃO PDF CORRIGIDO -->
-                ${hasPdfs ? `
-                    <button class="pdf-access" 
-                            onclick="window.handlePdfButtonClick(event, ${property.id})"
-                            title="Documentos do imóvel (senha: doc123)">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>` : ''}
+                ${pdfButtonHtml}
             </div>
         `;
     };
@@ -726,45 +723,8 @@
     // ========== VERIFICAÇÃO DE INTEGRIDADE (atualizada) ==========
 
     window.validateGalleryModule = function() {
-        SC.logModule('gallery', '🔍 Validação básica da galeria (core)...');
-        
-        // Se ValidationSystem disponível, delega para ele
-        if (window.ValidationSystem && typeof window.ValidationSystem.validateGalleryModule === 'function') {
-            return window.ValidationSystem.validateGalleryModule();
-        }
-        
-        // Fallback mínimo no core
-        const basicChecks = {
-            'openGallery': typeof window.openGallery === 'function',
-            'closeGallery': typeof window.closeGallery === 'function',
-            'currentGalleryImages': Array.isArray(window.currentGalleryImages),
-            'showPdfModal': typeof window.showPdfModal === 'function' // Nova verificação
-        };
-        
-        const allValid = Object.values(basicChecks).every(check => check === true);
-        SC.logModule('gallery', allValid ? '✅ Galeria OK' : '⚠️ Galeria com problemas');
-        
-        // Log específico para PDF
-        if (!basicChecks.showPdfModal) {
-            SC.logWarning('gallery', '⚠️ showPdfModal não disponível - PDFs podem não funcionar');
-            
-            // Criar fallback imediato se não existir
-            if (!window.showPdfModal) {
-                window.showPdfModal = function(propertyId) {
-                    SC.logWarning('gallery', '📄 Usando fallback de PDF na galeria');
-                    const property = window.properties?.find(p => p.id == propertyId);
-                    if (property && property.pdfs && property.pdfs !== 'EMPTY') {
-                        const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-                        if (pdfUrls.length > 0) {
-                            window.open(pdfUrls[0], '_blank');
-                        }
-                    }
-                };
-                SC.logModule('gallery', '✅ Fallback showPdfModal criado');
-            }
-        }
-        
-        return allValid;
+        return typeof window.pdfButtonHandler === 'function' && 
+               typeof window.showPdfModal === 'function';
     };
 
     // ========== INICIALIZAÇÃO AUTOMÁTICA (atualizada) ==========
@@ -830,6 +790,28 @@
         } else {
             SC.logError('gallery', '❌ showPdfModal não disponível');
             return false;
+        }
+    };
+
+    // ========== HANDLER GLOBAL SIMPLIFICADO PARA BOTÕES PDF ==========
+    // Handler GLOBAL SIMPLIFICADO para botões PDF
+    window.pdfButtonHandler = function(propertyId) {
+        console.log(`📄 Botão PDF clicado para imóvel ${propertyId}`);
+        
+        // Método 1: Usar showPdfModal se existir
+        if (typeof window.showPdfModal === 'function') {
+            return window.showPdfModal(propertyId);
+        }
+        
+        // Método 2: Fallback DIRETO
+        const property = window.properties?.find(p => p.id == propertyId);
+        if (property && property.pdfs && property.pdfs !== 'EMPTY') {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            if (pdfUrls.length > 0) {
+                window.open(pdfUrls[0], '_blank');
+            }
+        } else {
+            alert('Este imóvel não possui documentos PDF.');
         }
     };
 
