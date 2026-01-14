@@ -235,6 +235,7 @@ body {
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: bold;
+    z-index: 6; /* Acima da numeração */
 }
 
 .rural-badge {
@@ -319,6 +320,15 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
+    z-index: 6; /* Acima da numeração */
+}
+
+/* ========== MELHORIA VISUAL OPCIONAL ========== */
+/* Estilo para a numeração de fotos */
+.property-image > div[style*="top: 10px"] {
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* ========== SOBRE SECTION ========== */
