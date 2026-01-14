@@ -321,7 +321,7 @@
     // ========== FUNÇÕES BÁSICAS DA GALERIA ==========
 
     // Função para criar a galeria no card do imóvel - USANDO showPdfModal
-    window.createPropertyGallery = function(property) {
+        window.createPropertyGallery = function(property) {
         SC.logModule('gallery', `🖼️ Criando galeria para: ${property.title}`);
         
         const hasImages = property.images && property.images !== 'EMPTY';
@@ -332,10 +332,9 @@
             imageUrls[0] : 
             'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
         
-        // Determinar se tem PDFs
         const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY';
         
-        // HTML simples e funcional
+        // HTML corrigido com numeração de fotos
         return `
             <div class="property-image" style="position: relative; height: 250px;">
                 <img src="${firstImageUrl}" 
@@ -344,10 +343,17 @@
                      onclick="openGallery(${property.id})"
                      onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                 
+                <!-- NUMERAÇÃO DE FOTOS (Canto superior direito) -->
+                ${imageUrls.length > 1 ? `
+                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; z-index: 5; display: flex; align-items: center; gap: 4px;">
+                        <i class="fas fa-images" style="font-size: 0.7rem;"></i>
+                        <span>${imageUrls.length}</span>
+                    </div>` : ''}
+                
                 ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 
-                <!-- BOTÃO PDF SIMPLIFICADO E FUNCIONAL -->
+                <!-- BOTÃO PDF CORRIGIDO -->
                 ${hasPdfs ? `
                     <button class="pdf-access" 
                             onclick="window.pdfButtonHandler(event, ${property.id})"
