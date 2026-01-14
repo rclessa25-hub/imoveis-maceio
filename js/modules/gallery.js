@@ -393,7 +393,7 @@
                 <!-- BOTÃO PDF CORRIGIDO -->
                 ${hasPdfs ? `
                     <button class="pdf-access" 
-                            onclick="window.pdfButtonHandler(event, ${property.id})"
+                            onclick="window.handlePdfButtonClick(event, ${property.id})"
                             title="Documentos do imóvel (senha: doc123)">
                         <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
@@ -401,17 +401,6 @@
         `;
     };
     
-    // Função para manipular clique no botão PDF
-    window.pdfButtonHandler = function(event, propertyId) {
-        event.stopPropagation();
-        event.preventDefault();
-        if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-            window.PdfSystem.showModal(propertyId);
-        } else {
-            console.warn('Sistema PDF não encontrado');
-            SC.showAlert('Sistema de documentos temporariamente indisponível', 'warning');
-        }
-    };    
     // Função para abrir a galeria (mantida igual)
     window.openGallery = function(propertyId) {
         SC.logModule('gallery', `📸 Abrindo galeria para imóvel ID: ${propertyId}`);
