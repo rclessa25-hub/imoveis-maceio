@@ -645,27 +645,4 @@
             SC.logModule('pdf', '✅ Galeria pode acessar PDFs via showPdfModal()');
         }
     }, 1500);
-
-    // ========== COMPATIBILIDADE COM GALLERY.JS ==========
-    // Criar função de compatibilidade que a galeria pode chamar
-    window.handlePdfButtonClick = function(event, propertyId) {
-        if (event) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
-        
-        if (typeof window.showPdfModal === 'function') {
-            window.showPdfModal(propertyId);
-        } else if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-            window.PdfSystem.showModal(propertyId);
-        } else {
-            alert('📄 Carregando documentos...');
-            // Tentar novamente após 500ms
-            setTimeout(() => {
-                if (typeof window.showPdfModal === 'function') {
-                    window.showPdfModal(propertyId);
-                }
-            }, 500);
-        }
-    };
 })();
