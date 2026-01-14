@@ -685,30 +685,65 @@ body.test-mode .pdf-modal-content {
     }
 }
 
-/* ========== CORREÇÃO DO MODAL PDF - INICIALIZAÇÃO ========== */
+/* ========== CORREÇÃO DEFINITIVA DO MODAL PDF ========== */
+/* Garantir que modal fique invisível MAS funcional quando necessário */
+
+/* Estado INICIAL - escondido mas pronto */
 #pdfViewerModal {
-    display: none !important; /* FORÇAR escondido inicialmente */
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
+    display: none; /* IMPORTANTE: apenas 'none' sem !important */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-/* Quando ativo */
+/* Estado ATIVO - visível */
 #pdfViewerModal.active {
     display: flex !important;
     opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
 }
 
-/* Prevenir aparecimento por CSS mal configurado */
-.pdf-modal[style*="display: block"],
-.pdf-modal[style*="display: flex"] {
+/* Prevenir modais duplicados */
+.pdf-modal:not(#pdfViewerModal) {
     display: none !important;
 }
 
-/* Reset de qualquer estilo inline problemático no carregamento */
-body.loading .pdf-modal,
-body:not(.loaded) .pdf-modal {
+/* BLOQUEIO APENAS DURANTE INICIALIZAÇÃO */
+body:not(.site-ready) .pdf-modal {
     display: none !important;
+    pointer-events: none !important;
+}
+
+/* Correção para botões PDF nos cards */
+.pdf-access {
+    position: absolute;
+    bottom: 2px;
+    right: 35px;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--primary);
+    transition: all 0.3s ease;
+    z-index: 15;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    border: 1px solid rgba(0,0,0,0.15);
+}
+
+.pdf-access:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+    color: #1a5276;
 }
