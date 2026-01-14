@@ -324,82 +324,34 @@
     window.createPropertyGallery = function(property) {
         SC.logModule('gallery', `🖼️ Criando galeria para: ${property.title}`);
         
-        // Verificar se há imagens
-        const hasImages = property.images && 
-                         property.images.length > 0 && 
-                         property.images !== 'EMPTY';
-        
+        const hasImages = property.images && property.images !== 'EMPTY';
         const imageUrls = hasImages ? 
-            property.images.split(',').filter(url => url.trim() !== '') : 
-            [];
+            property.images.split(',').filter(url => url.trim() !== '') : [];
         
         const firstImageUrl = imageUrls.length > 0 ? 
             imageUrls[0] : 
             'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
         
-        // Se só tem uma imagem, mostrar imagem estática
-        if (imageUrls.length <= 1) {
-            return `
-                <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-                    <img src="${firstImageUrl}" 
-                         style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
-                         alt="${property.title}"
-                         onclick="openGallery(${property.id})"
-                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                    
-                    ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                    ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                    ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
-                    
-                    <!-- BOTÃO PDF PARA IMAGEM ÚNICA - USANDO showPdfModal -->
-                    ${property.pdfs && property.pdfs !== 'EMPTY' ? 
-                        `<button class="pdf-access"
-                             onclick="event.stopPropagation(); event.preventDefault(); window.showPdfModal(${property.id})"
-                             title="Documentos do imóvel (senha: doc123)">
-                            <i class="fas fa-file-pdf"></i>
-                        </button>` : ''}
-                </div>
-            `;
-        }
+        // Determinar se tem PDFs
+        const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY';
         
-        // Se tem múltiplas imagens, criar galeria
+        // HTML simples e funcional
         return `
-            <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-                <div class="property-gallery-container" onclick="openGallery(${property.id})">
-                    <img src="${firstImageUrl}" 
-                         class="property-gallery-image"
-                         alt="${property.title}"
-                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                    
-                    <!-- Indicador de galeria MOBILE -->
-                    <div class="gallery-indicator-mobile">
-                        <i class="fas fa-images"></i>
-                        <span>${imageUrls.length}</span>
-                    </div>
-                    
-                    <!-- Pontos indicadores -->
-                    <div class="gallery-controls">
-                        ${imageUrls.map((_, index) => `
-                            <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
-                                 data-index="${index}"
-                                 onclick="event.stopPropagation(); showGalleryImage(${property.id}, ${index})"></div>
-                        `).join('')}
-                    </div>
-                    
-                    <!-- Ícone de expansão -->
-                    <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
-                        <i class="fas fa-expand"></i>
-                    </div>
-                </div>
+            <div class="property-image" style="position: relative; height: 250px;">
+                <img src="${firstImageUrl}" 
+                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
+                     alt="${property.title}"
+                     onclick="openGallery(${property.id})"
+                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                 
-                ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
                 
-                <!-- BOTÃO PDF PARA MÚLTIPLAS IMAGENS - USANDO showPdfModal -->
-                ${property.pdfs && property.pdfs !== 'EMPTY' ? 
-                    `<button class="pdf-access"
-                         onclick="event.stopPropagation(); event.preventDefault(); window.showPdfModal(${property.id})"
-                         title="Documentos do imóvel (senha: doc123)">
+                <!-- BOTÃO PDF SIMPLIFICADO E FUNCIONAL -->
+                ${hasPdfs ? `
+                    <button class="pdf-access" 
+                            onclick="window.pdfButtonHandler(event, ${property.id})"
+                            title="Documentos do imóvel (senha: doc123)">
                         <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
             </div>
