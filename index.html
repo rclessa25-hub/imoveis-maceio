@@ -5,22 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WEBER LESSA CORRETOR & CONSULTORIA DE IMÓVEIS - CRECI: 654/AL</title>
 
-    <!-- 🔴 FLAG DE SEGURANÇA ADICIONADA (RECOMENDAÇÃO - Passo 5) -->
-    <script>
-        // 🔴 BLOQUEAR ABERTURA AUTOMÁTICA DE MODAIS PDF
-        window.BLOCK_AUTO_PDF_MODAL = true;
-        window.PDF_MODAL_AUTO_OPEN = false;
-        window.PDF_SYSTEM_AUTO_INIT = false;
-        
-        // Sobrescrever funções perigosas
-        if (typeof window.showPdfModal === 'undefined') {
-            window.showPdfModal = function() {
-                console.log('🔒 showPdfModal bloqueado (preventivo)');
-                return null;
-            };
-        }
-    </script>
-
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
  
@@ -437,27 +421,10 @@
             <div id="pdfPreview" class="pdf-preview">
                 <p>Documentos técnicos e legais disponíveis</p>
             </div>
-
-            <!-- 🔧 FORMULÁRIO CORRIGIDO -->
             <form style="display: none;" aria-hidden="true" autocomplete="off">
-                <input
-                    type="text"
-                    name="dummy-username"
-                    autocomplete="username"
-                    disabled
-                    style="display:none"
-                >
-                <input
-                    type="password"
-                    id="pdfPassword"
-                    name="pdfPassword"
-                    class="pdf-password-input"
-                    placeholder="Digite a senha para acessar"
-                    autocomplete="new-password"
-                    disabled
-                >
+                <input type="text" name="dummy-username" style="display:none" autocomplete="username">
+                <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar" autocomplete="new-password">
             </form>
-
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                 <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
                     <i class="fas fa-lock-open"></i> Acessar
@@ -471,7 +438,7 @@
             </p>
         </div>
     </div>
-    
+
 <button class="admin-toggle">
     <i class="fas fa-user-cog"></i>
 </button>
@@ -480,13 +447,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/modules/supabase.js" defer></script>
 <script src="js/modules/utils.js" defer></script>
-<script src="js/modules/core/SharedCore.js" defer></script>
 <script src="js/modules/utils/loading-manager.js" defer></script>
 
 <!-- ========== MÓDULOS PRINCIPAIS (DEFER) ========== -->
-<script src="js/modules/gallery.js" defer></script>
 <script src="js/modules/properties/properties-core.js" defer></script>
 <script src="js/modules/properties.js" defer></script>
+<script src="js/modules/gallery.js" defer></script>
 
 <!-- ========== MÓDULOS PDF (DEFER) ========== -->
 <script src="js/modules/reader/pdf-unified.js" defer></script>
@@ -496,6 +462,97 @@
 
 <!-- ========== ADMIN (DEPENDE DO SISTEMA DE MÍDIA) ========== -->
 <script src="js/modules/admin.js" defer></script>
+
+<!-- ========== CARREGAMENTO CONDICIONAL DE MÓDULOS DE SUPORTE ========== -->
+<script>
+(() => {
+    // DEBUG: Marcar início da execução apenas em debug/test/local
+    const shouldLoadSupport = 
+        window.location.search.includes('debug=true') || 
+        window.location.search.includes('test=true') ||
+        window.location.hostname.includes('localhost') ||
+        window.location.hostname.includes('127.0.0.1');
+
+    // Debouncing para evitar múltiplos carregamentos
+    if (!window.supportModulesLoaded) {
+        window.supportModulesLoaded = false;
+    }
+
+    if (window.supportModulesLoaded) {
+        if (shouldLoadSupport) console.log('⚡ [SUPORTE] Módulos já carregados, ignorando repetição');
+        return;
+    }
+
+    if (shouldLoadSupport) {
+        console.log('🔧 [SUPORTE] Carregando módulos do repositório de suporte...');
+        window.supportModulesLoaded = true;
+
+        // Array de módulos a carregar
+        const supportModules = [
+            'debug/diagnostics.js',
+            'debug/function-verifier.js',
+            'debug/media-logger.js',
+            'debug/media-recovery.js', 
+            'debug/pdf-logger.js',
+            'debug/duplication-checker.js',
+            'debug/emergency-recovery.js',
+            'debug/simple-checker.js',
+            'debug/validation.js',
+            'debug/validation-essentials.js',    
+            'debug/core-optimizer.js',
+            'performance/optimizer.js',
+            'debug/media-migration-check.js' 
+       ];
+
+        const baseUrl = 'https://rclessa25-hub.github.io/weberlessa-support/';
+        let loadedCount = 0;
+
+        supportModules.forEach(modulePath => {
+            const fullUrl = baseUrl + modulePath;
+            console.log(`🔧 [SUPORTE] Tentando carregar: ${fullUrl}`);
+
+            const script = document.createElement('script');
+            script.src = fullUrl;
+            script.defer = true;
+
+            script.onload = () => {
+                loadedCount++;
+                console.log(`✅ [SUPORTE] ${modulePath} carregado (${loadedCount}/${supportModules.length})`);
+
+                if (loadedCount === supportModules.length) {
+                    console.log('🎉 [SUPORTE] TODOS os módulos carregados com sucesso!');
+
+                    // Executar verificações automáticas
+                    setTimeout(() => {
+                        if (typeof window.runSupportChecks === 'function') {
+                            window.runSupportChecks();
+                        } else {
+                            if (typeof window.verifySystemFunctions === 'function') {
+                                window.verifySystemFunctions();
+                            }
+                            if (typeof window.checkModuleDuplications === 'function') {
+                                window.checkModuleDuplications();
+                            }
+                        }
+                    }, 1000);
+                }
+            };
+
+            script.onerror = (error) => {
+                console.error(`❌ [SUPORTE] Falha ao carregar: ${modulePath}`, error);
+                console.error(`❌ [SUPORTE] URL falhou: ${fullUrl}`);
+            };
+
+            document.head.appendChild(script);
+        });
+
+        console.log(`📦 [SUPORTE] Total de módulos: ${supportModules.length}`);
+        console.log('🔗 [SUPORTE] Repositório: https://github.com/rclessa25-hub/weberlessa-support');
+    } else {
+        console.log('🚀 [SUPORTE] Site principal em modo produção - sem módulos de suporte');
+    }
+})();
+</script>
     
 <!-- ========== INICIALIZAÇÃO DO SISTEMA ========== -->
 <script>
@@ -516,123 +573,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.log('✅ Sistema Weber Lessa inicializado');
     }, 1000);
 });
-</script>
-
-// ========== CARREGAMENTO CONDICIONAL INTELIGENTE OTIMIZADO (VERSÃO LIMPA) ==========
-<script>
-(function() {
-    // 1. AGUARDAR Core System carregar COMPLETAMENTE
-    const waitForCoreSystem = setInterval(() => {
-        const coreReady = 
-            typeof window.SharedCore !== 'undefined' &&
-            typeof window.MediaSystem !== 'undefined' &&
-            typeof window.PdfSystem !== 'undefined' &&
-            typeof window.properties !== 'undefined';
-        
-        if (coreReady) {
-            clearInterval(waitForCoreSystem);
-            console.log('✅ Core System completamente carregado');
-            
-            // 🔴 CORREÇÃO CRÍTICA: REMOVER CARREGAMENTO DE SUPORTE DUPLICADO
-            // Apenas carregar diagnósticos em modo debug explícito
-            const shouldLoadSupport = 
-                window.location.search.includes('full-debug=true') || 
-                window.location.search.includes('debug=diagnostics-only');
-            
-            if (shouldLoadSupport) {
-                console.log('🔧 Carregando diagnóstico limitado...');
-                loadDiagnosticsOnly();
-            } else {
-                console.log('🚀 Modo produção - Sistemas de suporte não carregados');
-                // Marcar como carregado para evitar tentativas posteriores
-                window.supportSystemLoaded = true;
-            }
-        }
-    }, 500);
-    
-    // Timeout de segurança: 10 segundos
-    setTimeout(() => {
-        clearInterval(waitForCoreSystem);
-        console.log('⚠️ Timeout do Core System - continuando sem Support');
-        window.supportSystemLoaded = true;
-    }, 10000);
-    
-    // 🔴 NOVA FUNÇÃO: APENAS DIAGNÓSTICO (SEM DUPLICAÇÕES)
-    function loadDiagnosticsOnly() {
-        if (window.supportSystemLoaded) {
-            console.log('⚠️ Support System já carregado');
-            return;
-        }
-        
-        window.supportSystemLoaded = 'loading';
-        
-        // APENAS diagnóstico, sem criar sistemas duplicados
-        const script = document.createElement('script');
-        script.src = 'https://rclessa25-hub.github.io/weberlessa-support/debug/diagnostics.js';
-        
-        script.onload = function() {
-            console.log('✅ Diagnóstico carregado');
-            window.supportSystemLoaded = true;
-            
-            // Executar diagnóstico apenas
-            setTimeout(() => {
-                if (typeof window.runDiagnostics === 'function') {
-                    window.runDiagnostics();
-                }
-            }, 1000);
-        };
-        
-        script.onerror = function() {
-            console.warn('⚠️ Diagnóstico falhou (não crítico)');
-            window.supportSystemLoaded = true;
-        };
-        
-        document.head.appendChild(script);
-    }
-    
-    // 2. VERIFICAÇÃO DE PREVENÇÃO DE DUPLICAÇÃO
-    setTimeout(() => {
-        // Prevenir duplicação de funções globais
-        const globalFunctions = ['processAndSavePdfs', 'showPdfModal', 'pdfButtonHandler'];
-        
-        globalFunctions.forEach(funcName => {
-            if (typeof window[funcName] !== 'undefined') {
-                console.log(`✅ ${funcName} está disponível globalmente`);
-                
-                // Se já existe no MediaSystem, remover duplicata
-                if (window.MediaSystem && window.MediaSystem[funcName]) {
-                    console.log(`🔄 ${funcName} também está no MediaSystem - usando global`);
-                    // Opcional: remover do MediaSystem para evitar conflito
-                    delete window.MediaSystem[funcName];
-                }
-            }
-        });
-        
-        // Verificar sistemas ativos
-        const activeSystems = {
-            'MediaSystem': typeof window.MediaSystem !== 'undefined',
-            'PdfSystem': typeof window.PdfSystem !== 'undefined',
-            'SharedCore': typeof window.SharedCore !== 'undefined',
-            'PdfLogger': typeof window.PdfLogger !== 'undefined',
-            'ValidationSystem': typeof window.ValidationSystem !== 'undefined',
-            'EmergencySystem': typeof window.EmergencySystem !== 'undefined'
-        };
-        
-        console.log('📊 Sistemas ativos (evitar duplicação):');
-        console.table(activeSystems);
-        
-        // Se sistemas de suporte duplicados foram carregados, limpar
-        if (window.ValidationSystem && window.MediaSystem) {
-            console.log('⚠️ Sistemas duplicados detectados - usando MediaSystem como principal');
-            // Manter MediaSystem, limpar ValidationSystem se for redundante
-            if (window.ValidationSystem.validateImages && window.MediaSystem.validateImages) {
-                console.log('🔄 Removendo validação duplicada do ValidationSystem');
-                window.ValidationSystem = null;
-            }
-        }
-        
-    }, 3000);
-})();
 </script>
     
 </body>
