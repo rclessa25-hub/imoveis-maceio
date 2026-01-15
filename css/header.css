@@ -307,7 +307,6 @@
     display: none;
     width: 100%;
     padding: 5px 0;
-    /* 🔥 ADICIONE ESTAS LINHAS PARA FIXAR NO MOBILE: */
     position: fixed;
     top: 0;
     left: 0;
