@@ -819,9 +819,14 @@
 
     // ATUALIZE o pdfButtonHandler para isso:
     window.pdfButtonHandler = function(propertyId) {
-        console.log(`📄 Botão PDF clicado para imóvel ${propertyId}`);
+        console.log(`📄 Botão PDF clicado PARA IMÓVEL ${propertyId} (ativado pelo usuário)`);
         
-        // Método 1: Usar showPdfModal se existir
+        // 🔴 ADICIONAR CLASSE DE ATIVAÇÃO DO USUÁRIO
+        document.querySelectorAll('#pdfViewerModal, #pdfModal, .pdf-modal').forEach(modal => {
+            modal.classList.add('user-activated');
+        });
+        
+        // Resto da função normal...
         if (typeof window.showPdfModal === 'function') {
             // 🔴 CORREÇÃO CRÍTICA: Verificar se o modal realmente abre
             const result = window.showPdfModal(propertyId);
