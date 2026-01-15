@@ -294,8 +294,8 @@ const MediaSystem = {
             console.log(`🔄 Movendo entre arrays diferentes`);
             
             // Remover do array de origem
-                const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
-                if (sourceIndex !== -1) {
+            const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
+            if (sourceIndex !== -1) {
                 const [movedItem] = draggedArray.splice(sourceIndex, 1);
                 
                 // Adicionar ao array de destino (no final)
@@ -342,62 +342,146 @@ const MediaSystem = {
         });
     },
 
-    // ========== VERSÃO SIMPLIFICADA DO PREVIEW ==========
+    // ========== FUNÇÃO DE PREVIEW CORRIGIDA - VERSÃO SIMPLES E FUNCIONAL ==========
     getMediaPreviewHTML: function(item) {
-        // URL da imagem (preview ou url original)
+        console.log(`🔍 Gerando preview para: ${item.name || item.id}`);
+        
+        // Detectar se é imagem de forma mais assertiva
+        const hasImageExtension = item.name && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(item.name);
+        const isImageType = item.type && item.type.includes('image');
+        const isImage = item.isImage || isImageType || hasImageExtension;
+        
+        // Detectar se é vídeo
+        const hasVideoExtension = item.name && /\.(mp4|mov|avi|mkv|webm)$/i.test(item.name);
+        const isVideoType = item.type && item.type.includes('video');
+        const isVideo = item.isVideo || isVideoType || hasVideoExtension;
+        
+        // Detectar se é PDF
+        const isPdf = item.type && item.type.includes('pdf');
+        
         const mediaUrl = item.preview || item.url;
         
-        // Se não tem URL, mostrar fallback
         if (!mediaUrl) {
-            return `
-                <div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
-                    <i class="fas fa-image" style="font-size:1.5rem;color:#ccc;"></i>
-                </div>
-            `;
+            console.warn(`❌ Sem URL para ${item.name}`);
+            return this.getFallbackPreview(item, 'Sem URL');
         }
         
-        // Para arquivos com UUID (últimos 2 do log), tentar detectar se é imagem
-        const fileName = item.name || '';
-        const isLikelyImage = 
-            item.type && item.type.includes('image') ||
-            fileName.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i) ||
-            item.url && item.url.match(/\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i);
-        
-        // Se parece ser imagem, mostrar como imagem
-        if (isLikelyImage) {
-            return `
-                <img src="${mediaUrl}" 
-                     style="width:100%;height:70px;object-fit:cover;" 
-                     alt="${item.name || 'Preview'}"
-                     onload="console.log('✅ Imagem carregada:', this.src.substring(0, 50))"
-                     onerror="console.warn('❌ Falha ao carregar:', this.src.substring(0, 50));
-                              this.style.display='none';
-                              this.parentElement.innerHTML='<div style=\"width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;\"><i class=\"fas fa-image\" style=\"font-size:1.5rem;color:#ccc;\"></i></div>'">
-            `;
+        // 1. SE FOR IMAGEM: Mostrar a imagem real
+        if (isImage) {
+            console.log(`🖼️ Mostrando imagem: ${item.name}`);
+            return this.getImagePreview(mediaUrl, item.name);
         }
         
-        // Para vídeos
-        const isLikelyVideo = 
-            item.type && item.type.includes('video') ||
-            fileName.match(/\.(mp4|mov|avi|mkv|webm)$/i) ||
-            item.url && item.url.match(/\.(mp4|mov|avi|mkv|webm)$/i);
-        
-        if (isLikelyVideo) {
-            return `
-                <div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
-                    <i class="fas fa-video" style="font-size:1.5rem;color:#ecf0f1;"></i>
-                </div>
-            `;
+        // 2. SE FOR VÍDEO: Mostrar ícone de vídeo
+        if (isVideo) {
+            console.log(`🎥 Mostrando vídeo: ${item.name}`);
+            return this.getVideoPreview(item.name);
         }
         
-        // Fallback padrão
+        // 3. SE FOR PDF: Mostrar ícone de PDF
+        if (isPdf) {
+            console.log(`📄 Mostrando PDF: ${item.name}`);
+            return this.getPdfPreview(item.name);
+        }
+        
+        // 4. SE NÃO RECONHECER: Verificar pelo nome do arquivo
+        if (item.name) {
+            // Se parece com um UUID (arquivo do Supabase sem extensão), tratar como vídeo
+            if (item.name.match(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i)) {
+                console.log(`🎥 UUID detectado, tratando como vídeo: ${item.name}`);
+                return this.getVideoPreview('Vídeo');
+            }
+            
+            // Se tem "media" no nome, tratar como imagem
+            if (item.name.toLowerCase().includes('media')) {
+                console.log(`🖼️ Nome contém 'media', tratando como imagem: ${item.name}`);
+                return this.getImagePreview(mediaUrl, item.name);
+            }
+        }
+        
+        // 5. FALLBACK genérico
+        console.warn(`⚠️ Tipo não reconhecido para: ${item.name}`);
+        return this.getFallbackPreview(item, 'Tipo desconhecido');
+    },
+
+    // ========== PREVIEW DE IMAGEM - SIMPLES E DIRETO ==========
+    getImagePreview: function(imageUrl, altText) {
+        // SVG de fallback (mostrado apenas se a imagem falhar)
+        const fallbackSVG = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="70" viewBox="0 0 100 70">
+                <rect width="100" height="70" fill="#2c3e50"/>
+                <text x="50" y="35" font-family="Arial" font-size="10" fill="#ecf0f1" 
+                      text-anchor="middle" dominant-baseline="middle">
+                    ${altText ? altText.substring(0, 12) : 'Imagem'}
+                </text>
+            </svg>
+        `;
+        const fallbackDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(fallbackSVG);
+        
         return `
-            <div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
-                <i class="fas fa-file" style="font-size:1.5rem;color:#ccc;"></i>
+            <img src="${imageUrl}" 
+                 alt="${altText || 'Imagem'}"
+                 style="width:100%;height:70px;object-fit:cover;background:#2c3e50;"
+                 onload="console.log('✅ Imagem carregada: ${altText}')"
+                 onerror="console.log('❌ Falha na imagem: ${altText}'); 
+                          this.onerror=null; 
+                          this.src='${fallbackDataUrl}';
+                          this.style.objectFit='contain';
+                          this.style.padding='10px';">
+        `;
+    },
+
+    // ========== PREVIEW DE VÍDEO ==========
+    getVideoPreview: function(altText) {
+        const shortName = altText ? 
+            (altText.length > 12 ? altText.substring(0, 10) + '...' : altText) : 
+            'Vídeo';
+        
+        return `
+            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                <i class="fas fa-video" style="font-size:1.8rem;margin-bottom:5px;"></i>
+                <div style="font-size:0.65rem;text-align:center;max-width:100%;padding:0 5px;">
+                    ${shortName}
+                </div>
             </div>
         `;
     },
 
+    // ========== PREVIEW DE PDF ==========
+    getPdfPreview: function(altText) {
+        const shortName = altText ? 
+            (altText.length > 12 ? altText.substring(0, 10) + '...' : altText) : 
+            'PDF';
+        
+        return `
+            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                <i class="fas fa-file-pdf" style="font-size:1.8rem;margin-bottom:5px;"></i>
+                <div style="font-size:0.65rem;text-align:center;max-width:100%;padding:0 5px;">
+                    ${shortName}
+                </div>
+            </div>
+        `;
+    },
+
+    // ========== FALLBACK PREVIEW ==========
+    getFallbackPreview: function(item, reason) {
+        const shortName = item.name ? 
+            (item.name.length > 12 ? item.name.substring(0, 10) + '...' : item.name) : 
+            'Arquivo';
+        
+        return `
+            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;border:1px dashed #7f8c8d;">
+                <i class="fas fa-file" style="font-size:1.5rem;margin-bottom:5px;"></i>
+                <div style="font-size:0.65rem;text-align:center;">
+                    ${shortName}
+                </div>
+                <div style="font-size:0.5rem;color:#bdc3c7;margin-top:2px;">
+                    ${reason}
+                </div>
+            </div>
+        `;
+    },
+        
     getOrderedMediaUrls: function() {
         console.log('📋 Obtendo URLs ordenadas...');
         
@@ -634,7 +718,7 @@ const MediaSystem = {
             
             // 4. Combinar com arquivos existentes não excluídos
             const keptExistingPdfs = this.state.existingPdfs
-                .filter(item => !item.markedForDeletion && item.url)
+                .filter(item => !item.markedForletion && item.url)
                 .map(item => item.url);
             
             if (keptExistingPdfs.length > 0) {
@@ -849,22 +933,22 @@ const MediaSystem = {
             <div class="media-preview-item draggable-item" 
                      draggable="true"
                      data-id="${item.id}"
-                     title="Arraste para reordenar • ${item.name}"
+                     title="Arraste para reordenar"
                      style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
                     
-                    <!-- PREVIEW DE IMAGEM OU VÍDEO -->
+                    <!-- PREVIEW DE IMAGEM OU VÍDEO (70px de altura) -->
                     <div style="width:100%;height:70px;overflow:hidden;">
                         ${this.getMediaPreviewHTML(item)}
                     </div>
                     
-                    <!-- Nome do arquivo (cortado) -->
-                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:${bgColor};">
-                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">
+                    <!-- Nome do arquivo (40px de altura) -->
+                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                             ${item.name || this.extractFileName(item.url)}
                         </span>
                     </div>
                     
-                    <!-- Ícone de arrastar -->
+                    <!-- Ícone de arrastar (CRUZ DE MALTA) -->
                     <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.7);color:white;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;z-index:10;">
                         <i class="fas fa-arrows-alt"></i>
                     </div>
@@ -872,7 +956,7 @@ const MediaSystem = {
                     <!-- Indicador de ordem -->
                     <div class="order-indicator" style="display:none;"></div>
                     
-                    <!-- Botão de remover -->
+                    <!-- Botão de remover (X VERMELHO) -->
                     <button onclick="MediaSystem.removeFile('${item.id}')" 
                             style="position:absolute;top:2px;right:2px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;z-index:10;">
                         ${isMarked ? '↺' : '×'}
@@ -889,11 +973,6 @@ const MediaSystem = {
         
         html += '</div>';
         container.innerHTML = html;
-        
-        // Adicionar indicadores de ordem após renderização
-        setTimeout(() => {
-            this.addVisualOrderIndicators();
-        }, 100);
     },
     
     renderPdfPreview() {
@@ -1056,8 +1135,6 @@ setTimeout(() => {
     console.log('✅ Sistema de mídia unificado pronto');
 }, 1000);
 
-// NO FINAL do media-unified.js - ANTES do console.log final
-
 // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
 
 // Verificar se todas as funções necessárias estão disponíveis
@@ -1082,7 +1159,12 @@ setTimeout(() => {
         'cleanupDragState',
         'reorderItems',
         'reorderCombinedArray',
-        'addVisualOrderIndicators'
+        'addVisualOrderIndicators',
+        'getMediaPreviewHTML',
+        'getImagePreview',
+        'getVideoPreview',
+        'getPdfPreview',
+        'getFallbackPreview'
     ];
     
     const missing = [];
