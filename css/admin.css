@@ -50,85 +50,7 @@ body.test-mode .pdf-modal-content {
     border-left: 4px solid var(--primary);
 }
 
-/* ÍCONE DO PDF */
-.pdf-access {
-    position: absolute;
-    bottom: 2px;
-    right: 35px;
-    background: rgba(255, 255, 255, 0.95);
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    color: var(--primary);
-    transition: all 0.3s ease;
-    z-index: 15;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    border: 1px solid rgba(0,0,0,0.15);
-}
-
-.pdf-access:hover {
-    background: white;
-    transform: scale(1.1);
-    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
-    color: #1a5276;
-}
-
-.pdf-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-}
-
-.pdf-modal-content {
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-}
-
-.pdf-preview {
-    margin: 1rem 0;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 5px;
-}
-
-.pdf-file-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    background: white;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-}
-
-.pdf-password-input {
-    width: 100%;
-    padding: 0.8rem;
-    margin: 1rem 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-}
-
-/* ========== ESTILOS PARA OS NOVOS BOTÕES "X" DE PDF ========== */
+/* ========== BOTÃO "X" DE EXCLUSÃO DE PDF (CORRIGIDO) ========== */
 
 /* Container para posicionamento relativo */
 .pdf-preview-container {
@@ -137,11 +59,11 @@ body.test-mode .pdf-modal-content {
     margin: 5px;
 }
 
-/* Botão "X" de exclusão de PDF (GERAL) - AJUSTADO PARA FICAR COLADO */
+/* Botão "X" de exclusão de PDF (GERAL) - AJUSTADO */
 .delete-pdf-btn {
     position: absolute;
-    top: -5px;  /* ANTES: -10px (muito afastado) */
-    right: -5px; /* ANTES: -10px (muito afastado) */
+    top: -5px;
+    right: -5px;
     background: #e74c3c;
     color: white;
     border: none;
@@ -559,43 +481,12 @@ body.test-mode .pdf-modal-content {
     z-index: 1000 !important;
 }
 
-/* NOVO: Texto informativo durante arrasto */
-.draggable-item.dragging::after,
-.dragging::after {
-    content: "Soltar aqui para reordenar";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--primary);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.7rem;
-    white-space: nowrap;
-    z-index: 1001;
-}
-
 /* APRIMORADO: Área de destino mais destacada */
 .draggable-item.drop-target,
 .drop-target {
     border: 3px dashed var(--accent) !important;
     background: rgba(52, 152, 219, 0.15) !important;
     position: relative;
-}
-
-/* NOVO: Seta indicadora para área de drop */
-.draggable-item.drop-target::before,
-.drop-target::before {
-    content: "↓";
-    position: absolute;
-    top: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--accent);
-    font-size: 1.2rem;
-    font-weight: bold;
-    z-index: 10;
 }
 
 .draggable-item .fa-arrows-alt {
@@ -643,24 +534,6 @@ body.test-mode .pdf-modal-content {
     min-height: 120px !important;
 }
 
-/* NOVO: Tooltip para mostrar nome completo */
-.media-preview-item:hover::after,
-.pdf-preview-container:hover::after {
-    content: attr(title);
-    position: absolute;
-    bottom: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.7rem;
-    white-space: nowrap;
-    z-index: 1000;
-    pointer-events: none;
-}
-
 /* NOVO: Melhorar visualização das miniaturas */
 .media-preview-item:hover, 
 .pdf-preview-container:hover {
@@ -685,65 +558,78 @@ body.test-mode .pdf-modal-content {
     }
 }
 
-/* ========== CORREÇÃO DEFINITIVA DO MODAL PDF ========== */
-/* Garantir que modal fique invisível MAS funcional quando necessário */
+/* ========== MODAL PDF - CONSISTENTE COM main.css ========== */
+/* REMOVIDAS as duplicações - agora usa apenas .user-activated do main.css */
 
-/* Estado INICIAL - escondido mas pronto */
-#pdfViewerModal {
-    display: none; /* IMPORTANTE: apenas 'none' sem !important */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.85);
-    z-index: 10000;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-/* Estado ATIVO - visível */
-#pdfViewerModal.active {
+/* Apenas uma regra de compatibilidade para manter consistência */
+#pdfViewerModal.user-activated {
     display: flex !important;
     opacity: 1 !important;
 }
 
-/* Prevenir modais duplicados */
+/* Remover estilos conflitantes antigos */
+/*
 .pdf-modal:not(#pdfViewerModal) {
     display: none !important;
 }
 
-/* BLOQUEIO APENAS DURANTE INICIALIZAÇÃO */
 body:not(.site-ready) .pdf-modal {
     display: none !important;
     pointer-events: none !important;
 }
 
-/* Correção para botões PDF nos cards */
-.pdf-access {
-    position: absolute;
-    bottom: 2px;
-    right: 35px;
-    background: rgba(255, 255, 255, 0.95);
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    display: flex;
+#pdfViewerModal *,
+.pdf-modal * {
+    pointer-events: auto !important;
+}
+*/
+
+/* ========== MODAIS DO SISTEMA PDF ========== */
+/* Estilos para modais específicos do painel admin */
+.pdf-modal {
+    /* Estilos básicos - o restante está em main.css */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
-    color: var(--primary);
-    transition: all 0.3s ease;
-    z-index: 15;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    border: 1px solid rgba(0,0,0,0.15);
 }
 
-.pdf-access:hover {
+.pdf-modal-content {
     background: white;
-    transform: scale(1.1);
-    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
-    color: #1a5276;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+}
+
+.pdf-preview {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.pdf-file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    background: white;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.pdf-password-input {
+    width: 100%;
+    padding: 0.8rem;
+    margin: 1rem 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
 }
