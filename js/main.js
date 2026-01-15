@@ -1,6 +1,44 @@
 // js/main.js - SISTEMA DE INICIALIZAÇÃO
 console.log('🚀 main.js carregado - Sistema de Inicialização');
 
+// PATCH DE EMERGÊNCIA PARA PDFSYSTEM
+(function fixPdfSystemModal() {
+    'use strict';
+    
+    // Guardar função original
+    const originalShowModal = window.PdfSystem?.showModal;
+    
+    if (originalShowModal) {
+        // Substituir por versão corrigida
+        window.PdfSystem.showModal = function(propertyId) {
+            console.log(`🔧 PdfSystem.showModal CORRIGIDO chamado para: ${propertyId}`);
+            
+            // Chamar função original
+            const result = originalShowModal.call(this, propertyId);
+            
+            // 🔴 CORREÇÃO: Garantir que o modal fique visível
+            setTimeout(() => {
+                const modal = document.getElementById('pdfViewerModal');
+                if (modal) {
+                    // REMOVER qualquer display: none
+                    modal.style.display = 'flex';
+                    modal.style.opacity = '1';
+                    modal.style.visibility = 'visible';
+                    
+                    console.log('✅ Modal PDF forçado a ficar visível');
+                    
+                    // Scroll para o modal
+                    modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 150);
+            
+            return result;
+        };
+        
+        console.log('🔧 Patch aplicado: PdfSystem.showModal corrigido');
+    }
+})();
+
 window.initializeWeberLessaSystem = async function() {
     console.log('⚙️ Inicializando Sistema Weber Lessa...');
     
