@@ -1,3 +1,5 @@
+/* css/main.css - ESTILOS GERAIS DO SITE WEBER LESSA */
+
 /* ========== VARIÁVEIS GLOBAIS ========== */
 :root {
     --primary: #1a5276;
@@ -232,7 +234,6 @@ body {
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: bold;
-    z-index: 6;
 }
 
 .rural-badge {
@@ -317,14 +318,6 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    z-index: 6;
-}
-
-/* ========== MELHORIA VISUAL OPCIONAL ========== */
-.property-image > div[style*="top: 10px"] {
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* ========== SOBRE SECTION ========== */
@@ -446,7 +439,6 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* Correção para elementos de upload */
 #pdfUploadArea * {
     pointer-events: none;
 }
@@ -461,173 +453,6 @@ body {
 
 .image-preview-container {
     pointer-events: auto;
-}
-
-/* ========== CORREÇÃO DE EMERGÊNCIA PARA MODAL PDF ========== */
-#pdfViewerModal,
-.pdf-modal[style*="display: none"],
-.pdf-modal:not([style*="display: flex"]):not([style*="display: block"]) {
-    display: flex !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    z-index: 10000 !important;
-}
-
-/* Garantir que o campo de senha seja visível */
-#pdfPassword {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: static !important;
-}
-
-/* Remover qualquer overlay que esteja bloqueando */
-body > div:not(#pdfViewerModal):not(.pdf-modal) {
-    pointer-events: none !important;
-}
-
-#pdfViewerModal *,
-.pdf-modal * {
-    pointer-events: auto !important;
-}
-
-/* ========== CORREÇÃO CRÍTICA: ESCONDER MODAL PDF AO CARREGAR ========== */
-#pdfViewerModal,
-#pdfModal,
-.pdf-modal,
-[class*="pdf-"][class*="modal"],
-[class*="modal"][class*="pdf-"] {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    position: fixed !important;
-    top: -9999px !important;
-    left: -9999px !important;
-}
-
-/* Permitir visibilidade APENAS quando explicitamente ativado */
-#pdfViewerModal.user-activated,
-#pdfModal.user-activated,
-.pdf-modal.user-activated {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    z-index: 10000 !important;
-}
-
-/* ========== GARANTIR VISIBILIDADE DO CAMPO DE SENHA ========== */
-#pdfViewerModal #pdfPassword {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: static !important;
-    width: 100% !important;
-    margin: 1rem 0 !important;
-    padding: 0.8rem !important;
-    border: 1px solid #ddd !important;
-    border-radius: 5px !important;
-    font-size: 1rem !important;
-}
-
-/* ========== ANIMAÇÕES SUAVES PARA MODAL PDF ========== */
-#pdfViewerModal {
-    transition: opacity 0.3s ease !important;
-}
-
-/* ========== BOTÃO PDF NOS CARDS (REAFIRMAÇÃO) ========== */
-.pdf-access {
-    position: absolute !important;
-    bottom: 2px !important;
-    right: 35px !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: none !important;
-    border-radius: 50% !important;
-    width: 28px !important;
-    height: 28px !important;
-    cursor: pointer !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 0.75rem !important;
-    color: #1a5276 !important;
-    z-index: 15 !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
-    border: 1px solid rgba(0,0,0,0.15) !important;
-}
-
-.pdf-access:hover {
-    background: white !important;
-    transform: scale(1.1) !important;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.4) !important;
-}
-
-/* ========== CORREÇÃO DEFINITIVA DOS FILTROS ========== */
-/* REMOVER QUALQUER ESTILO INLINE QUE ESTÁ CAUSANDO O BUG */
-.filter-btn {
-    /* RESET COMPLETO - remover qualquer estilo inline */
-    background: #f8f9fa !important;
-    color: #2c3e50 !important;
-    border: 2px solid #e0e0e0 !important;
-    padding: 0.7rem 1.5rem !important;
-    border-radius: 30px !important;
-    font-size: 1rem !important;
-    cursor: pointer !important;
-    transition: all 0.3s ease !important;
-    font-weight: 600 !important;
-}
-
-/* ESTADO ATIVO - SOMENTE quando tem a classe .active */
-.filter-btn.active {
-    background: #1a5276 !important;
-    border-color: #1a5276 !important;
-    color: white !important !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3) !important;
-}
-
-/* Garantir que o hover não sobrescreva o estado ativo */
-.filter-btn:hover {
-    background: #e9ecef !important;
-    border-color: #3498db !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
-}
-
-/* Botão ativo NÃO deve mudar no hover */
-.filter-btn.active:hover {
-    background: #154060 !important;
-    border-color: #154060 !important;
-    color: white !important !important;
-}
-
-/* Correção para Firefox/Safari */
-@supports (-webkit-appearance: none) or (-moz-appearance: none) {
-    .filter-btn.active {
-        -webkit-text-fill-color: white !important;
-        -moz-text-fill-color: white !important;
-        text-fill-color: white !important;
-    }
-}
-
-/* PREVENIR que JavaScript adicione estilos inline */
-.filter-btn[style] {
-    /* Sobrescrever QUALQUER estilo inline */
-    background: #f8f9fa !important;
-    color: #2c3e50 !important;
-    border: 2px solid #e0e0e0 !important;
-}
-
-.filter-btn.active[style] {
-    background: #1a5276 !important;
-    border-color: #1a5276 !important;
-    color: white !important !important;
 }
 
 /* ========== RESPONSIVIDADE GERAL ========== */
@@ -672,8 +497,6 @@ body > div:not(#pdfViewerModal):not(.pdf-modal) {
 }
 
 /* ========== CORREÇÃO DEFINITIVA DOS FILTROS ========== */
-/* Remover qualquer estilo inline que possa estar sobrescrevendo */
-
 .filter-btn[style*="color:"] {
     color: #2c3e50 !important;
 }
@@ -682,7 +505,6 @@ body > div:not(#pdfViewerModal):not(.pdf-modal) {
     color: white !important;
 }
 
-/* Garantir que JavaScript não sobrescreva cores erradas */
 .filter-btn {
     color: #2c3e50 !important;
 }
@@ -691,12 +513,10 @@ body > div:not(#pdfViewerModal):not(.pdf-modal) {
     color: white !important;
 }
 
-/* Prevenir transparência indesejada */
 .filter-btn.active {
     opacity: 1 !important;
 }
 
-/* Correção para Firefox e Safari */
 @supports (-webkit-appearance: none) or (-moz-appearance: none) {
     .filter-btn.active {
         -webkit-text-fill-color: white !important;
