@@ -339,11 +339,11 @@
                        property.pdfs !== 'null' &&
                        property.pdfs !== 'undefined';
         
-        // 🔴 CORREÇÃO: Botão PDF com evento DIRETO e SIMPLES
+        // 🔴 CORREÇÃO: Botão PDF com evento DIRETO e SIMPLES - VERSÃO ATUALIZADA
         const pdfButtonHtml = hasPdfs ? `
             <button class="pdf-access" 
-                    onclick="event.stopPropagation(); window.pdfButtonHandler && window.pdfButtonHandler(${property.id})"
-                    title="Documentos do imóvel">
+                    onclick="window.pdfButtonHandler(${property.id}, event)"
+                    title="Documentos do imóvel (senha: doc123)">
                 <i class="fas fa-file-pdf"></i>
             </button>
         ` : '';
@@ -793,90 +793,252 @@
         }
     };
 
-    // ========== HANDLER GLOBAL SIMPLIFICADO PARA BOTÕES PDF ==========
-    // Função auxiliar para abrir PDF diretamente
-    function openPdfDirectly(propertyId) {
-        const property = window.properties?.find(p => p.id == propertyId);
-        if (property && property.pdfs && property.pdfs !== 'EMPTY') {
-            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-            if (pdfUrls.length > 0) {
-                // Se só tem 1 PDF, abre diretamente
-                if (pdfUrls.length === 1) {
-                    window.open(pdfUrls[0], '_blank');
-                } 
-                // Se tem múltiplos, mostra lista simples
-                else {
-                    const choice = confirm(`Este imóvel tem ${pdfUrls.length} documentos.\n\nAbrir o primeiro documento agora?`);
-                    if (choice) {
-                        window.open(pdfUrls[0], '_blank');
+    // ========== HANDLER GLOBAL ATUALIZADO PARA BOTÕES PDF ==========
+    
+    // 🔴 SUBSTITUIR o pdfButtonHandler atual por ESTE:
+    window.pdfButtonHandler = function(propertyId, event) {
+        console.log(`📄 Botão PDF clicado para imóvel ${propertyId}`);
+        
+        // Prevenir comportamento padrão e propagação
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }
+        
+        // 🔴 CORREÇÃO 1: PRIMEIRO garantir que o modal existe
+        ensurePdfModalExists();
+        
+        // 🔴 CORREÇÃO 2: MOSTRAR MODAL DE SENHA (não abrir PDF diretamente)
+        showPdfPasswordModal(propertyId);
+        
+        return false; // Prevenir qualquer ação padrão
+    };
+
+    // 🔴 FUNÇÃO NOVA: Garantir que modal existe e está configurado
+    function ensurePdfModalExists() {
+        console.log('🔍 Verificando modal PDF...');
+        
+        let modal = document.getElementById('pdfViewerModal');
+        
+        // Se não existir, criar modal SIMPLES de senha
+        if (!modal) {
+            console.log('🛠️ Criando modal de senha PDF...');
+            
+            modal = document.createElement('div');
+            modal.id = 'pdfViewerModal';
+            modal.className = 'pdf-modal user-activated';
+            modal.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.95);
+                z-index: 10000;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <h3 style="color: #1a5276; margin: 0 0 1rem 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                        Documentos do Imóvel
+                    </h3>
+                    
+                    <div style="margin: 1.5rem 0; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                        <p style="margin: 0 0 1rem 0; color: #2c3e50; font-weight: 600;">
+                            <i class="fas fa-lock" style="color: #d4af37;"></i> Acesso Protegido
+                        </p>
+                        <p style="margin: 0; color: #666; font-size: 0.95rem;">
+                            Digite a senha para visualizar os documentos técnicos e legais do imóvel.
+                        </p>
+                    </div>
+                    
+                    <!-- CAMPO DE SENHA - SEMPRE VISÍVEL -->
+                    <input type="password" 
+                           id="pdfPassword" 
+                           placeholder="Digite a senha de acesso"
+                           style="width: 100%; padding: 0.9rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin: 1rem 0; box-sizing: border-box;"
+                           autocomplete="off">
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button onclick="submitPdfPassword()" 
+                                style="background: #1a5276; color: white; border: none; padding: 0.9rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; flex: 1; font-size: 1rem;">
+                            <i class="fas fa-lock-open"></i> Acessar Documentos
+                        </button>
+                        <button onclick="closePdfModal()" 
+                                style="background: #95a5a6; color: white; border: none; padding: 0.9rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
+                    </div>
+                    
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                        <i class="fas fa-info-circle" style="color: #3498db;"></i>
+                        Senha padrão: <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-family: monospace;">doc123</code>
+                    </p>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            console.log('✅ Modal de senha criado');
+        }
+        
+        return modal;
+    }
+
+    // 🔴 FUNÇÃO NOVA: Mostrar modal de senha (não abrir PDF)
+    window.showPdfPasswordModal = function(propertyId) {
+        console.log(`🔐 Mostrando modal de senha para imóvel ${propertyId}`);
+        
+        const modal = ensurePdfModalExists();
+        
+        // Guardar o ID do imóvel no modal
+        modal.dataset.propertyId = propertyId;
+        
+        // 🔴 CORREÇÃO CRÍTICA: MOSTRAR O MODAL VISIVELMENTE
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.style.opacity = '1';
+            
+            // Focar no campo de senha
+            const passwordInput = document.getElementById('pdfPassword');
+            if (passwordInput) {
+                passwordInput.value = ''; // Limpar campo
+                passwordInput.focus();
+                passwordInput.select();
+                
+                // Adicionar evento Enter
+                passwordInput.onkeydown = function(e) {
+                    if (e.key === 'Enter') {
+                        submitPdfPassword();
                     }
-                }
+                };
             }
-        } else {
-            alert('Este imóvel não possui documentos PDF.');
+        }, 10);
+        
+        console.log('✅ Modal de senha visível');
+    }
+
+    // 🔴 FUNÇÃO NOVA: Submeter senha
+    window.submitPdfPassword = function() {
+        const passwordInput = document.getElementById('pdfPassword');
+        const password = passwordInput ? passwordInput.value.trim() : '';
+        const modal = document.getElementById('pdfViewerModal');
+        const propertyId = modal ? modal.dataset.propertyId : null;
+        
+        if (!password) {
+            alert('Por favor, digite a senha para acessar os documentos.');
+            passwordInput.focus();
+            return;
+        }
+        
+        // Senha fixa "doc123"
+        if (password !== 'doc123') {
+            alert('❌ Senha incorreta!\n\nA senha correta é: doc123\n(Solicite ao corretor se não souber)');
+            passwordInput.value = '';
+            passwordInput.focus();
+            return;
+        }
+        
+        console.log(`✅ Senha válida! Acessando PDFs do imóvel ${propertyId}`);
+        
+        // Fechar modal de senha
+        closePdfModal();
+        
+        // Agora sim, abrir PDFs
+        openPropertyPdfs(propertyId);
+    }
+
+    // 🔴 FUNÇÃO NOVA: Abrir PDFs do imóvel (APÓS senha válida)
+    function openPropertyPdfs(propertyId) {
+        const property = window.properties?.find(p => p.id == propertyId);
+        
+        if (!property) {
+            alert('❌ Imóvel não encontrado!');
+            return;
+        }
+        
+        if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
+            alert('ℹ️ Este imóvel não possui documentos PDF disponíveis.');
+            return;
+        }
+        
+        const pdfUrls = property.pdfs.split(',')
+            .map(url => url.trim())
+            .filter(url => url && url !== 'EMPTY');
+        
+        if (pdfUrls.length === 0) {
+            alert('ℹ️ Nenhum documento PDF disponível para este imóvel.');
+            return;
+        }
+        
+        console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
+        
+        // Se só tem 1 PDF, abrir diretamente
+        if (pdfUrls.length === 1) {
+            window.open(pdfUrls[0], '_blank');
+        } 
+        // Se tem múltiplos, mostrar lista de escolha
+        else {
+            showPdfSelectionList(propertyId, property.title, pdfUrls);
         }
     }
 
-    // ATUALIZE o pdfButtonHandler para isso:
-    window.pdfButtonHandler = function(propertyId) {
-        console.log(`📄 Botão PDF clicado PARA IMÓVEL ${propertyId} (ativado pelo usuário)`);
-        
-        // 🔴 ADICIONAR CLASSE DE ATIVAÇÃO DO USUÁRIO
-        document.querySelectorAll('#pdfViewerModal, #pdfModal, .pdf-modal').forEach(modal => {
-            modal.classList.add('user-activated');
-        });
-        
-        // Resto da função normal...
-        if (typeof window.showPdfModal === 'function') {
-            // 🔴 CORREÇÃO CRÍTICA: Verificar se o modal realmente abre
-            const result = window.showPdfModal(propertyId);
-            
-            // 🔴 VERIFICAÇÃO EXTRA: Forçar visibilidade se necessário
+    // 🔴 FUNÇÃO NOVA: Fechar modal
+    window.closePdfModal = function() {
+        const modal = document.getElementById('pdfViewerModal');
+        if (modal) {
+            modal.style.opacity = '0';
             setTimeout(() => {
-                const modal = document.getElementById('pdfViewerModal') || 
-                             document.getElementById('pdfModal') ||
-                             document.querySelector('.pdf-modal');
-                
-                if (modal) {
-                    console.log('🔍 Modal encontrado:', {
-                        id: modal.id,
-                        display: modal.style.display,
-                        classList: modal.classList,
-                        computedDisplay: window.getComputedStyle(modal).display
-                    });
-                    
-                    // FORÇAR VISIBILIDADE SE ESTIVER OCULTO
-                    if (modal.style.display === 'none' || 
-                        window.getComputedStyle(modal).display === 'none') {
-                        console.log('🔧 Forçando visibilidade do modal...');
-                        modal.style.display = 'flex';
-                        modal.style.opacity = '1';
-                        modal.style.visibility = 'visible';
-                        modal.style.zIndex = '10000';
-                        
-                        // Focar no campo de senha
-                        setTimeout(() => {
-                            const passwordInput = modal.querySelector('#pdfPassword') || 
-                                                modal.querySelector('input[type="password"]');
-                            if (passwordInput) {
-                                passwordInput.focus();
-                                passwordInput.select();
-                            }
-                        }, 100);
-                    }
-                } else {
-                    console.error('❌ Modal não encontrado após showPdfModal');
-                    // Fallback direto
-                    openPdfDirectly(propertyId);
-                }
-            }, 100);
-            
-            return result;
+                modal.style.display = 'none';
+            }, 300);
         }
+    }
+
+    // Função para mostrar lista de seleção de PDFs
+    function showPdfSelectionList(propertyId, propertyTitle, pdfUrls) {
+        const modal = ensurePdfModalExists();
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%; text-align: left; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-height: 80vh; overflow-y: auto;">
+                <h3 style="color: #1a5276; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                    ${propertyTitle}
+                </h3>
+                
+                <p style="color: #666; margin-bottom: 1.5rem;">Selecione o documento que deseja visualizar:</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+                    ${pdfUrls.map((url, index) => `
+                        <button onclick="window.open('${url}', '_blank'); closePdfModal();" 
+                                style="text-align: left; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-file-pdf" style="color: #e74c3c;"></i>
+                            <span>Documento ${index + 1}</span>
+                            <span style="margin-left: auto; font-size: 0.8rem; color: #666;">
+                                <i class="fas fa-external-link-alt"></i>
+                            </span>
+                        </button>
+                    `).join('')}
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button onclick="closePdfModal()" 
+                            style="background: #95a5a6; color: white; border: none; padding: 0.9rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600; flex: 1;">
+                        <i class="fas fa-times"></i> Fechar
+                    </button>
+                </div>
+            </div>
+        `;
         
-        // Método 2: Fallback DIRETO (abrir PDF sem modal)
-        openPdfDirectly(propertyId);
-    };
+        modal.style.display = 'flex';
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
+    }
 
     // ========== EXPORT DO MÓDULO ==========
     SC.logModule('gallery', '✅ gallery.js completamente carregado e pronto');
