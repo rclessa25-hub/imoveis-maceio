@@ -358,5 +358,3 @@ if (typeof window !== 'undefined') {
     window.LoadingManager = LoadingManager;
     console.log('✅ LoadingManager carregado como módulo reutilizável');
 }
-
-export default LoadingManager;
