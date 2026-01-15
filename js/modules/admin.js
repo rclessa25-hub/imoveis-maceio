@@ -158,6 +158,77 @@ if (typeof LoadingManager === 'undefined') {
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
 
+// ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO ==========
+// ⭐⭐ NOVAS FUNÇÕES ADICIONADAS ⭐⭐
+window.formatPriceForInput = function(value) {
+    if (!value) return '';
+    
+    // Remove tudo que não for número
+    let numbersOnly = value.toString().replace(/\D/g, '');
+    
+    // Se não tem números, retorna vazio
+    if (numbersOnly === '') return '';
+    
+    // Converte para número inteiro
+    let priceNumber = parseInt(numbersOnly);
+    
+    // Formata como "R$ X.XXX" (sem centavos)
+    let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+    
+    return formatted;
+};
+
+// Função para obter apenas números do preço formatado
+window.getPriceNumbersOnly = function(formattedPrice) {
+    if (!formattedPrice) return '';
+    // Remove "R$ " e todos os pontos
+    return formattedPrice.replace('R$ ', '').replace(/\./g, '');
+};
+
+// ========== FORMATAÇÃO AUTOMÁTICA DO CAMPO PREÇO ==========
+function setupPriceAutoFormat() {
+    const priceField = document.getElementById('propPrice');
+    if (!priceField) return;
+    
+    // Formatar ao carregar (se já tiver valor)
+    if (priceField.value && !priceField.value.startsWith('R$')) {
+        priceField.value = window.formatPriceForInput(priceField.value);
+    }
+    
+    // Formatar ao digitar
+    priceField.addEventListener('input', function(e) {
+        // Permite backspace, delete, setas
+        if (e.inputType === 'deleteContentBackward' || 
+            e.inputType === 'deleteContentForward' ||
+            e.inputType === 'deleteByCut') {
+            return;
+        }
+        
+        // Salva posição do cursor
+        const cursorPos = this.selectionStart;
+        const originalValue = this.value;
+        
+        // Formata o valor
+        this.value = window.formatPriceForInput(this.value);
+        
+        // Ajusta posição do cursor
+        const diff = this.value.length - originalValue.length;
+        this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+    });
+    
+    // Formatar ao perder foco (garantir formatação)
+    priceField.addEventListener('blur', function() {
+        if (this.value && !this.value.startsWith('R$')) {
+            this.value = window.formatPriceForInput(this.value);
+        }
+    });
+    
+    console.log('✅ Formatação automática de preço configurada');
+}
+
 // ========== FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL ==========
 window.toggleAdminPanel = function() {
     console.log('🔄 toggleAdminPanel() executada');
@@ -417,7 +488,7 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados`);
 };
 
-// ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA E SCROLL ==========
+// ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA, SCROLL E FORMATAÇÃO DE PREÇO ==========
 window.editProperty = function(id) {
     console.log(`📝 EDITANDO IMÓVEL ${id} (MediaSystem unificado ativo)`);
 
@@ -438,10 +509,22 @@ window.editProperty = function(id) {
     }
 
     // ==============================
-    // 2️⃣ PREENCHER FORMULÁRIO
+    // 2️⃣ PREENCHER FORMULÁRIO COM PREÇO FORMATADO
     // ==============================
     document.getElementById('propTitle').value = property.title || '';
-    document.getElementById('propPrice').value = property.price || '';
+    
+    // ⭐⭐ FORMATAR PREÇO COM "R$" SEM VÍRGULA/CENTAVOS ⭐⭐
+    const priceField = document.getElementById('propPrice');
+    if (priceField && property.price) {
+        // Se já começa com R$, usa como está
+        if (property.price.startsWith('R$')) {
+            priceField.value = property.price;
+        } else {
+            // Formata o preço
+            priceField.value = window.formatPriceForInput(property.price) || '';
+        }
+    }
+    
     document.getElementById('propLocation').value = property.location || '';
     document.getElementById('propDescription').value = property.description || '';
 
@@ -605,7 +688,7 @@ window.resetAdminFormToInitialState = function() {
     }
 };
 
-// ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM SISTEMA DE LOADING ==========
+// ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM SISTEMA DE LOADING E FORMATAÇÃO DE PREÇO ==========
 window.setupForm = function() {
     console.log('📝 Configurando formulário admin com sistema de mídia integrado...');
     
@@ -619,6 +702,9 @@ window.setupForm = function() {
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     const freshForm = document.getElementById('propertyForm');
+    
+    // ⭐⭐ CONFIGURAR FORMATAÇÃO AUTOMÁTICA DE PREÇO ⭐⭐
+    setupPriceAutoFormat();
     
     // Configurar botão de submit
     const submitBtn = freshForm.querySelector('button[type="submit"]');
@@ -702,7 +788,12 @@ window.setupForm = function() {
                 // 4.1 Preparar objeto de atualização
                 const updateData = { ...propertyData };
                 
-                // 4.2 PROCESSAR PDFs
+                // 4.2 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
+                if (updateData.price && !updateData.price.startsWith('R$')) {
+                    updateData.price = window.formatPriceForInput(updateData.price);
+                }
+                
+                // 4.3 PROCESSAR PDFs
                 loading.updateMessage('Processando documentos PDF...');
                 loading.completeStep(); // Etapa 2 completa
                 
@@ -722,7 +813,7 @@ window.setupForm = function() {
                     updateData.pdfs = '';
                 }
                 
-                // 4.3 PROCESSAR MÍDIA (FOTOS/VIDEOS)
+                // 4.4 PROCESSAR MÍDIA (FOTOS/VIDEOS)
                 loading.updateMessage('Processando fotos e vídeos...');
                 loading.completeStep(); // Etapa 3 completa
                 
@@ -772,7 +863,7 @@ window.setupForm = function() {
                     updateData.images = currentProperty ? currentProperty.images : '';
                 }
                 
-                // 4.4 SALVAR NO BANCO
+                // 4.5 SALVAR NO BANCO
                 loading.updateMessage('Salvando alterações no banco de dados...');
                 loading.completeStep(); // Etapa 4 completa
                 
@@ -817,7 +908,12 @@ window.setupForm = function() {
                 console.log('🆕 CRIANDO novo imóvel...');
                 loading.updateTitle('Criando Novo Imóvel...');
                 
-                // 4.5 PROCESSAR MÍDIA PARA NOVO IMÓVEL
+                // 4.6 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
+                if (propertyData.price && !propertyData.price.startsWith('R$')) {
+                    propertyData.price = window.formatPriceForInput(propertyData.price);
+                }
+                
+                // 4.7 PROCESSAR MÍDIA PARA NOVO IMÓVEL
                 loading.updateMessage('Processando fotos e vídeos...');
                 loading.completeStep(); // Etapa 2 completa
                 
@@ -841,7 +937,7 @@ window.setupForm = function() {
                     }
                 }
                 
-                // 4.6 PROCESSAR PDFs PARA NOVO IMÓVEL
+                // 4.8 PROCESSAR PDFs PARA NOVO IMÓVEL
                 loading.updateMessage('Processando documentos PDF...');
                 loading.completeStep(); // Etapa 3 completa
                 
@@ -850,7 +946,7 @@ window.setupForm = function() {
                     // A lógica de PDFs para novo imóvel já está em addNewProperty
                 }
                 
-                // 4.7 CRIAR NO BANCO
+                // 4.9 CRIAR NO BANCO
                 loading.updateMessage('Salvando no banco de dados...');
                 loading.completeStep(); // Etapa 4 completa
                 
@@ -988,7 +1084,7 @@ window.setupForm = function() {
         console.groupEnd();
     });
     
-    console.log('✅ Formulário admin configurado com sistema de loading visual');
+    console.log('✅ Formulário admin configurado com sistema de loading visual e formatação de preço');
 };
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
@@ -2479,4 +2575,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
 console.log('✅ Sistema de loading visual adicionado ao admin.js');
 
-console.log('✅ admin.js pronto e funcional - SEM ERROS DE SINTAXE');
+console.log('✅ admin.js pronto e funcional - COM FORMATAÇÃO DE PREÇO IMPLEMENTADA');
