@@ -1,62 +1,13 @@
 // js/modules/properties.js - SISTEMA COMPLETO CORRIGIDO
-
-// Configuração SharedCore
-const SC = window.SharedCore;
-
-// Verificar se está disponível
-if (!SC) {
-    console.error('❌ SharedCore não disponível no properties.js!');
-    // Criar fallback local
-    window.SharedCore = window.SharedCore || {
-        debounce: function(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        },
-        supabaseFetch: window.supabaseFetch,
-        logModule: (module, msg) => console.log(`[${module}] ${msg}`),
-        formatPrice: window.formatPrice,
-        runLowPriority: function(task) {
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(task, { timeout: 1000 });
-            } else {
-                setTimeout(task, 100);
-            }
-        },
-        stringSimilarity: function(str1, str2) {
-            if (!str1 || !str2) return 0;
-            
-            str1 = str1.toLowerCase();
-            str2 = str2.toLowerCase();
-            
-            if (str1 === str2) return 1;
-            if (str1.length < 2 || str2.length < 2) return 0;
-            
-            let match = 0;
-            for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
-                if (str1[i] === str2[i]) match++;
-            }
-            
-            return match / Math.max(str1.length, str2.length);
-        }
-    };
-}
-
-SC.logModule('properties', 'Sistema Core de Propriedades');
-SC.logModule('properties', 'carregado - Versão Corrigida');
+console.log('🏠 properties.js - Sistema Core de Propriedades');
+console.log('🚀 properties.js carregado - Versão Corrigida');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
 window.editingPropertyId = null;
 
 window.initializeProperties = async function () {
-    SC.logModule('properties', 'Inicializando sistema de propriedades (USANDO CLIENTE OFICIAL)...');
+    console.log('🔄 Inicializando sistema de propriedades (USANDO CLIENTE OFICIAL)...');
 
     // ==========================================================
     // 📊 MONITORAMENTO DA OPERAÇÃO PRINCIPAL (OPCIONAL)
@@ -74,7 +25,7 @@ window.initializeProperties = async function () {
 
             if (cached && Array.isArray(cached) && cached.length > 0) {
                 window.properties = cached;
-                SC.logModule('properties', 'Propriedades carregadas do cache inteligente');
+                console.log('⚡ Propriedades carregadas do cache inteligente');
 
                 if (typeof window.renderProperties === 'function') {
                     const renderOpId = window.OperationMonitor
@@ -106,7 +57,7 @@ window.initializeProperties = async function () {
         // 1️⃣ SUPABASE – CLIENTE OFICIAL (PRIORIDADE) [ATUALIZADO]
         // ==========================================================
         const loadSupabaseProperties = async () => {
-            SC.logModule('properties', 'Tentando conexão com Supabase via cliente oficial...');
+            console.log('🌐 Tentando conexão com Supabase via cliente oficial...');
 
             if (!window.supabaseLoadProperties) return;
 
@@ -146,7 +97,7 @@ window.initializeProperties = async function () {
                         );
                     }
 
-                    SC.logModule('properties', `${formattedData.length} imóveis carregados (Supabase oficial)`);
+                    console.log(`✅ ${formattedData.length} imóveis carregados (Supabase oficial)`);
 
                     if (typeof window.renderProperties === 'function') {
                         setTimeout(() => window.renderProperties('todos'), 100);
@@ -160,7 +111,7 @@ window.initializeProperties = async function () {
                     }
                 }
             } catch (error) {
-                SC.logModule('properties', `Erro no cliente oficial: ${error}`, 'error');
+                console.error('❌ Erro no cliente oficial:', error);
             }
         };
 
@@ -174,11 +125,11 @@ window.initializeProperties = async function () {
         // ==========================================================
         // 2️⃣ SUPABASE FETCH (FALLBACK)
         // ==========================================================
-        SC.logModule('properties', 'Tentando com supabaseFetch (fallback)...');
+        console.log('🔄 Tentando com supabaseFetch (fallback)...');
 
-        if (SC.supabaseFetch) {
+        if (window.supabaseFetch) {
             try {
-                const result = await SC.supabaseFetch('/properties?select=*&order=id.desc');
+                const result = await window.supabaseFetch('/properties?select=*&order=id.desc');
 
                 if (result.ok && Array.isArray(result.data) && result.data.length > 0) {
                     const formattedData = result.data.map(item => ({
@@ -209,7 +160,7 @@ window.initializeProperties = async function () {
                         );
                     }
 
-                    SC.logModule('properties', `${formattedData.length} imóveis carregados (fallback fetch)`);
+                    console.log(`✅ ${formattedData.length} imóveis carregados (fallback fetch)`);
 
                     if (typeof window.renderProperties === 'function') {
                         setTimeout(() => window.renderProperties('todos'), 100);
@@ -224,14 +175,14 @@ window.initializeProperties = async function () {
                     return;
                 }
             } catch (error) {
-                SC.logModule('properties', `Erro no supabaseFetch: ${error}`, 'error');
+                console.error('❌ Erro no supabaseFetch:', error);
             }
         }
 
         // ==========================================================
         // 3️⃣ LOCALSTORAGE (FALLBACK)
         // ==========================================================
-        SC.logModule('properties', 'Usando fallback: localStorage...');
+        console.log('📁 Usando fallback: localStorage...');
         const stored = localStorage.getItem('weberlessa_properties');
 
         if (stored) {
@@ -262,14 +213,14 @@ window.initializeProperties = async function () {
                     return;
                 }
             } catch (e) {
-                SC.logModule('properties', `Erro ao parsear localStorage: ${e}`, 'error');
+                console.error('❌ Erro ao parsear localStorage:', e);
             }
         }
 
         // ==========================================================
         // 4️⃣ DADOS INICIAIS (ÚLTIMO FALLBACK)
         // ==========================================================
-        SC.logModule('properties', 'Usando fallback: dados iniciais...');
+        console.log('📦 Usando fallback: dados iniciais...');
         window.properties = getInitialProperties();
         window.savePropertiesToStorage();
 
@@ -294,7 +245,7 @@ window.initializeProperties = async function () {
         }
 
     } catch (error) {
-        SC.logModule('properties', `Erro crítico ao carregar propriedades: ${error}`, 'error');
+        console.error('❌ Erro crítico ao carregar propriedades:', error);
 
         if (operationId && window.OperationMonitor) {
             window.OperationMonitor.endOperationError(operationId, error);
@@ -345,17 +296,17 @@ function getInitialProperties() {
 window.savePropertiesToStorage = function() {
     try {
         localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
-        SC.logModule('properties', `Imóveis salvos no localStorage: ${window.properties.length}`);
+        console.log('💾 Imóveis salvos no localStorage:', window.properties.length);
         return true;
     } catch (error) {
-        SC.logModule('properties', `Erro ao salvar no localStorage: ${error}`, 'error');
+        console.error('❌ Erro ao salvar no localStorage:', error);
         return false;
     }
 };
 
 // ========== FUNÇÃO 4: Renderizar Propriedades (Atualizada com cache de DOM) ==========
 window.renderProperties = function(filter = 'todos') {
-    SC.logModule('properties', `renderProperties() com filtro: ${filter}`);
+    console.log('🎨 renderProperties() com filtro:', filter);
 
     const operationId = window.OperationMonitor ? 
         window.OperationMonitor.startOperation('renderProperties', { filter }) : null;
@@ -363,7 +314,7 @@ window.renderProperties = function(filter = 'todos') {
     try {
         const container = document.getElementById('properties-container');
         if (!container) {
-            SC.logModule('properties', 'Container não encontrado!', 'error');
+            console.error('❌ Container não encontrado!');
             if (operationId && window.OperationMonitor) {
                 window.OperationMonitor.endOperationError(operationId, new Error('Container não encontrado'));
             }
@@ -375,7 +326,7 @@ window.renderProperties = function(filter = 'todos') {
         let cachedHTML = null;
         if (window.PerformanceCache && PerformanceCache.get(cacheKey, 'dom')) {
             cachedHTML = PerformanceCache.get(cacheKey, 'dom');
-            SC.logModule('properties', 'Usando HTML cacheado do DOM');
+            console.log('⚡ Usando HTML cacheado do DOM');
         }
 
         if (cachedHTML) {
@@ -406,53 +357,29 @@ window.renderProperties = function(filter = 'todos') {
                 return;
             }
 
-            SC.logModule('properties', `Renderizando ${filteredProperties.length} imóveis...`);
+            console.log(`🎨 Renderizando ${filteredProperties.length} imóveis...`);
 
             // Renderizar cada imóvel
             filteredProperties.forEach(property => {
                 const features = Array.isArray(property.features) ? property.features : 
                                 (property.features ? property.features.split(',') : []);
 
-                // ==========================================================
-                // 📸 CORREÇÃO CRÍTICA: UNIFICAÇÃO DA FUNÇÃO createPropertyGallery
-                // ==========================================================
                 // Gerar HTML da imagem
                 let propertyImageHTML = '';
-                
-                // DEBUG: Verificar qual função está sendo usada
-                console.log('🔍 RENDER PROPERTIES DEBUG:');
-                console.log('- createPropertyGallery disponível?', typeof window.createPropertyGallery === 'function');
-                console.log('- property.id:', property.id);
-                console.log('- property.pdfs:', property.pdfs);
-                console.log('- property.images:', property.images ? property.images.split(',').length + ' imagens' : 'nenhuma');
-                
                 if (typeof window.createPropertyGallery === 'function') {
                     propertyImageHTML = window.createPropertyGallery(property);
                 } else {
-                    // FALLBACK com botão PDF
                     const imageUrl = property.images ? 
                         property.images.split(',')[0] : 
                         'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
-                    
-                    const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
-                    
+
                     propertyImageHTML = `
                         <div class="property-image" style="position: relative; height: 250px;">
                             <img src="${imageUrl}" 
-                                 style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
+                                 style="width: 100%; height: 100%; object-fit: cover;"
                                  alt="${property.title}"
-                                 onclick="openGallery(${property.id})"
                                  onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                             ${property.badge ? `<div class="property-badge">${property.badge}</div>` : ''}
-                            ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                            
-                            <!-- BOTÃO PDF NO FALLBACK -->
-                            ${hasPdfs ? 
-                                `<button class="pdf-access"
-                                     onclick="handlePdfButtonClick(event, ${property.id})"
-                                     title="Documentos do imóvel (senha: doc123)">
-                                    <i class="fas fa-file-pdf"></i>
-                                </button>` : ''}
                         </div>
                     `;
                 }
@@ -483,7 +410,7 @@ window.renderProperties = function(filter = 'todos') {
             // Cachear HTML gerado
             if (window.PerformanceCache && container.innerHTML) {
                 PerformanceCache.set(cacheKey, container.innerHTML, 'dom', 30000); // 30 segundos
-                SC.logModule('properties', `HTML cacheado para filtro: ${filter}`);
+                console.log(`💾 HTML cacheado para filtro: ${filter}`);
             }
         }
 
@@ -496,10 +423,10 @@ window.renderProperties = function(filter = 'todos') {
             });
         }
 
-        SC.logModule('properties', 'Imóveis renderizados com sucesso');
+        console.log('✅ Imóveis renderizados com sucesso');
 
     } catch (error) {
-        SC.logModule('properties', `Erro ao renderizar propriedades: ${error}`, 'error');
+        console.error('❌ Erro ao renderizar propriedades:', error);
         if (operationId && window.OperationMonitor) {
             window.OperationMonitor.endOperationError(operationId, error);
         }
@@ -508,90 +435,50 @@ window.renderProperties = function(filter = 'todos') {
 
 // ========== FUNÇÃO 5: Configurar Filtros ==========
 window.setupFilters = function() {
-    SC.logModule('properties', '🔧 Configurando filtros - VERSÃO CORRIGIDA');
+    console.log('🎛️ Configurando filtros...');
     
     const filterButtons = document.querySelectorAll('.filter-btn');
     if (!filterButtons || filterButtons.length === 0) {
-        SC.logModule('properties', 'Botões de filtro não encontrados!', 'error');
+        console.error('❌ Botões de filtro não encontrados!');
         return;
     }
     
-    // 1. REMOVER TODOS OS EVENT LISTENERS ANTIGOS (importante)
+    // Ativar "Todos" automaticamente
+    const todosBtn = Array.from(filterButtons).find(btn => 
+        btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
+    );
+    
+    if (todosBtn && !todosBtn.classList.contains('active')) {
+        todosBtn.classList.add('active');
+    }
+    
+    // Configurar eventos
     filterButtons.forEach(button => {
-        // Clonar o botão para remover listeners antigos
+        // Remover event listeners antigos
         const newButton = button.cloneNode(true);
         button.parentNode.replaceChild(newButton, button);
-    });
-    
-    // 2. PEGAR OS NOVOS BOTÕES (após clonagem)
-    const freshButtons = document.querySelectorAll('.filter-btn');
-    
-    // 3. CONFIGURAR NOVOS EVENT LISTENERS CORRETAMENTE
-    freshButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault();
-            event.stopPropagation();
+        
+        newButton.addEventListener('click', function() {
+            // Remover active de todos
+            filterButtons.forEach(btn => btn.classList.remove('active'));
             
-            SC.logModule('properties', `🎯 Filtro clicado: "${this.textContent.trim()}"`);
-            
-            // PASSO CRÍTICO: REMOVER 'active' e ESTILOS INLINE de TODOS
-            freshButtons.forEach(btn => {
-                // 1. Remover classe
-                btn.classList.remove('active');
-                
-                // 2. REMOVER QUALQUER ESTILO INLINE que possa estar causando o bug
-                btn.style.backgroundColor = '';
-                btn.style.color = '';
-                btn.style.borderColor = '';
-                btn.style.fontWeight = '';
-                btn.style.boxShadow = '';
-                
-                // 3. Resetar qualquer atributo de estilo
-                btn.removeAttribute('style'); // REMOVE TODOS os estilos inline
-            });
-            
-            // PASSO CRÍTICO: ADICIONAR 'active' APENAS ao clicado (SEM estilo inline)
+            // Adicionar active ao clicado
             this.classList.add('active');
-            // NÃO adicionar style inline - deixar o CSS cuidar disso
             
             // Obter filtro
             const filterText = this.textContent.trim();
             const filter = filterText === 'Todos' ? 'todos' : filterText;
             
-            SC.logModule('properties', `🚀 Aplicando filtro: ${filter}`);
+            console.log(`🎯 Filtrando por: ${filter}`);
             
-            // Executar filtro
+            // Renderizar
             if (typeof window.renderProperties === 'function') {
                 window.renderProperties(filter);
             }
-            
-            // DEBUG: Verificar estado
-            setTimeout(() => {
-                const activeCount = document.querySelectorAll('.filter-btn.active').length;
-                SC.logModule('properties', `✅ Filtro aplicado. Ativos: ${activeCount}`);
-                
-                if (activeCount !== 1) {
-                    SC.logModule('properties', `⚠️ ALERTA: ${activeCount} botões ativos (deveria ser 1)`, 'warn');
-                }
-            }, 50);
         });
     });
     
-    // 4. ATIVAR "Todos" por padrão se nenhum estiver ativo
-    setTimeout(() => {
-        const activeButtons = document.querySelectorAll('.filter-btn.active');
-        if (activeButtons.length === 0) {
-            const todosBtn = Array.from(freshButtons).find(btn => 
-                btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
-            );
-            if (todosBtn) {
-                todosBtn.classList.add('active');
-                SC.logModule('properties', '"Todos" ativado por padrão');
-            }
-        }
-    }, 100);
-    
-    SC.logModule('properties', `✅ ${freshButtons.length} filtros configurados corretamente`);
+    console.log('✅ Filtros configurados');
 };
 
 // ========== FUNÇÃO 6: Contactar Agente ==========
@@ -609,7 +496,7 @@ window.contactAgent = function(id) {
 
 // ========== FUNÇÃO 7: Adicionar Novo Imóvel (COM SISTEMA UNIFICADO DE MÍDIA) ==========
 window.addNewProperty = async function(propertyData) {
-    SC.logModule('properties', `ADICIONANDO NOVO IMÓVEL COM SISTEMA UNIFICADO: ${JSON.stringify(propertyData).substring(0, 100)}...`);
+    console.log('➕ ADICIONANDO NOVO IMÓVEL COM SISTEMA UNIFICADO:', propertyData);
 
     // ✅ Validação básica
     if (!propertyData.title || !propertyData.price || !propertyData.location) {
@@ -630,7 +517,7 @@ window.addNewProperty = async function(propertyData) {
         if (typeof MediaSystem !== 'undefined' &&
             (MediaSystem.state.files.length > 0 || MediaSystem.state.pdfs.length > 0)) {
 
-            SC.logModule('properties', 'Processando mídia com MediaSystem...');
+            console.log('📤 Processando mídia com MediaSystem...');
             const tempId = `temp_${Date.now()}`;
 
             mediaResult = await MediaSystem.uploadAll(tempId, propertyData.title);
@@ -638,7 +525,7 @@ window.addNewProperty = async function(propertyData) {
             if (mediaResult.images) propertyData.images = mediaResult.images;
             if (mediaResult.pdfs) propertyData.pdfs = mediaResult.pdfs;
         } else {
-            SC.logModule('properties', 'Nenhuma mídia selecionada para este imóvel');
+            console.log('ℹ️ Nenhuma mídia selecionada para este imóvel');
         }
 
         // =========================================================
@@ -668,16 +555,16 @@ window.addNewProperty = async function(propertyData) {
                     created_at: new Date().toISOString()
                 };
 
-                SC.logModule('properties', `Enviando imóvel ao Supabase: ${JSON.stringify(supabaseData).substring(0, 100)}...`);
+                console.log('📤 Enviando imóvel ao Supabase:', supabaseData);
                 const result = await window.supabaseSaveProperty(supabaseData);
 
                 if (result && result.success) {
                     supabaseSuccess = true;
                     supabaseId = result.data?.id;
-                    SC.logModule('properties', `Imóvel salvo no Supabase com ID ${supabaseId}`);
+                    console.log(`✅ Imóvel salvo no Supabase com ID ${supabaseId}`);
                 }
             } catch (error) {
-                SC.logModule('properties', `Erro ao salvar no Supabase: ${error}`, 'error');
+                console.error('❌ Erro ao salvar no Supabase:', error);
             }
         }
 
@@ -752,7 +639,7 @@ window.addNewProperty = async function(propertyData) {
         setTimeout(() => {
             if (typeof MediaSystem !== 'undefined') {
                 MediaSystem.resetState();
-                SC.logModule('properties', 'MediaSystem resetado após criação');
+                console.log('🧹 MediaSystem resetado após criação');
             }
         }, 300);
 
@@ -761,7 +648,7 @@ window.addNewProperty = async function(propertyData) {
         // =========================================================
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
-            SC.logModule('properties', 'Cache invalidado');
+            console.log('🗑️ Cache invalidado');
         }
 
         // =========================================================
@@ -777,7 +664,7 @@ window.addNewProperty = async function(propertyData) {
         return newProperty;
 
     } catch (error) {
-        SC.logModule('properties', `Erro crítico ao adicionar imóvel: ${error}`, 'error');
+        console.error('❌ Erro crítico ao adicionar imóvel:', error);
         alert('❌ Erro ao cadastrar imóvel: ' + error.message);
 
         if (operationId && window.OperationMonitor) {
@@ -796,7 +683,7 @@ window.clearPdfsOnCancel = function() {
     if (typeof window.updatePdfPreview === 'function') {
         window.updatePdfPreview();
     }
-    SC.logModule('properties', 'PDFs limpos no cancelamento');
+    console.log('🧹 PDFs limpos no cancelamento');
 };
 
 // Função para verificar se há PDFs pendentes
@@ -806,33 +693,35 @@ window.hasPendingPdfs = function() {
 
 // ========== DEBUG AVANÇADO: CHECKBOX "TEM VÍDEO" ==========
 window.debugHasVideoIssue = function(propertyId) {
-    SC.logModule('properties', 'DEBUG AVANÇADO: CHECKBOX TEM VÍDEO', 'info');
+    console.group('🔍 DEBUG AVANÇADO: CHECKBOX TEM VÍDEO');
     
     const property = window.properties.find(p => p.id == propertyId);
     const checkbox = document.getElementById('propHasVideo');
     
-    SC.logModule('properties', 'ESTADO ATUAL:');
-    SC.logModule('properties', `- Checkbox marcado: ${checkbox?.checked}`);
-    SC.logModule('properties', `- Valor na propriedade original: ${property?.has_video}`);
-    SC.logModule('properties', `- Tipo na propriedade: ${typeof property?.has_video}`);
+    console.log('📊 ESTADO ATUAL:');
+    console.log('- Checkbox marcado:', checkbox?.checked);
+    console.log('- Valor na propriedade original:', property?.has_video);
+    console.log('- Tipo na propriedade:', typeof property?.has_video);
     
     // Forçar atualização do estado
     if (property) {
         property.has_video = checkbox?.checked || false;
-        SC.logModule('properties', `Estado forçado para: ${property.has_video}`);
+        console.log('🔄 Estado forçado para:', property.has_video);
         window.savePropertiesToStorage();
     }
+    
+    console.groupEnd();
 };
 
 // ========== FUNÇÃO 8: ATUALIZAR IMÓVEL (VERSÃO ROBUSTA COM SUPABASE E CACHE INTELIGENTE) ==========
 window.updateProperty = async function(id, propertyData) {
-    SC.logModule('properties', `ATUALIZANDO IMÓVEL ${id}: ${JSON.stringify(propertyData).substring(0, 100)}...`);
+    console.log(`✏️ ATUALIZANDO IMÓVEL ${id}:`, propertyData);
 
     // ✅ VALIDAÇÃO DO ID
     if (!id || id === 'null' || id === 'undefined') {
-        SC.logModule('properties', `ID inválido fornecido: ${id}`, 'error');
+        console.error('❌ ID inválido fornecido:', id);
         if (window.editingPropertyId) {
-            SC.logModule('properties', `Usando editingPropertyId: ${window.editingPropertyId}`);
+            console.log(`🔄 Usando editingPropertyId: ${window.editingPropertyId}`);
             id = window.editingPropertyId;
         } else {
             alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!');
@@ -840,18 +729,18 @@ window.updateProperty = async function(id, propertyData) {
         }
     }
 
-    SC.logModule('properties', `ID para atualização: ${id}`);
+    console.log(`🔍 ID para atualização: ${id}`);
 
     // ✅ BUSCAR IMÓVEL
     const index = window.properties.findIndex(p => p.id == id || p.id === id);
     if (index === -1) {
-        SC.logModule('properties', `Imóvel não encontrado! IDs disponíveis: ${window.properties.map(p => p.id).join(', ')}`, 'error');
+        console.error('❌ Imóvel não encontrado! IDs disponíveis:', window.properties.map(p => p.id));
         alert(`❌ Imóvel não encontrado!\n\nIDs disponíveis: ${window.properties.map(p => p.id).join(', ')}`);
         return false;
     }
 
     const property = window.properties[index];
-    SC.logModule('properties', `Imóvel encontrado: "${property.title}"`);
+    console.log(`✅ Imóvel encontrado: "${property.title}"`);
 
     const operationId = window.OperationMonitor ? 
         window.OperationMonitor.startOperation('updateProperty', { id, title: propertyData.title }) : null;
@@ -872,7 +761,7 @@ window.updateProperty = async function(id, propertyData) {
             pdfs: propertyData.pdfs || property.pdfs || ''
         };
 
-        SC.logModule('properties', `Dados para Supabase: ${JSON.stringify(updateData).substring(0, 100)}...`);
+        console.log('📤 Dados para Supabase:', updateData);
 
         // ✅ 2. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
@@ -889,17 +778,17 @@ window.updateProperty = async function(id, propertyData) {
                     body: JSON.stringify(updateData)
                 });
 
-                SC.logModule('properties', `Status do Supabase: ${response.status}`);
+                console.log('📊 Status do Supabase:', response.status);
 
                 if (response.ok) {
                     supabaseSuccess = true;
-                    SC.logModule('properties', `Imóvel ${id} atualizado no Supabase`);
+                    console.log(`✅ Imóvel ${id} atualizado no Supabase`);
                 } else {
                     const errorText = await response.text();
-                    SC.logModule('properties', `Erro no Supabase: ${errorText.substring(0, 200)}`, 'error');
+                    console.error('❌ Erro no Supabase:', errorText);
                 }
             } catch (error) {
-                SC.logModule('properties', `Erro de conexão com Supabase: ${error}`, 'error');
+                console.error('❌ Erro de conexão com Supabase:', error);
             }
         }
 
@@ -910,7 +799,7 @@ window.updateProperty = async function(id, propertyData) {
             id: id
         };
         window.savePropertiesToStorage();
-        SC.logModule('properties', 'Atualização local salva');
+        console.log('✅ Atualização local salva');
 
         // ✅ 4. RENDERIZAR
         if (typeof window.renderProperties === 'function') {
@@ -925,7 +814,7 @@ window.updateProperty = async function(id, propertyData) {
         // ✅ 6. INVALIDAR CACHE INTELIGENTE
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
-            SC.logModule('properties', 'Cache invalidado após atualizar imóvel');
+            console.log('🗑️ Cache invalidado após atualizar imóvel');
         }
 
         // ✅ 7. FEEDBACK
@@ -945,7 +834,7 @@ window.updateProperty = async function(id, propertyData) {
         return true;
 
     } catch (error) {
-        SC.logModule('properties', `ERRO ao atualizar imóvel: ${error}`, 'error');
+        console.error('❌ ERRO ao atualizar imóvel:', error);
         alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
 
         if (operationId && window.OperationMonitor) {
@@ -956,9 +845,27 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
+// Função auxiliar para similaridade de strings (adicionar após a função updateProperty)
+function stringSimilarity(str1, str2) {
+    if (!str1 || !str2) return 0;
+    
+    str1 = str1.toLowerCase();
+    str2 = str2.toLowerCase();
+    
+    if (str1 === str2) return 1;
+    if (str1.length < 2 || str2.length < 2) return 0;
+    
+    let match = 0;
+    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+        if (str1[i] === str2[i]) match++;
+    }
+    
+    return match / Math.max(str1.length, str2.length);
+}
+
 // ========== FUNÇÃO 10: EXCLUIR IMÓVEL (COM SUPABASE E CACHE INTELIGENTE) ==========
 window.deleteProperty = async function(id) {
-    SC.logModule('properties', `Iniciando exclusão COMPLETA do imóvel ${id}...`);
+    console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
 
     const operationId = window.OperationMonitor ? 
         window.OperationMonitor.startOperation('deleteProperty', { id }) : null;
@@ -972,23 +879,23 @@ window.deleteProperty = async function(id) {
 
     // 2. Confirmação DUPLA (segurança)
     if (!confirm(`⚠️ TEM CERTEZA que deseja excluir o imóvel?\n\n"${property.title}"\n\nEsta ação NÃO pode ser desfeita.`)) {
-        SC.logModule('properties', 'Exclusão cancelada pelo usuário');
+        console.log('❌ Exclusão cancelada pelo usuário');
         return false;
     }
 
     if (!confirm(`❌ CONFIRMAÇÃO FINAL:\n\nClique em OK APENAS se tiver absoluta certeza.\nO imóvel "${property.title}" será PERMANENTEMENTE excluído.`)) {
-        SC.logModule('properties', 'Exclusão cancelada na confirmação final');
+        console.log('❌ Exclusão cancelada na confirmação final');
         return false;
     }
 
-    SC.logModule('properties', `Excluindo imóvel ${id}: "${property.title}"`);
+    console.log(`🗑️ Excluindo imóvel ${id}: "${property.title}"`);
 
     let supabaseSuccess = false;
     let supabaseError = null;
 
     // ✅ 3. PRIMEIRO: Tentar excluir do Supabase
     if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-        SC.logModule('properties', `Tentando excluir imóvel ${id} do Supabase...`);
+        console.log(`🌐 Tentando excluir imóvel ${id} do Supabase...`);
         try {
             const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
                 method: 'DELETE',
@@ -999,22 +906,22 @@ window.deleteProperty = async function(id) {
                 }
             });
 
-            SC.logModule('properties', `Status da exclusão no Supabase: ${response.status}`);
+            console.log('📊 Status da exclusão no Supabase:', response.status);
 
             if (response.ok) {
                 supabaseSuccess = true;
-                SC.logModule('properties', `Imóvel ${id} excluído do Supabase com sucesso!`);
+                console.log(`✅ Imóvel ${id} excluído do Supabase com sucesso!`);
             } else {
                 const errorText = await response.text();
                 supabaseError = errorText;
-                SC.logModule('properties', `Erro ao excluir do Supabase: ${errorText.substring(0, 200)}`, 'error');
+                console.error(`❌ Erro ao excluir do Supabase:`, errorText);
             }
         } catch (error) {
             supabaseError = error.message;
-            SC.logModule('properties', `Erro de conexão ao excluir do Supabase: ${error}`, 'error');
+            console.error(`❌ Erro de conexão ao excluir do Supabase:`, error);
         }
     } else {
-        SC.logModule('properties', 'Credenciais Supabase não disponíveis');
+        console.log('⚠️ Credenciais Supabase não disponíveis');
     }
 
     // ✅ 4. Excluir localmente (sempre)
@@ -1022,9 +929,9 @@ window.deleteProperty = async function(id) {
     window.properties = window.properties.filter(p => p.id !== id);
     const newLength = window.properties.length;
     if (originalLength !== newLength) {
-        SC.logModule('properties', `Imóvel ${id} excluído localmente`);
+        console.log(`💾 Imóvel ${id} excluído localmente`);
     } else {
-        SC.logModule('properties', 'Imóvel não encontrado localmente após tentativa de exclusão');
+        console.log('⚠️ Imóvel não encontrado localmente após tentativa de exclusão');
     }
 
     // ✅ 5. Salvar no localStorage
@@ -1039,29 +946,29 @@ window.deleteProperty = async function(id) {
     if (typeof window.loadPropertyList === 'function') {
         setTimeout(() => {
             window.loadPropertyList();
-            SC.logModule('properties', 'Lista do admin atualizada após exclusão');
+            console.log('📋 Lista do admin atualizada após exclusão');
         }, 300);
     }
 
     // ✅ 8. INVALIDAR CACHE INTELIGENTE
     if (window.SmartCache) {
         SmartCache.invalidatePropertiesCache();
-        SC.logModule('properties', 'Cache invalidado após excluir imóvel');
+        console.log('🗑️ Cache invalidado após excluir imóvel');
     }
 
     // ✅ 9. Feedback ao usuário
     if (supabaseSuccess) {
-        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor não voltará a aparecer.`);
-        SC.logModule('properties', `Imóvel ${id} excluído completamente (online + local)`);
+        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
+        console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
 
         // ✅ 10. Excluir PDFs relacionados (opcional)
         if (property.pdfs && property.pdfs !== '' && property.pdfs !== 'EMPTY') {
-            SC.logModule('properties', `Excluindo ${property.pdfs.split(',').length} PDF(s) do storage...`);
+            console.log(`🗑️ Excluindo ${property.pdfs.split(',').length} PDF(s) do storage...`);
             if (typeof window.deletePdfFromSupabaseStorage === 'function') {
                 const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
                 pdfUrls.forEach(url => {
                     window.deletePdfFromSupabaseStorage(url).then(success => {
-                        SC.logModule('properties', success ? `PDF excluído: ${url.substring(0, 50)}...` : `Falha ao excluir: ${url.substring(0, 50)}...`);
+                        console.log(success ? `✅ PDF excluído: ${url}` : `❌ Falha ao excluir: ${url}`);
                     });
                 });
             }
@@ -1072,7 +979,7 @@ window.deleteProperty = async function(id) {
             '\n\nMotivo: Conexão com servidor falhou.';
 
         alert(`⚠️ Imóvel "${property.title}" excluído apenas LOCALMENTE.${errorMessage}\n\nO imóvel ainda existe no servidor e reaparecerá ao sincronizar.`);
-        SC.logModule('properties', `Imóvel ${id} excluído apenas localmente (Supabase falhou)`);
+        console.log(`🎯 Imóvel ${id} excluído apenas localmente (Supabase falhou)`);
     }
 
     // ✅ 11. Finalizar monitoramento
@@ -1086,7 +993,7 @@ window.deleteProperty = async function(id) {
 // ========== FUNÇÃO 11: Carregar Lista para Admin ==========
 window.loadPropertyList = function() {
     if (!window.properties || typeof window.properties.forEach !== 'function') {
-        SC.logModule('properties', 'window.properties não é um array válido', 'error');
+        console.error('❌ window.properties não é um array válido');
         return;
     }
     
@@ -1128,21 +1035,21 @@ window.loadPropertyList = function() {
         container.appendChild(item);
     });
     
-    SC.logModule('properties', `${window.properties.length} imóveis listados no admin`);
+    console.log(`✅ ${window.properties.length} imóveis listados no admin`);
 };
 
 // ========== FUNÇÃO 12: Sincronização com Supabase (NOVA) ==========
 window.syncWithSupabase = async function() {
-    SC.logModule('properties', 'Iniciando sincronização com Supabase...');
+    console.log('🔄 Iniciando sincronização com Supabase...');
     
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-        SC.logModule('properties', 'Credenciais Supabase não configuradas', 'error');
+        console.error('❌ Credenciais Supabase não configuradas');
         return { success: false, error: 'Credenciais não configuradas' };
     }
     
     try {
         // Testar conexão primeiro
-        SC.logModule('properties', 'Testando conexão com Supabase...');
+        console.log('🔍 Testando conexão com Supabase...');
         const testResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
             headers: {
                 'apikey': window.SUPABASE_KEY,
@@ -1151,14 +1058,14 @@ window.syncWithSupabase = async function() {
         });
         
         if (!testResponse.ok) {
-            SC.logModule('properties', `Supabase não acessível: ${testResponse.status}`, 'error');
+            console.error('❌ Supabase não acessível:', testResponse.status);
             return { 
                 success: false, 
                 error: `Erro HTTP ${testResponse.status}: ${testResponse.statusText}` 
             };
         }
         
-        SC.logModule('properties', 'Conexão Supabase OK. Buscando dados...');
+        console.log('✅ Conexão Supabase OK. Buscando dados...');
         
         // Buscar todos os imóveis do Supabase
         const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*&order=id.desc`, {
@@ -1173,7 +1080,7 @@ window.syncWithSupabase = async function() {
             const supabaseData = await response.json();
             
             if (Array.isArray(supabaseData) && supabaseData.length > 0) {
-                SC.logModule('properties', `${supabaseData.length} imóveis recebidos do Supabase`);
+                console.log(`📥 ${supabaseData.length} imóveis recebidos do Supabase`);
                 
                 // Converter dados do Supabase para formato local
                 const formattedData = supabaseData.map(item => ({
@@ -1208,14 +1115,14 @@ window.syncWithSupabase = async function() {
                         window.renderProperties('todos');
                     }
                     
-                    SC.logModule('properties', `${newProperties.length} novos imóveis sincronizados`);
+                    console.log(`✅ ${newProperties.length} novos imóveis sincronizados`);
                     return { 
                         success: true, 
                         count: newProperties.length,
                         message: `${newProperties.length} novos imóveis carregados` 
                     };
                 } else {
-                    SC.logModule('properties', 'Já sincronizado - sem novos imóveis');
+                    console.log('✅ Já sincronizado - sem novos imóveis');
                     return { 
                         success: true, 
                         count: 0,
@@ -1223,12 +1130,12 @@ window.syncWithSupabase = async function() {
                     };
                 }
             } else {
-                SC.logModule('properties', 'Nenhum imóvel no Supabase');
+                console.log('ℹ️ Nenhum imóvel no Supabase');
                 return { success: true, count: 0, message: 'Nenhum imóvel no servidor' };
             }
         } else {
             const errorText = await response.text();
-            SC.logModule('properties', `Erro ao buscar dados: ${response.status} ${errorText.substring(0, 200)}`, 'error');
+            console.error('❌ Erro ao buscar dados:', response.status, errorText);
             return { 
                 success: false, 
                 error: `HTTP ${response.status}: ${errorText.substring(0, 100)}` 
@@ -1236,7 +1143,7 @@ window.syncWithSupabase = async function() {
         }
         
     } catch (error) {
-        SC.logModule('properties', `Erro na sincronização: ${error}`, 'error');
+        console.error('❌ Erro na sincronização:', error);
         return { 
             success: false, 
             error: error.message,
@@ -1247,7 +1154,7 @@ window.syncWithSupabase = async function() {
 
 // ========== FUNÇÃO 13: Teste Simples de Conexão ==========
 window.testSupabaseConnectionSimple = async function() {
-    SC.logModule('properties', 'Teste simples de conexão Supabase...');
+    console.log('🌐 Teste simples de conexão Supabase...');
     
     try {
         // Usar endpoint mais simples
@@ -1259,23 +1166,23 @@ window.testSupabaseConnectionSimple = async function() {
             mode: 'cors' // Explicitamente pedir modo CORS
         });
         
-        SC.logModule('properties', `Status do teste: ${response.status} ${response.statusText}`);
+        console.log('📊 Status do teste:', response.status, response.statusText);
         
         if (response.ok) {
-            SC.logModule('properties', 'CONEXÃO SUPABASE FUNCIONANDO!');
+            console.log('✅ CONEXÃO SUPABASE FUNCIONANDO!');
             return { connected: true, status: response.status };
         } else {
-            SC.logModule('properties', `Supabase respondeu com erro: ${response.status}`);
+            console.log('❌ Supabase respondeu com erro:', response.status);
             return { connected: false, status: response.status };
         }
     } catch (error) {
-        SC.logModule('properties', `Erro de conexão: ${error.message}`);
+        console.log('❌ Erro de conexão:', error.message);
         
         // Verificar se é CORS
         if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-            SC.logModule('properties', 'PROVÁVEL ERRO CORS - Verifique configurações do Supabase');
-            SC.logModule('properties', `URL do projeto: ${window.SUPABASE_URL}`);
-            SC.logModule('properties', `Seu domínio: ${window.location.origin}`);
+            console.log('⚠️ PROVÁVEL ERRO CORS - Verifique configurações do Supabase');
+            console.log('🔗 URL do projeto:', window.SUPABASE_URL);
+            console.log('🌍 Seu domínio:', window.location.origin);
         }
         
         return { connected: false, error: error.message };
@@ -1283,43 +1190,52 @@ window.testSupabaseConnectionSimple = async function() {
 };
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-SC.logModule('properties', 'carregado com 10 funções principais');
+console.log('✅ properties.js carregado com 10 funções principais');
+
+// Função utilitária para executar tarefas em baixa prioridade
+function runLowPriority(task) {
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(task, { timeout: 1000 });
+    } else {
+        setTimeout(task, 100);
+    }
+}
 
 // Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        SC.logModule('properties', 'DOM carregado - inicializando properties...');
+        console.log('🏠 DOM carregado - inicializando properties...');
 
         // Inicializar propriedades em baixa prioridade
-        SC.runLowPriority(() => {
+        runLowPriority(() => {
             if (typeof window.initializeProperties === 'function') {
                 window.initializeProperties();
-                SC.logModule('properties', 'initializeProperties executada');
+                console.log('⚙️ initializeProperties executada');
             }
 
             // Configurar filtros também em baixa prioridade
-            SC.runLowPriority(() => {
+            runLowPriority(() => {
                 if (typeof window.setupFilters === 'function') {
                     window.setupFilters();
-                    SC.logModule('properties', 'setupFilters executada');
+                    console.log('⚙️ setupFilters executada');
                 }
             });
         });
     });
 } else {
-    SC.logModule('properties', 'DOM já carregado - inicializando agora...');
+    console.log('🏠 DOM já carregado - inicializando agora...');
 
     // Inicializar direto em baixa prioridade
-    SC.runLowPriority(() => {
+    runLowPriority(() => {
         if (typeof window.initializeProperties === 'function') {
             window.initializeProperties();
-            SC.logModule('properties', 'initializeProperties executada');
+            console.log('⚙️ initializeProperties executada');
         }
 
-        SC.runLowPriority(() => {
+        runLowPriority(() => {
             if (typeof window.setupFilters === 'function') {
                 window.setupFilters();
-                SC.logModule('properties', 'setupFilters executada');
+                console.log('⚙️ setupFilters executada');
             }
         });
     });
@@ -1337,14 +1253,14 @@ window.getInitialProperties = getInitialProperties;
         window.location.hostname.includes('localhost');
 
     if (isDebug) {
-        SC.logModule('properties', '[DEBUG] Verificação essencial: window.properties...');
+        console.log('🔍 [DEBUG] Verificação essencial: window.properties...');
     }
 
     const checkInterval = setInterval(() => {
         if (!window.properties || window.properties.length === 0) {
 
             if (isDebug) {
-                SC.logModule('properties', '[DEBUG] window.properties vazio, aguardando carregamento...', 'warn');
+                console.warn('⚠️ [DEBUG] window.properties vazio, aguardando carregamento...');
             }
 
             // Recuperação tardia com prioridade baixa
@@ -1357,12 +1273,14 @@ window.getInitialProperties = getInitialProperties;
                             window.properties = JSON.parse(stored);
 
                             if (isDebug) {
-                                SC.logModule('properties', `[DEBUG] Recuperado do localStorage: ${window.properties.length} imóveis`);
+                                console.log(
+                                    `✅ [DEBUG] Recuperado do localStorage: ${window.properties.length} imóveis`
+                                );
                             }
 
                         } catch (e) {
                             if (isDebug) {
-                                SC.logModule('properties', '[DEBUG] Erro ao parsear localStorage', 'error');
+                                console.error('❌ [DEBUG] Erro ao parsear localStorage');
                             }
                         }
                     }
@@ -1371,7 +1289,9 @@ window.getInitialProperties = getInitialProperties;
 
         } else {
             if (isDebug) {
-                SC.logModule('properties', `[DEBUG] Verificação OK: ${window.properties.length} imóveis carregados`);
+                console.log(
+                    `✅ [DEBUG] Verificação OK: ${window.properties.length} imóveis carregados`
+                );
             }
             clearInterval(checkInterval);
         }
@@ -1394,14 +1314,14 @@ setTimeout(() => {
 }, 0);
 
 function forceLoadProperties() {
-    SC.logModule('properties', 'FORÇANDO CARREGAMENTO DE IMÓVEIS...');
+    console.log('⚡ FORÇANDO CARREGAMENTO DE IMÓVEIS...');
     
     // Estratégia 1: localStorage
     const stored = localStorage.getItem('weberlessa_properties');
     if (stored) {
         try {
             window.properties = JSON.parse(stored);
-            SC.logModule('properties', `Recuperado do localStorage: ${window.properties.length} imóveis`);
+            console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóveis`);
             
             // Atualizar interface
             if (typeof window.renderProperties === 'function') {
@@ -1414,16 +1334,16 @@ function forceLoadProperties() {
             
             return;
         } catch (e) {
-            SC.logModule('properties', `Erro ao parsear localStorage: ${e}`, 'error');
+            console.error('❌ Erro ao parsear localStorage:', e);
         }
     }
     
     // Estratégia 2: Dados iniciais
-    SC.logModule('properties', 'Carregando dados iniciais...');
+    console.log('📦 Carregando dados iniciais...');
     window.properties = getInitialProperties();
     window.savePropertiesToStorage();
     
-    SC.logModule('properties', `Dados iniciais carregados: ${window.properties.length} imóveis`);
+    console.log(`✅ Dados iniciais carregados: ${window.properties.length} imóveis`);
     
     // Atualizar interface
     if (typeof window.renderProperties === 'function') {
@@ -1440,7 +1360,7 @@ setTimeout(forceLoadProperties, 1000);
 
 // Função de fallback se o cliente oficial falhar
 async function saveWithFetchDirect(propertyData) {
-    SC.logModule('properties', 'Usando fallback fetch direto para Supabase...');
+    console.log('🔄 Usando fallback fetch direto para Supabase...');
     
     try {
         const response = await fetch('https://syztbxvpdaplpetmixmt.supabase.co/rest/v1/properties', {
@@ -1459,97 +1379,11 @@ async function saveWithFetchDirect(propertyData) {
             return { success: true, id: data[0]?.id };
         } else {
             const errorText = await response.text();
-            SC.logModule('properties', `Fallback fetch falhou: ${errorText.substring(0, 200)}`, 'error');
+            console.error('❌ Fallback fetch falhou:', errorText);
             return { success: false, error: errorText };
         }
     } catch (error) {
-        SC.logModule('properties', `Erro no fallback fetch: ${error}`, 'error');
+        console.error('❌ Erro no fallback fetch:', error);
         return { success: false, error: error.message };
     }
 }
-
-// Script de verificação automática das funções críticas
-setTimeout(() => {
-    console.group('🔍 VERIFICAÇÃO DAS 4 FUNÇÕES CRÍTICAS');
-    
-    // Verificar se funções estão no SharedCore
-    const criticalFunctions = ['stringSimilarity', 'runLowPriority'];
-    criticalFunctions.forEach(func => {
-        const inSharedCore = window.SharedCore && typeof window.SharedCore[func] === 'function';
-        const inGlobal = typeof window[func] === 'function';
-        
-        console.log(`${func}:`);
-        console.log(`  SharedCore: ${inSharedCore ? '✅' : '❌'}`);
-        console.log(`  Global: ${inGlobal ? '⚠️  (DEVE ser removida)' : '✅'}`);
-        
-        if (inGlobal && inSharedCore) {
-            console.warn(`  🔧 MIGRAR: Substituir window.${func}() por SharedCore.${func}()`);
-        }
-    });
-    
-    console.groupEnd();
-}, 1000);
-
-// FUNÇÃO DE EMERGÊNCIA: Forçar correção dos filtros
-window.fixFiltersEmergency = function() {
-    console.group('🚨 CORREÇÃO DE EMERGÊNCIA DOS FILTROS');
-    
-    // 1. Remover TODOS os estilos inline
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.removeAttribute('style');
-        btn.classList.remove('active');
-    });
-    
-    // 2. Recriar listeners do zero
-    if (typeof window.setupFilters === 'function') {
-        window.setupFilters();
-    }
-    
-    // 3. Verificar CSS está carregado
-    const hasFilterCSS = Array.from(document.styleSheets).some(sheet => {
-        try {
-            return sheet.cssRules && Array.from(sheet.cssRules).some(rule => 
-                rule.selectorText && rule.selectorText.includes('.filter-btn')
-            );
-        } catch(e) {
-            return false;
-        }
-    });
-    
-    console.log(`✅ CSS carregado: ${hasFilterCSS ? 'SIM' : 'NÃO'}`);
-    console.log(`🎯 Botões encontrados: ${document.querySelectorAll('.filter-btn').length}`);
-    
-    // 4. Testar automaticamente
-    setTimeout(() => {
-        const buttons = document.querySelectorAll('.filter-btn');
-        if (buttons.length > 0) {
-            // Simular clique no primeiro
-            buttons[0].click();
-            
-            setTimeout(() => {
-                const activeAfterClick = document.querySelectorAll('.filter-btn.active').length;
-                console.log(`✅ Após clique: ${activeAfterClick} botão(s) ativo(s)`);
-                
-                if (activeAfterClick === 1) {
-                    console.log('🎉 CORREÇÃO BEM-SUCEDIDA!');
-                    alert('✅ Filtros corrigidos com sucesso!');
-                } else {
-                    console.error(`❌ ERRO: ${activeAfterClick} botões ativos (deveria ser 1)`);
-                    alert('⚠️ Ainda há problema com os filtros. Recarregue a página.');
-                }
-            }, 200);
-        }
-    }, 500);
-    
-    console.groupEnd();
-};
-
-// Executar correção automaticamente após 3 segundos
-setTimeout(() => {
-    // Verificar se há múltiplos botões ativos
-    const activeButtons = document.querySelectorAll('.filter-btn.active');
-    if (activeButtons.length > 1) {
-        console.warn(`⚠️ Detectado ${activeButtons.length} botões ativos simultaneamente`);
-        window.fixFiltersEmergency();
-    }
-}, 3000);
