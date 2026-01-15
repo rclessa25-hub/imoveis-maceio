@@ -90,6 +90,9 @@ window.initializeWeberLessaSystem = async function() {
             console.table(testResults);
         }, 500);
         
+        // COMENTAR:
+        // window.PdfSystem && window.PdfSystem.init();
+        
     } catch (error) {
         console.error('❌ Erro na inicialização:', error);
     }
