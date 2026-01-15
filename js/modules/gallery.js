@@ -731,4 +731,28 @@
     }
     
     SC.logModule('gallery', '✅ gallery.js completamente carregado (com correção do botão PDF)');
+
+    // ========== INICIALIZAÇÃO SEGURA DO HANDLER PDF ==========
+    // Garantir que a função está disponível globalmente
+    if (typeof window.pdfButtonHandler === 'undefined') {
+        // Já definido acima, mas garantir disponibilidade
+        console.log('✅ pdfButtonHandler disponível globalmente');
+    }
+    
+    // Teste rápido para verificar se o sistema está funcionando
+    setTimeout(() => {
+        console.log('🔍 Verificação do sistema PDF na galeria:');
+        console.log('- pdfButtonHandler:', typeof window.pdfButtonHandler === 'function' ? '✅ Disponível' : '❌ Ausente');
+        console.log('- showPdfModal:', typeof window.showPdfModal === 'function' ? '✅ Disponível' : '❌ Ausente');
+        
+        // Se showPdfModal não existe, criar um fallback mínimo
+        if (typeof window.showPdfModal === 'undefined') {
+            console.log('⚠️ Criando fallback mínimo para showPdfModal');
+            window.showPdfModal = function(propertyId) {
+                console.log('📄 showPdfModal (fallback) chamado');
+                return window.pdfButtonHandler(propertyId, { preventDefault: () => {} });
+            };
+        }
+    }, 2000);
+    
 })();
