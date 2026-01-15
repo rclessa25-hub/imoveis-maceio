@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WEBER LESSA CORRETOR & CONSULTORIA DE IMÓVEIS - CRECI: 654/AL</title>
 
+    <!-- 🔴 FLAG DE SEGURANÇA ADICIONADA (RECOMENDAÇÃO - Passo 5) -->
+    <script>
+        // 🔴 BLOQUEAR ABERTURA AUTOMÁTICA DE MODAIS PDF
+        window.BLOCK_AUTO_PDF_MODAL = true;
+        window.PDF_MODAL_AUTO_OPEN = false;
+        window.PDF_SYSTEM_AUTO_INIT = false;
+        
+        // Sobrescrever funções perigosas
+        if (typeof window.showPdfModal === 'undefined') {
+            window.showPdfModal = function() {
+                console.log('🔒 showPdfModal bloqueado (preventivo)');
+                return null;
+            };
+        }
+    </script>
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
  
