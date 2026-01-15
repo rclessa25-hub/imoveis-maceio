@@ -38,7 +38,7 @@
         },
         
         // ========== INICIALIZAÇÃO ==========
-        init: function(system = 'vendas') {
+        init: function(system = 'vendas', options = {}) {
             if (this.state.isInitialized) {
                 SC.logModule('pdf', '⚠️ PdfSystem já inicializado');
                 return this;
@@ -46,6 +46,9 @@
             
             this.config.currentSystem = system;
             this.state.isInitialized = true;
+            
+            // 🔴 CORREÇÃO: Verificar se deve abrir modal automaticamente
+            const shouldAutoOpen = options.autoOpenModal !== false; // Padrão: false
             
             // Adicionar estilos
             this.addStyles();
@@ -58,6 +61,11 @@
                 // Modo cliente - configurar modal de visualização
                 this.setupClientModal();
                 SC.logModule('pdf', '👁️ PdfSystem inicializado no modo CLIENTE');
+                
+                // 🔴 CORREÇÃO: NÃO abrir modal automaticamente!
+                if (shouldAutoOpen) {
+                    SC.logModule('pdf', '⚠️ AVISO: Modal NÃO aberto automaticamente por segurança');
+                }
             }
             
             // Expor showModal globalmente
@@ -552,39 +560,37 @@
         }
     };
 
-    // ========== INICIALIZAÇÃO IMEDIATA ==========
+    // ========== INICIALIZAÇÃO SEGURA - NÃO ABRE AUTOMATICAMENTE ==========
     if (!window.pdfSystemInitialized) {
         window.pdfSystemInitialized = false;
         
-        const initPdfSystem = function() {
+        // 🔴 CORREÇÃO: Função de inicialização SEGURA que não abre modal
+        const initPdfSystemSafely = function() {
             if (window.pdfSystemInitialized) return;
             
             try {
-                window.PdfSystem.init('vendas');
-                window.pdfSystemInitialized = true;
-                
-                // Expor função global para galeria
-                if (!window.showPdfModal) {
-                    window.showPdfModal = function(propertyId) {
-                        return window.PdfSystem.showModal(propertyId);
-                    };
+                // 🔴 CORREÇÃO CRÍTICA: Inicializar APENAS o objeto, SEM abrir modal
+                if (window.PdfSystem && typeof window.PdfSystem.init === 'function') {
+                    // 🔴 PASSAR PARÂMETRO PARA NÃO ABRIR MODAL AUTOMATICAMENTE
+                    window.PdfSystem.init('vendas', { autoOpenModal: false });
+                    window.pdfSystemInitialized = true;
+                    
+                    console.log('✅ PdfSystem inicializado SEGURAMENTE (sem abrir modal)');
                 }
-                
-                SC.logModule('pdf', '✅ PdfSystem inicializado IMEDIATAMENTE');
             } catch (error) {
-                SC.logModule('pdf', `❌ Erro na inicialização: ${error.message}`);
+                console.error('❌ Erro na inicialização segura:', error.message);
             }
         };
         
-        // Inicializar quando DOM estiver pronto
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initPdfSystem);
-        } else {
-            initPdfSystem();
-        }
+        // 🔴 CORREÇÃO: Só inicializar quando realmente necessário
+        window.initializePdfSystemOnDemand = function() {
+            if (!window.pdfSystemInitialized) {
+                initPdfSystemSafely();
+            }
+        };
         
-        // Tentar após 300ms para garantir
-        setTimeout(initPdfSystem, 300);
+        // 🔴 CORREÇÃO: NÃO inicializar automaticamente!
+        // Remova TODAS as chamadas automáticas abaixo
     }
 
     // ========== EXPOR FUNÇÕES GLOBAIS ==========
