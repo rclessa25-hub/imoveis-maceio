@@ -1,6 +1,52 @@
 // js/main.js - SISTEMA DE INICIALIZAÇÃO
 console.log('🚀 main.js carregado - Sistema de Inicialização');
 
+// 🔴 PATCH DE EMERGÊNCIA: FECHAR MODAL PDF SE ESTIVER ABERTO AO CARREGAR
+(function closeAutoOpenedPdfModal() {
+    'use strict';
+    
+    // Executar IMEDIATAMENTE quando o script carregar
+    function closeAllPdfModals() {
+        const pdfModals = [
+            document.getElementById('pdfViewerModal'),
+            document.getElementById('pdfModal'),
+            document.getElementById('pdfEmergencyModal'),
+            ...document.querySelectorAll('.pdf-modal')
+        ].filter(modal => modal);
+        
+        pdfModals.forEach(modal => {
+            console.log('🔒 Fechando modal auto-aberto:', modal.id || 'sem-id');
+            modal.style.display = 'none';
+            modal.style.opacity = '0';
+            modal.style.visibility = 'hidden';
+        });
+        
+        // Remover event listeners problemáticos
+        const originalAddEventListener = document.addEventListener;
+        document.addEventListener = function(type, listener, options) {
+            // Bloquear eventos que possam abrir modal automaticamente
+            if (type === 'DOMContentLoaded' && 
+                listener.toString().includes('showPdfModal') ||
+                listener.toString().includes('PdfSystem.init')) {
+                console.warn('⚠️ Bloqueado event listener perigoso:', type);
+                return;
+            }
+            return originalAddEventListener.call(this, type, listener, options);
+        };
+    }
+    
+    // Executar agora e após DOM carregar
+    closeAllPdfModals();
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', closeAllPdfModals);
+    }
+    
+    // Executar novamente após 1s para garantir
+    setTimeout(closeAllPdfModals, 1000);
+    setTimeout(closeAllPdfModals, 3000);
+})();
+
 // PATCH DE EMERGÊNCIA PARA PDFSYSTEM
 (function fixPdfSystemModal() {
     'use strict';
@@ -89,9 +135,6 @@ window.initializeWeberLessaSystem = async function() {
             
             console.table(testResults);
         }, 500);
-        
-        // COMENTAR:
-        // window.PdfSystem && window.PdfSystem.init();
         
     } catch (error) {
         console.error('❌ Erro na inicialização:', error);
