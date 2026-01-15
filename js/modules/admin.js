@@ -510,7 +510,7 @@
                     SC.logModule('admin', '✅ Painel admin aberto automaticamente');
                 }
                 
-                // Agora rolar suavemente até o formulário
+                // Agrar rolar suavemente até o formulário
                 if (propertyForm) {
                     SC.logModule('admin', 'Rolando até o formulário de edição...');
                     
@@ -2537,8 +2537,8 @@
                 
                 if (window.PdfSystem && typeof window.PdfSystem.init === 'function') {
                     try {
-                        window.PdfSystem.init('vendas');
-                        SC.logModule('admin', '✅ PdfSystem inicializado via admin.js');
+                        // window.PdfSystem.init('vendas'); // COMENTADO: Removida auto-execução
+                        SC.logModule('admin', '✅ PdfSystem disponível (inicialização comentada)');
                     } catch (error) {
                         SC.logModule('admin', `⚠️ PdfSystem já inicializado ou erro: ${error.message}`);
                     }
