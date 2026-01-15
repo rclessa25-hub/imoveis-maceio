@@ -152,15 +152,15 @@ body {
 }
 
 .filter-btn {
-    background: #f8f9fa; /* Fundo mais claro para contraste */
+    background: #f8f9fa;
     border: 2px solid #e0e0e0;
     padding: 0.7rem 1.5rem;
     border-radius: 30px;
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: #2c3e50; /* Cor escura para melhor leitura */
-    font-weight: 600; /* Texto mais forte */
+    color: #2c3e50;
+    font-weight: 600;
 }
 
 .filter-btn:hover {
@@ -171,16 +171,15 @@ body {
 }
 
 .filter-btn.active {
-    background: var(--primary); /* #1a5276 */
+    background: var(--primary);
     border-color: var(--primary);
-    color: white !important; /* Forçar cor branca */
+    color: white !important;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3);
 }
 
-/* Adicionar estilo específico para garantir contraste */
 .filter-btn.active:hover {
-    background: #154060; /* Tom mais escuro do primary */
+    background: #154060;
     border-color: #154060;
 }
 
@@ -233,7 +232,7 @@ body {
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: bold;
-    z-index: 6; /* Acima da numeração */
+    z-index: 6;
 }
 
 .rural-badge {
@@ -318,11 +317,10 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
-    z-index: 6; /* Acima da numeração */
+    z-index: 6;
 }
 
 /* ========== MELHORIA VISUAL OPCIONAL ========== */
-/* Estilo para a numeração de fotos */
 .property-image > div[style*="top: 10px"] {
     backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -524,6 +522,52 @@ body > div:not(#pdfViewerModal):not(.pdf-modal) {
     z-index: 10000 !important;
 }
 
+/* ========== GARANTIR VISIBILIDADE DO CAMPO DE SENHA ========== */
+#pdfViewerModal #pdfPassword {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 1rem 0 !important;
+    padding: 0.8rem !important;
+    border: 1px solid #ddd !important;
+    border-radius: 5px !important;
+    font-size: 1rem !important;
+}
+
+/* ========== ANIMAÇÕES SUAVES PARA MODAL PDF ========== */
+#pdfViewerModal {
+    transition: opacity 0.3s ease !important;
+}
+
+/* ========== BOTÃO PDF NOS CARDS (REAFIRMAÇÃO) ========== */
+.pdf-access {
+    position: absolute !important;
+    bottom: 2px !important;
+    right: 35px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 28px !important;
+    height: 28px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.75rem !important;
+    color: #1a5276 !important;
+    z-index: 15 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+    border: 1px solid rgba(0,0,0,0.15) !important;
+}
+
+.pdf-access:hover {
+    background: white !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.4) !important;
+}
+
 /* ========== CORREÇÃO DEFINITIVA DOS FILTROS ========== */
 /* REMOVER QUALQUER ESTILO INLINE QUE ESTÁ CAUSANDO O BUG */
 .filter-btn {
@@ -541,9 +585,9 @@ body > div:not(#pdfViewerModal):not(.pdf-modal) {
 
 /* ESTADO ATIVO - SOMENTE quando tem a classe .active */
 .filter-btn.active {
-    background: #1a5276 !important; /* var(--primary) */
+    background: #1a5276 !important;
     border-color: #1a5276 !important;
-    color: white !important !important; /* FORÇAR branco */
+    color: white !important !important;
     font-weight: 700 !important;
     box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3) !important;
 }
@@ -551,16 +595,16 @@ body > div:not(#pdfViewerModal):not(.pdf-modal) {
 /* Garantir que o hover não sobrescreva o estado ativo */
 .filter-btn:hover {
     background: #e9ecef !important;
-    border-color: #3498db !important; /* var(--accent) */
+    border-color: #3498db !important;
     transform: translateY(-2px) !important;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
 }
 
 /* Botão ativo NÃO deve mudar no hover */
 .filter-btn.active:hover {
-    background: #154060 !important; /* Tom mais escuro */
+    background: #154060 !important;
     border-color: #154060 !important;
-    color: white !important !important; /* Manter branco */
+    color: white !important !important;
 }
 
 /* Correção para Firefox/Safari */
@@ -631,11 +675,11 @@ body > div:not(#pdfViewerModal):not(.pdf-modal) {
 /* Remover qualquer estilo inline que possa estar sobrescrevendo */
 
 .filter-btn[style*="color:"] {
-    color: #2c3e50 !important; /* Corrigir caso tenha estilo inline */
+    color: #2c3e50 !important;
 }
 
 .filter-btn.active[style*="color:"] {
-    color: white !important; /* Forçar branco quando ativo */
+    color: white !important;
 }
 
 /* Garantir que JavaScript não sobrescreva cores erradas */
