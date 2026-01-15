@@ -794,25 +794,83 @@
     };
 
     // ========== HANDLER GLOBAL SIMPLIFICADO PARA BOTÕES PDF ==========
-    // Handler GLOBAL SIMPLIFICADO para botões PDF
+    // Função auxiliar para abrir PDF diretamente
+    function openPdfDirectly(propertyId) {
+        const property = window.properties?.find(p => p.id == propertyId);
+        if (property && property.pdfs && property.pdfs !== 'EMPTY') {
+            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+            if (pdfUrls.length > 0) {
+                // Se só tem 1 PDF, abre diretamente
+                if (pdfUrls.length === 1) {
+                    window.open(pdfUrls[0], '_blank');
+                } 
+                // Se tem múltiplos, mostra lista simples
+                else {
+                    const choice = confirm(`Este imóvel tem ${pdfUrls.length} documentos.\n\nAbrir o primeiro documento agora?`);
+                    if (choice) {
+                        window.open(pdfUrls[0], '_blank');
+                    }
+                }
+            }
+        } else {
+            alert('Este imóvel não possui documentos PDF.');
+        }
+    }
+
+    // ATUALIZE o pdfButtonHandler para isso:
     window.pdfButtonHandler = function(propertyId) {
         console.log(`📄 Botão PDF clicado para imóvel ${propertyId}`);
         
         // Método 1: Usar showPdfModal se existir
         if (typeof window.showPdfModal === 'function') {
-            return window.showPdfModal(propertyId);
+            // 🔴 CORREÇÃO CRÍTICA: Verificar se o modal realmente abre
+            const result = window.showPdfModal(propertyId);
+            
+            // 🔴 VERIFICAÇÃO EXTRA: Forçar visibilidade se necessário
+            setTimeout(() => {
+                const modal = document.getElementById('pdfViewerModal') || 
+                             document.getElementById('pdfModal') ||
+                             document.querySelector('.pdf-modal');
+                
+                if (modal) {
+                    console.log('🔍 Modal encontrado:', {
+                        id: modal.id,
+                        display: modal.style.display,
+                        classList: modal.classList,
+                        computedDisplay: window.getComputedStyle(modal).display
+                    });
+                    
+                    // FORÇAR VISIBILIDADE SE ESTIVER OCULTO
+                    if (modal.style.display === 'none' || 
+                        window.getComputedStyle(modal).display === 'none') {
+                        console.log('🔧 Forçando visibilidade do modal...');
+                        modal.style.display = 'flex';
+                        modal.style.opacity = '1';
+                        modal.style.visibility = 'visible';
+                        modal.style.zIndex = '10000';
+                        
+                        // Focar no campo de senha
+                        setTimeout(() => {
+                            const passwordInput = modal.querySelector('#pdfPassword') || 
+                                                modal.querySelector('input[type="password"]');
+                            if (passwordInput) {
+                                passwordInput.focus();
+                                passwordInput.select();
+                            }
+                        }, 100);
+                    }
+                } else {
+                    console.error('❌ Modal não encontrado após showPdfModal');
+                    // Fallback direto
+                    openPdfDirectly(propertyId);
+                }
+            }, 100);
+            
+            return result;
         }
         
-        // Método 2: Fallback DIRETO
-        const property = window.properties?.find(p => p.id == propertyId);
-        if (property && property.pdfs && property.pdfs !== 'EMPTY') {
-            const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
-            if (pdfUrls.length > 0) {
-                window.open(pdfUrls[0], '_blank');
-            }
-        } else {
-            alert('Este imóvel não possui documentos PDF.');
-        }
+        // Método 2: Fallback DIRETO (abrir PDF sem modal)
+        openPdfDirectly(propertyId);
     };
 
     // ========== EXPORT DO MÓDULO ==========
