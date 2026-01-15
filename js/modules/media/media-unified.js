@@ -322,6 +322,22 @@ const MediaSystem = {
             if (!indicator) {
                 indicator = document.createElement('div');
                 indicator.className = 'order-indicator';
+                indicator.style.cssText = `
+                    position: absolute;
+                    bottom: 2px;
+                    right: 2px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                    z-index: 5;
+                `;
                 item.appendChild(indicator);
             }
             indicator.textContent = index + 1;
@@ -335,6 +351,22 @@ const MediaSystem = {
             if (!indicator) {
                 indicator = document.createElement('div');
                 indicator.className = 'order-indicator';
+                indicator.style.cssText = `
+                    position: absolute;
+                    bottom: 2px;
+                    right: 2px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                    z-index: 5;
+                `;
                 item.appendChild(indicator);
             }
             indicator.textContent = index + 1;
@@ -949,16 +981,31 @@ const MediaSystem = {
                     </div>
                     
                     <!-- Ícone de arrastar (CRUZ DE MALTA) -->
-                    <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.7);color:white;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;z-index:10;">
+                    <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.7);color:white;width:22px;height:22px;border-radius:0 0 8px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:10;">
                         <i class="fas fa-arrows-alt"></i>
                     </div>
                     
                     <!-- Indicador de ordem -->
-                    <div class="order-indicator" style="display:none;"></div>
+                    <div class="order-indicator" style="
+                        position:absolute;
+                        bottom:2px;
+                        right:2px;
+                        background:rgba(0,0,0,0.8);
+                        color:white;
+                        width:18px;
+                        height:18px;
+                        border-radius:50%;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:10px;
+                        font-weight:bold;
+                        z-index:5;
+                    ">${allFiles.findIndex(f => f.id === item.id) + 1}</div>
                     
-                    <!-- Botão de remover (X VERMELHO) -->
+                    <!-- Botão de remover (X VERMELHO GRANDE NO CANTO) -->
                     <button onclick="MediaSystem.removeFile('${item.id}')" 
-                            style="position:absolute;top:2px;right:2px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;z-index:10;">
+                            style="position:absolute;top:0;right:0;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;width:24px;height:24px;cursor:pointer;font-size:14px;font-weight:bold;z-index:10;border-radius:0 0 0 8px;display:flex;align-items:center;justify-content:center;">
                         ${isMarked ? '↺' : '×'}
                     </button>
                     
@@ -993,7 +1040,7 @@ const MediaSystem = {
         
         let html = '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
         
-        allPdfs.forEach(pdf => {
+        allPdfs.forEach((pdf, index) => {
             const isMarked = pdf.markedForDeletion;
             const isExisting = pdf.isExisting;
             const shortName = pdf.name.length > 15 ? pdf.name.substring(0, 12) + '...' : pdf.name;
@@ -1005,17 +1052,23 @@ const MediaSystem = {
                      draggable="true"
                      data-id="${pdf.id}"
                      style="position:relative;cursor:grab;">
-                    <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:0.5rem;width:90px;height:90px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;">
+                    <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:0.5rem;width:90px;height:90px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;position:relative;">
                         <!-- Ícone de arrastar -->
-                        <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.6);color:white;padding:2px 5px;border-radius:3px;font-size:0.7rem;z-index:5;">
+                        <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.6);color:white;width:20px;height:20px;border-radius:0 0 6px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:5;">
                             <i class="fas fa-arrows-alt"></i>
                         </div>
+                        
+                        <!-- Indicador de ordem -->
+                        <div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.8);color:white;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;z-index:5;">
+                            ${index + 1}
+                        </div>
+                        
                         <i class="fas fa-file-pdf" style="font-size:1.2rem;color:${borderColor};margin-bottom:0.3rem;"></i>
                         <p style="font-size:0.7rem;margin:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${shortName}</p>
                         <small style="color:#7f8c8d;font-size:0.6rem;">PDF</small>
                     </div>
                     <button onclick="MediaSystem.removeFile('${pdf.id}')" 
-                            style="position:absolute;top:-5px;right:-5px;background:${borderColor};color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:16px;cursor:pointer;">
+                            style="position:absolute;top:0;right:0;background:${borderColor};color:white;border:none;width:22px;height:22px;font-size:14px;font-weight:bold;cursor:pointer;border-radius:0 0 0 6px;display:flex;align-items:center;justify-content:center;">
                         ×
                     </button>
                 </div>
