@@ -486,7 +486,7 @@ window.editProperty = function(id) {
     }
 
     // ==============================
-    // ⭐⭐ 4️⃣ ROLAR ATÉ O FORMULÁRIO AUTOMATICAMENTE ⭐⭐
+    // ⭐⭐ 4️⃣ ROLAR ATÉ O FORMULÁRIO COM COMPORTAMENTO CORRIGIDO ⭐⭐
     // ==============================
     setTimeout(() => {
         const adminPanel = document.getElementById('adminPanel');
@@ -498,7 +498,7 @@ window.editProperty = function(id) {
             console.log('✅ Painel admin aberto automaticamente');
         }
         
-        // Agora rolar suavemente até o formulário
+        // Agora rolar suavemente até o formulário SEM SELECIONAR TEXTO
         if (propertyForm) {
             console.log('📜 Rolando até o formulário de edição...');
             
@@ -509,7 +509,7 @@ window.editProperty = function(id) {
                 inline: 'nearest'
             });
             
-            // Método 2: Destacar visualmente o formulário
+            // Método 2: Destacar visualmente o formulário (sem selecionar texto)
             propertyForm.style.transition = 'all 0.3s ease';
             propertyForm.style.boxShadow = '0 0 0 3px var(--accent)';
             
@@ -520,6 +520,21 @@ window.editProperty = function(id) {
             
             console.log('✅ Formulário em foco para edição');
             
+            // ⭐⭐ CRÍTICO: Focar no campo título SEM SELECIONAR o texto ⭐⭐
+            setTimeout(() => {
+                const titleField = document.getElementById('propTitle');
+                if (titleField) {
+                    // Focar no campo mas NÃO selecionar o texto
+                    titleField.focus();
+                    
+                    // ⭐⭐ SOLUÇÃO: Posicionar cursor no FINAL do texto em vez de selecionar tudo ⭐⭐
+                    // Isso previne a exclusão acidental
+                    const textLength = titleField.value.length;
+                    titleField.setSelectionRange(textLength, textLength);
+                    
+                    console.log('🎯 Foco no campo título (cursor posicionado no final)');
+                }
+            }, 700); // Aumentar delay para garantir que o scroll terminou
         } else {
             console.warn('⚠️ Formulário não encontrado para scroll');
             // Fallback: rolar até o painel admin
@@ -527,17 +542,6 @@ window.editProperty = function(id) {
                 adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
-        
-        // Focar no primeiro campo (título) para facilitar edição
-        setTimeout(() => {
-            const titleField = document.getElementById('propTitle');
-            if (titleField) {
-                titleField.focus();
-                titleField.select(); // Selecionar texto para fácil edição
-                console.log('🎯 Foco no campo título');
-            }
-        }, 600);
-        
     }, 100); // Pequeno delay para garantir que o DOM foi atualizado
 
     console.log(`✅ Imóvel ${id} pronto para edição`);
