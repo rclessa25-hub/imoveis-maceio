@@ -342,54 +342,182 @@ const MediaSystem = {
         });
     },
 
+    // ========== FUNÇÃO MELHORADA DE PREVIEW DE MÍDIA ==========
+
     getMediaPreviewHTML: function(item) {
-        // Determinar se é imagem ou vídeo baseado no tipo ou extensão
+        console.log(`🔍 GERANDO PREVIEW para: ${item.id}`, {
+            nome: item.name || 'sem nome',
+            tipo: item.type || 'desconhecido',
+            temPreview: !!item.preview,
+            temUrl: !!item.url,
+            isExisting: !!item.isExisting,
+            isNew: !!item.isNew,
+            isImage: item.isImage,
+            isVideo: item.isVideo
+        });
+        
+        // Determinar se é imagem ou vídeo baseado em múltiplos fatores
         const isImage = item.isImage || 
                        (item.type && item.type.includes('image')) ||
-                       (item.url && this.getFileTypeFromUrl(item.url) === 'image');
+                       (item.url && this.getFileTypeFromUrl(item.url) === 'image') ||
+                       (item.name && /\.(jpg|jpeg|png|gif|webp)$/i.test(item.name));
         
         const isVideo = item.isVideo ||
                        (item.type && item.type.includes('video')) ||
-                       (item.url && this.getFileTypeFromUrl(item.url) === 'video');
+                       (item.url && this.getFileTypeFromUrl(item.url) === 'video') ||
+                       (item.name && /\.(mp4|mov|avi)$/i.test(item.name));
         
         const mediaUrl = item.preview || item.url;
         
-        if (isImage && mediaUrl) {
-            // Para imagens, mostrar preview
-            return `
-                <img src="${mediaUrl}" 
-                     style="width:100%;height:70px;object-fit:cover;" 
-                     alt="Preview"
-                     onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='<div style=\\'width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;\\'><i class=\\'fas fa-image\\' style=\\'font-size:1.5rem;color:#ccc;\\'></i></div>'">
-            `;
-        } else if (isVideo && mediaUrl) {
-            // Para vídeos, mostrar ícone com possível thumbnail
-            // Muitos vídeos no Supabase podem ter thumbnails com sufixo _thumbnail
-            const thumbnailUrl = mediaUrl.replace(/\.(mp4|mov|avi)$/i, '_thumbnail.jpg');
-            
-            return `
-                <div style="width:100%;height:70px;position:relative;">
-                    <div style="width:100%;height:100%;background:#2c3e50;display:flex;align-items:center;justify-content:center;">
-                        <i class="fas fa-video" style="font-size:1.5rem;color:#ecf0f1;"></i>
-                    </div>
-                    <!-- Tentar carregar thumbnail se existir -->
-                    <img src="${thumbnailUrl}" 
-                         style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:none;"
-                         alt="Thumbnail"
-                         onload="this.style.display='block'; this.nextElementSibling.style.display='none';"
-                         onerror="this.style.display='none';">
-                </div>
-            `;
-        } else {
-            // Fallback para tipo desconhecido
-            return `
-                <div style="width:100%;height:70px;display:flex;align-items:center;justify-content:center;background:#2c3e50;">
-                    <i class="fas fa-file" style="font-size:1.5rem;color:#ccc;"></i>
-                </div>
-            `;
-        }
-    },
+        console.log(`📊 ANÁLISE: isImage=${isImage}, isVideo=${isVideo}, mediaUrl=${mediaUrl ? 'PRESENTE' : 'AUSENTE'}`);
         
+        // Se não tem URL, mostrar fallback informativo
+        if (!mediaUrl) {
+            console.warn(`❌ SEM URL para preview: ${item.id} - ${item.name}`);
+            return this.getFallbackPreviewHTML(item, 'Sem URL disponível');
+        }
+        
+        // PARA IMAGENS: Tentar mostrar preview real
+        if (isImage) {
+            console.log(`🖼️ Tentando mostrar IMAGEM: ${item.name} (${mediaUrl.substring(0, 80)}...)`);
+            return this.getImagePreviewHTML(mediaUrl, item.name, item.id);
+        }
+        
+        // PARA VÍDEOS: Mostrar ícone com possível thumbnail
+        if (isVideo) {
+            console.log(`🎥 Tentando mostrar VÍDEO: ${item.name}`);
+            return this.getVideoPreviewHTML(mediaUrl, item.name);
+        }
+        
+        // Fallback para tipo desconhecido
+        console.warn(`⚠️ Tipo não reconhecido para ${item.name}, usando fallback`);
+        return this.getFallbackPreviewHTML(item, 'Tipo desconhecido');
+    },
+
+    // ========== FUNÇÃO DE PREVIEW DE IMAGEM COM VALIDAÇÃO ==========
+
+    getImagePreviewHTML: function(imageUrl, altText, itemId) {
+        // Criar ID único para rastreamento
+        const imgId = `img_preview_${itemId || Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        console.log(`🖼️ Criando tag img com ID: ${imgId} para: ${altText}`);
+        
+        return `
+        <div id="preview_container_${imgId}" 
+             style="width:100%;height:70px;position:relative;overflow:hidden;background:#2c3e50;">
+            
+            <!-- IMAGEM REAL (tentar carregar) -->
+            <img id="${imgId}"
+                 src="${imageUrl}" 
+                 alt="${altText || 'Imagem'}"
+                 style="width:100%;height:100%;object-fit:cover;"
+                 onload="console.log('✅ PREVIEW CARREGADO: ${imgId} - ${altText}'); 
+                         document.getElementById('preview_container_${imgId}').style.background='transparent';"
+                 onerror="console.warn('❌ FALHA NO PREVIEW: ${imgId} - ${altText}'); 
+                          this.style.display='none';
+                          this.parentElement.innerHTML = document.getElementById('fallback_${imgId}').innerHTML;">
+            
+            <!-- FALLBACK (inicialmente oculto) -->
+            <div id="fallback_${imgId}" style="display:none;">
+                <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:white;">
+                    <i class="fas fa-image" style="font-size:1.5rem;margin-bottom:5px;"></i>
+                    <div style="font-size:0.6rem;text-align:center;max-width:100%;padding:0 5px;overflow:hidden;text-overflow:ellipsis;">
+                        ${altText ? altText.substring(0, 20) + (altText.length > 20 ? '...' : '') : 'Imagem'}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LOADER (enquanto carrega) -->
+            <div id="loader_${imgId}" 
+                 style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(44,62,80,0.8);">
+                <div style="color:white;font-size:0.7rem;">
+                    <i class="fas fa-spinner fa-spin"></i> Carregando...
+                </div>
+            </div>
+            
+            <!-- SCRIPT PARA REMOVER LOADER APÓS CARREGAR OU FALHAR -->
+            <script>
+                (function() {
+                    const img = document.getElementById('${imgId}');
+                    const loader = document.getElementById('loader_${imgId}');
+                    
+                    if (img.complete) {
+                        // Imagem já carregada (cache)
+                        if (loader) loader.style.display = 'none';
+                    } else {
+                        // Aguardar carregamento
+                        img.addEventListener('load', function() {
+                            if (loader) loader.style.display = 'none';
+                        });
+                        img.addEventListener('error', function() {
+                            if (loader) loader.style.display = 'none';
+                        });
+                    }
+                })();
+            </script>
+        </div>
+        `;
+    },
+
+    // ========== FUNÇÃO DE PREVIEW DE VÍDEO ==========
+
+    getVideoPreviewHTML: function(videoUrl, altText) {
+        console.log(`🎥 Criando preview de vídeo: ${altText}`);
+        
+        // Tentar obter thumbnail (Supabase gera automaticamente _thumbnail.jpg)
+        const thumbnailUrl = videoUrl.replace(/\.(mp4|mov|avi)$/i, '_thumbnail.jpg');
+        
+        return `
+        <div style="width:100%;height:70px;position:relative;background:#2c3e50;">
+            
+            <!-- TENTAR CARREGAR THUMBNAIL (se existir) -->
+            <img src="${thumbnailUrl}" 
+                 style="width:100%;height:100%;object-fit:cover;display:none;"
+                 alt="Thumbnail"
+                 onload="this.style.display='block'; 
+                         this.nextElementSibling.style.display='none';"
+                 onerror="this.style.display='none';">
+            
+            <!-- ÍCONE DE VÍDEO (fallback se thumbnail não existir) -->
+            <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <i class="fas fa-video" style="font-size:1.5rem;color:#ecf0f1;"></i>
+                <div style="font-size:0.6rem;color:#bdc3c7;text-align:center;max-width:100%;padding:0 5px;overflow:hidden;text-overflow:ellipsis;">
+                    ${altText ? altText.substring(0, 15) + (altText.length > 15 ? '...' : '') : 'Vídeo'}
+                </div>
+            </div>
+            
+        </div>
+        `;
+    },
+
+    // ========== FUNÇÃO DE FALLBACK GENÉRICO ==========
+
+    getFallbackPreviewHTML: function(item, reason) {
+        console.warn(`🔄 Usando fallback para ${item.id}: ${reason}`);
+        
+        const shortName = item.name ? 
+            (item.name.length > 15 ? item.name.substring(0, 12) + '...' : item.name) : 
+            'Arquivo';
+        
+        const icon = item.type && item.type.includes('pdf') ? 'fa-file-pdf' : 
+                    item.type && item.type.includes('image') ? 'fa-image' :
+                    item.type && item.type.includes('video') ? 'fa-video' : 'fa-file';
+        
+        const color = item.type && item.type.includes('pdf') ? '#e74c3c' : 
+                      item.type && item.type.includes('image') ? '#3498db' :
+                      item.type && item.type.includes('video') ? '#9b59b6' : '#95a5a6';
+        
+        return `
+        <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${color}22;border:1px solid ${color};border-radius:3px;">
+            <i class="fas ${icon}" style="font-size:1.5rem;color:${color};margin-bottom:5px;"></i>
+            <div style="font-size:0.6rem;color:#2c3e50;text-align:center;max-width:100%;padding:0 5px;overflow:hidden;text-overflow:ellipsis;">
+                ${shortName}
+            </div>
+            ${reason ? `<div style="font-size:0.5rem;color:#7f8c8d;margin-top:2px;">${reason}</div>` : ''}
+        </div>
+        `;
+    },
+
     getOrderedMediaUrls: function() {
         console.log('📋 Obtendo URLs ordenadas...');
         
@@ -812,20 +940,41 @@ const MediaSystem = {
         }, 50);
     },
     
-    renderMediaPreview() {
+    // ========== ADICIONAR LOGS DE DIAGNÓSTICO NO renderMediaPreview() ==========
+
+    renderMediaPreview: function() {
         const container = document.getElementById('uploadPreview');
-        if (!container) return;
+        if (!container) {
+            console.error('❌ Container uploadPreview não encontrado!');
+            return;
+        }
         
         const allFiles = [...this.state.existing, ...this.state.files];
         
+        console.group(`🎨 RENDERIZANDO PREVIEW: ${allFiles.length} itens total`);
+        console.log('📊 ESTADO DOS ARQUIVOS:');
+        
+        allFiles.forEach((item, index) => {
+            console.log(`${index + 1}. ${item.id} - ${item.name}`, {
+                tipo: item.type,
+                isExisting: item.isExisting,
+                isNew: item.isNew,
+                preview: item.preview ? 'BLOB_URL' : 'NONE',
+                url: item.url ? 'SUPABASE_URL' : 'NONE',
+                markedForDeletion: item.markedForDeletion
+            });
+        });
+        
         if (allFiles.length === 0) {
             container.innerHTML = `
-                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
-                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
-                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
-                </div>
+            <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+            </div>
             `;
+            console.log('📭 Container vazio - mostrando placeholder');
+            console.groupEnd();
             return;
         }
         
@@ -837,48 +986,60 @@ const MediaSystem = {
             const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
             const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
             
+            console.log(`🖌️ Renderizando item: ${item.id} - ${item.name} (${isMarked ? 'marcado' : 'ativo'})`);
+            
             html += `
             <div class="media-preview-item draggable-item" 
-                     draggable="true"
-                     data-id="${item.id}"
-                     title="Arraste para reordenar"
-                     style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
-                    
-                    <!-- PREVIEW DE IMAGEM OU VÍDEO -->
+                 draggable="true"
+                 data-id="${item.id}"
+                 title="Arraste para reordenar • ${item.name}"
+                 style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
+                
+                <!-- PREVIEW DINÂMICO (70px de altura) -->
+                <div style="width:100%;height:70px;overflow:hidden;">
                     ${this.getMediaPreviewHTML(item)}
-                    
-                    <!-- Nome do arquivo (cortado) -->
-                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                            ${item.name || this.extractFileName(item.url)}
-                        </span>
-                    </div>
-                    
-                    <!-- Ícone de arrastar -->
-                    <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.7);color:white;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;z-index:10;">
-                        <i class="fas fa-arrows-alt"></i>
-                    </div>
-                    
-                    <!-- Indicador de ordem -->
-                    <div class="order-indicator" style="display:none;"></div>
-                    
-                    <!-- Botão de remover -->
-                    <button onclick="MediaSystem.removeFile('${item.id}')" 
-                            style="position:absolute;top:2px;right:2px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;z-index:10;">
-                        ${isMarked ? '↺' : '×'}
-                    </button>
-                    
-                    ${isExisting ? 
-                        `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.5rem;padding:1px 3px;border-radius:2px;z-index:10;">
-                            ${isMarked ? 'EXCLUIR' : 'Existente'}
-                        </div>` : ''
-                    }
                 </div>
+                
+                <!-- Nome do arquivo (40px de altura) -->
+                <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:${bgColor};">
+                    <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">
+                        ${item.name || this.extractFileName(item.url)}
+                    </span>
+                </div>
+                
+                <!-- Ícone de arrastar -->
+                <div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,0.7);color:white;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;z-index:10;">
+                    <i class="fas fa-arrows-alt"></i>
+                </div>
+                
+                <!-- Indicador de ordem -->
+                <div class="order-indicator" style="display:none;"></div>
+                
+                <!-- Botão de remover -->
+                <button onclick="MediaSystem.removeFile('${item.id}')" 
+                        style="position:absolute;top:2px;right:2px;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;z-index:10;">
+                    ${isMarked ? '↺' : '×'}
+                </button>
+                
+                ${isExisting ? 
+                    `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.5rem;padding:1px 3px;border-radius:2px;z-index:10;">
+                        ${isMarked ? 'EXCLUIR' : 'Existente'}
+                    </div>` : ''
+                }
+            </div>
             `;
         });
         
         html += '</div>';
         container.innerHTML = html;
+        
+        console.log(`✅ Renderizado ${allFiles.length} itens no container`);
+        console.groupEnd();
+        
+        // Adicionar indicadores de ordem após renderização
+        setTimeout(() => {
+            this.addVisualOrderIndicators();
+        }, 100);
     },
     
     renderPdfPreview() {
@@ -934,7 +1095,7 @@ const MediaSystem = {
     
     // ========== UTILITIES ==========
     
-    setupEventListeners() {
+    setupEventListeners: function() {
         console.log('🔧 Configurando event listeners unificados...');
         
         // Configurar upload de mídia
@@ -942,6 +1103,29 @@ const MediaSystem = {
         const fileInput = document.getElementById('fileInput');
         
         if (uploadArea && fileInput) {
+            // Adicionar botão de debug à área de upload (apenas em desenvolvimento)
+            if (window.location.hostname.includes('localhost') || window.location.search.includes('debug')) {
+                const debugBtn = document.createElement('button');
+                debugBtn.innerHTML = '🔧 Debug';
+                debugBtn.style.cssText = `
+                    position: absolute;
+                    top: 5px;
+                    right: 5px;
+                    background: #9b59b6;
+                    color: white;
+                    border: none;
+                    padding: 3px 8px;
+                    border-radius: 3px;
+                    font-size: 0.7rem;
+                    cursor: pointer;
+                    z-index: 10;
+                `;
+                debugBtn.onclick = () => {
+                    MediaSystem.diagnosePreviewIssue();
+                };
+                uploadArea.appendChild(debugBtn);
+            }
+            
             // Clique na área
             uploadArea.addEventListener('click', () => fileInput.click());
             
@@ -1029,6 +1213,135 @@ const MediaSystem = {
                 URL.revokeObjectURL(item.preview);
             }
         });
+    }
+};
+
+// ========== FERRAMENTAS DE DIAGNÓSTICO ==========
+
+// Adicionar ao objeto MediaSystem (após todas as outras funções)
+MediaSystem.diagnosePreviewIssue = function() {
+    console.group('🔧 DIAGNÓSTICO DE PREVIEW DE IMAGENS');
+    
+    const allItems = [...this.state.existing, ...this.state.files];
+    console.log(`📊 Total de itens: ${allItems.length}`);
+    
+    if (allItems.length === 0) {
+        console.log('ℹ️ Nenhum item para diagnosticar');
+        console.groupEnd();
+        return;
+    }
+    
+    // Testar cada item
+    allItems.forEach((item, index) => {
+        console.group(`Item ${index + 1}: ${item.name}`);
+        
+        // Verificar se é imagem
+        const isImage = item.isImage || 
+                       (item.type && item.type.includes('image')) ||
+                       (item.url && this.getFileTypeFromUrl(item.url) === 'image');
+        
+        console.log(`• É imagem? ${isImage ? '✅ SIM' : '❌ NÃO'}`);
+        console.log(`• Tipo: ${item.type || 'desconhecido'}`);
+        console.log(`• URL: ${item.url ? item.url.substring(0, 80) + '...' : 'NÃO TEM'}`);
+        console.log(`• Preview (BLOB): ${item.preview ? 'PRESENTE' : 'AUSENTE'}`);
+        console.log(`• Status: ${item.isExisting ? 'EXISTENTE' : 'NOVO'}`);
+        
+        // Testar carregamento da URL se for imagem
+        if (isImage && (item.preview || item.url)) {
+            const testUrl = item.preview || item.url;
+            console.log(`• Testando carregamento de: ${testUrl.substring(0, 60)}...`);
+            
+            const testImg = new Image();
+            testImg.onload = () => console.log('✅ URL CARREGA corretamente!');
+            testImg.onerror = () => console.log('❌ URL FALHOU ao carregar');
+            testImg.src = testUrl;
+        }
+        
+        console.groupEnd();
+    });
+    
+    // Verificar container DOM
+    const container = document.getElementById('uploadPreview');
+    if (container) {
+        console.log('📋 Container uploadPreview encontrado');
+        console.log(`• HTML length: ${container.innerHTML.length} caracteres`);
+        
+        // Contar tags img
+        const imgTags = container.querySelectorAll('img');
+        console.log(`• Tags img encontradas: ${imgTags.length}`);
+        
+        imgTags.forEach((img, i) => {
+            console.log(`  ${i + 1}. src: ${img.src.substring(0, 60)}...`);
+            console.log(`     complete: ${img.complete}, naturalWidth: ${img.naturalWidth}`);
+        });
+    } else {
+        console.error('❌ Container uploadPreview NÃO encontrado!');
+    }
+    
+    console.groupEnd();
+    
+    // Sugestões baseadas no diagnóstico
+    console.log('💡 SUGESTÕES:');
+    console.log('1. Se URLs blob estão falhando: Pode ser memory leak ou revogação prematura');
+    console.log('2. Se URLs Supabase estão falhando: Pode ser CORS ou autenticação');
+    console.log('3. Use MediaSystem.testImagePreview() para testar uma imagem específica');
+};
+
+// Função para testar preview específico
+MediaSystem.testImagePreview = function(itemId) {
+    const item = [...this.state.existing, ...this.state.files].find(i => i.id === itemId);
+    if (!item) {
+        console.error(`❌ Item ${itemId} não encontrado`);
+        return;
+    }
+    
+    console.group(`🧪 TESTE DE PREVIEW: ${item.name}`);
+    console.log('Item:', item);
+    
+    // Criar preview isolado para teste
+    const testDiv = document.createElement('div');
+    testDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        z-index: 99999;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: auto;
+    `;
+    
+    testDiv.innerHTML = `
+        <h3>Teste de Preview: ${item.name}</h3>
+        <p><strong>ID:</strong> ${item.id}</p>
+        <p><strong>Tipo:</strong> ${item.type}</p>
+        <p><strong>URL:</strong> ${item.url || 'N/A'}</p>
+        <p><strong>Preview:</strong> ${item.preview ? 'BLOB PRESENTE' : 'N/A'}</p>
+        <hr>
+        <h4>Visualização:</h4>
+        <div style="width:300px;height:200px;border:2px dashed #ccc;margin:10px 0;">
+            ${this.getMediaPreviewHTML(item)}
+        </div>
+        <hr>
+        <button onclick="this.parentElement.parentElement.remove()" style="background:#e74c3c;color:white;border:none;padding:10px 20px;border-radius:5px;cursor:pointer;">
+            Fechar Teste
+        </button>
+    `;
+    
+    document.body.appendChild(testDiv);
+    console.groupEnd();
+};
+
+// Adicionar atalho global para diagnóstico
+window.diagnoseMediaPreview = function() {
+    if (window.MediaSystem && typeof MediaSystem.diagnosePreviewIssue === 'function') {
+        MediaSystem.diagnosePreviewIssue();
+    } else {
+        console.error('❌ MediaSystem.diagnosePreviewIssue não disponível');
     }
 };
 
