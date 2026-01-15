@@ -467,6 +467,34 @@ body {
     pointer-events: auto;
 }
 
+/* ========== CORREÇÃO DE EMERGÊNCIA PARA MODAL PDF ========== */
+#pdfViewerModal,
+.pdf-modal[style*="display: none"],
+.pdf-modal:not([style*="display: flex"]):not([style*="display: block"]) {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 10000 !important;
+}
+
+/* Garantir que o campo de senha seja visível */
+#pdfPassword {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+}
+
+/* Remover qualquer overlay que esteja bloqueando */
+body > div:not(#pdfViewerModal):not(.pdf-modal) {
+    pointer-events: none !important;
+}
+
+#pdfViewerModal *,
+.pdf-modal * {
+    pointer-events: auto !important;
+}
+
 /* ========== RESPONSIVIDADE GERAL ========== */
 @media (max-width: 768px) {
     .header-content {
