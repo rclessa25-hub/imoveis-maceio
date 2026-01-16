@@ -447,33 +447,84 @@ const MediaSystem = {
         });
     },
 
-    // ========== FUNÇÃO DE PREVIEW CORRIGIDA - VERSÃO SIMPLES E FUNCIONAL ==========
+    // ========== FUNÇÕES AUXILIARES DE DETECÇÃO (NOVAS) ==========
+    isImageFile: function(item) {
+        // Priorizar flags explícitas
+        if (item.isImage === true) return true;
+        if (item.isImage === false) return false;
+        
+        // Verificar por tipo MIME
+        if (item.type && item.type.includes('image')) return true;
+        
+        // Verificar por extensão
+        if (item.name) {
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            return imageExtensions.some(ext => 
+                item.name.toLowerCase().endsWith(ext)
+            );
+        }
+        
+        // Verificar por URL (se termina com extensão de imagem)
+        const url = item.url || item.preview || '';
+        if (url) {
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            return imageExtensions.some(ext => 
+                url.toLowerCase().includes(ext) || 
+                url.toLowerCase().includes('image/')
+            );
+        }
+        
+        return false;
+    },
+
+    isVideoFile: function(item) {
+        if (item.isVideo === true) return true;
+        if (item.type && item.type.includes('video')) return true;
+        
+        if (item.name) {
+            const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
+            return videoExtensions.some(ext => 
+                item.name.toLowerCase().endsWith(ext)
+            );
+        }
+        
+        return false;
+    },
+
+    isPdfFile: function(item) {
+        if (item.type && item.type.includes('pdf')) return true;
+        
+        if (item.name && item.name.toLowerCase().endsWith('.pdf')) {
+            return true;
+        }
+        
+        const url = item.url || item.preview || '';
+        return url.toLowerCase().includes('.pdf') || 
+               url.toLowerCase().includes('application/pdf');
+    },
+
+    // ========== FUNÇÃO DE PREVIEW CORRIGIDA - VERSÃO DEFINITIVA (SUBSTITUÍDA) ==========
     getMediaPreviewHTML: function(item) {
         console.log(`🔍 Gerando preview para: ${item.name || item.id}`);
         
-        // Detectar se é imagem de forma mais assertiva
-        const hasImageExtension = item.name && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(item.name);
-        const isImageType = item.type && item.type.includes('image');
-        const isImage = item.isImage || isImageType || hasImageExtension;
-        
-        // Detectar se é vídeo
-        const hasVideoExtension = item.name && /\.(mp4|mov|avi|mkv|webm)$/i.test(item.name);
-        const isVideoType = item.type && item.type.includes('video');
-        const isVideo = item.isVideo || isVideoType || hasVideoExtension;
-        
-        // Detectar se é PDF
-        const isPdf = item.type && item.type.includes('pdf');
-        
-        const mediaUrl = item.preview || item.url;
+        // ✅ CRÍTICO: Priorizar URL permanente sobre preview temporário
+        const mediaUrl = item.url || item.preview;
         
         if (!mediaUrl) {
             console.warn(`❌ Sem URL para ${item.name}`);
             return this.getFallbackPreview(item, 'Sem URL');
         }
         
-        // 1. SE FOR IMAGEM: Mostrar a imagem real
+        // ✅ CRÍTICO: Detectar tipo de forma mais assertiva
+        const isImage = this.isImageFile(item);
+        const isVideo = this.isVideoFile(item);
+        const isPdf = this.isPdfFile(item);
+        
+        console.log(`📊 Detecção: ${isImage ? 'IMAGEM' : ''} ${isVideo ? 'VÍDEO' : ''} ${isPdf ? 'PDF' : ''}`);
+        
+        // 1. SE FOR IMAGEM: Mostrar a imagem real SEMPRE
         if (isImage) {
-            console.log(`🖼️ Mostrando imagem: ${item.name}`);
+            console.log(`🖼️ Mostrando imagem real: ${item.name}`);
             return this.getImagePreview(mediaUrl, item.name);
         }
         
@@ -489,22 +540,7 @@ const MediaSystem = {
             return this.getPdfPreview(item.name);
         }
         
-        // 4. SE NÃO RECONHECER: Verificar pelo nome do arquivo
-        if (item.name) {
-            // Se parece com um UUID (arquivo do Supabase sem extensão), tratar como vídeo
-            if (item.name.match(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i)) {
-                console.log(`🎥 UUID detectado, tratando como vídeo: ${item.name}`);
-                return this.getVideoPreview('Vídeo');
-            }
-            
-            // Se tem "media" no nome, tratar como imagem
-            if (item.name.toLowerCase().includes('media')) {
-                console.log(`🖼️ Nome contém 'media', tratando como imagem: ${item.name}`);
-                return this.getImagePreview(mediaUrl, item.name);
-            }
-        }
-        
-        // 5. FALLBACK genérico
+        // 4. FALLBACK genérico
         console.warn(`⚠️ Tipo não reconhecido para: ${item.name}`);
         return this.getFallbackPreview(item, 'Tipo desconhecido');
     },
@@ -621,6 +657,63 @@ const MediaSystem = {
         
         // Liberar URLs de preview para evitar memory leaks
         this.revokeAllPreviewUrls();
+        
+        return this;
+    },
+
+    // ========== FUNÇÃO CRÍTICA: ATUALIZAR ESTADO APÓS UPLOAD (NOVA) ==========
+    updateStateAfterUpload: function(uploadedUrls, uploadedPdfs) {
+        console.group('🔄 ATUALIZANDO ESTADO APÓS UPLOAD');
+        
+        // 1. Atualizar arquivos de mídia com URLs permanentes
+        this.state.files.forEach((file, index) => {
+            if (file.isNew && !file.uploaded && uploadedUrls.images) {
+                const urls = uploadedUrls.images.split(',');
+                if (urls[index]) {
+                    // Liberar URL temporária
+                    if (file.preview && file.preview.startsWith('blob:')) {
+                        URL.revokeObjectURL(file.preview);
+                    }
+                    
+                    // Atualizar com URL permanente
+                    file.url = urls[index];
+                    file.preview = urls[index]; // IMPORTANTE: manter preview também
+                    file.uploaded = true;
+                    file.isNew = false;
+                    
+                    console.log(`✅ Arquivo "${file.name}" atualizado com URL permanente`);
+                }
+            }
+        });
+        
+        // 2. Atualizar PDFs com URLs permanentes
+        this.state.pdfs.forEach((pdf, index) => {
+            if (pdf.isNew && !pdf.uploaded && uploadedPdfs) {
+                const urls = uploadedPdfs.split(',');
+                if (urls[index]) {
+                    pdf.url = urls[index];
+                    pdf.uploaded = true;
+                    pdf.isNew = false;
+                    console.log(`✅ PDF "${pdf.name}" atualizado com URL permanente`);
+                }
+            }
+        });
+        
+        // 3. Marcar arquivos existentes como "não marcados para exclusão"
+        this.state.existing.forEach(item => {
+            if (item.markedForDeletion === false) {
+                item.isExisting = true;
+            }
+        });
+        
+        this.state.existingPdfs.forEach(pdf => {
+            if (pdf.markedForDeletion === false) {
+                pdf.isExisting = true;
+            }
+        });
+        
+        console.log('✅ Estado atualizado após upload');
+        console.groupEnd();
         
         return this;
     },
@@ -762,32 +855,31 @@ const MediaSystem = {
         return addedCount;
     },
 
-    // ========== UPLOAD PARA SUPABASE ==========
-    
+    // ========== UPLOAD PARA SUPABASE - VERSÃO CORRIGIDA (SUBSTITUÍDA) ==========
     async uploadAll(propertyId, propertyTitle) {
         if (this.state.isUploading) {
             console.warn('⚠️ Upload já em andamento');
             return { images: '', pdfs: '' };
         }
-        
+
         this.state.isUploading = true;
-        console.group('🚀 UPLOAD UNIFICADO PARA SUPABASE');
-        
+        console.group('🚀 UPLOAD UNIFICADO PARA SUPABASE (VERSÃO CORRIGIDA)');
+
         try {
             const results = {
                 images: '',
                 pdfs: ''
             };
-            
+
             // 1. Processar exclusões primeiro
             await this.processDeletions();
-            
+
             // 2. Upload de fotos/vídeos (usar ordem visual)
             if (this.state.files.length > 0 || this.state.existing.length > 0) {
                 // Usar ordem atual dos itens
                 const allMedia = [...this.state.existing, ...this.state.files]
                     .filter(item => !item.markedForDeletion);
-                
+
                 // Upload apenas dos novos
                 const newFiles = allMedia.filter(item => item.isNew && item.file);
                 if (newFiles.length > 0) {
@@ -798,19 +890,19 @@ const MediaSystem = {
                     );
                     results.images = imageUrls.join(',');
                 }
-                
+
                 // Adicionar existentes (já ordenados)
                 const existingUrls = allMedia
                     .filter(item => item.isExisting && item.url && !item.markedForDeletion)
                     .map(item => item.url);
-                
+
                 if (existingUrls.length > 0) {
                     results.images = results.images 
                         ? `${results.images},${existingUrls.join(',')}`
                         : existingUrls.join(',');
                 }
             }
-            
+
             // 3. Upload de PDFs
             if (this.state.pdfs.length > 0) {
                 const pdfUrls = await this.uploadFiles(
@@ -820,21 +912,26 @@ const MediaSystem = {
                 );
                 results.pdfs = pdfUrls.join(',');
             }
-            
+
             // 4. Combinar com arquivos existentes não excluídos
             const keptExistingPdfs = this.state.existingPdfs
-                .filter(item => !item.markedForletion && item.url)
+                .filter(item => !item.markedForDeletion && item.url)
                 .map(item => item.url);
-            
+
             if (keptExistingPdfs.length > 0) {
                 results.pdfs = results.pdfs
                     ? `${results.pdfs},${keptExistingPdfs.join(',')}`
                     : keptExistingPdfs.join(',');
             }
-            
-            console.log('✅ Upload completo:', results);
+
+            // ✅ 5. ATUALIZAÇÃO CRÍTICA: Atualizar estado interno com URLs permanentes
+            if (results.images || results.pdfs) {
+                this.updateStateAfterUpload(results, results.pdfs);
+            }
+
+            console.log('✅ Upload completo e estado atualizado:', results);
             return results;
-            
+
         } catch (error) {
             console.error('❌ Erro no upload unificado:', error);
             return { images: '', pdfs: '' };
@@ -1290,7 +1387,11 @@ setTimeout(() => {
         'getImagePreview',
         'getVideoPreview',
         'getPdfPreview',
-        'getFallbackPreview'
+        'getFallbackPreview',
+        'updateStateAfterUpload', // ✅ NOVA FUNÇÃO ADICIONADA
+        'isImageFile',           // ✅ NOVAS FUNÇÕES ADICIONADAS
+        'isVideoFile',           // ✅ NOVAS FUNÇÕES ADICIONADAS
+        'isPdfFile'              // ✅ NOVAS FUNÇÕES ADICIONADAS
     ];
     
     const missing = [];
