@@ -130,30 +130,11 @@ const ADMIN_CONFIG = {
 };
 
 /* ==========================================================
-   INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA
+   SISTEMA DE LOADING AGORA É EXTERNO (loading-manager.js)
    ========================================================== */
 
-// Verificar se LoadingManager está disponível, senão carregar fallback
-if (typeof LoadingManager === 'undefined') {
-    console.warn('⚠️ LoadingManager não encontrado. Criando fallback básico...');
-    
-    // Fallback mínimo compatível com a API
-    window.LoadingManager = {
-        show: function(title, message) {
-            console.log(`🔄 [FALLBACK] Loading: ${title}`);
-            return {
-                updateTitle: () => {},
-                updateMessage: () => {},
-                updateProgress: () => {},
-                completeStep: () => {},
-                hide: () => console.log('✅ [FALLBACK] Loading oculto')
-            };
-        },
-        hide: function() {
-            console.log('✅ [FALLBACK] LoadingManager.hide() chamado');
-        }
-    };
-}
+// REMOVIDO: Fallback do LoadingManager (linhas 157-2578 do código original)
+// O LoadingManager agora é um módulo independente carregado antes do admin.js
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
@@ -719,16 +700,16 @@ window.setupForm = function() {
         e.preventDefault();
         console.group('🚀 SUBMISSÃO DO FORMULÁRIO ADMIN');
         
-        // 1. INICIAR LOADING
+        // 1. INICIAR LOADING (AGORA USANDO MÓDULO EXTERNO)
+        if (!window.LoadingManager || typeof window.LoadingManager.show !== 'function') {
+            console.error('❌ LoadingManager não disponível! Usando fallback simples...');
+            alert('⚠️ Sistema temporariamente indisponível. Recarregue a página.');
+            return;
+        }
+        
         const loading = window.LoadingManager.show(
             'Salvando Imóvel...', 
-            'Por favor, aguarde enquanto processamos todos os dados.',
-            [ // Etapas opcionais - mantém compatibilidade
-                'Validando dados do formulário...',
-                'Processando fotos e vídeos...',
-                'Enviando documentos PDF...',
-                'Salvando no banco de dados...'
-            ]
+            'Por favor, aguarde enquanto processamos todos os dados.'
         );
         
         // Desabilitar botão de submit
@@ -753,11 +734,9 @@ window.setupForm = function() {
             };
             
             console.log('📋 Dados coletados:', propertyData);
-            loading.completeStep(); // Etapa 1 completa
             
             // 3. VALIDAÇÃO BÁSICA
             if (!propertyData.title || !propertyData.price || !propertyData.location) {
-                loading.updateTitle('❌ Validação Falhou');
                 loading.updateMessage('Preencha Título, Preço e Localização!');
                 setTimeout(() => {
                     loading.hide();
@@ -783,7 +762,7 @@ window.setupForm = function() {
             if (window.editingPropertyId) {
                 // ========== EDIÇÃO DE IMÓVEL EXISTENTE ==========
                 console.log(`🔄 EDITANDO imóvel ID: ${window.editingPropertyId}`);
-                loading.updateTitle('Atualizando Imóvel...');
+                loading.updateMessage('Atualizando Imóvel...');
                 
                 // 4.1 Preparar objeto de atualização
                 const updateData = { ...propertyData };
@@ -795,7 +774,6 @@ window.setupForm = function() {
                 
                 // 4.3 PROCESSAR PDFs
                 loading.updateMessage('Processando documentos PDF...');
-                loading.completeStep(); // Etapa 2 completa
                 
                 if (typeof window.processAndSavePdfs === 'function') {
                     console.log(`📄 Delegando processamento de PDFs para MediaSystem...`);
@@ -815,7 +793,6 @@ window.setupForm = function() {
                 
                 // 4.4 PROCESSAR MÍDIA (FOTOS/VIDEOS)
                 loading.updateMessage('Processando fotos e vídeos...');
-                loading.completeStep(); // Etapa 3 completa
                 
                 try {
                     if (typeof window.getMediaUrlsForProperty === 'function') {
@@ -848,16 +825,10 @@ window.setupForm = function() {
                         }
                     } else {
                         console.error('❌ Função getMediaUrlsForProperty não disponível!');
-                        console.log('🔍 Verificando window object:', {
-                            hasGetMediaUrls: typeof window.getMediaUrlsForProperty,
-                            mediaConfig: window.MEDIA_CONFIG,
-                            currentSystem: window.currentMediaSystem
-                        });
                         updateData.images = '';
                     }
                 } catch (mediaError) {
                     console.error('❌ ERRO CRÍTICO ao processar mídia:', mediaError);
-                    console.log('🔄 Usando fallback: mantendo imagens existentes');
                     // Tenta manter as imagens existentes do imóvel atual
                     const currentProperty = window.properties.find(p => p.id == window.editingPropertyId);
                     updateData.images = currentProperty ? currentProperty.images : '';
@@ -865,7 +836,6 @@ window.setupForm = function() {
                 
                 // 4.5 SALVAR NO BANCO
                 loading.updateMessage('Salvando alterações no banco de dados...');
-                loading.completeStep(); // Etapa 4 completa
                 
                 if (typeof window.updateProperty === 'function') {
                     console.log('💾 Enviando atualização para o sistema de propriedades...');
@@ -875,7 +845,6 @@ window.setupForm = function() {
                         console.log('✅ Imóvel atualizado com sucesso no banco de dados!');
                         
                         // Feedback final
-                        loading.updateTitle('✅ Concluído!');
                         loading.updateMessage('Imóvel atualizado com sucesso!');
                         
                         // Mostrar resumo para o usuário
@@ -891,7 +860,6 @@ window.setupForm = function() {
                         }, 800);
                         
                     } else {
-                        loading.updateTitle('❌ Erro');
                         loading.updateMessage('Falha na atualização');
                         setTimeout(() => {
                             loading.hide();
@@ -906,7 +874,7 @@ window.setupForm = function() {
             } else {
                 // ========== CRIAÇÃO DE NOVO IMÓVEL ==========
                 console.log('🆕 CRIANDO novo imóvel...');
-                loading.updateTitle('Criando Novo Imóvel...');
+                loading.updateMessage('Criando Novo Imóvel...');
                 
                 // 4.6 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
                 if (propertyData.price && !propertyData.price.startsWith('R$')) {
@@ -915,7 +883,6 @@ window.setupForm = function() {
                 
                 // 4.7 PROCESSAR MÍDIA PARA NOVO IMÓVEL
                 loading.updateMessage('Processando fotos e vídeos...');
-                loading.completeStep(); // Etapa 2 completa
                 
                 let mediaUrls = '';
                 if (window.selectedMediaFiles && window.selectedMediaFiles.length > 0) {
@@ -939,7 +906,6 @@ window.setupForm = function() {
                 
                 // 4.8 PROCESSAR PDFs PARA NOVO IMÓVEL
                 loading.updateMessage('Processando documentos PDF...');
-                loading.completeStep(); // Etapa 3 completa
                 
                 if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
                     console.log(`📄 Processando ${window.selectedPdfFiles.length} PDF(s) para novo imóvel...`);
@@ -948,7 +914,6 @@ window.setupForm = function() {
                 
                 // 4.9 CRIAR NO BANCO
                 loading.updateMessage('Salvando no banco de dados...');
-                loading.completeStep(); // Etapa 4 completa
                 
                 if (typeof window.addNewProperty === 'function') {
                     console.log('💾 Chamando addNewProperty com dados:', {
@@ -963,7 +928,6 @@ window.setupForm = function() {
                         console.log(`✅ Novo imóvel criado com ID: ${newProperty.id}`);
 
                         // Feedback final
-                        loading.updateTitle('✅ Concluído!');
                         loading.updateMessage('Imóvel cadastrado com sucesso!');
                         
                         // Mostrar resumo
@@ -982,7 +946,6 @@ window.setupForm = function() {
                         }, 800);
                         
                     } else {
-                        loading.updateTitle('❌ Erro');
                         loading.updateMessage('Falha na criação');
                         setTimeout(() => {
                             loading.hide();
@@ -998,9 +961,7 @@ window.setupForm = function() {
         } catch (error) {
             // 5. TRATAMENTO DE ERROS
             console.error('❌ ERRO CRÍTICO no processamento do formulário:', error);
-            console.error('🔍 Stack trace:', error.stack);
             
-            loading.updateTitle('❌ Erro no Processamento');
             loading.updateMessage(error.message || 'Erro desconhecido');
             
             setTimeout(() => {
@@ -1460,12 +1421,12 @@ function initializeAdminSystem() {
         }
     }, 2000);
 
-    // 6. VERIFICAR SISTEMA DE LOADING (⭐ NOVA SEÇÃO ⭐)
-    console.log('🔍 Verificando sistema de loading...');
-    if (typeof LoadingManager !== 'undefined') {
-        console.log('✅ LoadingManager disponível');
+    // 6. VERIFICAR SISTEMA DE LOADING (AGORA É EXTERNO)
+    console.log('🔍 Verificando sistema de loading (módulo externo)...');
+    if (typeof LoadingManager !== 'undefined' && typeof LoadingManager.show === 'function') {
+        console.log('✅ LoadingManager disponível como módulo externo');
     } else {
-        console.warn('⚠️ LoadingManager não carregado');
+        console.warn('⚠️ LoadingManager não carregado - verifique ordem dos scripts');
     }
    
     console.log('✅ Sistema admin inicializado');
@@ -2572,7 +2533,5 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('🎨 Estilos de loading visual aplicados');
 });
-
-console.log('✅ Sistema de loading visual adicionado ao admin.js');
 
 console.log('✅ admin.js pronto e funcional - COM FORMATAÇÃO DE PREÇO IMPLEMENTADA');
