@@ -187,74 +187,147 @@ const MediaSystem = {
     },
 
     reorderItems: function(draggedId, targetId) {
-        console.group(`🔀 REORDENAÇÃO: ${draggedId} → ${targetId}`);
+        console.group(`🔀 REORDENAÇÃO CRÍTICA: ${draggedId} → ${targetId}`);
         
-        // Determinar qual array está sendo modificado
-        let sourceArray, targetArray;
+        // 1. IDENTIFICAR ARRAY CORRETO com lógica aprimorada
+        let sourceArray = null;
+        let arrayName = '';
         
-        if (draggedId.includes('file_')) {
-            sourceArray = this.state.files;
-            console.log('📸 Movendo arquivo NOVO');
-        } else if (draggedId.includes('existing_')) {
-            sourceArray = this.state.existing;
-            console.log('🖼️ Movendo arquivo EXISTENTE');
-        } else if (draggedId.includes('pdf_')) {
-            sourceArray = this.state.pdfs;
-            console.log('📄 Movendo PDF NOVO');
-        } else if (draggedId.includes('existing_pdf_')) {
-            sourceArray = this.state.existingPdfs;
-            console.log('📋 Movendo PDF EXISTENTE');
-        } else {
-            console.error('❌ Tipo de item não reconhecido:', draggedId);
-            return;
+        // Verificar em TODOS os arrays possíveis
+        const allArrays = [
+            { name: 'files', array: this.state.files, prefix: 'file_' },
+            { name: 'existing', array: this.state.existing, prefix: 'existing_' },
+            { name: 'pdfs', array: this.state.pdfs, prefix: 'pdf_' },
+            { name: 'existingPdfs', array: this.state.existingPdfs, prefix: 'existing_pdf_' }
+        ];
+        
+        for (const arr of allArrays) {
+            const draggedIndex = arr.array.findIndex(item => item.id === draggedId);
+            if (draggedIndex !== -1) {
+                sourceArray = arr.array;
+                arrayName = arr.name;
+                console.log(`✅ Array identificado: ${arrayName}`);
+                break;
+            }
         }
         
-        // Encontrar índices no array REAL
-        const draggedIndex = sourceArray.findIndex(item => item.id === draggedId);
-        const targetIndex = sourceArray.findIndex(item => item.id === targetId);
-        
-        console.log(`📊 Índices: dragged[${draggedIndex}], target[${targetIndex}]`);
-        
-        // Se não encontrou no array atual, procurar no array correspondente
-        if (draggedIndex === -1 || targetIndex === -1) {
-            console.log('🔍 Item não encontrado no array principal, verificando outro...');
-            
-            // Para mídias, verificar ambos arrays
-            if (draggedId.includes('_') && !draggedId.includes('pdf_')) {
-                const allMedia = [...this.state.files, ...this.state.existing];
-                const draggedIndexAll = allMedia.findIndex(item => item.id === draggedId);
-                const targetIndexAll = allMedia.findIndex(item => item.id === targetId);
-                
-                if (draggedIndexAll !== -1 && targetIndexAll !== -1) {
-                    console.log(`🎯 Reordenando em array combinado: ${draggedIndexAll}→${targetIndexAll}`);
-                    this.reorderCombinedArray(draggedId, targetId);
-                    this.updateUI();
-                    console.groupEnd();
-                    return;
-                }
-            }
-            
-            console.error('❌ Não foi possível encontrar os itens');
+        if (!sourceArray) {
+            console.error('❌ Item arrastado não encontrado em nenhum array!');
+            console.log('🔄 Tentando reordenação combinada como fallback...');
+            this.reorderCombinedArray(draggedId, targetId);
+            this.updateUI();
             console.groupEnd();
             return;
         }
         
-        // Realizar reordenação NO ARRAY REAL
-        const [draggedItem] = sourceArray.splice(draggedIndex, 1);
-        sourceArray.splice(targetIndex, 0, draggedItem);
+        // 2. ENCONTRAR ÍNDICES EXATOS
+        const draggedIndex = sourceArray.findIndex(item => item.id === draggedId);
+        const targetIndex = sourceArray.findIndex(item => item.id === targetId);
         
-        console.log(`✅ Reordenado: ${draggedItem.name || draggedItem.id}`);
-        console.log('📋 Novo array:', sourceArray.map(item => item.id));
+        console.log(`📊 Índices encontrados: dragged[${draggedIndex}], target[${targetIndex}]`);
         
-        // Atualizar UI IMEDIATAMENTE
+        // 3. VALIDAÇÃO CRÍTICA: Se não encontrou target no mesmo array
+        if (targetIndex === -1) {
+            console.log(`⚠️ Target ${targetId} não encontrado no array ${arrayName}`);
+            console.log(`🔄 Procurando em todos os arrays combinados...`);
+            
+            // Criar array combinado de todos os itens VISÍVEIS
+            const allVisibleItems = [
+                ...this.state.existing.filter(item => !item.markedForDeletion),
+                ...this.state.files,
+                ...this.state.existingPdfs.filter(pdf => !pdf.markedForDeletion),
+                ...this.state.pdfs
+            ];
+            
+            const draggedIndexAll = allVisibleItems.findIndex(item => item.id === draggedId);
+            const targetIndexAll = allVisibleItems.findIndex(item => item.id === targetId);
+            
+            if (draggedIndexAll !== -1 && targetIndexAll !== -1) {
+                console.log(`🎯 Encontrado em array combinado: ${draggedIndexAll}→${targetIndexAll}`);
+                
+                // Reordenar usando a lógica combinada
+                this.reorderInCombinedArray(draggedIndexAll, targetIndexAll, allVisibleItems);
+                this.updateUI();
+                console.groupEnd();
+                return;
+            } else {
+                console.error('❌ Não foi possível encontrar os itens em nenhum array!');
+                console.groupEnd();
+                return;
+            }
+        }
+        
+        // 4. EXECUTAR REORDENAÇÃO NO ARRAY ORIGINAL (CÓDIGO CORRIGIDO)
+        console.log(`🔄 Realocando "${draggedId}" de posição ${draggedIndex} para ${targetIndex}`);
+        
+        // Método mais robusto: criar novo array reordenado
+        const newArray = [...sourceArray];
+        const [draggedItem] = newArray.splice(draggedIndex, 1);
+        newArray.splice(targetIndex, 0, draggedItem);
+        
+        // 5. ATUALIZAR ESTADO ORIGINAL (IMPORTANTE: manter referência ao array correto)
+        if (arrayName === 'files') this.state.files = newArray;
+        else if (arrayName === 'existing') this.state.existing = newArray;
+        else if (arrayName === 'pdfs') this.state.pdfs = newArray;
+        else if (arrayName === 'existingPdfs') this.state.existingPdfs = newArray;
+        
+        console.log(`✅ Reordenação concluída no array ${arrayName}`);
+        console.log('📋 Nova ordem:', newArray.map(item => item.name || item.id));
+        
+        // 6. ATUALIZAR UI IMEDIATAMENTE
         this.updateUI();
         
-        // Adicionar índice visual
+        // 7. ADICIONAR ÍNDICES VISUAIS (opcional, mas útil)
         setTimeout(() => {
             this.addVisualOrderIndicators();
-        }, 100);
+        }, 50);
         
         console.groupEnd();
+    },
+
+    // ADICIONAR NOVA FUNÇÃO AUXILIAR (colocar após reorderItems)
+    reorderInCombinedArray: function(draggedIndex, targetIndex, combinedArray) {
+        console.log('🔄 Reordenando no array combinado...');
+        
+        // Reordenar array combinado
+        const newCombinedArray = [...combinedArray];
+        const [draggedItem] = newCombinedArray.splice(draggedIndex, 1);
+        newCombinedArray.splice(targetIndex, 0, draggedItem);
+        
+        // Reconstruir arrays originais mantendo a ordem visual
+        let filesIndex = 0;
+        let existingIndex = 0;
+        let pdfsIndex = 0;
+        let existingPdfsIndex = 0;
+        
+        const newFiles = [];
+        const newExisting = [];
+        const newPdfs = [];
+        const newExistingPdfs = [];
+        
+        newCombinedArray.forEach(item => {
+            if (item.id.includes('file_')) {
+                newFiles.push({ ...item });
+                filesIndex++;
+            } else if (item.id.includes('existing_') && !item.id.includes('pdf_')) {
+                newExisting.push({ ...item });
+                existingIndex++;
+            } else if (item.id.includes('pdf_') && !item.id.includes('existing_')) {
+                newPdfs.push({ ...item });
+                pdfsIndex++;
+            } else if (item.id.includes('existing_pdf_')) {
+                newExistingPdfs.push({ ...item });
+                existingPdfsIndex++;
+            }
+        });
+        
+        // Atualizar estado
+        this.state.files = newFiles;
+        this.state.existing = newExisting;
+        this.state.pdfs = newPdfs;
+        this.state.existingPdfs = newExistingPdfs;
+        
+        console.log(`📊 Arrays reconstruídos: ${newFiles.length} files, ${newExisting.length} existing, ${newPdfs.length} pdfs, ${newExistingPdfs.length} existingPdfs`);
     },
 
     reorderCombinedArray: function(draggedId, targetId) {
