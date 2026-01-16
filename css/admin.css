@@ -1,609 +1,1327 @@
-/* css/admin.css - Estilos do Painel Administrativo */
+// js/modules/media/media-unified.js - SISTEMA UNIFICADO DE MÍDIA
+console.log('🔄 media-unified.js carregado - Sistema Centralizado');
 
-/* ========== ESTILOS DO PAINEL ADMIN ========== */
-.admin-panel {
-    background: #f8f9fa;
-    padding: 2rem;
-    margin: 2rem auto;
-    max-width: 1000px;
-    border-radius: 10px;
-    display: none;
-}
+/**
+ * SISTEMA UNIFICADO DE MÍDIA - VERSÃO OTIMIZADA
+ * Responsabilidade única: Gerenciar todo o estado e operações de mídia
+ * Dependências: Supabase, utils.js
+ */
 
-.admin-toggle {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 1rem;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 1000;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    font-size: 1.2rem;
-}
+const MediaSystem = {
+    // ========== CONFIGURAÇÃO ==========
+    config: {
+        currentSystem: 'vendas', // 'vendas' ou 'aluguel'
+        buckets: {
+            vendas: 'properties',
+            aluguel: 'rentals'
+        },
+        limits: {
+            maxFiles: 10,
+            maxSize: 5 * 1024 * 1024, // 5MB
+            maxPdfs: 5,
+            maxPdfSize: 10 * 1024 * 1024 // 10MB
+        },
+        allowedTypes: {
+            images: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+            videos: ['video/mp4', 'video/quicktime'],
+            pdfs: ['application/pdf']
+        }
+    },
 
-.property-item {
-    background: #f5f5f5;
-    padding: 1rem;
-    margin: 0.5rem 0;
-    border-radius: 5px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-left: 4px solid var(--primary);
-}
+    // ========== ESTADO GLOBAL ==========
+    state: {
+        files: [],           // Arquivos selecionados (novos)
+        existing: [],        // Arquivos existentes (do banco)
+        pdfs: [],            // PDFs selecionados (novos)
+        existingPdfs: [],    // PDFs existentes (do banco)
+        isUploading: false,
+        currentPropertyId: null
+    },
 
-/* ÍCONE DO PDF */
-.pdf-access {
-    position: absolute;
-    bottom: 2px;
-    right: 35px;
-    background: rgba(255, 255, 255, 0.95);
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    color: var(--primary);
-    transition: all 0.3s ease;
-    z-index: 15;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    border: 1px solid rgba(0,0,0,0.15);
-}
+    // ========== INICIALIZAÇÃO ==========
+    init(systemName = 'vendas') {
+        console.log(`🔧 Inicializando sistema de mídia para: ${systemName}`);
+        
+        this.config.currentSystem = systemName;
+        this.resetState();
+        
+        // Configurar event listeners uma única vez
+        this.setupEventListeners();
+        
+        // Inicializar sistema de drag & drop
+        setTimeout(() => {
+            this.setupDragAndDrop();
+        }, 500);
+        
+        return this;
+    },
 
-.pdf-access:hover {
-    background: white;
-    transform: scale(1.1);
-    box-shadow: 0 3px 12px rgba(0,0,0,0.4);
-    color: #1a5276;
-}
+    // ========== SISTEMA DE REORDENAÇÃO DRAG & DROP CORRIGIDO ==========
+    setupDragAndDrop: function() {
+        console.log('🎯 Configurando sistema de drag & drop avançado...');
+        
+        // Configurar após pequeno delay para garantir DOM carregado
+        setTimeout(() => {
+            this.setupContainerDragEvents('uploadPreview');
+            this.setupContainerDragEvents('pdfUploadPreview');
+            this.addVisualOrderIndicators();
+        }, 800);
+    },
 
-.pdf-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.8);
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-}
+    setupContainerDragEvents: function(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) {
+            console.warn(`⚠️ Container ${containerId} não encontrado`);
+            return;
+        }
+        
+        console.log(`🎯 Configurando drag para: ${containerId}`);
+        
+        // Evento de início do drag
+        container.addEventListener('dragstart', (e) => {
+            const draggable = e.target.closest('.draggable-item');
+            if (!draggable) return;
+            
+            e.dataTransfer.setData('text/plain', draggable.dataset.id);
+            e.dataTransfer.effectAllowed = 'move';
+            
+            // Adicionar classe de arraste
+            draggable.classList.add('dragging');
+            container.classList.add('drag-active');
+            
+            // Criar ghost image com preview
+            if (draggable.querySelector('img')) {
+                const img = draggable.querySelector('img');
+                e.dataTransfer.setDragImage(img, 50, 50);
+            }
+            
+            console.log('👆 Iniciando drag:', draggable.dataset.id);
+        });
+        
+        // Evento durante o drag
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            const draggable = e.target.closest('.draggable-item');
+            const afterElement = this.getDragAfterElement(container, e.clientY);
+            
+            if (draggable) {
+                draggable.classList.add('drop-target');
+            }
+        });
+        
+        // Evento de saída
+        container.addEventListener('dragleave', (e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                document.querySelectorAll('.drop-target').forEach(el => {
+                    el.classList.remove('drop-target');
+                });
+            }
+        });
+        
+        // Evento de soltar
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const draggable = document.querySelector(`[data-id="${draggedId}"]`);
+            const dropTarget = e.target.closest('.draggable-item');
+            
+            if (!draggedId || !dropTarget) {
+                console.log('❌ Drop inválido');
+                this.cleanupDragState();
+                return;
+            }
+            
+            const targetId = dropTarget.dataset.id;
+            
+            if (draggedId === targetId) {
+                console.log('⚠️ Mesmo item, ignorando');
+                this.cleanupDragState();
+                return;
+            }
+            
+            console.log(`🎯 Drop: ${draggedId} → ${targetId}`);
+            
+            // Executar reordenação
+            this.reorderItems(draggedId, targetId);
+            
+            // Limpar estado
+            this.cleanupDragState();
+        });
+        
+        // Finalizar drag
+        container.addEventListener('dragend', () => {
+            this.cleanupDragState();
+        });
+    },
 
-.pdf-modal-content {
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-}
+    getDragAfterElement: function(container, y) {
+        const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
+        
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    },
 
-.pdf-preview {
-    margin: 1rem 0;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 5px;
-}
+    cleanupDragState: function() {
+        document.querySelectorAll('.dragging').forEach(el => {
+            el.classList.remove('dragging');
+        });
+        
+        document.querySelectorAll('.drop-target').forEach(el => {
+            el.classList.remove('drop-target');
+        });
+        
+        document.querySelectorAll('.drag-active').forEach(el => {
+            el.classList.remove('drag-active');
+        });
+    },
 
-.pdf-file-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0.5rem;
-    margin: 0.5rem 0;
-    background: white;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-}
+    reorderItems: function(draggedId, targetId) {
+        console.group(`🔀 REORDENAÇÃO CRÍTICA: ${draggedId} → ${targetId}`);
+        
+        // 1. IDENTIFICAR ARRAY CORRETO com lógica aprimorada
+        let sourceArray = null;
+        let arrayName = '';
+        
+        // Verificar em TODOS os arrays possíveis
+        const allArrays = [
+            { name: 'files', array: this.state.files, prefix: 'file_' },
+            { name: 'existing', array: this.state.existing, prefix: 'existing_' },
+            { name: 'pdfs', array: this.state.pdfs, prefix: 'pdf_' },
+            { name: 'existingPdfs', array: this.state.existingPdfs, prefix: 'existing_pdf_' }
+        ];
+        
+        for (const arr of allArrays) {
+            const draggedIndex = arr.array.findIndex(item => item.id === draggedId);
+            if (draggedIndex !== -1) {
+                sourceArray = arr.array;
+                arrayName = arr.name;
+                console.log(`✅ Array identificado: ${arrayName}`);
+                break;
+            }
+        }
+        
+        if (!sourceArray) {
+            console.error('❌ Item arrastado não encontrado em nenhum array!');
+            console.log('🔄 Tentando reordenação combinada como fallback...');
+            this.reorderCombinedArray(draggedId, targetId);
+            this.updateUI();
+            console.groupEnd();
+            return;
+        }
+        
+        // 2. ENCONTRAR ÍNDICES EXATOS
+        const draggedIndex = sourceArray.findIndex(item => item.id === draggedId);
+        const targetIndex = sourceArray.findIndex(item => item.id === targetId);
+        
+        console.log(`📊 Índices encontrados: dragged[${draggedIndex}], target[${targetIndex}]`);
+        
+        // 3. VALIDAÇÃO CRÍTICA: Se não encontrou target no mesmo array
+        if (targetIndex === -1) {
+            console.log(`⚠️ Target ${targetId} não encontrado no array ${arrayName}`);
+            console.log(`🔄 Procurando em todos os arrays combinados...`);
+            
+            // Criar array combinado de todos os itens VISÍVEIS
+            const allVisibleItems = [
+                ...this.state.existing.filter(item => !item.markedForDeletion),
+                ...this.state.files,
+                ...this.state.existingPdfs.filter(pdf => !pdf.markedForDeletion),
+                ...this.state.pdfs
+            ];
+            
+            const draggedIndexAll = allVisibleItems.findIndex(item => item.id === draggedId);
+            const targetIndexAll = allVisibleItems.findIndex(item => item.id === targetId);
+            
+            if (draggedIndexAll !== -1 && targetIndexAll !== -1) {
+                console.log(`🎯 Encontrado em array combinado: ${draggedIndexAll}→${targetIndexAll}`);
+                
+                // Reordenar usando a lógica combinada
+                this.reorderInCombinedArray(draggedIndexAll, targetIndexAll, allVisibleItems);
+                this.updateUI();
+                console.groupEnd();
+                return;
+            } else {
+                console.error('❌ Não foi possível encontrar os itens em nenhum array!');
+                console.groupEnd();
+                return;
+            }
+        }
+        
+        // 4. EXECUTAR REORDENAÇÃO NO ARRAY ORIGINAL (CÓDIGO CORRIGIDO)
+        console.log(`🔄 Realocando "${draggedId}" de posição ${draggedIndex} para ${targetIndex}`);
+        
+        // Método mais robusto: criar novo array reordenado
+        const newArray = [...sourceArray];
+        const [draggedItem] = newArray.splice(draggedIndex, 1);
+        newArray.splice(targetIndex, 0, draggedItem);
+        
+        // 5. ATUALIZAR ESTADO ORIGINAL (IMPORTANTE: manter referência ao array correto)
+        if (arrayName === 'files') this.state.files = newArray;
+        else if (arrayName === 'existing') this.state.existing = newArray;
+        else if (arrayName === 'pdfs') this.state.pdfs = newArray;
+        else if (arrayName === 'existingPdfs') this.state.existingPdfs = newArray;
+        
+        console.log(`✅ Reordenação concluída no array ${arrayName}`);
+        console.log('📋 Nova ordem:', newArray.map(item => item.name || item.id));
+        
+        // 6. ATUALIZAR UI IMEDIATAMENTE
+        this.updateUI();
+        
+        // 7. ADICIONAR ÍNDICES VISUAIS (opcional, mas útil)
+        setTimeout(() => {
+            this.addVisualOrderIndicators();
+        }, 50);
+        
+        console.groupEnd();
+    },
 
-.pdf-password-input {
-    width: 100%;
-    padding: 0.8rem;
-    margin: 1rem 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-}
+    // ADICIONAR NOVA FUNÇÃO AUXILIAR (colocar após reorderItems)
+    reorderInCombinedArray: function(draggedIndex, targetIndex, combinedArray) {
+        console.log('🔄 Reordenando no array combinado...');
+        
+        // Reordenar array combinado
+        const newCombinedArray = [...combinedArray];
+        const [draggedItem] = newCombinedArray.splice(draggedIndex, 1);
+        newCombinedArray.splice(targetIndex, 0, draggedItem);
+        
+        // Reconstruir arrays originais mantendo a ordem visual
+        let filesIndex = 0;
+        let existingIndex = 0;
+        let pdfsIndex = 0;
+        let existingPdfsIndex = 0;
+        
+        const newFiles = [];
+        const newExisting = [];
+        const newPdfs = [];
+        const newExistingPdfs = [];
+        
+        newCombinedArray.forEach(item => {
+            if (item.id.includes('file_')) {
+                newFiles.push({ ...item });
+                filesIndex++;
+            } else if (item.id.includes('existing_') && !item.id.includes('pdf_')) {
+                newExisting.push({ ...item });
+                existingIndex++;
+            } else if (item.id.includes('pdf_') && !item.id.includes('existing_')) {
+                newPdfs.push({ ...item });
+                pdfsIndex++;
+            } else if (item.id.includes('existing_pdf_')) {
+                newExistingPdfs.push({ ...item });
+                existingPdfsIndex++;
+            }
+        });
+        
+        // Atualizar estado
+        this.state.files = newFiles;
+        this.state.existing = newExisting;
+        this.state.pdfs = newPdfs;
+        this.state.existingPdfs = newExistingPdfs;
+        
+        console.log(`📊 Arrays reconstruídos: ${newFiles.length} files, ${newExisting.length} existing, ${newPdfs.length} pdfs, ${newExistingPdfs.length} existingPdfs`);
+    },
 
-/* ========== ESTILOS PARA OS NOVOS BOTÕES "X" DE PDF ========== */
+    reorderCombinedArray: function(draggedId, targetId) {
+        console.log('🔄 Reordenando array combinado...');
+        
+        // Combinar todos os itens visíveis
+        const allItems = [
+            ...this.state.existing.filter(item => !item.markedForDeletion),
+            ...this.state.files,
+            ...this.state.existingPdfs.filter(pdf => !pdf.markedForDeletion),
+            ...this.state.pdfs
+        ];
+        
+        const draggedIndex = allItems.findIndex(item => item.id === draggedId);
+        const targetIndex = allItems.findIndex(item => item.id === targetId);
+        
+        if (draggedIndex === -1 || targetIndex === -1) {
+            console.error('❌ Índices não encontrados no array combinado');
+            return;
+        }
+        
+        // Determinar arrays de origem
+        let draggedArray, targetArray;
+        
+        if (draggedId.includes('file_')) draggedArray = this.state.files;
+        else if (draggedId.includes('existing_')) draggedArray = this.state.existing;
+        else if (draggedId.includes('pdf_')) draggedArray = this.state.pdfs;
+        else if (draggedId.includes('existing_pdf_')) draggedArray = this.state.existingPdfs;
+        
+        if (targetId.includes('file_')) targetArray = this.state.files;
+        else if (targetId.includes('existing_')) targetArray = this.state.existing;
+        else if (targetId.includes('pdf_')) targetArray = this.state.pdfs;
+        else if (targetId.includes('existing_pdf_')) targetArray = this.state.existingPdfs;
+        
+        // Mover entre arrays se necessário
+        if (draggedArray !== targetArray) {
+            console.log(`🔄 Movendo entre arrays diferentes`);
+            
+            // Remover do array de origem
+            const sourceIndex = draggedArray.findIndex(item => item.id === draggedId);
+            if (sourceIndex !== -1) {
+                const [movedItem] = draggedArray.splice(sourceIndex, 1);
+                
+                // Adicionar ao array de destino (no final)
+                targetArray.push(movedItem);
+                
+                console.log(`✅ Movido ${movedItem.id} entre arrays`);
+            }
+        }
+        
+        // Atualizar estado para refletir mudanças
+        this.state.files = [...this.state.files];
+        this.state.existing = [...this.state.existing];
+        this.state.pdfs = [...this.state.pdfs];
+        this.state.existingPdfs = [...this.state.existingPdfs];
+    },
 
-/* Container para posicionamento relativo */
-.pdf-preview-container {
-    position: relative;
-    display: inline-block;
-    margin: 5px;
-}
+    addVisualOrderIndicators: function() {
+        console.log('🔢 Adicionando indicadores visuais de ordem...');
+        
+        // Para mídias
+        const mediaItems = document.querySelectorAll('#uploadPreview .draggable-item');
+        mediaItems.forEach((item, index) => {
+            let indicator = item.querySelector('.order-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'order-indicator';
+                indicator.style.cssText = `
+                    position: absolute;
+                    bottom: 2px;
+                    right: 2px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                    z-index: 5;
+                `;
+                item.appendChild(indicator);
+            }
+            indicator.textContent = index + 1;
+            indicator.style.display = 'flex';
+        });
+        
+        // Para PDFs
+        const pdfItems = document.querySelectorAll('#pdfUploadPreview .draggable-item');
+        pdfItems.forEach((item, index) => {
+            let indicator = item.querySelector('.order-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'order-indicator';
+                indicator.style.cssText = `
+                    position: absolute;
+                    bottom: 2px;
+                    right: 2px;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 10px;
+                    font-weight: bold;
+                    z-index: 5;
+                `;
+                item.appendChild(indicator);
+            }
+            indicator.textContent = index + 1;
+            indicator.style.display = 'flex';
+        });
+    },
 
-/* Botão "X" de exclusão de PDF (GERAL) - AJUSTADO PARA FICAR COLADO */
-.delete-pdf-btn {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 26px;
-    height: 26px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.4);
-    transition: all 0.3s ease;
-    line-height: 1;
-    padding: 0;
-    margin: 0;
-    opacity: 0.95;
-}
+    // ========== FUNÇÃO DE PREVIEW CORRIGIDA - VERSÃO SIMPLES E FUNCIONAL ==========
+    getMediaPreviewHTML: function(item) {
+        console.log(`🔍 Gerando preview para: ${item.name || item.id}`);
+        
+        // Detectar se é imagem de forma mais assertiva
+        const hasImageExtension = item.name && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(item.name);
+        const isImageType = item.type && item.type.includes('image');
+        const isImage = item.isImage || isImageType || hasImageExtension;
+        
+        // Detectar se é vídeo
+        const hasVideoExtension = item.name && /\.(mp4|mov|avi|mkv|webm)$/i.test(item.name);
+        const isVideoType = item.type && item.type.includes('video');
+        const isVideo = item.isVideo || isVideoType || hasVideoExtension;
+        
+        // Detectar se é PDF
+        const isPdf = item.type && item.type.includes('pdf');
+        
+        const mediaUrl = item.preview || item.url;
+        
+        if (!mediaUrl) {
+            console.warn(`❌ Sem URL para ${item.name}`);
+            return this.getFallbackPreview(item, 'Sem URL');
+        }
+        
+        // 1. SE FOR IMAGEM: Mostrar a imagem real
+        if (isImage) {
+            console.log(`🖼️ Mostrando imagem: ${item.name}`);
+            return this.getImagePreview(mediaUrl, item.name);
+        }
+        
+        // 2. SE FOR VÍDEO: Mostrar ícone de vídeo
+        if (isVideo) {
+            console.log(`🎥 Mostrando vídeo: ${item.name}`);
+            return this.getVideoPreview(item.name);
+        }
+        
+        // 3. SE FOR PDF: Mostrar ícone de PDF
+        if (isPdf) {
+            console.log(`📄 Mostrando PDF: ${item.name}`);
+            return this.getPdfPreview(item.name);
+        }
+        
+        // 4. SE NÃO RECONHECER: Verificar pelo nome do arquivo
+        if (item.name) {
+            // Se parece com um UUID (arquivo do Supabase sem extensão), tratar como vídeo
+            if (item.name.match(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i)) {
+                console.log(`🎥 UUID detectado, tratando como vídeo: ${item.name}`);
+                return this.getVideoPreview('Vídeo');
+            }
+            
+            // Se tem "media" no nome, tratar como imagem
+            if (item.name.toLowerCase().includes('media')) {
+                console.log(`🖼️ Nome contém 'media', tratando como imagem: ${item.name}`);
+                return this.getImagePreview(mediaUrl, item.name);
+            }
+        }
+        
+        // 5. FALLBACK genérico
+        console.warn(`⚠️ Tipo não reconhecido para: ${item.name}`);
+        return this.getFallbackPreview(item, 'Tipo desconhecido');
+    },
 
-/* Botão "X" específico para NOVOS PDFs (azul) */
-#newPdfsSection .delete-pdf-btn {
-    background: #3498db;
-}
+    // ========== PREVIEW DE IMAGEM - SIMPLES E DIRETO ==========
+    getImagePreview: function(imageUrl, altText) {
+        // SVG de fallback (mostrado apenas se a imagem falhar)
+        const fallbackSVG = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="70" viewBox="0 0 100 70">
+                <rect width="100" height="70" fill="#2c3e50"/>
+                <text x="50" y="35" font-family="Arial" font-size="10" fill="#ecf0f1" 
+                      text-anchor="middle" dominant-baseline="middle">
+                    ${altText ? altText.substring(0, 12) : 'Imagem'}
+                </text>
+            </svg>
+        `;
+        const fallbackDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(fallbackSVG);
+        
+        return `
+            <img src="${imageUrl}" 
+                 alt="${altText || 'Imagem'}"
+                 style="width:100%;height:70px;object-fit:cover;background:#2c3e50;"
+                 onload="console.log('✅ Imagem carregada: ${altText}')"
+                 onerror="console.log('❌ Falha na imagem: ${altText}'); 
+                          this.onerror=null; 
+                          this.src='${fallbackDataUrl}';
+                          this.style.objectFit='contain';
+                          this.style.padding='10px';">
+        `;
+    },
 
-/* Botão "X" específico para PDFs EXISTENTES (vermelho) */
-#existingPdfsSection .delete-pdf-btn {
-    background: #e74c3c;
-}
+    // ========== PREVIEW DE VÍDEO ==========
+    getVideoPreview: function(altText) {
+        const shortName = altText ? 
+            (altText.length > 12 ? altText.substring(0, 10) + '...' : altText) : 
+            'Vídeo';
+        
+        return `
+            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                <i class="fas fa-video" style="font-size:1.8rem;margin-bottom:5px;"></i>
+                <div style="font-size:0.65rem;text-align:center;max-width:100%;padding:0 5px;">
+                    ${shortName}
+                </div>
+            </div>
+        `;
+    },
 
-/* Efeitos hover */
-.delete-pdf-btn:hover {
-    transform: scale(1.3);
-    opacity: 1;
-    box-shadow: 0 5px 12px rgba(0,0,0,0.5);
-}
+    // ========== PREVIEW DE PDF ==========
+    getPdfPreview: function(altText) {
+        const shortName = altText ? 
+            (altText.length > 12 ? altText.substring(0, 10) + '...' : altText) : 
+            'PDF';
+        
+        return `
+            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                <i class="fas fa-file-pdf" style="font-size:1.8rem;margin-bottom:5px;"></i>
+                <div style="font-size:0.65rem;text-align:center;max-width:100%;padding:0 5px;">
+                    ${shortName}
+                </div>
+            </div>
+        `;
+    },
 
-#newPdfsSection .delete-pdf-btn:hover {
-    background: #2980b9;
-}
+    // ========== FALLBACK PREVIEW ==========
+    getFallbackPreview: function(item, reason) {
+        const shortName = item.name ? 
+            (item.name.length > 12 ? item.name.substring(0, 10) + '...' : item.name) : 
+            'Arquivo';
+        
+        return `
+            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;border:1px dashed #7f8c8d;">
+                <i class="fas fa-file" style="font-size:1.5rem;margin-bottom:5px;"></i>
+                <div style="font-size:0.65rem;text-align:center;">
+                    ${shortName}
+                </div>
+                <div style="font-size:0.5rem;color:#bdc3c7;margin-top:2px;">
+                    ${reason}
+                </div>
+            </div>
+        `;
+    },
+        
+    getOrderedMediaUrls: function() {
+        console.log('📋 Obtendo URLs ordenadas...');
+        
+        // Combinar arquivos novos e existentes mantendo a ordem visual
+        const orderedMedia = [...this.state.existing, ...this.state.files]
+            .filter(item => !item.markedForDeletion)
+            .map(item => item.url || item.preview);
+        
+        const orderedPdfs = [...this.state.existingPdfs, ...this.state.pdfs]
+            .filter(pdf => !pdf.markedForDeletion)
+            .map(pdf => pdf.url);
+        
+        return {
+            images: orderedMedia.join(','),
+            pdfs: orderedPdfs.join(',')
+        };
+    },
 
-#existingPdfsSection .delete-pdf-btn:hover {
-    background: #c0392b;
-}
+    // ========== GERENCIAMENTO DE ESTADO ==========
+    resetState() {
+        console.log('🧹 Resetando estado do sistema de mídia');
+        
+        // Limpar arrays
+        this.state.files.length = 0;
+        this.state.existing.length = 0;
+        this.state.pdfs.length = 0;
+        this.state.existingPdfs.length = 0;
+        
+        // Resetar flags
+        this.state.isUploading = false;
+        this.state.currentPropertyId = null;
+        
+        // Liberar URLs de preview para evitar memory leaks
+        this.revokeAllPreviewUrls();
+        
+        return this;
+    },
 
-/* Container do PDF item */
-.pdf-item-new, .pdf-item-existing {
-    transition: all 0.3s ease;
-    position: relative;
-    z-index: 10;
-}
-
-/* Efeito ao passar mouse sobre o item PDF */
-.pdf-preview-container:hover .pdf-item-new {
-    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-    transform: translateY(-2px);
-}
-
-.pdf-preview-container:hover .pdf-item-existing {
-    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-    transform: translateY(-2px);
-}
-
-/* ========== EXCLUSÃO DE FOTOS ========== */
-.image-preview-container {
-    position: relative;
-    display: inline-block;
-    margin: 5px;
-}
-
-.delete-image-btn {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-
-.delete-image-btn:hover {
-    background: #c0392b;
-    transform: scale(1.1);
-}
-
-/* CONTADOR DE FOTOS */
-.image-count {
-    position: absolute;
-    bottom: 1px;
-    right: 1px;
-    background: rgba(0,0,0,0.9);
-    color: white;
-    padding: 0.1rem 0.35rem;
-    border-radius: 8px 0 8px 8px;
-    font-size: 0.75rem;
-    z-index: 10;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.6);
-    font-weight: 600;
-    min-width: 22px;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    border: 0.5px solid rgba(255,255,255,0.15);
-}
-
-/* ========== UPLOAD E PREVIEW ========== */
-#existingImagesSection .image-preview-container,
-#existingPdfsSection .image-preview-container {
-    border: 2px solid var(--success);
-}
-
-#existingImagesSection .delete-image-btn,
-#existingPdfsSection .delete-image-btn {
-    background: #e74c3c;
-}
-
-#newImagesSection .image-preview-container {
-    border: 2px dashed #3498db;
-}
-
-#newImagesSection .delete-image-btn,
-#newPdfsSection .delete-image-btn {
-    background: #3498db;
-}
-
-#newImagesSection .delete-image-btn:hover,
-#newPdfsSection .delete-image-btn:hover {
-    background: #2980b9;
-}
-
-#newPdfsSection .pdf-file-item {
-    border: 2px dashed #3498db;
-    background: #f8faff;
-}
-
-#existingImagesSection,
-#existingPdfsSection {
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 2px solid #eee;
-}
-
-#newImagesSection,
-#newPdfsSection {
-    margin-top: 1rem;
-    padding-top: 1.5rem;
-}
-
-#existingImagesSection > div,
-#newImagesSection > div,
-#existingPdfsSection > div,
-#newPdfsSection > div {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-}
-
-/* Estilos específicos do formulário admin */
-#propertyForm input,
-#propertyForm textarea,
-#propertyForm select {
-    padding: 0.8rem;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    width: 100%;
-    font-size: 1rem;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-#propertyForm input:focus,
-#propertyForm textarea:focus,
-#propertyForm select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(26, 82, 118, 0.1);
-}
-
-#propertyForm button[type="submit"] {
-    background: var(--success);
-    color: white;
-    padding: 1rem 2rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    width: 100%;
-}
-
-#propertyForm button[type="submit"]:hover {
-    background: #219653;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(33, 150, 83, 0.3);
-}
-
-#cancelEditBtn {
-    background: #95a5a6;
-    color: white;
-    padding: 1rem 2rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-#cancelEditBtn:hover {
-    background: #7f8c8d;
-}
-
-/* Área de upload */
-#uploadArea,
-#pdfUploadArea {
-    border: 2px dashed #ddd;
-    border-radius: 10px;
-    padding: 2rem;
-    text-align: center;
-    margin: 1rem 0;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #fafafa;
-}
-
-#uploadArea:hover,
-#pdfUploadArea:hover {
-    border-color: var(--primary);
-    background: #f0f8ff;
-}
-
-#uploadPreview,
-#pdfUploadPreview {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin: 1rem 0;
-    min-height: 60px;
-}
-
-/* Botões do admin */
-.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close) {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 3px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-}
-
-.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close):hover {
-    background: #2980b9;
-    transform: translateY(-2px);
-}
-
-.admin-panel button[style*="background: #e74c3c"] {
-    background: #e74c3c !important;
-}
-
-.admin-panel button[style*="background: #e74c3c"]:hover {
-    background: #c0392b !important;
-}
-
-/* Responsividade do admin */
-@media (max-width: 768px) {
-    .admin-panel {
-        padding: 1rem;
-        margin: 1rem;
-    }
+    // ========== API PÚBLICA - FOTOS/VIDEOS ==========
     
-    #propertyForm {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
+    // Adicionar novos arquivos
+    addFiles(fileList) {
+        if (!fileList || fileList.length === 0) return 0;
+        
+        const filesArray = Array.from(fileList);
+        let addedCount = 0;
+        
+        filesArray.forEach(file => {
+            if (this.validateFile(file)) {
+                this.state.files.push({
+                    file: file,
+                    id: `file_${Date.now()}_${Math.random()}`,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    preview: URL.createObjectURL(file),
+                    isImage: this.config.allowedTypes.images.includes(file.type),
+                    isVideo: this.config.allowedTypes.videos.includes(file.type),
+                    isNew: true,
+                    uploaded: false
+                });
+                addedCount++;
+            }
+        });
+        
+        console.log(`📁 ${addedCount}/${filesArray.length} arquivo(s) adicionado(s)`);
+        this.updateUI();
+        return addedCount;
+    },
+
+    // Carregar arquivos existentes
+    loadExisting(property) {
+        if (!property) return;
+        
+        this.state.currentPropertyId = property.id;
+        
+        // Carregar fotos/vídeos existentes
+        if (property.images && property.images !== 'EMPTY') {
+            const urls = property.images.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            
+            this.state.existing = urls.map((url, index) => ({
+                url: url,
+                id: `existing_${property.id}_${index}`,
+                name: this.extractFileName(url),
+                type: this.getFileTypeFromUrl(url),
+                isExisting: true,
+                markedForDeletion: false,
+                isVisible: true
+            }));
+        }
+        
+        // Carregar PDFs existentes
+        if (property.pdfs && property.pdfs !== 'EMPTY') {
+            const pdfUrls = property.pdfs.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            
+            this.state.existingPdfs = pdfUrls.map((url, index) => ({
+                url: url,
+                id: `existing_pdf_${property.id}_${index}`,
+                name: this.extractFileName(url),
+                isExisting: true,
+                markedForDeletion: false
+            }));
+        }
+        
+        this.updateUI();
+        return this;
+    },
+
+    // Remover arquivo
+    removeFile(fileId) {
+        // Buscar em todos os arrays
+        const allArrays = [
+            { name: 'files', array: this.state.files },
+            { name: 'existing', array: this.state.existing },
+            { name: 'pdfs', array: this.state.pdfs },
+            { name: 'existingPdfs', array: this.state.existingPdfs }
+        ];
+        
+        for (const { name, array } of allArrays) {
+            const index = array.findIndex(item => item.id === fileId);
+            if (index !== -1) {
+                const removed = array[index];
+                
+                // Se é um arquivo existente, marcar para exclusão
+                if (removed.isExisting) {
+                    removed.markedForDeletion = true;
+                    console.log(`🗑️ Arquivo existente marcado para exclusão: ${removed.name}`);
+                } else {
+                    // Se é um arquivo novo, remover e liberar URL
+                    if (removed.preview && removed.preview.startsWith('blob:')) {
+                        URL.revokeObjectURL(removed.preview);
+                    }
+                    array.splice(index, 1);
+                    console.log(`🗑️ Arquivo novo removido: ${removed.name}`);
+                }
+                
+                this.updateUI();
+                return true;
+            }
+        }
+        
+        return false;
+    },
+
+    // ========== API PÚBLICA - PDFs ==========
     
-    #propertyForm > div {
-        grid-template-columns: 1fr !important;
-    }
+    addPdfs(fileList) {
+        if (!fileList || fileList.length === 0) return 0;
+        
+        const filesArray = Array.from(fileList);
+        let addedCount = 0;
+        
+        filesArray.forEach(file => {
+            if (this.validatePdf(file)) {
+                this.state.pdfs.push({
+                    file: file,
+                    id: `pdf_${Date.now()}_${Math.random()}`,
+                    name: file.name,
+                    size: file.size,
+                    isNew: true,
+                    uploaded: false
+                });
+                addedCount++;
+            }
+        });
+        
+        console.log(`📄 ${addedCount}/${filesArray.length} PDF(s) adicionado(s)`);
+        this.updateUI();
+        return addedCount;
+    },
+
+    // ========== UPLOAD PARA SUPABASE ==========
     
-    .property-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
+    async uploadAll(propertyId, propertyTitle) {
+        if (this.state.isUploading) {
+            console.warn('⚠️ Upload já em andamento');
+            return { images: '', pdfs: '' };
+        }
+        
+        this.state.isUploading = true;
+        console.group('🚀 UPLOAD UNIFICADO PARA SUPABASE');
+        
+        try {
+            const results = {
+                images: '',
+                pdfs: ''
+            };
+            
+            // 1. Processar exclusões primeiro
+            await this.processDeletions();
+            
+            // 2. Upload de fotos/vídeos (usar ordem visual)
+            if (this.state.files.length > 0 || this.state.existing.length > 0) {
+                // Usar ordem atual dos itens
+                const allMedia = [...this.state.existing, ...this.state.files]
+                    .filter(item => !item.markedForDeletion);
+                
+                // Upload apenas dos novos
+                const newFiles = allMedia.filter(item => item.isNew && item.file);
+                if (newFiles.length > 0) {
+                    const imageUrls = await this.uploadFiles(
+                        newFiles.map(f => f.file),
+                        propertyId,
+                        'images'
+                    );
+                    results.images = imageUrls.join(',');
+                }
+                
+                // Adicionar existentes (já ordenados)
+                const existingUrls = allMedia
+                    .filter(item => item.isExisting && item.url && !item.markedForDeletion)
+                    .map(item => item.url);
+                
+                if (existingUrls.length > 0) {
+                    results.images = results.images 
+                        ? `${results.images},${existingUrls.join(',')}`
+                        : existingUrls.join(',');
+                }
+            }
+            
+            // 3. Upload de PDFs
+            if (this.state.pdfs.length > 0) {
+                const pdfUrls = await this.uploadFiles(
+                    this.state.pdfs.map(p => p.file),
+                    propertyId,
+                    'pdfs'
+                );
+                results.pdfs = pdfUrls.join(',');
+            }
+            
+            // 4. Combinar com arquivos existentes não excluídos
+            const keptExistingPdfs = this.state.existingPdfs
+                .filter(item => !item.markedForletion && item.url)
+                .map(item => item.url);
+            
+            if (keptExistingPdfs.length > 0) {
+                results.pdfs = results.pdfs
+                    ? `${results.pdfs},${keptExistingPdfs.join(',')}`
+                    : keptExistingPdfs.join(',');
+            }
+            
+            console.log('✅ Upload completo:', results);
+            return results;
+            
+        } catch (error) {
+            console.error('❌ Erro no upload unificado:', error);
+            return { images: '', pdfs: '' };
+        } finally {
+            this.state.isUploading = false;
+            console.groupEnd();
+        }
+    },
+
+    // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
+    // ADICIONADAS APÓS uploadAll 
+
+    processAndSavePdfs: async function(propertyId, propertyTitle) {
+        console.group(`📄 MediaSystem.processAndSavePdfs CHAMADO para ${propertyId}`);
+        console.log('🔍 Estado atual dos PDFs:');
+        console.log('- PDFs novos:', this.state.pdfs.length);
+        console.log('- PDFs existentes:', this.state.existingPdfs.length);
+        console.log('- PDFs marcados para exclusão:', 
+            this.state.existingPdfs.filter(p => p.markedForDeletion).length);
+        
+        const result = await this.uploadAll(propertyId, propertyTitle);
+        
+        console.log('📊 Resultado do uploadAll:', {
+            pdfs: result.pdfs ? `${result.pdfs.split(',').length} URL(s)` : 'Nenhum'
+        });
+        console.groupEnd();
+        
+        return result.pdfs;
+    },
+
+    clearAllPdfs: function() {
+        console.log('🧹 Limpando apenas PDFs');
+        this.state.pdfs.length = 0;
+        this.state.existingPdfs.length = 0;
+        this.updateUI();
+        return this;
+    },
+
+    loadExistingPdfsForEdit: function(property) {
+        console.log('📄 Carregando PDFs existentes para edição');
+        if (!property) return this;
+        this.state.existingPdfs.length = 0;
+        if (property.pdfs && property.pdfs !== 'EMPTY') {
+            const pdfUrls = property.pdfs.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            this.state.existingPdfs = pdfUrls.map((url, index) => ({
+                url: url,
+                id: `existing_pdf_${property.id}_${index}`,
+                name: this.extractFileName(url),
+                isExisting: true,
+                markedForDeletion: false
+            }));
+        }
+        this.updateUI();
+        return this;
+    },
+
+    getPdfsToSave: async function(propertyId) {
+        console.log(`💾 Obtendo PDFs para salvar para ${propertyId}`);
+        const result = await this.uploadAll(propertyId, 'Imóvel');
+        return result.pdfs;
+    },
+
+    getMediaUrlsForProperty: async function(propertyId, propertyTitle) {
+        console.log(`🖼️ Obtendo URLs de mídia para ${propertyId}`);
+        const result = await this.uploadAll(propertyId, propertyTitle);
+        return result.images;
+    },
+
+    clearAllMedia: function() {
+        console.log('🧹 LIMPEZA COMPLETA DE MÍDIA E PDFs');
+        return this.resetState();
+    },
     
-    .property-item > div:last-child {
-        display: flex;
-        gap: 0.5rem;
-        width: 100%;
-    }
+    // ===== RESTANTE DAS FUNÇÕES (UI, validação, utilidades) FUNÇÕES PRIVADAS ======
     
-    .admin-toggle {
-        bottom: 70px;
-        right: 20px;
-        padding: 0.8rem;
-        font-size: 1rem;
-    }
-}
-
-/* ========== MODAL DE SELEÇÃO DE PDFs ========== */
-.pdf-list-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-}
-
-.pdf-list-item:active {
-    transform: translateY(-1px);
-}
-
-/* Animações para o modal de seleção */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-#pdfSelectionModal > div {
-    animation: slideIn 0.3s ease;
-}
-
-/* Responsividade para a lista de PDFs */
-@media (max-width: 768px) {
-    .pdf-list-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
+    validateFile(file) {
+        const isImage = this.config.allowedTypes.images.includes(file.type);
+        const isVideo = this.config.allowedTypes.videos.includes(file.type);
+        
+        if (!isImage && !isVideo) {
+            alert(`❌ "${file.name}" - Tipo não suportado!`);
+            return false;
+        }
+        
+        if (file.size > this.config.limits.maxSize) {
+            alert(`❌ "${file.name}" - Arquivo muito grande!`);
+            return false;
+        }
+        
+        return true;
+    },
     
-    .pdf-list-item > div:last-child {
-        align-self: flex-end;
-    }
+    validatePdf(file) {
+        if (!this.config.allowedTypes.pdfs.includes(file.type)) {
+            alert(`❌ "${file.name}" - Não é um PDF válido!`);
+            return false;
+        }
+        
+        if (file.size > this.config.limits.maxPdfSize) {
+            alert(`❌ "${file.name}" - PDF muito grande!`);
+            return false;
+        }
+        
+        return true;
+    },
     
-    #pdfSelectionModal > div {
-        width: 95%;
-        padding: 1.5rem;
-    }
-}
-
-/* ========== DRAG & DROP REORDER - ESTILOS APRIMORADOS ========== */
-/* Melhorar visualização durante drag */
-.dragging {
-    opacity: 0.5 !important;
-    transform: rotate(5deg) scale(0.95) !important;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3) !important;
-    z-index: 1000 !important;
-}
-
-.dragging::after {
-    content: "Soltar aqui para reordenar";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--primary);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.7rem;
-    white-space: nowrap;
-    z-index: 1001;
-}
-
-/* Feedback visual para área de drop */
-.drop-target {
-    border: 3px dashed var(--accent) !important;
-    background: rgba(52, 152, 219, 0.15) !important;
-    position: relative;
-}
-
-.drop-target::before {
-    content: "↓";
-    position: absolute;
-    top: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: var(--accent);
-    font-size: 1.2rem;
-    font-weight: bold;
-    z-index: 10;
-}
-
-/* Container ativo durante drag */
-.drag-active {
-    background: rgba(52, 152, 219, 0.05) !important;
-    border: 2px dashed var(--accent) !important;
-    min-height: 120px !important;
-}
-
-/* Melhorar visualização das miniaturas */
-.media-preview-item:hover, .pdf-preview-container:hover {
-    transform: translateY(-3px) scale(1.03) !important;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
-    transition: all 0.3s ease !important;
-}
-
-/* Indicador de ordem mais visível */
-.order-indicator {
-    position: absolute !important;
-    top: 25px !important;
-    right: 2px !important;
-    background: var(--primary) !important;
-    color: white !important;
-    font-size: 0.6rem !important;
-    width: 18px !important;
-    height: 18px !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-weight: bold !important;
-    z-index: 5 !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
-    border: 1px solid white !important;
-}
-
-/* Tooltip para mostrar nome completo */
-.media-preview-item:hover::after,
-.pdf-preview-container:hover::after {
-    content: attr(title);
-    position: absolute;
-    bottom: -30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.7rem;
-    white-space: nowrap;
-    z-index: 1000;
-    pointer-events: none;
-}
-
-/* Melhor contraste para ícones */
-.fa-arrows-alt {
-    color: white !important;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
-}
-
-/* Responsividade para mobile */
-@media (max-width: 768px) {
-    .media-preview-item, .pdf-preview-container {
-        width: 100px !important;
-        height: 100px !important;
-    }
+    async uploadFiles(files, propertyId, type = 'images') {
+        const bucket = this.config.buckets[this.config.currentSystem];
+        const uploadedUrls = [];
+        
+        for (const file of files) {
+            try {
+                const fileName = this.generateFileName(file, propertyId, type);
+                const filePath = `${bucket}/${fileName}`;
+                
+                const response = await fetch(
+                    `${window.SUPABASE_URL}/storage/v1/object/${filePath}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                            'apikey': window.SUPABASE_KEY,
+                            'Content-Type': file.type
+                        },
+                        body: file
+                    }
+                );
+                
+                if (response.ok) {
+                    const publicUrl = `${window.SUPABASE_URL}/storage/v1/object/public/${filePath}`;
+                    uploadedUrls.push(publicUrl);
+                    console.log(`✅ ${type} enviado: ${file.name}`);
+                }
+            } catch (error) {
+                console.error(`❌ Erro ao enviar ${file.name}:`, error);
+            }
+        }
+        
+        return uploadedUrls;
+    },
     
-    .order-indicator {
-        top: 20px !important;
-        right: 1px !important;
-        width: 16px !important;
-        height: 16px !important;
-        font-size: 0.5rem !important;
+    async processDeletions() {
+        // Processar exclusões de fotos/vídeos
+        const imagesToDelete = this.state.existing
+            .filter(item => item.markedForDeletion && item.url)
+            .map(item => item.url);
+        
+        // Processar exclusões de PDFs
+        const pdfsToDelete = this.state.existingPdfs
+            .filter(item => item.markedForDeletion && item.url)
+            .map(item => item.url);
+        
+        // TODO: Implementar exclusão do Supabase Storage
+        console.log(`🗑️ ${imagesToDelete.length} imagem(ns) e ${pdfsToDelete.length} PDF(s) marcados para exclusão`);
+        
+        // Remover itens marcados dos arrays
+        this.state.existing = this.state.existing.filter(item => !item.markedForDeletion);
+        this.state.existingPdfs = this.state.existingPdfs.filter(item => !item.markedForDeletion);
+    },
+    
+    // ========== UI UPDATES ==========
+    
+    updateUI() {
+        // Debounce para evitar múltiplas renderizações
+        if (this._updateTimeout) clearTimeout(this._updateTimeout);
+        
+        this._updateTimeout = setTimeout(() => {
+            this.renderMediaPreview();
+            this.renderPdfPreview();
+        }, 50);
+    },
+    
+    renderMediaPreview() {
+        const container = document.getElementById('uploadPreview');
+        if (!container) return;
+        
+        const allFiles = [...this.state.existing, ...this.state.files];
+        
+        if (allFiles.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
+        
+        allFiles.forEach(item => {
+            const isMarked = item.markedForDeletion;
+            const isExisting = item.isExisting;
+            const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
+            const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
+            
+            html += `
+            <div class="media-preview-item draggable-item" 
+                     draggable="true"
+                     data-id="${item.id}"
+                     title="Arraste para reordenar"
+                     style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
+                    
+                    <!-- PREVIEW DE IMAGEM OU VÍDEO (70px de altura) -->
+                    <div style="width:100%;height:70px;overflow:hidden;">
+                        ${this.getMediaPreviewHTML(item)}
+                    </div>
+                    
+                    <!-- Nome do arquivo (40px de altura) -->
+                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            ${item.name || this.extractFileName(item.url)}
+                        </span>
+                    </div>
+                    
+                    <!-- Ícone de arrastar (CRUZ DE MALTA) -->
+                    <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.7);color:white;width:22px;height:22px;border-radius:0 0 8px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:10;">
+                        <i class="fas fa-arrows-alt"></i>
+                    </div>
+                    
+                    <!-- Indicador de ordem -->
+                    <div class="order-indicator" style="
+                        position:absolute;
+                        bottom:2px;
+                        right:2px;
+                        background:rgba(0,0,0,0.8);
+                        color:white;
+                        width:18px;
+                        height:18px;
+                        border-radius:50%;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:10px;
+                        font-weight:bold;
+                        z-index:5;
+                    ">${allFiles.findIndex(f => f.id === item.id) + 1}</div>
+                    
+                    <!-- Botão de remover (X VERMELHO GRANDE NO CANTO) -->
+                    <button onclick="MediaSystem.removeFile('${item.id}')" 
+                            style="position:absolute;top:0;right:0;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;width:24px;height:24px;cursor:pointer;font-size:14px;font-weight:bold;z-index:10;border-radius:0 0 0 8px;display:flex;align-items:center;justify-content:center;">
+                        ${isMarked ? '↺' : '×'}
+                    </button>
+                    
+                    ${isExisting ? 
+                        `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.5rem;padding:1px 3px;border-radius:2px;z-index:10;">
+                            ${isMarked ? 'EXCLUIR' : 'Existente'}
+                        </div>` : ''
+                    }
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    renderPdfPreview() {
+        const container = document.getElementById('pdfUploadPreview');
+        if (!container) return;
+        
+        const allPdfs = [...this.state.existingPdfs, ...this.state.pdfs];
+        
+        if (allPdfs.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                    <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">';
+        
+        allPdfs.forEach((pdf, index) => {
+            const isMarked = pdf.markedForDeletion;
+            const isExisting = pdf.isExisting;
+            const shortName = pdf.name.length > 15 ? pdf.name.substring(0, 12) + '...' : pdf.name;
+            const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
+            const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
+            
+            html += `
+                <div class="pdf-preview-container draggable-item"
+                     draggable="true"
+                     data-id="${pdf.id}"
+                     style="position:relative;cursor:grab;">
+                    <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:0.5rem;width:90px;height:90px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;position:relative;">
+                        <!-- Ícone de arrastar -->
+                        <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.6);color:white;width:20px;height:20px;border-radius:0 0 6px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:5;">
+                            <i class="fas fa-arrows-alt"></i>
+                        </div>
+                        
+                        <!-- Indicador de ordem -->
+                        <div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.8);color:white;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;z-index:5;">
+                            ${index + 1}
+                        </div>
+                        
+                        <i class="fas fa-file-pdf" style="font-size:1.2rem;color:${borderColor};margin-bottom:0.3rem;"></i>
+                        <p style="font-size:0.7rem;margin:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;">${shortName}</p>
+                        <small style="color:#7f8c8d;font-size:0.6rem;">PDF</small>
+                    </div>
+                    <button onclick="MediaSystem.removeFile('${pdf.id}')" 
+                            style="position:absolute;top:0;right:0;background:${borderColor};color:white;border:none;width:22px;height:22px;font-size:14px;font-weight:bold;cursor:pointer;border-radius:0 0 0 6px;display:flex;align-items:center;justify-content:center;">
+                        ×
+                    </button>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+    
+    // ========== UTILITIES ==========
+    
+    setupEventListeners() {
+        console.log('🔧 Configurando event listeners unificados...');
+        
+        // Configurar upload de mídia
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        if (uploadArea && fileInput) {
+            // Clique na área
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            // Drag & drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#3498db';
+                uploadArea.style.background = '#e8f4fc';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#ddd';
+                uploadArea.style.background = '#fafafa';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#ddd';
+                uploadArea.style.background = '#fafafa';
+                
+                if (e.dataTransfer.files.length > 0) {
+                    this.addFiles(e.dataTransfer.files);
+                }
+            });
+            
+            // Change no input
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    this.addFiles(e.target.files);
+                }
+            });
+        }
+        
+        // Configurar upload de PDFs
+        const pdfUploadArea = document.getElementById('pdfUploadArea');
+        const pdfFileInput = document.getElementById('pdfFileInput');
+        
+        if (pdfUploadArea && pdfFileInput) {
+            pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+            
+            pdfFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    this.addPdfs(e.target.files);
+                }
+            });
+        }
+        
+        // Inicializar sistema de drag & drop após setup dos containers
+        setTimeout(() => {
+            this.setupDragAndDrop();
+        }, 500);
+    },
+    
+    extractFileName(url) {
+        if (!url) return 'Arquivo';
+        const parts = url.split('/');
+        let fileName = parts[parts.length - 1] || 'Arquivo';
+        try { fileName = decodeURIComponent(fileName); } catch (e) {}
+        return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
+    },
+    
+    getFileTypeFromUrl(url) {
+        if (!url) return 'file';
+        const ext = url.split('.').pop().toLowerCase();
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+        if (['mp4', 'mov', 'avi'].includes(ext)) return 'video';
+        if (ext === 'pdf') return 'pdf';
+        return 'file';
+    },
+    
+    generateFileName(file, propertyId, type) {
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 10);
+        const safeName = file.name
+            .replace(/[^a-zA-Z0-9.-]/g, '_')
+            .substring(0, 40);
+        
+        const prefix = type === 'pdfs' ? 'pdf' : 'media';
+        return `${prefix}_${propertyId}_${timestamp}_${random}_${safeName}`;
+    },
+    
+    revokeAllPreviewUrls() {
+        [...this.state.files, ...this.state.pdfs].forEach(item => {
+            if (item.preview && item.preview.startsWith('blob:')) {
+                URL.revokeObjectURL(item.preview);
+            }
+        });
     }
+};
+
+// Exportar para window
+window.MediaSystem = MediaSystem;
+
+// Auto-inicialização
+setTimeout(() => {
+    window.MediaSystem.init('vendas');
+    console.log('✅ Sistema de mídia unificado pronto');
+}, 1000);
+
+// ========== VERIFICAÇÃO DE INTEGRIDADE ==========
+
+// Verificar se todas as funções necessárias estão disponíveis
+setTimeout(() => {
+    console.log('🔍 Verificação de integridade do MediaSystem');
+    
+    const requiredFunctions = [
+        'addFiles',
+        'addPdfs', 
+        'loadExisting',
+        'resetState',
+        'uploadAll',
+        'processAndSavePdfs',
+        'clearAllPdfs',
+        'loadExistingPdfsForEdit',
+        'getPdfsToSave',
+        'getMediaUrlsForProperty',
+        'getOrderedMediaUrls',
+        'setupDragAndDrop',
+        'setupContainerDragEvents',
+        'getDragAfterElement',
+        'cleanupDragState',
+        'reorderItems',
+        'reorderCombinedArray',
+        'addVisualOrderIndicators',
+        'getMediaPreviewHTML',
+        'getImagePreview',
+        'getVideoPreview',
+        'getPdfPreview',
+        'getFallbackPreview'
+    ];
+    
+    const missing = [];
+    requiredFunctions.forEach(func => {
+        if (typeof MediaSystem[func] !== 'function') {
+            missing.push(func);
+        }
+    });
+    
+    if (missing.length === 0) {
+        console.log('✅ Todas as funções necessárias disponíveis');
+    } else {
+        console.error('❌ Funções faltando:', missing);
+    }
+}, 2000);
+
+// ========== COMPATIBILIDADE COM MÓDULOS DE SUPORTE ==========
+
+// Criar fallbacks silenciosos para funções que os módulos de suporte podem procurar
+if (typeof window.initMediaSystem === 'undefined') {
+    window.initMediaSystem = function() {
+        console.log('🔧 initMediaSystem chamada (fallback para compatibilidade)');
+        return MediaSystem ? MediaSystem.init('vendas') : null;
+    };
 }
+
+if (typeof window.updateMediaPreview === 'undefined') {
+    window.updateMediaPreview = function() {
+        console.log('🎨 updateMediaPreview chamada (fallback para compatibilidade)');
+        return MediaSystem ? MediaSystem.updateUI() : null;
+    };
+}
+
+console.log('✅ Sistema de mídia unificado pronto com compatibilidade total');
