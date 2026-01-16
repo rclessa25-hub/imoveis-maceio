@@ -449,64 +449,226 @@ const MediaSystem = {
 
     // ========== FUNÇÃO DE PREVIEW CORRIGIDA - VERSÃO SIMPLES E FUNCIONAL ==========
     getMediaPreviewHTML: function(item) {
-        console.log(`🔍 Gerando preview para: ${item.name || item.id}`);
+        console.log(`🖼️ Gerando preview REAL para: ${item.name || item.id}`);
         
-        // Detectar se é imagem de forma mais assertiva
-        const hasImageExtension = item.name && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(item.name);
-        const isImageType = item.type && item.type.includes('image');
-        const isImage = item.isImage || isImageType || hasImageExtension;
+        // DETECTAR TIPO COM MAIS PRECISÃO
+        const isImage = item.type?.includes('image') || 
+                        /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(item.name || '') ||
+                        item.isImage === true;
         
-        // Detectar se é vídeo
-        const hasVideoExtension = item.name && /\.(mp4|mov|avi|mkv|webm)$/i.test(item.name);
-        const isVideoType = item.type && item.type.includes('video');
-        const isVideo = item.isVideo || isVideoType || hasVideoExtension;
+        const isVideo = item.type?.includes('video') || 
+                        /\.(mp4|mov|avi|mkv|webm)$/i.test(item.name || '') ||
+                        item.isVideo === true;
         
-        // Detectar se é PDF
-        const isPdf = item.type && item.type.includes('pdf');
+        const isPdf = item.type?.includes('pdf') || 
+                      /\.pdf$/i.test(item.name || '');
         
-        const mediaUrl = item.preview || item.url;
+        // OBTER URL DO PREVIEW
+        let mediaUrl = item.preview || item.url;
         
-        if (!mediaUrl) {
-            console.warn(`❌ Sem URL para ${item.name}`);
-            return this.getFallbackPreview(item, 'Sem URL');
+        // 1️⃣ SE FOR IMAGEM COM PREVIEW (arquivo novo selecionado)
+        if (isImage && item.preview) {
+            console.log(`📸 Preview de imagem local disponível: ${item.name}`);
+            return `
+                <img src="${item.preview}" 
+                     alt="${item.name || 'Imagem'}"
+                     style="width:100%;height:70px;object-fit:cover;"
+                     onload="console.log('✅ Thumbnail carregada: ${item.name}')"
+                     onerror="console.warn('❌ Falha na thumbnail: ${item.name}'); this.style.display='none'; this.parentElement.innerHTML='${this.getFallbackPreview(item, 'Erro na imagem')}'">
+            `;
         }
         
-        // 1. SE FOR IMAGEM: Mostrar a imagem real
-        if (isImage) {
-            console.log(`🖼️ Mostrando imagem: ${item.name}`);
-            return this.getImagePreview(mediaUrl, item.name);
+        // 2️⃣ SE FOR IMAGEM EXISTENTE (URL do Supabase)
+        if (isImage && item.url) {
+            console.log(`🖼️ Carregando imagem existente: ${item.name}`);
+            return `
+                <img src="${item.url}" 
+                     alt="${item.name || 'Imagem'}"
+                     style="width:100%;height:70px;object-fit:cover;background:#2c3e50;"
+                     loading="lazy"
+                     onload="console.log('✅ Imagem carregada: ${item.name}')"
+                     onerror="console.warn('❌ Falha na imagem existente: ${item.name}'); this.onerror=null; this.src='data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="70" viewBox="0 0 100 70"><rect width="100" height="70" fill="#2c3e50"/><text x="50" y="35" font-family="Arial" font-size="10" fill="#ecf0f1" text-anchor="middle" dominant-baseline="middle">${item.name?.substring(0,10) || 'Imagem'}</text></svg>`)}'; this.style.objectFit='contain'; this.style.padding='10px';">
+            `;
         }
         
-        // 2. SE FOR VÍDEO: Mostrar ícone de vídeo
-        if (isVideo) {
-            console.log(`🎥 Mostrando vídeo: ${item.name}`);
-            return this.getVideoPreview(item.name);
+        // 3️⃣ SE FOR VÍDEO NOVO (File object) - CRIAR THUMBNAIL DO VÍDEO
+        if (isVideo && item.file && item.file.type.includes('video')) {
+            console.log(`🎥 Criando thumbnail para vídeo local: ${item.name}`);
+            
+            return `
+                <div class="video-thumbnail-container" 
+                     data-video-file="${encodeURIComponent(JSON.stringify({
+                         name: item.name,
+                         type: item.type
+                     }))}"
+                     style="width:100%;height:70px;position:relative;background:#2c3e50;">
+                    
+                    <div class="video-thumbnail-overlay" 
+                         style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ecf0f1;text-align:center;">
+                        
+                        <i class="fas fa-video" style="font-size:1.8rem;margin-bottom:5px;"></i>
+                        <div style="font-size:0.65rem;padding:0 5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;">
+                            ${item.name ? (item.name.length > 12 ? item.name.substring(0, 10) + '...' : item.name) : 'Vídeo'}
+                        </div>
+                        <div style="font-size:0.5rem;color:#bdc3c7;margin-top:2px;">
+                            Vídeo
+                        </div>
+                    </div>
+                    
+                    <!-- Thumbnail será gerada via JavaScript -->
+                    <canvas class="video-thumbnail-canvas" 
+                            style="display:none;width:100%;height:70px;"></canvas>
+                </div>
+                
+                <script>
+                // Gerar thumbnail do vídeo quando possível
+                (function() {
+                    const container = document.currentScript.parentElement;
+                    const videoFile = ${item.file ? `new File([${Array.from(new Uint8Array(await item.file.arrayBuffer()))}], "${item.name}", { type: "${item.type}" })` : 'null'};
+                    
+                    if (videoFile && videoFile.type.includes('video')) {
+                        setTimeout(() => {
+                            const video = document.createElement('video');
+                            video.preload = 'metadata';
+                            
+                            video.onloadedmetadata = function() {
+                                // Buscar quadro em 25% do vídeo para thumbnail
+                                video.currentTime = video.duration * 0.25;
+                            };
+                            
+                            video.onseeked = function() {
+                                const canvas = container.querySelector('.video-thumbnail-canvas');
+                                const ctx = canvas.getContext('2d');
+                                
+                                // Desenhar frame no canvas
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                
+                                // Converter para data URL e mostrar
+                                const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                
+                                // Criar elemento img com thumbnail
+                                const img = document.createElement('img');
+                                img.src = thumbnailUrl;
+                                img.style.width = '100%';
+                                img.style.height = '70px';
+                                img.style.objectFit = 'cover';
+                                img.alt = 'Thumbnail do vídeo';
+                                
+                                // Substituir overlay por thumbnail
+                                const overlay = container.querySelector('.video-thumbnail-overlay');
+                                if (overlay) {
+                                    overlay.style.display = 'none';
+                                }
+                                
+                                // Inserir thumbnail antes do canvas
+                                canvas.parentElement.insertBefore(img, canvas);
+                                
+                                console.log('✅ Thumbnail gerada para vídeo:', videoFile.name);
+                            };
+                            
+                            video.src = URL.createObjectURL(videoFile);
+                        }, 100);
+                    }
+                })();
+                </script>
+            `;
         }
         
-        // 3. SE FOR PDF: Mostrar ícone de PDF
+        // 4️⃣ SE FOR VÍDEO EXISTENTE (URL do Supabase)
+        if (isVideo && item.url) {
+            console.log(`📹 Vídeo existente: ${item.name}`);
+            return `
+                <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;position:relative;">
+                    
+                    <!-- Tentar mostrar poster/thumbnail se disponível -->
+                    <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7));"></div>
+                    
+                    <i class="fas fa-video" style="font-size:1.8rem;margin-bottom:5px;z-index:2;position:relative;"></i>
+                    <div style="font-size:0.65rem;text-align:center;max-width:100%;padding:0 5px;z-index:2;position:relative;">
+                        ${item.name ? (item.name.length > 12 ? item.name.substring(0, 10) + '...' : item.name) : 'Vídeo'}
+                    </div>
+                    <div style="font-size:0.5rem;color:#bdc3c7;margin-top:2px;z-index:2;position:relative;">
+                        Vídeo
+                    </div>
+                    
+                    <!-- Nota: Para vídeos existentes, precisaríamos do poster URL -->
+                    <!-- Em uma versão futura, poderíamos extrair thumbnails -->
+                </div>
+            `;
+        }
+        
+        // 5️⃣ SE FOR PDF
         if (isPdf) {
-            console.log(`📄 Mostrando PDF: ${item.name}`);
+            console.log(`📄 Preview de PDF: ${item.name}`);
             return this.getPdfPreview(item.name);
         }
         
-        // 4. SE NÃO RECONHECER: Verificar pelo nome do arquivo
-        if (item.name) {
-            // Se parece com um UUID (arquivo do Supabase sem extensão), tratar como vídeo
-            if (item.name.match(/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/i)) {
-                console.log(`🎥 UUID detectado, tratando como vídeo: ${item.name}`);
-                return this.getVideoPreview('Vídeo');
+        // 6️⃣ FALLBACK GENÉRICO
+        console.warn(`⚠️ Tipo não reconhecido para preview: ${item.name}`);
+        return this.getFallbackPreview(item, 'Tipo não suportado');
+    },
+
+    // ADICIONAR FUNÇÃO AUXILIAR PARA VÍDEOS (colocar após getMediaPreviewHTML)
+    generateVideoThumbnail: function(videoFile, container) {
+        return new Promise((resolve) => {
+            if (!videoFile || !videoFile.type.includes('video')) {
+                resolve(null);
+                return;
             }
             
-            // Se tem "media" no nome, tratar como imagem
-            if (item.name.toLowerCase().includes('media')) {
-                console.log(`🖼️ Nome contém 'media', tratando como imagem: ${item.name}`);
-                return this.getImagePreview(mediaUrl, item.name);
-            }
-        }
-        
-        // 5. FALLBACK genérico
-        console.warn(`⚠️ Tipo não reconhecido para: ${item.name}`);
-        return this.getFallbackPreview(item, 'Tipo desconhecido');
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+            
+            // Configurar timeout para não travar
+            const timeout = setTimeout(() => {
+                console.log('⏱️ Timeout na geração de thumbnail do vídeo');
+                resolve(null);
+            }, 5000);
+            
+            video.onloadedmetadata = function() {
+                clearTimeout(timeout);
+                
+                // Buscar quadro em 10% do vídeo (mais rápido)
+                try {
+                    video.currentTime = Math.min(video.duration * 0.1, 2);
+                } catch (e) {
+                    console.warn('❌ Não foi possível definir currentTime:', e);
+                    resolve(null);
+                }
+            };
+            
+            video.onseeked = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 120;
+                    canvas.height = 70;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Desenhar frame
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Converter para data URL
+                    const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    resolve(thumbnailUrl);
+                    
+                    // Limpar URL do objeto
+                    URL.revokeObjectURL(video.src);
+                } catch (e) {
+                    console.error('❌ Erro ao gerar thumbnail:', e);
+                    resolve(null);
+                }
+            };
+            
+            video.onerror = function() {
+                clearTimeout(timeout);
+                console.warn('❌ Erro no vídeo:', videoFile.name);
+                resolve(null);
+            };
+            
+            video.src = URL.createObjectURL(videoFile);
+        });
     },
 
     // ========== PREVIEW DE IMAGEM - SIMPLES E DIRETO ==========
@@ -628,31 +790,39 @@ const MediaSystem = {
     // ========== API PÚBLICA - FOTOS/VIDEOS ==========
     
     // Adicionar novos arquivos
-    addFiles(fileList) {
+    addFiles: function(fileList) {
         if (!fileList || fileList.length === 0) return 0;
         
         const filesArray = Array.from(fileList);
         let addedCount = 0;
         
+        // Processar cada arquivo com preview
         filesArray.forEach(file => {
             if (this.validateFile(file)) {
-                this.state.files.push({
+                // GERAR PREVIEW IMEDIATAMENTE
+                const previewUrl = URL.createObjectURL(file);
+                
+                const fileItem = {
                     file: file,
                     id: `file_${Date.now()}_${Math.random()}`,
                     name: file.name,
                     size: file.size,
                     type: file.type,
-                    preview: URL.createObjectURL(file),
+                    preview: previewUrl, // ✅ PREVIEW garantido
                     isImage: this.config.allowedTypes.images.includes(file.type),
                     isVideo: this.config.allowedTypes.videos.includes(file.type),
                     isNew: true,
                     uploaded: false
-                });
+                };
+                
+                this.state.files.push(fileItem);
                 addedCount++;
+                
+                console.log(`📁 Preview gerado para: ${file.name}`);
             }
         });
         
-        console.log(`📁 ${addedCount}/${filesArray.length} arquivo(s) adicionado(s)`);
+        console.log(`✅ ${addedCount}/${filesArray.length} arquivo(s) adicionado(s) COM PREVIEW`);
         this.updateUI();
         return addedCount;
     },
