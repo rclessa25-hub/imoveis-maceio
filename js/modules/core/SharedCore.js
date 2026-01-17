@@ -74,7 +74,7 @@ const SharedCore = (function() {
         return text.substring(0, maxLength) + '...';
     };
 
-    const stringSimilarity = (str1, str2) => {
+    const stringSimilarity = function(str1, str2) {
         if (!str1 || !str2) return 0;
         
         str1 = str1.toLowerCase();
@@ -396,14 +396,28 @@ setTimeout(() => {
             critical: true
         },
         {
+            name: 'stringSimilarity disponível no SharedCore',
+            test: () => typeof window.SharedCore.stringSimilarity === 'function',
+            critical: true
+        },
+        {
             name: 'Formatação R$ correta',
             test: () => window.SharedCore.formatPriceForInput('450000') === 'R$ 450.000',
             critical: true
         },
         {
+            name: 'stringSimilarity funciona',
+            test: () => {
+                const result = window.SharedCore.stringSimilarity('teste', 'teste');
+                return result === 1;
+            },
+            critical: true
+        },
+        {
             name: 'Funções disponíveis globalmente para compatibilidade',
             test: () => typeof window.formatPriceForInput === 'function' && 
-                       typeof window.getPriceNumbersOnly === 'function',
+                       typeof window.getPriceNumbersOnly === 'function' &&
+                       typeof window.setupPriceAutoFormat === 'function',
             critical: false // Não crítico pois são fallbacks
         }
     ];
@@ -419,4 +433,4 @@ setTimeout(() => {
     console.groupEnd();
 }, 2000);
 
-console.log('✅ SharedCore.js pronto - 26 funções utilitárias centralizadas (3 migradas de admin.js)');
+console.log('✅ SharedCore.js pronto - 26 funções utilitárias centralizadas (4 funções migradas: 3 de admin.js + 1 de properties.js)');
