@@ -139,10 +139,6 @@ const ADMIN_CONFIG = {
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
 
-// ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO ==========
-// ⭐⭐ REMOVIDAS: Funções duplicadas foram movidas para SharedCore.js ⭐⭐
-// As funções agora estão disponíveis em window.SharedCore.formatPriceForInput()
-
 // ========== FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL ==========
 window.toggleAdminPanel = function() {
     console.log('🔄 toggleAdminPanel() executada');
@@ -434,7 +430,7 @@ window.editProperty = function(id) {
         if (property.price.startsWith('R$')) {
             priceField.value = property.price;
         } else {
-            // Formata o preço
+            // Formata o preço usando SharedCore
             priceField.value = window.SharedCore.formatPriceForInput(property.price) || '';
         }
     }
@@ -618,7 +614,12 @@ window.setupForm = function() {
     const freshForm = document.getElementById('propertyForm');
     
     // ⭐⭐ CONFIGURAR FORMATAÇÃO AUTOMÁTICA DE PREÇO ⭐⭐
-    window.SharedCore.setupPriceAutoFormat();
+    // Usando função do SharedCore
+    if (window.SharedCore && typeof window.SharedCore.setupPriceAutoFormat === 'function') {
+        window.SharedCore.setupPriceAutoFormat();
+    } else {
+        console.warn('⚠️ Função setupPriceAutoFormat não disponível no SharedCore');
+    }
     
     // Configurar botão de submit
     const submitBtn = freshForm.querySelector('button[type="submit"]');
@@ -2467,4 +2468,4 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🎨 Estilos de loading visual aplicados');
 });
 
-console.log('✅ admin.js pronto e funcional - COM FORMATAÇÃO DE PREÇO IMPLEMENTADA');
+console.log('✅ admin.js pronto e funcional - COM FORMATAÇÃO DE PREÇO IMPLEMENTADA VIA SharedCore');
