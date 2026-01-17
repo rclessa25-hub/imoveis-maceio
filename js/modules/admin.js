@@ -431,7 +431,13 @@ window.editProperty = function(id) {
             priceField.value = property.price;
         } else {
             // Formata o preço usando SharedCore
-            priceField.value = window.SharedCore.formatPriceForInput(property.price) || '';
+            if (window.SharedCore && typeof window.SharedCore.formatPriceForInput === 'function') {
+                priceField.value = window.SharedCore.formatPriceForInput(property.price) || '';
+            } else {
+                // Fallback local
+                console.warn('⚠️ SharedCore não disponível, usando fallback local');
+                priceField.value = formatPriceForInputFallback(property.price) || '';
+            }
         }
     }
     
@@ -541,6 +547,28 @@ window.editProperty = function(id) {
     return true;
 };
 
+// Função de fallback local (mantida para compatibilidade)
+function formatPriceForInputFallback(value) {
+    if (!value) return '';
+    
+    // Remove tudo que não for número
+    let numbersOnly = value.toString().replace(/\D/g, '');
+    
+    // Se não tem números, retorna vazio
+    if (numbersOnly === '') return '';
+    
+    // Converte para número inteiro
+    let priceNumber = parseInt(numbersOnly);
+    
+    // Formata como "R$ X.XXX" (sem centavos)
+    let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+    
+    return formatted;
+}
+
 // ========== Função de Limpeza do Formulário ==========
 
 window.resetAdminFormToInitialState = function() {
@@ -614,11 +642,13 @@ window.setupForm = function() {
     const freshForm = document.getElementById('propertyForm');
     
     // ⭐⭐ CONFIGURAR FORMATAÇÃO AUTOMÁTICA DE PREÇO ⭐⭐
-    // Usando função do SharedCore
+    // Usando função do SharedCore com fallback
     if (window.SharedCore && typeof window.SharedCore.setupPriceAutoFormat === 'function') {
         window.SharedCore.setupPriceAutoFormat();
+        console.log('✅ Formatação de preço configurada via SharedCore');
     } else {
-        console.warn('⚠️ Função setupPriceAutoFormat não disponível no SharedCore');
+        console.warn('⚠️ SharedCore não disponível, usando fallback local');
+        setupPriceAutoFormatFallback();
     }
     
     // Configurar botão de submit
@@ -703,7 +733,12 @@ window.setupForm = function() {
                 
                 // 4.2 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
                 if (updateData.price && !updateData.price.startsWith('R$')) {
-                    updateData.price = window.SharedCore.formatPriceForInput(updateData.price);
+                    if (window.SharedCore && typeof window.SharedCore.formatPriceForInput === 'function') {
+                        updateData.price = window.SharedCore.formatPriceForInput(updateData.price);
+                    } else {
+                        // Fallback local
+                        updateData.price = formatPriceForInputFallback(updateData.price);
+                    }
                 }
                 
                 // 4.3 PROCESSAR PDFs
@@ -812,7 +847,12 @@ window.setupForm = function() {
                 
                 // 4.6 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
                 if (propertyData.price && !propertyData.price.startsWith('R$')) {
-                    propertyData.price = window.SharedCore.formatPriceForInput(propertyData.price);
+                    if (window.SharedCore && typeof window.SharedCore.formatPriceForInput === 'function') {
+                        propertyData.price = window.SharedCore.formatPriceForInput(propertyData.price);
+                    } else {
+                        // Fallback local
+                        propertyData.price = formatPriceForInputFallback(propertyData.price);
+                    }
                 }
                 
                 // 4.7 PROCESSAR MÍDIA PARA NOVO IMÓVEL
@@ -981,6 +1021,47 @@ window.setupForm = function() {
     
     console.log('✅ Formulário admin configurado com sistema de loading visual e formatação de preço');
 };
+
+// Função de fallback local para formatação automática de preço
+function setupPriceAutoFormatFallback() {
+    const priceField = document.getElementById('propPrice');
+    if (!priceField) return;
+    
+    // Formatar ao carregar (se já tiver valor)
+    if (priceField.value && !priceField.value.startsWith('R$')) {
+        priceField.value = formatPriceForInputFallback(priceField.value);
+    }
+    
+    // Formatar ao digitar
+    priceField.addEventListener('input', function(e) {
+        // Permite backspace, delete, setas
+        if (e.inputType === 'deleteContentBackward' || 
+            e.inputType === 'deleteContentForward' ||
+            e.inputType === 'deleteByCut') {
+            return;
+        }
+        
+        // Salva posição do cursor
+        const cursorPos = this.selectionStart;
+        const originalValue = this.value;
+        
+        // Formata o valor
+        this.value = formatPriceForInputFallback(this.value);
+        
+        // Ajusta posição do cursor
+        const diff = this.value.length - originalValue.length;
+        this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+    });
+    
+    // Formatar ao perder foco (garantir formatação)
+    priceField.addEventListener('blur', function() {
+        if (this.value && !this.value.startsWith('R$')) {
+            this.value = formatPriceForInputFallback(this.value);
+        }
+    });
+    
+    console.log('✅ Formatação automática de preço configurada (fallback local)');
+}
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
 window.syncWithSupabaseManual = async function() {
