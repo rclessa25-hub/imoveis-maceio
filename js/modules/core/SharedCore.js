@@ -44,7 +44,54 @@ const SharedCore = (function() {
         return re.test(phone);
     };
 
-    // ========== FORMATAÇÃO DE PREÇO ==========
+    // ========== MANIPULAÇÃO DE STRINGS ==========
+    const formatPrice = (price) => {
+        if (!price && price !== 0) return 'R$ 0,00';
+        
+        // Remover qualquer formatação existente
+        let cleanPrice = String(price)
+            .replace('R$', '')
+            .replace('.', '')
+            .replace(',', '.')
+            .trim();
+        
+        // Converter para número
+        const numericPrice = parseFloat(cleanPrice);
+        
+        if (isNaN(numericPrice)) return 'R$ 0,00';
+        
+        // Formatar para moeda brasileira
+        return numericPrice.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
+    const truncateText = (text, maxLength = 100) => {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    };
+
+    const stringSimilarity = (str1, str2) => {
+        if (!str1 || !str2) return 0;
+        
+        str1 = str1.toLowerCase();
+        str2 = str2.toLowerCase();
+        
+        if (str1 === str2) return 1;
+        if (str1.length < 2 || str2.length < 2) return 0;
+        
+        let match = 0;
+        for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
+            if (str1[i] === str2[i]) match++;
+        }
+        
+        return match / Math.max(str1.length, str2.length);
+    };
+
+    // ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO (MIGRADAS DO admin.js) ==========
     const formatPriceForInput = function(value) {
         if (!value) return '';
         
@@ -112,53 +159,6 @@ const SharedCore = (function() {
         });
         
         console.log('✅ Formatação automática de preço configurada');
-    };
-
-    // ========== MANIPULAÇÃO DE STRINGS ==========
-    const formatPrice = (price) => {
-        if (!price && price !== 0) return 'R$ 0,00';
-        
-        // Remover qualquer formatação existente
-        let cleanPrice = String(price)
-            .replace('R$', '')
-            .replace('.', '')
-            .replace(',', '.')
-            .trim();
-        
-        // Converter para número
-        const numericPrice = parseFloat(cleanPrice);
-        
-        if (isNaN(numericPrice)) return 'R$ 0,00';
-        
-        // Formatar para moeda brasileira
-        return numericPrice.toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    };
-
-    const truncateText = (text, maxLength = 100) => {
-        if (!text || text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
-    };
-
-    const stringSimilarity = (str1, str2) => {
-        if (!str1 || !str2) return 0;
-        
-        str1 = str1.toLowerCase();
-        str2 = str2.toLowerCase();
-        
-        if (str1 === str2) return 1;
-        if (str1.length < 2 || str2.length < 2) return 0;
-        
-        let match = 0;
-        for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
-            if (str1[i] === str2[i]) match++;
-        }
-        
-        return match / Math.max(str1.length, str2.length);
     };
 
     // ========== DOM UTILITIES ==========
@@ -320,15 +320,15 @@ const SharedCore = (function() {
         isValidPhone,
         validateProperty,
         
-        // Formatação de Preço
-        formatPriceForInput,
-        getPriceNumbersOnly,
-        setupPriceAutoFormat,
-        
         // Strings
         formatPrice,
         truncateText,
         stringSimilarity,
+        
+        // Funções de formatação de preço (MIGRADAS)
+        formatPriceForInput,
+        getPriceNumbersOnly,
+        setupPriceAutoFormat,
         
         // DOM
         elementExists,
@@ -363,106 +363,60 @@ window.SharedCore = SharedCore;
 (function ensurePriceFormatting() {
     if (!window.formatPriceForInput && window.SharedCore?.formatPriceForInput) {
         window.formatPriceForInput = window.SharedCore.formatPriceForInput.bind(window.SharedCore);
-        console.log('✅ Função formatPriceForInput disponível via SharedCore');
+        console.log('✅ Função formatPriceForInput disponível via SharedCore (compatibilidade)');
     }
     if (!window.getPriceNumbersOnly && window.SharedCore?.getPriceNumbersOnly) {
         window.getPriceNumbersOnly = window.SharedCore.getPriceNumbersOnly.bind(window.SharedCore);
-        console.log('✅ Função getPriceNumbersOnly disponível via SharedCore');
+        console.log('✅ Função getPriceNumbersOnly disponível via SharedCore (compatibilidade)');
+    }
+    if (!window.setupPriceAutoFormat && window.SharedCore?.setupPriceAutoFormat) {
+        window.setupPriceAutoFormat = window.SharedCore.setupPriceAutoFormat.bind(window.SharedCore);
+        console.log('✅ Função setupPriceAutoFormat disponível via SharedCore (compatibilidade)');
     }
 })();
 
-console.log('✅ SharedCore.js pronto - 26 funções utilitárias centralizadas');
-
-// ========== WRAPPERS DE COMPATIBILIDADE ==========
-(function createCompatibilityWrappers() {
-    console.group('🔧 CRIANDO WRAPPERS DE COMPATIBILIDADE (CORRIGIDO)');
+// ========== VALIDAÇÃO PÓS-MIGRAÇÃO ==========
+setTimeout(() => {
+    console.group('🧪 VALIDAÇÃO DA MIGRAÇÃO DE FORMATAÇÃO');
     
-    // Lista de funções que DEVEM estar apenas no SharedCore
-    const functionsToWrap = [
-        'stringSimilarity', 
-        'runLowPriority',
-        'debounce',
-        'throttle',
-        'formatPrice',
-        'isMobileDevice',
-        'elementExists',
-        'logModule',
-        'supabaseFetch',
-        'formatPriceForInput',
-        'getPriceNumbersOnly',
-        'setupPriceAutoFormat'
+    const tests = [
+        {
+            name: 'formatPriceForInput disponível no SharedCore',
+            test: () => typeof window.SharedCore.formatPriceForInput === 'function',
+            critical: true
+        },
+        {
+            name: 'getPriceNumbersOnly disponível no SharedCore',
+            test: () => typeof window.SharedCore.getPriceNumbersOnly === 'function',
+            critical: true
+        },
+        {
+            name: 'setupPriceAutoFormat disponível no SharedCore',
+            test: () => typeof window.SharedCore.setupPriceAutoFormat === 'function',
+            critical: true
+        },
+        {
+            name: 'Formatação R$ correta',
+            test: () => window.SharedCore.formatPriceForInput('450000') === 'R$ 450.000',
+            critical: true
+        },
+        {
+            name: 'Funções disponíveis globalmente para compatibilidade',
+            test: () => typeof window.formatPriceForInput === 'function' && 
+                       typeof window.getPriceNumbersOnly === 'function',
+            critical: false // Não crítico pois são fallbacks
+        }
     ];
     
-    functionsToWrap.forEach(funcName => {
-        // Verificar se a função existe no SharedCore
-        if (window.SharedCore && typeof window.SharedCore[funcName] === 'function') {
-            
-            // Se já existe no window e é diferente do SharedCore
-            if (window[funcName] && window[funcName] !== window.SharedCore[funcName]) {
-                console.log(`🔧 Criando wrapper para ${funcName}...`);
-                
-                // Guardar referência original para fallback
-                const originalFunc = window[funcName];
-                const sharedFunc = window.SharedCore[funcName];
-                
-                // Criar wrapper transparente
-                window[funcName] = function(...args) {
-                    // Executar via SharedCore
-                    return sharedFunc.apply(this, args);
-                };
-                
-                // Copiar propriedades se existirem
-                Object.keys(originalFunc).forEach(key => {
-                    if (!window[funcName][key]) {
-                        window[funcName][key] = originalFunc[key];
-                    }
-                });
-                
-                console.log(`✅ Wrapper criado para ${funcName}`);
-            }
-        }
+    let allPassed = true;
+    tests.forEach(t => {
+        const passed = t.test();
+        console.log(`${passed ? '✅' : '❌'} ${t.name}`);
+        if (!passed && t.critical) allPassed = false;
     });
     
+    console.log(allPassed ? '🎉 MIGRAÇÃO VALIDADA' : '⚠️ VERIFICAÇÃO REQUERIDA');
     console.groupEnd();
-})();
+}, 2000);
 
-// ========== VERIFICAÇÃO E PREVENÇÃO DE DUPLICAÇÕES ==========
-(function preventDuplicates() {
-    console.log('🔍 Verificando duplicações de módulos...');
-    
-    // Lista de sistemas que NÃO devem ser duplicados
-    const criticalSystems = ['MediaSystem', 'PdfSystem', 'ValidationSystem', 'EmergencySystem'];
-    
-    criticalSystems.forEach(systemName => {
-        if (window[systemName] && window[`_original_${systemName}`]) {
-            console.warn(`⚠️  ${systemName} já existe! Usando instância original.`);
-            // Restaurar instância original
-            window[systemName] = window[`_original_${systemName}`];
-        } else if (window[systemName]) {
-            // Armazenar primeira instância como original
-            window[`_original_${systemName}`] = window[systemName];
-        }
-    });
-    
-    // Prevenir duplicação de funções específicas
-    const criticalFunctions = ['processAndSavePdfs', 'clearAllPdfs', 'loadExistingPdfsForEdit'];
-    
-    criticalFunctions.forEach(funcName => {
-        if (window[funcName] && typeof window[funcName] === 'function') {
-            console.log(`✅ ${funcName} disponível no escopo global`);
-            
-            // Se também existe no MediaSystem, garantir consistência
-            if (window.MediaSystem && typeof window.MediaSystem[funcName] === 'function') {
-                console.log(`🔗 ${funcName} também disponível no MediaSystem`);
-                
-                // Forçar uso do MediaSystem como fonte da verdade
-                window[`_fallback_${funcName}`] = window[funcName];
-                window[funcName] = function(...args) {
-                    return window.MediaSystem[funcName].apply(window.MediaSystem, args);
-                };
-            }
-        }
-    });
-    
-    console.log('✅ Prevenção de duplicações configurada');
-})();
+console.log('✅ SharedCore.js pronto - 26 funções utilitárias centralizadas (3 migradas de admin.js)');
