@@ -140,75 +140,8 @@ const ADMIN_CONFIG = {
 window.editingPropertyId = null;
 
 // ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO ==========
-// ⭐⭐ NOVAS FUNÇÕES ADICIONADAS ⭐⭐
-window.formatPriceForInput = function(value) {
-    if (!value) return '';
-    
-    // Remove tudo que não for número
-    let numbersOnly = value.toString().replace(/\D/g, '');
-    
-    // Se não tem números, retorna vazio
-    if (numbersOnly === '') return '';
-    
-    // Converte para número inteiro
-    let priceNumber = parseInt(numbersOnly);
-    
-    // Formata como "R$ X.XXX" (sem centavos)
-    let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-    
-    return formatted;
-};
-
-// Função para obter apenas números do preço formatado
-window.getPriceNumbersOnly = function(formattedPrice) {
-    if (!formattedPrice) return '';
-    // Remove "R$ " e todos os pontos
-    return formattedPrice.replace('R$ ', '').replace(/\./g, '');
-};
-
-// ========== FORMATAÇÃO AUTOMÁTICA DO CAMPO PREÇO ==========
-function setupPriceAutoFormat() {
-    const priceField = document.getElementById('propPrice');
-    if (!priceField) return;
-    
-    // Formatar ao carregar (se já tiver valor)
-    if (priceField.value && !priceField.value.startsWith('R$')) {
-        priceField.value = window.formatPriceForInput(priceField.value);
-    }
-    
-    // Formatar ao digitar
-    priceField.addEventListener('input', function(e) {
-        // Permite backspace, delete, setas
-        if (e.inputType === 'deleteContentBackward' || 
-            e.inputType === 'deleteContentForward' ||
-            e.inputType === 'deleteByCut') {
-            return;
-        }
-        
-        // Salva posição do cursor
-        const cursorPos = this.selectionStart;
-        const originalValue = this.value;
-        
-        // Formata o valor
-        this.value = window.formatPriceForInput(this.value);
-        
-        // Ajusta posição do cursor
-        const diff = this.value.length - originalValue.length;
-        this.setSelectionRange(cursorPos + diff, cursorPos + diff);
-    });
-    
-    // Formatar ao perder foco (garantir formatação)
-    priceField.addEventListener('blur', function() {
-        if (this.value && !this.value.startsWith('R$')) {
-            this.value = window.formatPriceForInput(this.value);
-        }
-    });
-    
-    console.log('✅ Formatação automática de preço configurada');
-}
+// ⭐⭐ REMOVIDAS: Funções duplicadas foram movidas para SharedCore.js ⭐⭐
+// As funções agora estão disponíveis em window.SharedCore.formatPriceForInput()
 
 // ========== FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL ==========
 window.toggleAdminPanel = function() {
@@ -502,7 +435,7 @@ window.editProperty = function(id) {
             priceField.value = property.price;
         } else {
             // Formata o preço
-            priceField.value = window.formatPriceForInput(property.price) || '';
+            priceField.value = window.SharedCore.formatPriceForInput(property.price) || '';
         }
     }
     
@@ -685,7 +618,7 @@ window.setupForm = function() {
     const freshForm = document.getElementById('propertyForm');
     
     // ⭐⭐ CONFIGURAR FORMATAÇÃO AUTOMÁTICA DE PREÇO ⭐⭐
-    setupPriceAutoFormat();
+    window.SharedCore.setupPriceAutoFormat();
     
     // Configurar botão de submit
     const submitBtn = freshForm.querySelector('button[type="submit"]');
@@ -769,7 +702,7 @@ window.setupForm = function() {
                 
                 // 4.2 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
                 if (updateData.price && !updateData.price.startsWith('R$')) {
-                    updateData.price = window.formatPriceForInput(updateData.price);
+                    updateData.price = window.SharedCore.formatPriceForInput(updateData.price);
                 }
                 
                 // 4.3 PROCESSAR PDFs
@@ -878,7 +811,7 @@ window.setupForm = function() {
                 
                 // 4.6 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
                 if (propertyData.price && !propertyData.price.startsWith('R$')) {
-                    propertyData.price = window.formatPriceForInput(propertyData.price);
+                    propertyData.price = window.SharedCore.formatPriceForInput(propertyData.price);
                 }
                 
                 // 4.7 PROCESSAR MÍDIA PARA NOVO IMÓVEL
