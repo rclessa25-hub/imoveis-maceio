@@ -44,6 +44,76 @@ const SharedCore = (function() {
         return re.test(phone);
     };
 
+    // ========== FORMATAÇÃO DE PREÇO ==========
+    const formatPriceForInput = function(value) {
+        if (!value) return '';
+        
+        // Remove tudo que não for número
+        let numbersOnly = value.toString().replace(/\D/g, '');
+        
+        // Se não tem números, retorna vazio
+        if (numbersOnly === '') return '';
+        
+        // Converte para número inteiro
+        let priceNumber = parseInt(numbersOnly);
+        
+        // Formata como "R$ X.XXX" (sem centavos)
+        let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+        
+        return formatted;
+    };
+
+    // Função para obter apenas números do preço formatado
+    const getPriceNumbersOnly = function(formattedPrice) {
+        if (!formattedPrice) return '';
+        // Remove "R$ " e todos os pontos
+        return formattedPrice.replace('R$ ', '').replace(/\./g, '');
+    };
+
+    // ========== FORMATAÇÃO AUTOMÁTICA DO CAMPO PREÇO ==========
+    const setupPriceAutoFormat = function() {
+        const priceField = document.getElementById('propPrice');
+        if (!priceField) return;
+        
+        // Formatar ao carregar (se já tiver valor)
+        if (priceField.value && !priceField.value.startsWith('R$')) {
+            priceField.value = formatPriceForInput(priceField.value);
+        }
+        
+        // Formatar ao digitar
+        priceField.addEventListener('input', function(e) {
+            // Permite backspace, delete, setas
+            if (e.inputType === 'deleteContentBackward' || 
+                e.inputType === 'deleteContentForward' ||
+                e.inputType === 'deleteByCut') {
+                return;
+            }
+            
+            // Salva posição do cursor
+            const cursorPos = this.selectionStart;
+            const originalValue = this.value;
+            
+            // Formata o valor
+            this.value = formatPriceForInput(this.value);
+            
+            // Ajusta posição do cursor
+            const diff = this.value.length - originalValue.length;
+            this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+        });
+        
+        // Formatar ao perder foco (garantir formatação)
+        priceField.addEventListener('blur', function() {
+            if (this.value && !this.value.startsWith('R$')) {
+                this.value = formatPriceForInput(this.value);
+            }
+        });
+        
+        console.log('✅ Formatação automática de preço configurada');
+    };
+
     // ========== MANIPULAÇÃO DE STRINGS ==========
     const formatPrice = (price) => {
         if (!price && price !== 0) return 'R$ 0,00';
@@ -250,6 +320,11 @@ const SharedCore = (function() {
         isValidPhone,
         validateProperty,
         
+        // Formatação de Preço
+        formatPriceForInput,
+        getPriceNumbersOnly,
+        setupPriceAutoFormat,
+        
         // Strings
         formatPrice,
         truncateText,
@@ -283,7 +358,20 @@ const SharedCore = (function() {
 
 // Exportar para escopo global
 window.SharedCore = SharedCore;
-console.log('✅ SharedCore.js pronto - 23 funções utilitárias centralizadas');
+
+// ========== FALLBACK SEGURO PARA COMPATIBILIDADE ==========
+(function ensurePriceFormatting() {
+    if (!window.formatPriceForInput && window.SharedCore?.formatPriceForInput) {
+        window.formatPriceForInput = window.SharedCore.formatPriceForInput.bind(window.SharedCore);
+        console.log('✅ Função formatPriceForInput disponível via SharedCore');
+    }
+    if (!window.getPriceNumbersOnly && window.SharedCore?.getPriceNumbersOnly) {
+        window.getPriceNumbersOnly = window.SharedCore.getPriceNumbersOnly.bind(window.SharedCore);
+        console.log('✅ Função getPriceNumbersOnly disponível via SharedCore');
+    }
+})();
+
+console.log('✅ SharedCore.js pronto - 26 funções utilitárias centralizadas');
 
 // ========== WRAPPERS DE COMPATIBILIDADE ==========
 (function createCompatibilityWrappers() {
@@ -299,7 +387,10 @@ console.log('✅ SharedCore.js pronto - 23 funções utilitárias centralizadas'
         'isMobileDevice',
         'elementExists',
         'logModule',
-        'supabaseFetch'
+        'supabaseFetch',
+        'formatPriceForInput',
+        'getPriceNumbersOnly',
+        'setupPriceAutoFormat'
     ];
     
     functionsToWrap.forEach(funcName => {
