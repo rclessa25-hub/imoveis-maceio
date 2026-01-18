@@ -211,7 +211,10 @@ window.cleanAdminForm = function(mode = 'cancel') {
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
     
     if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
-    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+        cancelBtn.disabled = false; // GARANTIR estado ativo para próxima vez
+    }
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
         submitBtn.style.background = 'var(--primary)';
@@ -335,6 +338,10 @@ window.editProperty = function(id) {
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.style.display = 'block';
+        cancelBtn.disabled = false; // GARANTIR que não está desabilitado
+        cancelBtn.style.opacity = '1';
+        cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.pointerEvents = 'auto';
     }
 
     // Marcar modo edição
@@ -918,7 +925,7 @@ function addSyncButton() {
     
     const syncButton = document.createElement('button');
     syncButton.id = 'syncButton';
-    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
+    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
     syncButton.style.cssText = `
         background: var(--gold);
         color: white;
@@ -1205,14 +1212,14 @@ function initializeAdminSystem() {
     // 🔥 CRÍTICO: CONFIGURAR BOTÃO "CANCELAR EDIÇÃO"
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     if (cancelEditBtn) {
-        cancelEditBtn.removeAttribute('onclick');
+        cancelEditBtn.removeAttribute('onclick'); // Remover atributo antigo
         cancelEditBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🖱️ Botão "Cancelar Edição" clicado');
+            console.log('🖱️ Botão "Cancelar Edição" clicado - EVENTO ATIVO');
             window.cleanAdminForm('cancel');
         });
-        console.log('✅ Botão "Cancelar Edição" configurado');
+        console.log('✅ Botão "Cancelar Edição" configurado com listener');
     }
     
     // 3. Configurar formulário
@@ -1263,6 +1270,24 @@ function initializeAdminSystem() {
     }
    
     console.log('✅ Sistema admin inicializado');
+    
+    // Teste imediato do botão
+    setTimeout(() => {
+        const testCancelBtn = document.getElementById('cancelEditBtn');
+        if (testCancelBtn) {
+            console.log('✅ Botão Cancelar disponível:', {
+                display: testCancelBtn.style.display,
+                disabled: testCancelBtn.disabled,
+                onclick: !!testCancelBtn.onclick
+            });
+            
+            // Forçar visibilidade se em modo edição
+            if (window.editingPropertyId && testCancelBtn.style.display === 'none') {
+                testCancelBtn.style.display = 'block';
+                console.log('🔧 Forçando visibilidade do botão Cancelar');
+            }
+        }
+    }, 1000);
 }
 
 // ========== EXECUÇÃO AUTOMÁTICA ==========
