@@ -307,6 +307,99 @@ const SharedCore = (function() {
         }
     };
 
+    // ========== FUNÇÕES MIGRADAS DE UTILS.JS ==========
+
+    // Função de formatação de preço melhorada (substituir a atual)
+    const formatPriceEnhanced = (price) => {
+        if (!price && price !== 0) return 'R$ 0,00';
+        
+        // Se já é string formatada, retorna como está
+        if (typeof price === 'string' && price.includes('R$')) {
+            return price;
+        }
+        
+        // Converter para número
+        const numericPrice = parseFloat(price.toString().replace(/[^0-9,-]/g, '').replace(',', '.'));
+        
+        if (isNaN(numericPrice)) return 'R$ 0,00';
+        
+        // Formatar com separadores brasileiros
+        return numericPrice.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
+    // Função de logging aprimorada
+    const logModuleEnhanced = (moduleName, message, level = 'info', data = null) => {
+        const timestamp = new Date().toLocaleTimeString();
+        const prefix = `[${timestamp}] [${moduleName.toUpperCase()}]`;
+        
+        const levels = {
+            info: () => console.log(`${prefix} ℹ️ ${message}`, data || ''),
+            warn: () => console.warn(`${prefix} ⚠️ ${message}`, data || ''),
+            error: () => console.error(`${prefix} ❌ ${message}`, data || ''),
+            success: () => console.log(`${prefix} ✅ ${message}`, data || ''),
+            debug: () => console.debug(`${prefix} 🔍 ${message}`, data || '')
+        };
+        
+        (levels[level] || levels.info)();
+    };
+
+    // Função de validação de Supabase
+    const validateSupabaseConnection = async () => {
+        try {
+            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                }
+            });
+            
+            return {
+                connected: response.ok,
+                status: response.status,
+                online: response.ok ? '✅ CONECTADO' : '❌ OFFLINE'
+            };
+        } catch (error) {
+            return {
+                connected: false,
+                error: error.message,
+                online: '❌ ERRO DE CONEXÃO'
+            };
+        }
+    };
+
+    // Função de geração de ID único
+    const generateUniqueId = (prefix = 'id') => {
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2, 9);
+        return `${prefix}_${timestamp}_${random}`;
+    };
+
+    // Função de sanitização de texto
+    const sanitizeText = (text, maxLength = null) => {
+        if (!text) return '';
+        
+        // Remover HTML tags e trim
+        let sanitized = text.toString()
+            .replace(/<[^>]*>/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+        
+        // Truncar se necessário
+        if (maxLength && sanitized.length > maxLength) {
+            sanitized = sanitized.substring(0, maxLength - 3) + '...';
+        }
+        
+        return sanitized;
+    };
+
+    // Função de delay (para testes e animações)
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     // ========== API PÚBLICA ==========
     return {
         // Performance
@@ -321,7 +414,7 @@ const SharedCore = (function() {
         validateProperty,
         
         // Strings
-        formatPrice,
+        formatPrice: formatPriceEnhanced, // Substitui a antiga
         truncateText,
         stringSimilarity,
         
@@ -335,7 +428,7 @@ const SharedCore = (function() {
         createElement,
         
         // Logging
-        logModule,
+        logModule: logModuleEnhanced,     // Substitui a antiga
         
         // Supabase
         supabaseFetch,
@@ -352,7 +445,15 @@ const SharedCore = (function() {
                 console.error('❌ Erro ao copiar:', err);
                 return false;
             }
-        }
+        },
+        
+        // Novas funções migradas
+        formatPriceEnhanced,
+        logModuleEnhanced,
+        validateSupabaseConnection,
+        generateUniqueId,
+        sanitizeText,
+        delay
     };
 })();
 
@@ -381,18 +482,23 @@ setTimeout(() => {
     
     const tests = [
         {
-            name: 'formatPriceForInput disponível no SharedCore',
-            test: () => typeof window.SharedCore.formatPriceForInput === 'function',
+            name: 'formatPriceEnhanced disponível no SharedCore',
+            test: () => typeof window.SharedCore.formatPriceEnhanced === 'function',
             critical: true
         },
         {
-            name: 'getPriceNumbersOnly disponível no SharedCore',
-            test: () => typeof window.SharedCore.getPriceNumbersOnly === 'function',
+            name: 'logModuleEnhanced disponível no SharedCore',
+            test: () => typeof window.SharedCore.logModuleEnhanced === 'function',
             critical: true
         },
         {
-            name: 'setupPriceAutoFormat disponível no SharedCore',
-            test: () => typeof window.SharedCore.setupPriceAutoFormat === 'function',
+            name: 'validateSupabaseConnection disponível no SharedCore',
+            test: () => typeof window.SharedCore.validateSupabaseConnection === 'function',
+            critical: true
+        },
+        {
+            name: 'generateUniqueId disponível no SharedCore',
+            test: () => typeof window.SharedCore.generateUniqueId === 'function',
             critical: true
         },
         {
@@ -402,7 +508,7 @@ setTimeout(() => {
         },
         {
             name: 'Formatação R$ correta',
-            test: () => window.SharedCore.formatPriceForInput('450000') === 'R$ 450.000',
+            test: () => window.SharedCore.formatPriceEnhanced('450000') === 'R$ 450.000,00',
             critical: true
         },
         {
@@ -433,4 +539,4 @@ setTimeout(() => {
     console.groupEnd();
 }, 2000);
 
-console.log('✅ SharedCore.js pronto - 26 funções utilitárias centralizadas (4 funções migradas: 3 de admin.js + 1 de properties.js)');
+console.log('✅ SharedCore.js pronto - 33 funções utilitárias centralizadas');
