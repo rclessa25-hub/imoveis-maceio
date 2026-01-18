@@ -129,13 +129,6 @@ const ADMIN_CONFIG = {
     storageKey: "weberlessa_properties"
 };
 
-/* ==========================================================
-   SISTEMA DE LOADING AGORA É EXTERNO (loading-manager.js)
-   ========================================================== */
-
-// REMOVIDO: Fallback do LoadingManager (linhas 157-2578 do código original)
-// O LoadingManager agora é um módulo independente carregado antes do admin.js
-
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
 
@@ -664,7 +657,7 @@ window.setupForm = function() {
         e.preventDefault();
         console.group('🚀 SUBMISSÃO DO FORMULÁRIO ADMIN');
         
-        // 1. INICIAR LOADING (AGORA USANDO MÓDULO EXTERNO)
+        // 1. INICIAR LOADING (USANDO MÓDULO EXTERNO LoadingManager)
         if (!window.LoadingManager || typeof window.LoadingManager.show !== 'function') {
             console.error('❌ LoadingManager não disponível! Usando fallback simples...');
             alert('⚠️ Sistema temporariamente indisponível. Recarregue a página.');
@@ -673,7 +666,8 @@ window.setupForm = function() {
         
         const loading = window.LoadingManager.show(
             'Salvando Imóvel...', 
-            'Por favor, aguarde enquanto processamos todos os dados.'
+            'Por favor, aguarde enquanto processamos todos os dados.',
+            { variant: 'processing' }
         );
         
         // Desabilitar botão de submit
@@ -701,6 +695,7 @@ window.setupForm = function() {
             
             // 3. VALIDAÇÃO BÁSICA
             if (!propertyData.title || !propertyData.price || !propertyData.location) {
+                loading.setVariant('error');
                 loading.updateMessage('Preencha Título, Preço e Localização!');
                 setTimeout(() => {
                     loading.hide();
@@ -814,6 +809,7 @@ window.setupForm = function() {
                         console.log('✅ Imóvel atualizado com sucesso no banco de dados!');
                         
                         // Feedback final
+                        loading.setVariant('success');
                         loading.updateMessage('Imóvel atualizado com sucesso!');
                         
                         // Mostrar resumo para o usuário
@@ -829,6 +825,7 @@ window.setupForm = function() {
                         }, 800);
                         
                     } else {
+                        loading.setVariant('error');
                         loading.updateMessage('Falha na atualização');
                         setTimeout(() => {
                             loading.hide();
@@ -902,6 +899,7 @@ window.setupForm = function() {
                         console.log(`✅ Novo imóvel criado com ID: ${newProperty.id}`);
 
                         // Feedback final
+                        loading.setVariant('success');
                         loading.updateMessage('Imóvel cadastrado com sucesso!');
                         
                         // Mostrar resumo
@@ -920,6 +918,7 @@ window.setupForm = function() {
                         }, 800);
                         
                     } else {
+                        loading.setVariant('error');
                         loading.updateMessage('Falha na criação');
                         setTimeout(() => {
                             loading.hide();
@@ -936,6 +935,7 @@ window.setupForm = function() {
             // 5. TRATAMENTO DE ERROS
             console.error('❌ ERRO CRÍTICO no processamento do formulário:', error);
             
+            loading.setVariant('error');
             loading.updateMessage(error.message || 'Erro desconhecido');
             
             setTimeout(() => {
