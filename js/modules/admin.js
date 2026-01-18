@@ -925,7 +925,7 @@ function addSyncButton() {
     
     const syncButton = document.createElement('button');
     syncButton.id = 'syncButton';
-    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
     syncButton.style.cssText = `
         background: var(--gold);
         color: white;
