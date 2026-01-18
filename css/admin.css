@@ -375,6 +375,28 @@
     pointer-events: none !important;
 }
 
+/* ========== CORREÇÃO DEFINITIVA DO BOTÃO "CANCELAR EDIÇÃO" ========== */
+/* GARANTIR QUE NENHUM ELEMENTO PAI ESTEJA BLOQUEANDO CLIQUES */
+#cancelEditBtn {
+    position: relative !important;
+    z-index: 1000 !important;
+}
+
+#propertyForm * {
+    pointer-events: auto !important;
+}
+
+/* Feedback visual para estado de cancelamento */
+#cancelEditBtn.cancelling {
+    animation: pulseCancel 0.5s ease;
+}
+
+@keyframes pulseCancel {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); box-shadow: 0 0 0 5px rgba(149, 165, 166, 0.3); }
+    100% { transform: scale(1); }
+}
+
 /* Área de upload */
 #uploadArea,
 #pdfUploadArea {
