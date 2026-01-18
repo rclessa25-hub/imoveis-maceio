@@ -877,7 +877,7 @@ function setupPriceAutoFormatFallback() {
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
 window.syncWithSupabaseManual = async function() {
-    if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
+    if (confirm('🔄 Sincronizar?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
         console.log('🔄 Iniciando sincronização manual...');
         
         const syncBtn = document.getElementById('syncButton');
@@ -908,7 +908,7 @@ window.syncWithSupabaseManual = async function() {
         } finally {
             if (syncBtn) {
                 syncBtn.disabled = false;
-                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
+                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
             }
         }
     }
@@ -925,7 +925,7 @@ function addSyncButton() {
     
     const syncButton = document.createElement('button');
     syncButton.id = 'syncButton';
-    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
+    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
     syncButton.style.cssText = `
         background: var(--gold);
         color: white;
