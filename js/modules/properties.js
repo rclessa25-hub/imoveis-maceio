@@ -868,31 +868,6 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// Função auxiliar para similaridade de strings (usando SharedCore se disponível)
-// NOTA: A função stringSimilarity foi migrada para SharedCore.js
-// Esta função mantém compatibilidade temporária
-function getStringSimilarity(str1, str2) {
-    if (window.SharedCore && typeof window.SharedCore.stringSimilarity === 'function') {
-        return window.SharedCore.stringSimilarity(str1, str2);
-    }
-    
-    // Fallback local temporário (deve ser removido após validação)
-    if (!str1 || !str2) return 0;
-    
-    str1 = str1.toLowerCase();
-    str2 = str2.toLowerCase();
-    
-    if (str1 === str2) return 1;
-    if (str1.length < 2 || str2.length < 2) return 0;
-    
-    let match = 0;
-    for (let i = 0; i < Math.min(str1.length, str2.length); i++) {
-        if (str1[i] === str2[i]) match++;
-    }
-    
-    return match / Math.max(str1.length, str2.length);
-}
-
 // ========== FUNÇÃO 10: EXCLUIR IMÓVEL (COM SUPABASE E CACHE INTELIGENTE) ==========
 window.deleteProperty = async function(id) {
     console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
