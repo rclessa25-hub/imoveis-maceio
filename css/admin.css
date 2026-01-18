@@ -354,6 +354,27 @@
     background: #7f8c8d;
 }
 
+/* ========== GARANTIR QUE BOTÃO CANCELAR SEJA SEMPRE CLICÁVEL ========== */
+/* ADICIONADO POR RECOMENDAÇÃO DE MELHORIA - ETAPA 16.1 */
+#cancelEditBtn {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    transition: all 0.3s ease !important;
+}
+
+#cancelEditBtn:hover {
+    background: #7f8c8d !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3) !important;
+}
+
+#cancelEditBtn:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
 /* Área de upload */
 #uploadArea,
 #pdfUploadArea {
