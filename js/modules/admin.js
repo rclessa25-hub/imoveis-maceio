@@ -178,37 +178,66 @@ window.toggleAdminPanel = function() {
 };
 
 // ========== FUNÇÕES DO FORMULÁRIO ==========
-// ATUALIZADO: FUNÇÃO UNIFICADA DE LIMPEZA COM VERSÃO CORRIGIDA DA ETAPA 16.1
+// ========== FUNÇÃO UNIFICADA DE LIMPEZA - VERSÃO ROBUSTA ==========
 window.cleanAdminForm = function(mode = 'cancel') {
-    console.group(`🧹 [admin.js] LIMPEZA COMPLETA DO FORMULÁRIO (${mode})`);
+    console.group(`🧹 [admin.js] LIMPEZA COMPLETA DO FORMULÁRIO (${mode}) - VERSÃO ROBUSTA`);
     
-    // 1. RESETAR ESTADO DE EDIÇÃO (CRÍTICO)
-    window.editingPropertyId = null;
-    console.log('✅ Estado de edição resetado');
-    
-    // 2. RESETAR CAMPOS DO FORMULÁRIO
-    const form = document.getElementById('propertyForm');
-    if (form) {
-        form.reset();
-        console.log('✅ Campos do formulário resetados');
+    // 1. FEEDBACK VISUAL IMEDIATO NO BOTÃO
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn && mode === 'cancel') {
+        cancelBtn.classList.add('cancelling');
+        setTimeout(() => cancelBtn.classList.remove('cancelling'), 500);
     }
     
-    // 3. LIMPAR SISTEMA DE MÍDIA COMPLETAMENTE
+    // 2. RESETAR ESTADO DE EDIÇÃO (CRÍTICO)
+    window.editingPropertyId = null;
+    window.editingProperty = null;
+    console.log('✅ Estado de edição resetado');
+    
+    // 3. RESETAR CAMPOS DO FORMULÁRIO COM SEGURANÇA
+    const form = document.getElementById('propertyForm');
+    if (form) {
+        // Reset seguro do formulário
+        try {
+            form.reset();
+            console.log('✅ Campos do formulário resetados');
+        } catch (e) {
+            console.warn('⚠️ Reset do formulário falhou, limpando manualmente');
+            // Limpeza manual de campos críticos
+            const fields = ['propTitle', 'propPrice', 'propLocation', 'propDescription', 'propFeatures'];
+            fields.forEach(id => {
+                const field = document.getElementById(id);
+                if (field) field.value = '';
+            });
+        }
+    }
+    
+    // 4. LIMPAR SISTEMA DE MÍDIA COMPLETAMENTE
     if (window.MediaSystem && typeof MediaSystem.resetState === 'function') {
         MediaSystem.resetState();
         console.log('✅ Sistema de mídia limpo');
     }
     
-    // 4. LIMPAR PDFs (se houver sistema específico)
+    // 5. LIMPAR PDFs (se houver sistema específico)
     if (typeof window.clearAllPdfs === 'function') {
         window.clearAllPdfs();
         console.log('✅ PDFs limpos');
     }
     
-    // 5. ATUALIZAR UI DO FORMULÁRIO (CRÍTICO PARA VISUAL)
+    // 6. LIMPAR SEÇÕES DE PDF ESPECÍFICAS DO ADMIN
+    const pdfSections = ['newPdfsSection', 'existingPdfsSection'];
+    pdfSections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.innerHTML = '';
+            console.log(`✅ Seção ${sectionId} limpa`);
+        }
+    });
+    
+    // 7. ATUALIZAR UI DO FORMULÁRIO (CRÍTICO PARA VISUAL)
     const formTitle = document.getElementById('formTitle');
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    const formAction = document.getElementById('formAction');
+    const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
     
     // Restaurar título original
     if (formTitle) {
@@ -216,11 +245,22 @@ window.cleanAdminForm = function(mode = 'cancel') {
         console.log('✅ Título do formulário restaurado');
     }
     
+    // Restaurar texto da ação
+    if (formAction) {
+        formAction.textContent = 'Adicionar Imóvel';
+        console.log('✅ Texto da ação restaurado');
+    }
+    
     // Esconder botão Cancelar (MUDANÇA IMPORTANTE)
     if (cancelBtn) {
         cancelBtn.style.display = 'none';
         cancelBtn.disabled = false; // Garantir que não fique desabilitado
-        console.log('✅ Botão "Cancelar Edição" ocultado');
+        cancelBtn.style.opacity = '1';
+        cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.pointerEvents = 'auto';
+        cancelBtn.style.visibility = 'visible';
+        cancelBtn.style.zIndex = '1000'; // Garantir sobreposição
+        console.log('✅ Botão "Cancelar Edição" ocultado e estado resetado');
     }
     
     // Restaurar botão de submit
@@ -228,10 +268,11 @@ window.cleanAdminForm = function(mode = 'cancel') {
         submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
         submitBtn.style.background = 'var(--success)';
         submitBtn.disabled = false;
+        submitBtn.style.zIndex = 'auto'; // Resetar z-index
         console.log('✅ Botão de submit restaurado');
     }
     
-    // 6. LIMPAR QUALQUER CACHE DE PREVIEW
+    // 8. LIMPAR QUALQUER CACHE DE PREVIEW
     if (document.getElementById('uploadPreview')) {
         document.getElementById('uploadPreview').innerHTML = '';
     }
@@ -239,24 +280,81 @@ window.cleanAdminForm = function(mode = 'cancel') {
         document.getElementById('pdfUploadPreview').innerHTML = '';
     }
     
-    // 7. REMOVER DESTAQUE VISUAL (se houver)
+    // 9. REMOVER DESTAQUE VISUAL (se houver)
     if (form) {
         form.style.boxShadow = '';
+        form.style.zIndex = 'auto';
     }
     
-    // 8. FOCAR NO CAMPO TÍTULO PARA PRÓXIMA INTERAÇÃO
+    // 10. FOCAR NO CAMPO TÍTULO PARA PRÓXIMA INTERAÇÃO
     setTimeout(() => {
         const titleField = document.getElementById('propTitle');
         if (titleField) {
             titleField.focus();
-            console.log('✅ Foco restaurado no campo título');
+            // Posicionar cursor no final
+            const textLength = titleField.value.length;
+            titleField.setSelectionRange(textLength, textLength);
+            console.log('✅ Foco restaurado no campo título (cursor no final)');
         }
     }, 100);
+    
+    // 11. DISPARAR EVENTO PARA SISTEMAS EXTERNOS
+    try {
+        const cancelEvent = new CustomEvent('adminFormCancelled', { 
+            detail: { mode: mode, timestamp: Date.now() }
+        });
+        document.dispatchEvent(cancelEvent);
+        console.log('✅ Evento adminFormCancelled disparado');
+    } catch (e) {
+        console.log('ℹ️ Evento custom não suportado');
+    }
     
     console.log(`✅ Formulário completamente limpo (modo: ${mode})`);
     console.groupEnd();
     
     return true;
+};
+
+// ========== FUNÇÃO ESPECÍFICA cancelEdit PARA COMPATIBILIDADE ==========
+window.cancelEdit = function() {
+    console.group('🚨 INICIANDO CANCELAMENTO DE EDIÇÃO (Função direta)');
+    
+    try {
+        // CONFIRMAÇÃO DE CANCELAMENTO (apenas se estiver editando)
+        if (window.editingPropertyId) {
+            const confirmCancel = confirm('Deseja realmente cancelar a edição?\n\nTodas as alterações serão perdidas.');
+            if (!confirmCancel) {
+                console.log('❌ Cancelamento abortado pelo usuário');
+                console.groupEnd();
+                return false;
+            }
+        }
+        
+        // Chamar a função unificada de limpeza
+        const result = window.cleanAdminForm('cancel');
+        
+        // Feedback visual opcional
+        if (window.showNotification) {
+            window.showNotification('Edição cancelada com sucesso', 'info');
+        }
+        
+        console.groupEnd();
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Erro ao cancelar edição:', error);
+        console.groupEnd();
+        
+        // Fallback emergencial
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (cancelBtn) {
+            cancelBtn.style.display = 'none';
+            cancelBtn.disabled = false;
+        }
+        
+        window.editingPropertyId = null;
+        return false;
+    }
 };
 
 window.loadPropertyList = function() {
@@ -301,7 +399,6 @@ window.loadPropertyList = function() {
 };
 
 // ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA, SCROLL E FORMATAÇÃO DE PREÇO ==========
-// ATUALIZADO: ADICIONADO VISIBILIDADE DO BOTÃO CANCELAR (ETAPA 16.1 - PASSO 5)
 window.editProperty = function(id) {
     console.log(`📝 EDITANDO IMÓVEL ${id} (MediaSystem unificado ativo)`);
 
@@ -379,6 +476,7 @@ window.editProperty = function(id) {
         cancelBtn.style.cursor = 'pointer';
         cancelBtn.style.pointerEvents = 'auto';
         cancelBtn.style.visibility = 'visible'; // ADICIONAR ESTA LINHA CRÍTICA
+        cancelBtn.style.zIndex = '1000'; // GARANTIR SOBREPOSIÇÃO
         
         console.log('✅ Botão "Cancelar Edição" tornado visível');
     }
@@ -1248,39 +1346,36 @@ function initializeAdminSystem() {
         console.log('✅ Botão admin configurado');
     }
     
-    // 🔥 CRÍTICO: CONFIGURAR BOTÃO "CANCELAR EDIÇÃO" COM CONFIRMAÇÃO
-    // ATUALIZADO: ETAPA 16.1 - PASSO 2 E 3
+    // 🔥 CRÍTICO: CONFIGURAR BOTÃO "CANCELAR EDIÇÃO" COM CONFIRMAÇÃO E ROBUSTEZ
+    // ATUALIZADO: ETAPA 16.1 - VERSÃO DEFINITIVA
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     if (cancelEditBtn) {
-        cancelEditBtn.removeAttribute('onclick'); // Remover atributo antigo
+        // REMOVER QUALQUER LISTENER ANTIGO para evitar duplicação
+        const newCancelBtn = cancelEditBtn.cloneNode(true);
+        cancelEditBtn.parentNode.replaceChild(newCancelBtn, cancelEditBtn);
         
-        cancelEditBtn.addEventListener('click', function(e) {
+        // CONFIGURAR NOVO LISTENER ROBUSTO
+        const freshCancelBtn = document.getElementById('cancelEditBtn');
+        
+        freshCancelBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
             
-            console.log('🖱️ Botão "Cancelar Edição" clicado');
+            console.log('🎯 Botão "Cancelar Edição" clicado (evento direto e protegido)');
             
-            // CONFIRMAÇÃO DE CANCELAMENTO (apenas se estiver editando)
-            if (window.editingPropertyId) {
-                const confirmCancel = confirm('Deseja realmente cancelar a edição?\n\nTodas as alterações serão perdidas.');
-                if (!confirmCancel) {
-                    console.log('❌ Cancelamento abortado pelo usuário');
-                    return;
-                }
-            }
-            
-            // EXECUTAR LIMPEZA
-            window.cleanAdminForm('cancel');
-            
-            // FEEDBACK VISUAL IMEDIATO
-            if (this.style.display !== 'none') {
-                this.style.display = 'none';
-            }
-            
-            console.log('✅ Edição cancelada com sucesso');
+            // Executar cancelamento através da função dedicada
+            window.cancelEdit();
         });
         
-        console.log('✅ Botão "Cancelar Edição" configurado com listener e confirmação');
+        // Configurar também via onclick para redundância
+        freshCancelBtn.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.cancelEdit();
+        };
+        
+        console.log('✅ Botão "Cancelar Edição" configurado com listener robusto e redundante');
     }
     
     // 3. Configurar formulário
@@ -1332,7 +1427,7 @@ function initializeAdminSystem() {
    
     console.log('✅ Sistema admin inicializado');
     
-    // Teste imediato do botão Cancelar - ETAPA 16.1 PASSO 4
+    // Teste imediato do botão Cancelar
     setTimeout(() => {
         const testCancelBtn = document.getElementById('cancelEditBtn');
         if (testCancelBtn) {
@@ -2239,8 +2334,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500);
 });
 
-console.log('✅ admin.js pronto e funcional');
-
 // CORREÇÃO DEFINITIVA: Ocultar botão de teste de upload
 function hideMediaTestButtonPermanently() {
     console.log('🔧 Ocultando botão de teste de mídia definitivamente...');
@@ -2343,8 +2436,6 @@ setTimeout(() => {
         console.log('💡 Use: testPdfAccessDirect(101) para testar com imóvel ID 101');
     }
 }, 3000);
-
-console.log('✅ admin.js pronto e funcional');
 
 // 🔧 PATCH TEMPORÁRIO: Corrigir checkbox "Tem vídeo" na edição
 document.addEventListener('DOMContentLoaded', function() {
@@ -2452,5 +2543,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('🎨 Estilos de loading visual aplicados');
 });
+
+// ========== VERIFICAÇÃO DE INTEGRIDADE DO BOTÃO CANCELAR ==========
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO DE INTEGRIDADE DO BOTÃO "CANCELAR EDIÇÃO"');
+    
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        console.log('📊 Status do botão Cancelar:');
+        console.log('- Display:', cancelBtn.style.display);
+        console.log('- Visibility:', cancelBtn.style.visibility);
+        console.log('- Opacity:', cancelBtn.style.opacity);
+        console.log('- Disabled:', cancelBtn.disabled);
+        console.log('- Z-Index:', cancelBtn.style.zIndex);
+        console.log('- Pointer Events:', cancelBtn.style.pointerEvents);
+        console.log('- Has onclick:', !!cancelBtn.onclick);
+        console.log('- Has event listeners:', cancelBtn.hasAttribute('listeners-checked'));
+        
+        // Teste de clique programático (apenas em debug)
+        if (window.location.search.includes('debug=cancel')) {
+            console.log('🧪 Testando funcionalidade do botão Cancelar...');
+            setTimeout(() => {
+                if (cancelBtn.style.display !== 'none') {
+                    cancelBtn.click();
+                }
+            }, 1000);
+        }
+    } else {
+        console.warn('⚠️ Botão "Cancelar Edição" não encontrado no DOM');
+    }
+    
+    // Verificar se a função cancelEdit está disponível
+    console.log('🎯 Função cancelEdit disponível:', typeof window.cancelEdit === 'function');
+    console.log('🎯 Função cleanAdminForm disponível:', typeof window.cleanAdminForm === 'function');
+}, 2000);
 
 console.log('✅ admin.js pronto e funcional - COM FORMATAÇÃO DE PREÇO IMPLEMENTADA VIA SharedCore');
