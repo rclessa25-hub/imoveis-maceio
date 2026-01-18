@@ -908,7 +908,7 @@ window.syncWithSupabaseManual = async function() {
         } finally {
             if (syncBtn) {
                 syncBtn.disabled = false;
-                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
             }
         }
     }
