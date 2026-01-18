@@ -918,7 +918,7 @@ function addSyncButton() {
     
     const syncButton = document.createElement('button');
     syncButton.id = 'syncButton';
-    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
     syncButton.style.cssText = `
         background: var(--gold);
         color: white;
@@ -1200,6 +1200,19 @@ function initializeAdminSystem() {
             window.toggleAdminPanel();
         });
         console.log('✅ Botão admin configurado');
+    }
+    
+    // 🔥 CRÍTICO: CONFIGURAR BOTÃO "CANCELAR EDIÇÃO"
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    if (cancelEditBtn) {
+        cancelEditBtn.removeAttribute('onclick');
+        cancelEditBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Botão "Cancelar Edição" clicado');
+            window.cleanAdminForm('cancel');
+        });
+        console.log('✅ Botão "Cancelar Edição" configurado');
     }
     
     // 3. Configurar formulário
