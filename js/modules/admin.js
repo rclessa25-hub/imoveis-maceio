@@ -224,7 +224,7 @@ const ADMIN_CONFIG = {
 window.editingPropertyId = null;
 
 // ========== FUNÇÃO UNIFICADA DE LIMPEZA - VERSÃO OTIMIZADA (50 linhas) ==========
-// SUBSTITUI: cleanAdminForm() (135 linhas) + cancelEdit() (40 linhas) + lógica parcial
+// SUBSTITUI: cleanAdminForm() (135 linha) + cancelEdit() (40 linhas) + lógica parcial
 window.cleanAdminForm = function(mode = 'cancel') {
     console.group(`🧹 [admin.js] FUNÇÃO UNIFICADA DE LIMPEZA (${mode})`);
     
@@ -565,7 +565,23 @@ window.setupAdminUI = function() {
     // 10. CONFIGURAÇÃO DO UPLOAD DE PDF (já tratada em outro lugar, apenas log)
     console.log('📄 Upload de PDFs delegado para MediaSystem (configurado separadamente)');
     
-    // 11. TESTE PÓS-CONFIGURAÇÃO
+    // 11. LIMPEZA DE BOTÕES DE TESTE (NOVA - substitui código morto)
+    setTimeout(() => {
+        // Remover botão de teste de mídia se existir
+        const mediaTestBtn = document.getElementById('media-test-btn');
+        if (mediaTestBtn) {
+            mediaTestBtn.remove();
+            console.log('🧹 Botão de teste de mídia removido');
+        }
+        
+        // Manter botão de emergência para acesso rápido
+        const emergencyBtn = document.getElementById('emergency-admin-btn');
+        if (emergencyBtn) {
+            console.log('⚠️ Botão de emergência mantido para acesso rápido');
+        }
+    }, 1000);
+    
+    // 12. TESTE PÓS-CONFIGURAÇÃO
     setTimeout(() => {
         console.log('🔍 Verificação pós-configuração:');
         
@@ -1693,7 +1709,7 @@ window.accessPdfDocuments = function() {
     });
 };
 
-// ========== VERIFICAÇÃO DE INTEGRIDADE DO BOTÃO CANCELAR ==========
+// ========== VERIFICAÇÃO DE INTEGRIDADE DO SISTEMA ==========
 setTimeout(() => {
     console.log('🔍 VERIFICAÇÃO DE INTEGRIDADE DO SISTEMA');
     
@@ -1719,7 +1735,8 @@ setTimeout(() => {
     console.log('📊 OTIMIZAÇÃO CONCLUÍDA:');
     console.log('- setupAdminUI: 80 linhas (substitui initializeAdminSystem + partes)');
     console.log('- adminPdfHandler: 65 linhas (substitui 5 funções)');
-    console.log('- Redução total: ~150+ linhas eliminadas');
+    console.log('- Código morto removido: ~186 linhas');
+    console.log('- Redução total: ~371+ linhas eliminadas');
 }, 2000);
 
-console.log('✅ admin.js pronto e funcional - COM WRAPPER DE PDFs E UI CONSOLIDADA');
+console.log('✅ admin.js pronto e funcional - LIMPO E OTIMIZADO');
