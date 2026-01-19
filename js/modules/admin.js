@@ -341,28 +341,19 @@ window.setupAdminUI = function() {
     }
     
     // 6. Correção de filtros
-    if (typeof window.fixFilterVisuals === 'function') {
-        setTimeout(() => window.fixFilterVisuals(), 800);
-        log.success('admin', 'Correção de filtros agendada');
-    }
+    // 6. Correção de filtros (substituir por FilterManager)
+   if (window.FilterManager) {
+       // Reconfigurar filtros com FilterManager
+       setTimeout(() => {
+           FilterManager.init((filterValue) => {
+               if (window.renderProperties) window.renderProperties(filterValue);
+           });
+       }, 1000);
+       log.success('admin', 'Filtros configurados via FilterManager');
+   }
     
     // 7. Observador de filtros
-    document.addEventListener('click', function(e) {
-        const clickedFilter = e.target.closest('.filter-btn');
-        if (clickedFilter) {
-            log.info('admin', `Filtro clicado: ${clickedFilter.textContent.trim()}`);
-            
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                if (btn !== clickedFilter) btn.classList.remove('active');
-            });
-            
-            clickedFilter.classList.add('active');
-            
-            const filter = clickedFilter.textContent.trim() === 'Todos' ? 'todos' : clickedFilter.textContent.trim();
-            if (window.renderProperties) window.renderProperties(filter);
-        }
-    });
-    log.success('admin', 'Observador de filtros ativo');
+    // REMOVIDO
     
     // 8. Remover botões de teste (se existirem)
     setTimeout(() => {
@@ -819,48 +810,7 @@ window.syncWithSupabaseManual = async function() {
 };
 
 // ========== CORREÇÃO DE FILTROS ==========
-window.fixFilterVisuals = function() {
-    log.info('admin', 'CORREÇÃO DE FILTROS VISUAIS');
-    
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    if (!filterButtons || filterButtons.length === 0) {
-        log.warn('admin', 'Nenhum botão de filtro encontrado');
-        return;
-    }
-    
-    filterButtons.forEach((button) => {
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-        
-        newButton.addEventListener('click', function handleFilterClick(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            log.info('admin', `Filtro clicado: "${this.textContent.trim()}"`);
-            
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.backgroundColor = '';
-                btn.style.color = '';
-                btn.style.borderColor = '';
-            });
-            
-            this.classList.add('active');
-            this.style.backgroundColor = 'var(--primary)';
-            this.style.color = 'white';
-            this.style.borderColor = 'var(--primary)';
-            
-            const filterText = this.textContent.trim();
-            const filter = filterText === 'Todos' ? 'todos' : filterText;
-            
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties(filter);
-            }
-        });
-    });
-    
-    log.success('admin', 'Filtros corrigidos');
-};
+// REMOVIDA
 
 // ========== CONFIGURAÇÃO DE UPLOAD DE PDF ==========
 setTimeout(() => {
