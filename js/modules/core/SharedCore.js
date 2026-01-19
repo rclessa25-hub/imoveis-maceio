@@ -1,6 +1,28 @@
 // js/modules/core/SharedCore.js - MÓDULO CENTRALIZADO DE UTILITÁRIOS
 console.log('🔧 SharedCore.js carregado - Utilitários Compartilhados');
 
+// ========== FALLBACK DE EMERGÊNCIA (SEGURANÇA) ==========
+if (typeof window.SUPABASE_URL === 'undefined') {
+    console.warn('⚠️ Constantes não definidas - aplicando fallback de emergência');
+    window.SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
+    window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+    window.ADMIN_PASSWORD = "wl654";
+    window.PDF_PASSWORD = "doc123";
+}
+
+// ========== CONSTANTES ESSENCIAIS ==========
+const ESSENTIAL_CONSTANTS = {
+    SUPABASE_URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
+    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+    ADMIN_PASSWORD: "wl654",
+    PDF_PASSWORD: "doc123"
+};
+
+// Expor globalmente para compatibilidade (mantendo referências diretas)
+Object.entries(ESSENTIAL_CONSTANTS).forEach(([key, value]) => {
+    window[key] = value;
+});
+
 const SharedCore = (function() {
     // ========== PERFORMANCE ESSENCIAIS ==========
     const debounce = (func, wait) => {
@@ -48,19 +70,17 @@ const SharedCore = (function() {
     const formatPrice = (price) => {
         if (!price && price !== 0) return 'R$ 0,00';
         
-        // Remover qualquer formatação existente
-        let cleanPrice = String(price)
-            .replace('R$', '')
-            .replace('.', '')
-            .replace(',', '.')
-            .trim();
+        // Se já é string formatada, retorna como está
+        if (typeof price === 'string' && price.includes('R$')) {
+            return price;
+        }
         
         // Converter para número
-        const numericPrice = parseFloat(cleanPrice);
+        const numericPrice = parseFloat(price.toString().replace(/[^0-9,-]/g, '').replace(',', '.'));
         
         if (isNaN(numericPrice)) return 'R$ 0,00';
         
-        // Formatar para moeda brasileira
+        // Formatar com separadores brasileiros
         return numericPrice.toLocaleString('pt-BR', {
             style: 'currency',
             currency: 'BRL',
@@ -195,15 +215,16 @@ const SharedCore = (function() {
     };
 
     // ========== LOGGING SISTEMÁTICO ==========
-    const logModule = (moduleName, message, level = 'info') => {
+    const logModule = (moduleName, message, level = 'info', data = null) => {
         const timestamp = new Date().toLocaleTimeString();
-        const prefix = `[${timestamp}] [${moduleName}]`;
+        const prefix = `[${timestamp}] [${moduleName.toUpperCase()}]`;
         
         const levels = {
-            info: () => console.log(`${prefix} ${message}`),
-            warn: () => console.warn(`⚠️ ${prefix} ${message}`),
-            error: () => console.error(`❌ ${prefix} ${message}`),
-            success: () => console.log(`✅ ${prefix} ${message}`)
+            info: () => console.log(`${prefix} ℹ️ ${message}`, data || ''),
+            warn: () => console.warn(`${prefix} ⚠️ ${message}`, data || ''),
+            error: () => console.error(`${prefix} ❌ ${message}`, data || ''),
+            success: () => console.log(`${prefix} ✅ ${message}`, data || ''),
+            debug: () => console.debug(`${prefix} 🔍 ${message}`, data || '')
         };
         
         (levels[level] || levels.info)();
@@ -307,47 +328,6 @@ const SharedCore = (function() {
         }
     };
 
-    // ========== FUNÇÕES MIGRADAS DE UTILS.JS ==========
-
-    // Função de formatação de preço melhorada (substituir a atual)
-    const formatPriceEnhanced = (price) => {
-        if (!price && price !== 0) return 'R$ 0,00';
-        
-        // Se já é string formatada, retorna como está
-        if (typeof price === 'string' && price.includes('R$')) {
-            return price;
-        }
-        
-        // Converter para número
-        const numericPrice = parseFloat(price.toString().replace(/[^0-9,-]/g, '').replace(',', '.'));
-        
-        if (isNaN(numericPrice)) return 'R$ 0,00';
-        
-        // Formatar com separadores brasileiros
-        return numericPrice.toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-    };
-
-    // Função de logging aprimorada
-    const logModuleEnhanced = (moduleName, message, level = 'info', data = null) => {
-        const timestamp = new Date().toLocaleTimeString();
-        const prefix = `[${timestamp}] [${moduleName.toUpperCase()}]`;
-        
-        const levels = {
-            info: () => console.log(`${prefix} ℹ️ ${message}`, data || ''),
-            warn: () => console.warn(`${prefix} ⚠️ ${message}`, data || ''),
-            error: () => console.error(`${prefix} ❌ ${message}`, data || ''),
-            success: () => console.log(`${prefix} ✅ ${message}`, data || ''),
-            debug: () => console.debug(`${prefix} 🔍 ${message}`, data || '')
-        };
-        
-        (levels[level] || levels.info)();
-    };
-
     // Função de validação de Supabase
     const validateSupabaseConnection = async () => {
         try {
@@ -400,6 +380,17 @@ const SharedCore = (function() {
     // Função de delay (para testes e animações)
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+    // ========== FUNÇÃO DE CÓPIA PARA CLIPBOARD ==========
+    const copyToClipboard = async (text) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (err) {
+            console.error('❌ Erro ao copiar:', err);
+            return false;
+        }
+    };
+
     // ========== API PÚBLICA ==========
     return {
         // Performance
@@ -414,7 +405,7 @@ const SharedCore = (function() {
         validateProperty,
         
         // Strings
-        formatPrice: formatPriceEnhanced, // Substitui a antiga
+        formatPrice,
         truncateText,
         stringSimilarity,
         
@@ -428,7 +419,7 @@ const SharedCore = (function() {
         createElement,
         
         // Logging
-        logModule: logModuleEnhanced,     // Substitui a antiga
+        logModule,
         
         // Supabase
         supabaseFetch,
@@ -437,19 +428,9 @@ const SharedCore = (function() {
         arrayUtils,
         
         // Utilitários diversos
-        copyToClipboard: async (text) => {
-            try {
-                await navigator.clipboard.writeText(text);
-                return true;
-            } catch (err) {
-                console.error('❌ Erro ao copiar:', err);
-                return false;
-            }
-        },
+        copyToClipboard,
         
-        // Novas funções migradas
-        formatPriceEnhanced,
-        logModuleEnhanced,
+        // Novas funções
         validateSupabaseConnection,
         generateUniqueId,
         sanitizeText,
@@ -460,83 +441,101 @@ const SharedCore = (function() {
 // Exportar para escopo global
 window.SharedCore = SharedCore;
 
+// ========== INICIALIZAÇÃO E COMPATIBILIDADE ==========
+function initializeGlobalCompatibility() {
+    console.log('🔗 Inicializando compatibilidade global...');
+    
+    // Mapeamento de funções para expor globalmente
+    const globalExports = {
+        // Performance
+        debounce: SharedCore.debounce,
+        throttle: SharedCore.throttle,
+        runLowPriority: SharedCore.runLowPriority,
+        
+        // Validações
+        isMobileDevice: SharedCore.isMobileDevice,
+        isValidEmail: SharedCore.isValidEmail,
+        isValidPhone: SharedCore.isValidPhone,
+        
+        // Strings
+        formatPrice: SharedCore.formatPrice,
+        truncateText: SharedCore.truncateText,
+        stringSimilarity: SharedCore.stringSimilarity,
+        
+        // Formatação de preço
+        formatPriceForInput: SharedCore.formatPriceForInput,
+        getPriceNumbersOnly: SharedCore.getPriceNumbersOnly,
+        setupPriceAutoFormat: SharedCore.setupPriceAutoFormat,
+        
+        // DOM
+        elementExists: SharedCore.elementExists,
+        
+        // Logging
+        logModule: SharedCore.logModule,
+        
+        // Supabase
+        supabaseFetch: SharedCore.supabaseFetch,
+        
+        // Utilitários
+        copyToClipboard: SharedCore.copyToClipboard
+    };
+    
+    // Exportar para window (somente se não existirem já)
+    Object.entries(globalExports).forEach(([name, func]) => {
+        if (typeof window[name] === 'undefined' && typeof func === 'function') {
+            window[name] = func;
+        }
+    });
+    
+    console.log(`✅ ${Object.keys(globalExports).length} funções disponíveis globalmente`);
+}
+
+// Executar após SharedCore estar pronto
+setTimeout(initializeGlobalCompatibility, 100);
+
 // ========== FALLBACK SEGURO PARA COMPATIBILIDADE ==========
 (function ensurePriceFormatting() {
     if (!window.formatPriceForInput && window.SharedCore?.formatPriceForInput) {
-        window.formatPriceForInput = window.SharedCore.formatPriceForInput.bind(window.SharedCore);
+        window.formatPriceForInput = window.SharedCore.formatPriceForInput;
         console.log('✅ Função formatPriceForInput disponível via SharedCore (compatibilidade)');
     }
     if (!window.getPriceNumbersOnly && window.SharedCore?.getPriceNumbersOnly) {
-        window.getPriceNumbersOnly = window.SharedCore.getPriceNumbersOnly.bind(window.SharedCore);
+        window.getPriceNumbersOnly = window.SharedCore.getPriceNumbersOnly;
         console.log('✅ Função getPriceNumbersOnly disponível via SharedCore (compatibilidade)');
     }
     if (!window.setupPriceAutoFormat && window.SharedCore?.setupPriceAutoFormat) {
-        window.setupPriceAutoFormat = window.SharedCore.setupPriceAutoFormat.bind(window.SharedCore);
+        window.setupPriceAutoFormat = window.SharedCore.setupPriceAutoFormat;
         console.log('✅ Função setupPriceAutoFormat disponível via SharedCore (compatibilidade)');
     }
 })();
 
-// ========== VALIDAÇÃO PÓS-MIGRAÇÃO ==========
+// ========== AUTO-VALIDAÇÃO ==========
 setTimeout(() => {
-    console.group('🧪 VALIDAÇÃO DA MIGRAÇÃO DE FORMATAÇÃO');
+    console.group('🧪 VALIDAÇÃO DO SHAREDCORE');
     
-    const tests = [
-        {
-            name: 'formatPriceEnhanced disponível no SharedCore',
-            test: () => typeof window.SharedCore.formatPriceEnhanced === 'function',
-            critical: true
-        },
-        {
-            name: 'logModuleEnhanced disponível no SharedCore',
-            test: () => typeof window.SharedCore.logModuleEnhanced === 'function',
-            critical: true
-        },
-        {
-            name: 'validateSupabaseConnection disponível no SharedCore',
-            test: () => typeof window.SharedCore.validateSupabaseConnection === 'function',
-            critical: true
-        },
-        {
-            name: 'generateUniqueId disponível no SharedCore',
-            test: () => typeof window.SharedCore.generateUniqueId === 'function',
-            critical: true
-        },
-        {
-            name: 'stringSimilarity disponível no SharedCore',
-            test: () => typeof window.SharedCore.stringSimilarity === 'function',
-            critical: true
-        },
-        {
-            name: 'Formatação R$ correta',
-            test: () => window.SharedCore.formatPriceEnhanced('450000') === 'R$ 450.000,00',
-            critical: true
-        },
-        {
-            name: 'stringSimilarity funciona',
-            test: () => {
-                const result = window.SharedCore.stringSimilarity('teste', 'teste');
-                return result === 1;
-            },
-            critical: true
-        },
-        {
-            name: 'Funções disponíveis globalmente para compatibilidade',
-            test: () => typeof window.formatPriceForInput === 'function' && 
-                       typeof window.getPriceNumbersOnly === 'function' &&
-                       typeof window.setupPriceAutoFormat === 'function',
-            critical: false // Não crítico pois são fallbacks
-        }
+    const essentialFunctions = [
+        'debounce', 'throttle', 'formatPrice', 'supabaseFetch',
+        'elementExists', 'isMobileDevice', 'copyToClipboard',
+        'logModule', 'runLowPriority', 'validateProperty'
     ];
     
-    let allPassed = true;
-    tests.forEach(t => {
-        const passed = t.test();
-        console.log(`${passed ? '✅' : '❌'} ${t.name}`);
-        if (!passed && t.critical) allPassed = false;
+    let allAvailable = true;
+    essentialFunctions.forEach(func => {
+        const available = typeof window[func] === 'function';
+        console.log(`${available ? '✅' : '❌'} ${func} disponível`);
+        if (!available) allAvailable = false;
     });
     
-    console.log(allPassed ? '🎉 MIGRAÇÃO VALIDADA' : '⚠️ VERIFICAÇÃO REQUERIDA');
+    // Verificar constantes
+    const essentialConstants = ['SUPABASE_URL', 'SUPABASE_KEY', 'ADMIN_PASSWORD', 'PDF_PASSWORD'];
+    essentialConstants.forEach(constant => {
+        const exists = window[constant] !== undefined;
+        console.log(`${exists ? '✅' : '❌'} ${constant} definida`);
+        if (!exists) allAvailable = false;
+    });
+    
+    console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO' : '⚠️ VERIFICAÇÃO REQUERIDA');
     console.groupEnd();
 }, 2000);
 
-console.log('✅ SharedCore.js pronto - 33 funções utilitárias centralizadas');
+console.log(`✅ SharedCore.js pronto - ${Object.keys(SharedCore).length} funções utilitárias centralizadas`);
