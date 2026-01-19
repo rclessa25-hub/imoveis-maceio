@@ -216,7 +216,6 @@ window.renderProperties = function(filter = 'todos') {
 };
 
 window.filterProperties = function(properties, filter) {
-    if (!properties || !Array.isArray(properties)) return [];
     if (filter === 'todos' || !filter) return properties;
     
     const filterMap = {
