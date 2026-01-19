@@ -140,9 +140,7 @@ window.loadPropertiesData = async function () {
             finalMessage = `✨ ${propertyCount} opções incríveis!`;
         } else if (propertyCount <= 20) {
             finalMessage = `🏘️ ${propertyCount} oportunidades em Maceió!`;
-        } else {
-            finalMessage = `🎉 ${propertyCount} imóveis para você explorar!`;
-        }
+        } 
         
         loading?.updateMessage?.(finalMessage);
         
