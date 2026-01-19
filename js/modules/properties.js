@@ -1,4 +1,4 @@
-// js/modules/properties.js - SISTEMA COMPLETO CORRIGIDO E OTIMIZADO (VERSÃO FINAL)
+// js/modules/properties.js - SISTEMA COMPLETO OTIMIZADO (VERSÃO FINAL)
 console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO OTIMIZADA COMPLETA)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
@@ -9,9 +9,9 @@ window.editingPropertyId = null;
 const propertyTemplateCache = new Map();
 window.lastFilter = 'todos';
 
-// ========== 1. FUNÇÃO OTIMIZADA: INICIALIZAÇÃO (SUBSTITUI LINHAS 9-259) ==========
-window.initializeProperties = async function () {
-    console.log('🔄 Inicializando sistema de propriedades (VERSÃO CONSOLIDADA)...');
+// ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO (RENOMEADA) ==========
+window.loadPropertiesData = async function () {
+    console.log('🔄 Carregando dados de propriedades (VERSÃO CONSOLIDADA)...');
 
     // Estratégias de carregamento em ordem de prioridade
     const strategies = {
@@ -71,7 +71,7 @@ window.initializeProperties = async function () {
             setTimeout(() => window.renderProperties('todos'), 100);
         }
 
-        console.log(`✅ Sistema de propriedades inicializado: ${window.properties.length} imóveis`);
+        console.log(`✅ Dados de propriedades carregados: ${window.properties.length} imóveis`);
         
     } catch (error) {
         console.error('❌ Erro crítico:', error);
@@ -744,7 +744,7 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados no admin`);
 };
 
-// ========== 12. SINCRONIZAÇÃO SIMPLIFICADA (SUBSTITUI FUNÇÕES COMPLEXAS) ==========
+// ========== 12. SINCRONIZAÇÃO SIMPLIFICADA (MANTIDA) ==========
 window.testSupabaseConnectionSimple = async function() {
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
         return { connected: false, error: 'Credenciais não configuradas' };
@@ -792,7 +792,7 @@ window.syncWithSupabase = async function() {
     }
 };
 
-// ========== 13. RECUPERAÇÃO ESSENCIAL (SUBSTITUI FUNÇÕES REDUNDANTES) ==========
+// ========== 13. RECUPERAÇÃO ESSENCIAL (MANTIDA) ==========
 (function essentialPropertiesRecovery() {
     const isDebug = window.location.search.includes('debug=true');
     
@@ -840,9 +840,9 @@ if (document.readyState === 'loading') {
 
         // Inicializar propriedades em baixa prioridade
         runLowPriority(() => {
-            if (typeof window.initializeProperties === 'function') {
-                window.initializeProperties();
-                console.log('⚙️ initializeProperties executada');
+            if (typeof window.loadPropertiesData === 'function') {
+                window.loadPropertiesData();
+                console.log('⚙️ loadPropertiesData executada');
             }
 
             // Configurar filtros também em baixa prioridade
@@ -859,9 +859,9 @@ if (document.readyState === 'loading') {
 
     // Inicializar direto em baixa prioridade
     runLowPriority(() => {
-        if (typeof window.initializeProperties === 'function') {
-            window.initializeProperties();
-            console.log('⚙️ initializeProperties executada');
+        if (typeof window.loadPropertiesData === 'function') {
+            window.loadPropertiesData();
+            console.log('⚙️ loadPropertiesData executada');
         }
 
         runLowPriority(() => {
