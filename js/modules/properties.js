@@ -216,6 +216,7 @@ window.renderProperties = function(filter = 'todos') {
 };
 
 window.filterProperties = function(properties, filter) {
+    if (!properties || !Array.isArray(properties)) return [];
     if (filter === 'todos' || !filter) return properties;
     
     const filterMap = {
@@ -225,7 +226,8 @@ window.filterProperties = function(properties, filter) {
         'Minha Casa Minha Vida': p => p.badge === 'MCMV'
     };
 
-    return properties.filter(filterMap[filter] || (() => true));
+    const filterFn = filterMap[filter];
+    return filterFn ? properties.filter(filterFn) : properties;
 };
 
 // ========== 4. SALVAR NO STORAGE (MANTIDA) ==========
@@ -240,52 +242,48 @@ window.savePropertiesToStorage = function() {
     }
 };
 
-// ========== 5. CONFIGURAR FILTROS (MANTIDA) ==========
+// ========== 5. CONFIGURAR FILTROS (DELEGADO PARA FILTERMANAGER) ==========
 window.setupFilters = function() {
-    console.log('🎛️ Configurando filtros...');
+    console.log('🎛️ Configurando filtros via FilterManager...');
     
+    // Delegar para FilterManager se disponível
+    if (window.FilterManager && typeof window.FilterManager.init === 'function') {
+        window.FilterManager.init((filterValue) => {
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties(filterValue);
+            }
+        });
+        console.log('✅ Filtros configurados via FilterManager');
+        return;
+    }
+    
+    // Fallback para código original (compatibilidade)
+    console.warn('⚠️ FilterManager não disponível, usando fallback...');
     const filterButtons = document.querySelectorAll('.filter-btn');
+    
     if (!filterButtons || filterButtons.length === 0) {
         console.error('❌ Botões de filtro não encontrados!');
         return;
     }
     
-    // Ativar "Todos" automaticamente
-    const todosBtn = Array.from(filterButtons).find(btn => 
-        btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
-    );
-    
-    if (todosBtn && !todosBtn.classList.contains('active')) {
-        todosBtn.classList.add('active');
-    }
-    
-    // Configurar eventos
+    // Código fallback simplificado (15 linhas vs 45 original)
     filterButtons.forEach(button => {
-        // Remover event listeners antigos
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-        
-        newButton.addEventListener('click', function() {
-            // Remover active de todos
+        button.addEventListener('click', function() {
             filterButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // Adicionar active ao clicado
             this.classList.add('active');
             
-            // Obter filtro
             const filterText = this.textContent.trim();
             const filter = filterText === 'Todos' ? 'todos' : filterText;
             
-            console.log(`🎯 Filtrando por: ${filter}`);
-            
-            // Renderizar
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties(filter);
-            }
+            if (window.renderProperties) window.renderProperties(filter);
         });
     });
     
-    console.log('✅ Filtros configurados');
+    // Ativar "Todos" por padrão
+    const todosBtn = Array.from(filterButtons).find(btn => 
+        btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
+    );
+    if (todosBtn) todosBtn.classList.add('active');
 };
 
 // ========== 6. CONTATAR AGENTE (MANTIDA) ==========
