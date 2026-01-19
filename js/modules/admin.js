@@ -340,22 +340,18 @@ window.setupAdminUI = function() {
         log.success('admin', 'Função setupForm executada');
     }
     
-    // 6. Correção de filtros
     // 6. Correção de filtros (substituir por FilterManager)
-   if (window.FilterManager) {
-       // Reconfigurar filtros com FilterManager
-       setTimeout(() => {
-           FilterManager.init((filterValue) => {
-               if (window.renderProperties) window.renderProperties(filterValue);
-           });
-       }, 1000);
-       log.success('admin', 'Filtros configurados via FilterManager');
-   }
+    if (window.FilterManager) {
+        // Reconfigurar filtros com FilterManager
+        setTimeout(() => {
+            FilterManager.init((filterValue) => {
+                if (window.renderProperties) window.renderProperties(filterValue);
+            });
+        }, 1000);
+        log.success('admin', 'Filtros configurados via FilterManager');
+    }
     
-    // 7. Observador de filtros
-    // REMOVIDO
-    
-    // 8. Remover botões de teste (se existirem)
+    // 7. Remover botões de teste (se existirem)
     setTimeout(() => {
         const testBtn = document.getElementById('media-test-btn');
         if (testBtn) testBtn.remove();
@@ -809,9 +805,6 @@ window.syncWithSupabaseManual = async function() {
     }
 };
 
-// ========== CORREÇÃO DE FILTROS ==========
-// REMOVIDA
-
 // ========== CONFIGURAÇÃO DE UPLOAD DE PDF ==========
 setTimeout(() => {
     const pdfFileInput = document.getElementById('pdfFileInput');
@@ -986,6 +979,7 @@ setTimeout(() => {
     log.info('admin', '- cleanAdminForm consolidado: 170 → 40 linhas');
     log.info('admin', '- adminPdfHandler wrapper: 120 → 30 linhas');
     log.info('admin', '- Botões de teste removidos: 100 linhas');
+    log.info('admin', '- FilterManager implementado');
     log.info('admin', '- Redução total: ~350 linhas');
     log.info('admin', '- Formulário funcional: ✅ SIM');
     log.groupEnd();
