@@ -38,12 +38,11 @@ window.clearMediaSystemComplete = function() {
 };
 
 /* ==========================================================
-   1.2 WRAPPER ÚNICO PARA PDFs (120 → 30 linhas) - ATUALIZADO
+   1.2 WRAPPER ÚNICO PARA PDFs (120 → 30 linhas)
    ========================================================== */
 window.adminPdfHandler = {
     clear: function() {
         log.info('admin', 'adminPdfHandler.clear()');
-        // Prioridade: MediaSystem, depois PdfSystem
         return window.MediaSystem?.clearAllPdfs?.() || window.PdfSystem?.clearAllPdfs?.();
     },
     
@@ -918,11 +917,11 @@ window.ensurePdfModal = function() {
                 <input type="password" id="pdfPassword" placeholder="Digite a senha" 
                        style="width:100%;padding:0.8rem;border:1px solid #ddd;border-radius:5px;margin:1rem 0;">
                 <div style="display:flex;gap:1rem;margin-top:1rem;">
-                    <button onclick="window.PdfSystem?.validatePasswordAndShowList?.() || accessPdfDocuments()" 
+                    <button onclick="accessPdfDocuments()" 
                             style="background:var(--primary);color:white;padding:0.8rem 1.5rem;border:none;border-radius:5px;cursor:pointer;flex:1;">
                         <i class="fas fa-lock-open"></i> Acessar
                     </button>
-                    <button onclick="window.PdfSystem?.closeModal?.() || closePdfModal()" 
+                    <button onclick="closePdfModal()" 
                             style="background:#95a5a6;color:white;padding:0.8rem 1.5rem;border:none;border-radius:5px;cursor:pointer;">
                         <i class="fas fa-times"></i> Fechar
                     </button>
@@ -937,7 +936,6 @@ window.ensurePdfModal = function() {
 window.showPdfModal = function(propertyId) {
     log.info('admin', `showPdfModal chamado para ID: ${propertyId}`);
     
-    // DELEGAR PARA PdfSystem SE DISPONÍVEL
     if (window.PdfSystem?.showModal) {
         window.PdfSystem.showModal(propertyId);
         return;
