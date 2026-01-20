@@ -1,5 +1,22 @@
-// js/modules/media/media-unified.js - SISTEMA UNIFICADO DE MÍDIA (COM CORREÇÃO CRÍTICA)
-console.log('🔄 media-unified.js carregado - Sistema Centralizado COM CORREÇÃO DE URLS PERMANENTES');
+// js/modules/media/media-unified.js - VERSÃO DEFINITIVA COM CORREÇÃO DE SUPABASE
+console.log('🔄 media-unified.js - VERSÃO DEFINITIVA COM CONSTANTES FIXAS');
+
+// ========== CONSTANTES SUPABASE FIXAS (NUNCA USAR undefined) ==========
+const SUPABASE_CONSTANTS = {
+    URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
+    KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo'
+};
+
+// Garantir que as constantes globais existam
+if (typeof window.SUPABASE_URL === 'undefined' || window.SUPABASE_URL === 'undefined') {
+    window.SUPABASE_URL = SUPABASE_CONSTANTS.URL;
+    console.log('✅ SUPABASE_URL definida:', window.SUPABASE_URL.substring(0, 50) + '...');
+}
+
+if (typeof window.SUPABASE_KEY === 'undefined' || !window.SUPABASE_KEY) {
+    window.SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+    console.log('✅ SUPABASE_KEY definida');
+}
 
 /**
  * SISTEMA UNIFICADO DE MÍDIA - VERSÃO OTIMIZADA
@@ -877,7 +894,7 @@ const MediaSystem = {
             return addedCount;
         },
 
-        // ========== UPLOAD PARA SUPABASE - VERSÃO CORRIGIDA (SUBSTITUÍDA) ==========
+        // ========== UPLOAD PARA SUPABASE - VERSÃO DEFINITIVA COM CONSTANTES FIXAS ==========
         async uploadAll(propertyId, propertyTitle) {
             if (this.state.isUploading) {
                 console.warn('⚠️ Upload já em andamento');
@@ -885,33 +902,25 @@ const MediaSystem = {
             }
         
             this.state.isUploading = true;
-            console.group('🚀 UPLOAD UNIFICADO PARA SUPABASE (VERSÃO CORRIGIDA)');
-        
+            console.group('🚀 UPLOAD UNIFICADO DEFINITIVO - COM CONSTANTES FIXAS');
+            console.log(`📌 Property ID: ${propertyId}, Title: ${propertyTitle}`);
+            
             try {
-                const results = {
-                    images: '',
-                    pdfs: ''
-                };
-        
+                const results = { images: '', pdfs: '' };
+                
                 // 1. Processar exclusões primeiro
                 await this.processDeletions();
-        
-                // 2. Upload de fotos/vídeos (usar ordem visual)
-                if (this.state.files.length > 0 || this.state.existing.length > 0) {
-                    // Usar ordem atual dos itens
-                    const allMedia = [...this.state.existing, ...this.state.files]
-                        .filter(item => !item.markedForDeletion);
-        
-                    // Upload apenas dos novos
-                    const newFiles = allMedia.filter(item => item.isNew && item.file);
-                    if (newFiles.length > 0) {
-                        const imageUrls = await this.uploadFiles(
-                            newFiles.map(f => f.file),
-                            propertyId,
-                            'images'
-                        );
-                        
-                        // ✅ CRÍTICO: Atualizar estado com URLs permanentes
+                
+                // 2. Upload de fotos/vídeos
+                const newFiles = this.state.files.filter(item => item.isNew && item.file && !item.uploaded);
+                if (newFiles.length > 0) {
+                    console.log(`📸 ${newFiles.length} arquivo(s) de mídia para upload`);
+                    
+                    const fileObjects = newFiles.map(f => f.file);
+                    const imageUrls = await this.uploadFiles(fileObjects, propertyId, 'images');
+                    
+                    if (imageUrls.length > 0) {
+                        // Atualizar estado com URLs permanentes
                         newFiles.forEach((file, index) => {
                             if (imageUrls[index]) {
                                 // Liberar URL temporária
@@ -921,7 +930,7 @@ const MediaSystem = {
                                 
                                 // Atualizar com URL permanente
                                 file.url = imageUrls[index];
-                                file.preview = imageUrls[index]; // IMPORTANTE
+                                file.preview = imageUrls[index];
                                 file.uploaded = true;
                                 file.isNew = false;
                                 
@@ -931,54 +940,63 @@ const MediaSystem = {
                         
                         results.images = imageUrls.join(',');
                     }
-        
-                    // Adicionar existentes (já ordenados)
-                    const existingUrls = allMedia
-                        .filter(item => item.isExisting && item.url && !item.markedForDeletion)
-                        .map(item => item.url);
-        
-                    if (existingUrls.length > 0) {
-                        results.images = results.images 
-                            ? `${results.images},${existingUrls.join(',')}`
-                            : existingUrls.join(',');
+                }
+                
+                // 3. Upload de PDFs
+                const newPdfs = this.state.pdfs.filter(pdf => pdf.isNew && pdf.file && !pdf.uploaded);
+                if (newPdfs.length > 0) {
+                    console.log(`📄 ${newPdfs.length} PDF(s) para upload`);
+                    
+                    const pdfObjects = newPdfs.map(p => p.file);
+                    const pdfUrls = await this.uploadFiles(pdfObjects, propertyId, 'pdfs');
+                    
+                    if (pdfUrls.length > 0) {
+                        // Atualizar estado dos PDFs
+                        newPdfs.forEach((pdf, index) => {
+                            if (pdfUrls[index]) {
+                                pdf.url = pdfUrls[index];
+                                pdf.uploaded = true;
+                                pdf.isNew = false;
+                                console.log(`✅ PDF "${pdf.name}" atualizado com URL permanente`);
+                            }
+                        });
+                        
+                        results.pdfs = pdfUrls.join(',');
                     }
                 }
-        
-                // 3. Upload de PDFs
-                if (this.state.pdfs.length > 0) {
-                    const pdfUrls = await this.uploadFiles(
-                        this.state.pdfs.map(p => p.file),
-                        propertyId,
-                        'pdfs'
-                    );
-                    
-                    // ✅ CRÍTICO: Atualizar estado dos PDFs com URLs permanentes
-                    this.state.pdfs.forEach((pdf, index) => {
-                        if (pdfUrls[index]) {
-                            pdf.url = pdfUrls[index];
-                            pdf.uploaded = true;
-                            pdf.isNew = false;
-                            console.log(`✅ PDF "${pdf.name}" atualizado com URL permanente`);
-                        }
-                    });
-                    
-                    results.pdfs = pdfUrls.join(',');
-                }
-        
-                // 4. Combinar com arquivos existentes não excluídos
-                const keptExistingPdfs = this.state.existingPdfs
+                
+                // 4. Adicionar arquivos existentes
+                const existingUrls = this.state.existing
                     .filter(item => !item.markedForDeletion && item.url)
                     .map(item => item.url);
-        
-                if (keptExistingPdfs.length > 0) {
-                    results.pdfs = results.pdfs
-                        ? `${results.pdfs},${keptExistingPdfs.join(',')}`
-                        : keptExistingPdfs.join(',');
+                
+                if (existingUrls.length > 0) {
+                    if (results.images) {
+                        results.images = `${results.images},${existingUrls.join(',')}`;
+                    } else {
+                        results.images = existingUrls.join(',');
+                    }
                 }
-        
-                console.log('✅ Upload completo com URLs permanentes:', results);
+                
+                const existingPdfUrls = this.state.existingPdfs
+                    .filter(item => !item.markedForDeletion && item.url)
+                    .map(item => item.url);
+                
+                if (existingPdfUrls.length > 0) {
+                    if (results.pdfs) {
+                        results.pdfs = `${results.pdfs},${existingPdfUrls.join(',')}`;
+                    } else {
+                        results.pdfs = existingPdfUrls.join(',');
+                    }
+                }
+                
+                console.log('✅ Upload completo com URLs permanentes:', {
+                    images: results.images ? `${results.images.split(',').length} URL(s)` : 'Nenhuma',
+                    pdfs: results.pdfs ? `${results.pdfs.split(',').length} URL(s)` : 'Nenhum'
+                });
+                
                 return results;
-        
+                
             } catch (error) {
                 console.error('❌ Erro no upload unificado:', error);
                 return { images: '', pdfs: '' };
@@ -988,7 +1006,89 @@ const MediaSystem = {
             }
         },
 
-        // ========== FUNÇÃO PARA GARANTIR QUE URLS PERMANENTES SEJAM PRESERVADAS (AÇÃO 2) ==========
+        // ========== FUNÇÃO uploadFiles COM CONSTANTES FIXAS ==========
+        async uploadFiles(files, propertyId, type = 'images') {
+            console.group(`📤 UPLOAD FILES - CONSTANTES FIXAS (${files.length} arquivo(s))`);
+            
+            if (!files || files.length === 0) {
+                console.warn('⚠️ Nenhum arquivo para upload');
+                console.groupEnd();
+                return [];
+            }
+            
+            // ✅ USAR CONSTANTES FIXAS, NUNCA window.SUPABASE_URL
+            const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+            
+            const bucket = this.config.buckets[this.config.currentSystem];
+            const uploadedUrls = [];
+            
+            console.log('🔧 Configuração:', {
+                filesCount: files.length,
+                propertyId,
+                type,
+                bucket,
+                SUPABASE_URL: SUPABASE_URL.substring(0, 50) + '...',
+                KEY_DISPONIVEL: SUPABASE_KEY ? '✅ Sim' : '❌ Não'
+            });
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                try {
+                    console.log(`⬆️ Upload ${i+1}/${files.length}: ${file.name} (${Math.round(file.size/1024)}KB)`);
+                    
+                    // Gerar nome único
+                    const fileName = this.generateFileName(file, propertyId, type);
+                    const filePath = `${bucket}/${fileName}`;
+                    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${filePath}`;
+                    
+                    console.log(`📁 URL de upload: ${uploadUrl.substring(0, 80)}...`);
+                    
+                    // Verificar se URL está correta
+                    if (!uploadUrl.includes('supabase.co')) {
+                        console.error('❌ URL INCORRETA! Deve conter "supabase.co"');
+                        console.error('URL atual:', uploadUrl);
+                        continue;
+                    }
+                    
+                    // Fazer upload
+                    const response = await fetch(uploadUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'apikey': SUPABASE_KEY,
+                            'Content-Type': file.type || 'application/octet-stream'
+                        },
+                        body: file
+                    });
+                    
+                    console.log(`📡 Resposta: ${response.status} ${response.statusText}`);
+                    
+                    if (response.ok) {
+                        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${filePath}`;
+                        uploadedUrls.push(publicUrl);
+                        console.log(`✅ Upload concluído: ${publicUrl.substring(0, 80)}...`);
+                    } else {
+                        const errorText = await response.text();
+                        console.error(`❌ Falha no upload ${file.name}:`, {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorText.substring(0, 200)
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.error(`❌ Erro ao enviar ${file.name}:`, error.message);
+                }
+            }
+            
+            console.log(`🎯 Resultado: ${uploadedUrls.length}/${files.length} sucesso(s)`);
+            console.groupEnd();
+            return uploadedUrls;
+        },
+
+        // ========== FUNÇÃO PARA GARANTIR QUE URLS PERMANENTES SEJAM PRESERVADAS ==========
         ensurePermanentUrls: function() {
             console.log('🔍 Verificando URLs permanentes...');
             
@@ -1005,8 +1105,7 @@ const MediaSystem = {
         },
 
         // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
-        // ADICIONADAS APÓS uploadAll 
-
+        
         processAndSavePdfs: async function(propertyId, propertyTitle) {
             console.group(`📄 MediaSystem.processAndSavePdfs CHAMADO para ${propertyId}`);
             console.log('🔍 Estado atual dos PDFs:');
@@ -1103,41 +1202,6 @@ const MediaSystem = {
             return true;
         },
         
-        async uploadFiles(files, propertyId, type = 'images') {
-            const bucket = this.config.buckets[this.config.currentSystem];
-            const uploadedUrls = [];
-            
-            for (const file of files) {
-                try {
-                    const fileName = this.generateFileName(file, propertyId, type);
-                    const filePath = `${bucket}/${fileName}`;
-                    
-                    const response = await fetch(
-                        `${window.SUPABASE_URL}/storage/v1/object/${filePath}`,
-                        {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                                'apikey': window.SUPABASE_KEY,
-                                'Content-Type': file.type
-                            },
-                            body: file
-                        }
-                    );
-                    
-                    if (response.ok) {
-                        const publicUrl = `${window.SUPABASE_URL}/storage/v1/object/public/${filePath}`;
-                        uploadedUrls.push(publicUrl);
-                        console.log(`✅ ${type} enviado: ${file.name}`);
-                    }
-                } catch (error) {
-                    console.error(`❌ Erro ao enviar ${file.name}:`, error);
-                }
-            }
-            
-            return uploadedUrls;
-        },
-        
         async processDeletions() {
             // Processar exclusões de fotos/vídeos
             const imagesToDelete = this.state.existing
@@ -1146,7 +1210,7 @@ const MediaSystem = {
             
             // Processar exclusões de PDFs
             const pdfsToDelete = this.state.existingPdfs
-                .filter(item => item.markedForDeletion && item.url)
+                .filter(item => item.markedForletion && item.url)
                 .map(item => item.url);
             
             // TODO: Implementar exclusão do Supabase Storage
@@ -1415,107 +1479,50 @@ const MediaSystem = {
     // Exportar para window
     window.MediaSystem = MediaSystem;
 
-    // ========== INICIALIZAÇÃO COM VERIFICAÇÃO DE PREVIEW (SUBSTITUÍDA) ==========
+    // ========== VERIFICAÇÃO DE CONSTANTES SUPABASE ==========
+    console.log('🔍 VERIFICAÇÃO FINAL DE CONSTANTES:');
+    console.log('- window.SUPABASE_URL:', window.SUPABASE_URL ? '✅ ' + window.SUPABASE_URL.substring(0, 50) + '...' : '❌ undefined');
+    console.log('- window.SUPABASE_KEY:', window.SUPABASE_KEY ? '✅ Disponível' : '❌ Indisponível');
+    
+    // Forçar correção se ainda estiver undefined
+    if (!window.SUPABASE_URL || window.SUPABASE_URL.includes('undefined')) {
+        console.warn('⚠️ CORRIGINDO SUPABASE_URL EM TEMPO DE EXECUÇÃO');
+        window.SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
+        window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+        console.log('✅ Constantes corrigidas:', window.SUPABASE_URL.substring(0, 50) + '...');
+    }
+
+    // ========== INICIALIZAÇÃO COM VERIFICAÇÃO ==========
     setTimeout(() => {
         window.MediaSystem.init('vendas');
-        console.log('✅ Sistema de mídia unificado pronto');
+        console.log('✅ Sistema de mídia unificado pronto com constantes fixas');
         
-        // Verificar se há previews quebrados após 3 segundos
-        setTimeout(() => {
-            const hasBrokenPreviews = [...window.MediaSystem.state.existing, ...window.MediaSystem.state.files]
-                .some(item => item.url && !item.preview);
+        // Adicionar função de teste
+        window.testMediaUpload = async function() {
+            console.group('🧪 TESTE DE UPLOAD MANUAL');
             
-            if (hasBrokenPreviews) {
-                console.warn('⚠️ Detectados previews quebrados, corrigindo...');
-                window.MediaSystem.forceReloadPreviews();
+            // Criar arquivo de teste
+            const testBlob = new Blob(['test'], { type: 'image/jpeg' });
+            const testFile = new File([testBlob], 'test_upload.jpg', { type: 'image/jpeg' });
+            
+            console.log('📁 Arquivo de teste criado');
+            
+            // Testar upload
+            const urls = await MediaSystem.uploadFiles([testFile], 'test_' + Date.now(), 'images');
+            
+            if (urls.length > 0) {
+                console.log('✅ UPLOAD FUNCIONOU! URL:', urls[0].substring(0, 100) + '...');
+                alert('✅ Upload funcionou! Verifique console.');
+            } else {
+                console.error('❌ UPLOAD FALHOU!');
+                alert('❌ Upload falhou. Verifique console.');
             }
-        }, 3000);
+            
+            console.groupEnd();
+        };
+        
+        console.log('💡 Execute window.testMediaUpload() para testar o upload');
+        
     }, 1000);
 
-    // ========== VERIFICAÇÃO AUTOMÁTICA DE URLS PERMANENTES (AÇÃO 4) ==========
-    setTimeout(() => {
-        console.log('🔍 VERIFICAÇÃO DE URLS PERMANENTES');
-        
-        const totalFiles = window.MediaSystem.state.files.length + window.MediaSystem.state.existing.length;
-        const permanentUrls = [...window.MediaSystem.state.files, ...window.MediaSystem.state.existing]
-            .filter(item => item.url && item.url.startsWith('http'))
-            .length;
-        
-        console.log(`📊 ${permanentUrls}/${totalFiles} URLs permanentes detectadas`);
-        
-        if (permanentUrls < totalFiles) {
-            console.warn('⚠️ Alguns arquivos não têm URLs permanentes');
-            window.MediaSystem.ensurePermanentUrls();
-        }
-    }, 5000);
-
-    // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
-
-    // Verificar se todas as funções necessárias estão disponíveis
-    setTimeout(() => {
-        console.log('🔍 Verificação de integridade do MediaSystem');
-        
-        const requiredFunctions = [
-            'addFiles',
-            'addPdfs', 
-            'loadExisting',
-            'resetState',
-            'uploadAll',
-            'processAndSavePdfs',
-            'clearAllPdfs',
-            'loadExistingPdfsForEdit',
-            'getPdfsToSave',
-            'getMediaUrlsForProperty',
-            'getOrderedMediaUrls',
-            'setupDragAndDrop',
-            'setupContainerDragEvents',
-            'getDragAfterElement',
-            'cleanupDragState',
-            'reorderItems',
-            'reorderCombinedArray',
-            'addVisualOrderIndicators',
-            'getMediaPreviewHTML',
-            'getImagePreview',
-            'getVideoPreview',
-            'getPdfPreview',
-            'getFallbackPreview',
-            'updateStateAfterUpload',
-            'isImageFile',
-            'isVideoFile',
-            'isPdfFile',
-            'forceReloadPreviews',
-            'ensurePermanentUrls' // ✅ NOVA FUNÇÃO ADICIONADA
-        ];
-        
-        const missing = [];
-        requiredFunctions.forEach(func => {
-            if (typeof MediaSystem[func] !== 'function') {
-                missing.push(func);
-            }
-        });
-        
-        if (missing.length === 0) {
-            console.log('✅ Todas as funções necessárias disponíveis');
-        } else {
-            console.error('❌ Funções faltando:', missing);
-        }
-    }, 2000);
-
-    // ========== COMPATIBILIDADE COM MÓDULOS DE SUPORTE ==========
-
-    // Criar fallbacks silenciosos para funções que os módulos de suporte podem procurar
-    if (typeof window.initMediaSystem === 'undefined') {
-        window.initMediaSystem = function() {
-            console.log('🔧 initMediaSystem chamada (fallback para compatibilidade)');
-            return MediaSystem ? MediaSystem.init('vendas') : null;
-        };
-    }
-
-    if (typeof window.updateMediaPreview === 'undefined') {
-        window.updateMediaPreview = function() {
-            console.log('🎨 updateMediaPreview chamada (fallback para compatibilidade)');
-            return MediaSystem ? MediaSystem.updateUI() : null;
-        };
-    }
-
-    console.log('✅ Sistema de mídia unificado pronto com correção crítica de URLs permanentes');
+    console.log('✅ media-unified.js carregado com correção definitiva');
