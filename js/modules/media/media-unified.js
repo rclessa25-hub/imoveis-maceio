@@ -882,25 +882,25 @@ const MediaSystem = {
                 console.warn('⚠️ Upload já em andamento');
                 return { images: '', pdfs: '' };
             }
-
+        
             this.state.isUploading = true;
             console.group('🚀 UPLOAD UNIFICADO PARA SUPABASE (VERSÃO CORRIGIDA)');
-
+        
             try {
                 const results = {
                     images: '',
                     pdfs: ''
                 };
-
+        
                 // 1. Processar exclusões primeiro
                 await this.processDeletions();
-
+        
                 // 2. Upload de fotos/vídeos (usar ordem visual)
                 if (this.state.files.length > 0 || this.state.existing.length > 0) {
                     // Usar ordem atual dos itens
                     const allMedia = [...this.state.existing, ...this.state.files]
                         .filter(item => !item.markedForDeletion);
-
+        
                     // Upload apenas dos novos
                     const newFiles = allMedia.filter(item => item.isNew && item.file);
                     if (newFiles.length > 0) {
@@ -909,21 +909,40 @@ const MediaSystem = {
                             propertyId,
                             'images'
                         );
+                        
+                        // ✅ CRÍTICO: Atualizar estado com URLs permanentes
+                        newFiles.forEach((file, index) => {
+                            if (imageUrls[index]) {
+                                // Liberar URL temporária
+                                if (file.preview && file.preview.startsWith('blob:')) {
+                                    URL.revokeObjectURL(file.preview);
+                                }
+                                
+                                // Atualizar com URL permanente
+                                file.url = imageUrls[index];
+                                file.preview = imageUrls[index]; // IMPORTANTE
+                                file.uploaded = true;
+                                file.isNew = false;
+                                
+                                console.log(`✅ Arquivo "${file.name}" atualizado com URL permanente`);
+                            }
+                        });
+                        
                         results.images = imageUrls.join(',');
                     }
-
+        
                     // Adicionar existentes (já ordenados)
                     const existingUrls = allMedia
                         .filter(item => item.isExisting && item.url && !item.markedForDeletion)
                         .map(item => item.url);
-
+        
                     if (existingUrls.length > 0) {
                         results.images = results.images 
                             ? `${results.images},${existingUrls.join(',')}`
                             : existingUrls.join(',');
                     }
                 }
-
+        
                 // 3. Upload de PDFs
                 if (this.state.pdfs.length > 0) {
                     const pdfUrls = await this.uploadFiles(
@@ -931,28 +950,34 @@ const MediaSystem = {
                         propertyId,
                         'pdfs'
                     );
+                    
+                    // ✅ CRÍTICO: Atualizar estado dos PDFs com URLs permanentes
+                    this.state.pdfs.forEach((pdf, index) => {
+                        if (pdfUrls[index]) {
+                            pdf.url = pdfUrls[index];
+                            pdf.uploaded = true;
+                            pdf.isNew = false;
+                            console.log(`✅ PDF "${pdf.name}" atualizado com URL permanente`);
+                        }
+                    });
+                    
                     results.pdfs = pdfUrls.join(',');
                 }
-
+        
                 // 4. Combinar com arquivos existentes não excluídos
                 const keptExistingPdfs = this.state.existingPdfs
                     .filter(item => !item.markedForDeletion && item.url)
                     .map(item => item.url);
-
+        
                 if (keptExistingPdfs.length > 0) {
                     results.pdfs = results.pdfs
                         ? `${results.pdfs},${keptExistingPdfs.join(',')}`
                         : keptExistingPdfs.join(',');
                 }
-
-                // ✅ 5. ATUALIZAÇÃO CRÍTICA: Atualizar estado interno com URLs permanentes
-                if (results.images || results.pdfs) {
-                    this.updateStateAfterUpload(results, results.pdfs);
-                }
-
-                console.log('✅ Upload completo e estado atualizado:', results);
+        
+                console.log('✅ Upload completo com URLs permanentes:', results);
                 return results;
-
+        
             } catch (error) {
                 console.error('❌ Erro no upload unificado:', error);
                 return { images: '', pdfs: '' };
