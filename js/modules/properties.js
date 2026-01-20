@@ -1,4 +1,3 @@
-// js/modules/properties.js - SISTEMA COMPLETO CORRIGIDO E OTIMIZADO (VERSÃO FINAL)
 console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO OTIMIZADA COMPLETA)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
