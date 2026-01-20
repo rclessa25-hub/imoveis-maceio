@@ -93,7 +93,11 @@ window.propertyTemplates = new PropertyTemplateEngine();
 
 // ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO COM NOVAS MENSAGENS ==========
 window.loadPropertiesData = async function () {
-    const loading = window.LoadingManager?.show?.('Olá! Carregando sonhos 👋', 'Estamos preparando tudo para você...');
+    const loading = window.LoadingManager?.show?.(
+        'Carregando imóveis...', 
+        'Buscando as melhores oportunidades em Maceió',
+        { variant: 'processing' }
+    );
     
     try {
         // Estratégias de carregamento otimizadas
@@ -140,7 +144,7 @@ window.loadPropertiesData = async function () {
             finalMessage = `✨ ${propertyCount} opções incríveis!`;
         } else if (propertyCount <= 20) {
             finalMessage = `🏘️ ${propertyCount} oportunidades em Maceió!`;
-        } 
+        }
         
         loading?.updateMessage?.(finalMessage);
         
@@ -150,7 +154,7 @@ window.loadPropertiesData = async function () {
     } catch (error) {
         console.error('❌ Erro no carregamento:', error);
         loading?.setVariant?.('error');
-        loading?.updateMessage?.('Tudo pronto! Recarregue se necessário 🔄');
+        loading?.updateMessage?.('⚠️ Erro ao carregar imóveis');
         window.properties = getInitialProperties();
         window.renderProperties('todos');
         
