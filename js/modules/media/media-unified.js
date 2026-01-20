@@ -1,5 +1,5 @@
-// js/modules/media/media-unified.js - SISTEMA UNIFICADO DE MÍDIA
-console.log('🔄 media-unified.js carregado - Sistema Centralizado');
+// js/modules/media/media-unified.js - SISTEMA UNIFICADO DE MÍDIA (COM CORREÇÃO CRÍTICA)
+console.log('🔄 media-unified.js carregado - Sistema Centralizado COM CORREÇÃO DE URLS PERMANENTES');
 
 /**
  * SISTEMA UNIFICADO DE MÍDIA - VERSÃO OTIMIZADA
@@ -785,6 +785,7 @@ const MediaSystem = {
                 
                 this.state.existing = urls.map((url, index) => ({
                     url: url,
+                    preview: url, // ✅ CRÍTICO: GARANTIR que preview = url permanente
                     id: `existing_${property.id}_${index}`,
                     name: this.extractFileName(url),
                     type: this.getFileTypeFromUrl(url),
@@ -985,6 +986,22 @@ const MediaSystem = {
                 this.state.isUploading = false;
                 console.groupEnd();
             }
+        },
+
+        // ========== FUNÇÃO PARA GARANTIR QUE URLS PERMANENTES SEJAM PRESERVADAS (AÇÃO 2) ==========
+        ensurePermanentUrls: function() {
+            console.log('🔍 Verificando URLs permanentes...');
+            
+            // Para arquivos já processados, garantir que 'preview' aponta para URL permanente
+            [...this.state.existing, ...this.state.files].forEach(item => {
+                if (item.url && item.url.startsWith('http') && item.preview && item.preview.startsWith('blob:')) {
+                    console.log(`🔄 Corrigindo preview para: ${item.name}`);
+                    URL.revokeObjectURL(item.preview);
+                    item.preview = item.url;
+                }
+            });
+            
+            return this;
         },
 
         // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
@@ -1415,6 +1432,23 @@ const MediaSystem = {
         }, 3000);
     }, 1000);
 
+    // ========== VERIFICAÇÃO AUTOMÁTICA DE URLS PERMANENTES (AÇÃO 4) ==========
+    setTimeout(() => {
+        console.log('🔍 VERIFICAÇÃO DE URLS PERMANENTES');
+        
+        const totalFiles = window.MediaSystem.state.files.length + window.MediaSystem.state.existing.length;
+        const permanentUrls = [...window.MediaSystem.state.files, ...window.MediaSystem.state.existing]
+            .filter(item => item.url && item.url.startsWith('http'))
+            .length;
+        
+        console.log(`📊 ${permanentUrls}/${totalFiles} URLs permanentes detectadas`);
+        
+        if (permanentUrls < totalFiles) {
+            console.warn('⚠️ Alguns arquivos não têm URLs permanentes');
+            window.MediaSystem.ensurePermanentUrls();
+        }
+    }, 5000);
+
     // ========== VERIFICAÇÃO DE INTEGRIDADE ==========
 
     // Verificar se todas as funções necessárias estão disponíveis
@@ -1449,7 +1483,8 @@ const MediaSystem = {
             'isImageFile',
             'isVideoFile',
             'isPdfFile',
-            'forceReloadPreviews' // ✅ NOVA FUNÇÃO ADICIONADA
+            'forceReloadPreviews',
+            'ensurePermanentUrls' // ✅ NOVA FUNÇÃO ADICIONADA
         ];
         
         const missing = [];
@@ -1483,4 +1518,4 @@ const MediaSystem = {
         };
     }
 
-    console.log('✅ Sistema de mídia unificado pronto com compatibilidade total');
+    console.log('✅ Sistema de mídia unificado pronto com correção crítica de URLs permanentes');
