@@ -1,27 +1,38 @@
-// js/modules/core/SharedCore.js - MÓDULO CENTRALIZADO DE UTILITÁRIOS
-console.log('🔧 SharedCore.js carregado - Utilitários Compartilhados');
+// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS
+console.log('🔧 SharedCore.js carregado - COM CONSTANTES FIXAS PARA SUPABASE');
 
-// ========== FALLBACK DE EMERGÊNCIA (SEGURANÇA) ==========
-if (typeof window.SUPABASE_URL === 'undefined') {
-    console.warn('⚠️ Constantes não definidas - aplicando fallback de emergência');
-    window.SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
-    window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
-    window.ADMIN_PASSWORD = "wl654";
-    window.PDF_PASSWORD = "doc123";
-}
-
-// ========== CONSTANTES ESSENCIAIS ==========
-const ESSENTIAL_CONSTANTS = {
-    SUPABASE_URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
-    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+// ========== CONSTANTES SUPABASE FIXAS (IMPORTANTE!) ==========
+const SUPABASE_CONSTANTS = {
+    URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
+    KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
     ADMIN_PASSWORD: "wl654",
     PDF_PASSWORD: "doc123"
 };
 
-// Expor globalmente para compatibilidade (mantendo referências diretas)
-Object.entries(ESSENTIAL_CONSTANTS).forEach(([key, value]) => {
-    window[key] = value;
+// ========== GARANTIR QUE AS CONSTANTES EXISTAM GLOBALMENTE ==========
+Object.entries(SUPABASE_CONSTANTS).forEach(([key, value]) => {
+    if (typeof window[key] === 'undefined' || window[key] === 'undefined') {
+        window[key] = value;
+        console.log(`✅ ${key} definida:`, key.includes('KEY') ? '✅ Disponível' : value.substring(0, 50) + '...');
+    }
 });
+
+// ========== VERIFICAÇÃO DE CONSTANTES ==========
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO DE CONSTANTES SUPABASE:');
+    console.log('- SUPABASE_URL:', window.SUPABASE_URL ? '✅ ' + window.SUPABASE_URL.substring(0, 50) + '...' : '❌ undefined');
+    console.log('- SUPABASE_KEY:', window.SUPABASE_KEY ? '✅ Disponível' : '❌ Indisponível');
+    console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD ? '✅ Definida' : '❌ Indefinida');
+    console.log('- PDF_PASSWORD:', window.PDF_PASSWORD ? '✅ Definida' : '❌ Indefinida');
+    
+    // Correção de emergência se ainda estiver undefined
+    if (!window.SUPABASE_URL || window.SUPABASE_URL.includes('undefined')) {
+        console.error('🚨 CORREÇÃO DE EMERGÊNCIA: SUPABASE_URL está undefined!');
+        window.SUPABASE_URL = SUPABASE_CONSTANTS.URL;
+        window.SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+        console.log('✅ Constantes corrigidas:', window.SUPABASE_URL.substring(0, 50) + '...');
+    }
+}, 1000);
 
 const SharedCore = (function() {
     // ========== PERFORMANCE ESSENCIAIS ==========
@@ -230,18 +241,24 @@ const SharedCore = (function() {
         (levels[level] || levels.info)();
     };
 
-    // ========== SUPABASE ESSENCIAL (wrapper unificado) ==========
+    // ========== SUPABASE ESSENCIAL (COM CONSTANTES FIXAS) ==========
     const supabaseFetch = async (endpoint, options = {}) => {
         try {
+            // ✅ USAR CONSTANTES FIXAS, NÃO window.SUPABASE_URL
+            const SUPABASE_URL = SUPABASE_CONSTANTS.URL;
+            const SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+            
             const proxyUrl = 'https://corsproxy.io/?';
-            const targetUrl = `${window.SUPABASE_URL}/rest/v1${endpoint}`;
+            const targetUrl = `${SUPABASE_URL}/rest/v1${endpoint}`;
             const finalUrl = proxyUrl + encodeURIComponent(targetUrl);
+            
+            console.log(`📡 Supabase fetch: ${endpoint}`);
             
             const response = await fetch(finalUrl, {
                 method: options.method || 'GET',
                 headers: {
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Content-Type': 'application/json',
                     ...options.headers
                 },
@@ -331,10 +348,13 @@ const SharedCore = (function() {
     // Função de validação de Supabase
     const validateSupabaseConnection = async () => {
         try {
-            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            const SUPABASE_URL = SUPABASE_CONSTANTS.URL;
+            const SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+            
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
                 headers: {
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
                 }
             });
             
@@ -391,6 +411,60 @@ const SharedCore = (function() {
         }
     };
 
+    // ========== FUNÇÃO PARA TESTAR UPLOAD DE ARQUIVOS ==========
+    const testFileUpload = async () => {
+        console.group('🧪 TESTE DE UPLOAD DE ARQUIVOS');
+        
+        const SUPABASE_URL = SUPABASE_CONSTANTS.URL;
+        const SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+        
+        console.log('🔧 Configuração:', {
+            SUPABASE_URL: SUPABASE_URL.substring(0, 50) + '...',
+            SUPABASE_KEY: SUPABASE_KEY ? '✅ Disponível' : '❌ Indisponível'
+        });
+        
+        // Criar arquivo de teste
+        const testBlob = new Blob(['test content'], { type: 'text/plain' });
+        const testFile = new File([testBlob], 'test.txt', { type: 'text/plain' });
+        
+        const bucket = 'properties';
+        const fileName = `test_${Date.now()}.txt`;
+        const filePath = `${bucket}/${fileName}`;
+        const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${filePath}`;
+        
+        console.log('📤 Tentando upload para:', uploadUrl.substring(0, 80) + '...');
+        
+        try {
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'apikey': SUPABASE_KEY,
+                    'Content-Type': 'text/plain'
+                },
+                body: testFile
+            });
+            
+            console.log('📡 Resposta:', response.status, response.statusText);
+            
+            if (response.ok) {
+                const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${filePath}`;
+                console.log('✅ UPLOAD BEM-SUCEDIDO!');
+                console.log('🔗 URL pública:', publicUrl);
+                return { success: true, url: publicUrl };
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Upload falhou:', errorText);
+                return { success: false, error: errorText };
+            }
+        } catch (error) {
+            console.error('❌ Erro de conexão:', error);
+            return { success: false, error: error.message };
+        } finally {
+            console.groupEnd();
+        }
+    };
+
     // ========== API PÚBLICA ==========
     return {
         // Performance
@@ -434,7 +508,13 @@ const SharedCore = (function() {
         validateSupabaseConnection,
         generateUniqueId,
         sanitizeText,
-        delay
+        delay,
+        
+        // Teste de upload
+        testFileUpload,
+        
+        // Constantes (exportadas para compatibilidade)
+        SUPABASE_CONSTANTS
     };
 })();
 
@@ -477,7 +557,10 @@ function initializeGlobalCompatibility() {
         supabaseFetch: SharedCore.supabaseFetch,
         
         // Utilitários
-        copyToClipboard: SharedCore.copyToClipboard
+        copyToClipboard: SharedCore.copyToClipboard,
+        
+        // Teste de upload
+        testFileUpload: SharedCore.testFileUpload
     };
     
     // Exportar para window (somente se não existirem já)
@@ -488,26 +571,27 @@ function initializeGlobalCompatibility() {
     });
     
     console.log(`✅ ${Object.keys(globalExports).length} funções disponíveis globalmente`);
+    
+    // Adicionar função de diagnóstico
+    window.diagnoseSupabase = function() {
+        console.group('🔍 DIAGNÓSTICO SUPABASE');
+        console.log('1. Constantes:');
+        console.log('- SUPABASE_URL:', window.SUPABASE_URL);
+        console.log('- SUPABASE_KEY:', window.SUPABASE_KEY ? '✅ Disponível' : '❌ Indisponível');
+        console.log('- É supabase.co?', window.SUPABASE_URL?.includes('supabase.co') ? '✅ Sim' : '❌ Não');
+        
+        console.log('2. Testando conexão...');
+        SharedCore.validateSupabaseConnection().then(result => {
+            console.log('- Conexão:', result.online);
+        });
+        
+        console.log('3. Testando upload... (execute SharedCore.testFileUpload())');
+        console.groupEnd();
+    };
 }
 
 // Executar após SharedCore estar pronto
 setTimeout(initializeGlobalCompatibility, 100);
-
-// ========== FALLBACK SEGURO PARA COMPATIBILIDADE ==========
-(function ensurePriceFormatting() {
-    if (!window.formatPriceForInput && window.SharedCore?.formatPriceForInput) {
-        window.formatPriceForInput = window.SharedCore.formatPriceForInput;
-        console.log('✅ Função formatPriceForInput disponível via SharedCore (compatibilidade)');
-    }
-    if (!window.getPriceNumbersOnly && window.SharedCore?.getPriceNumbersOnly) {
-        window.getPriceNumbersOnly = window.SharedCore.getPriceNumbersOnly;
-        console.log('✅ Função getPriceNumbersOnly disponível via SharedCore (compatibilidade)');
-    }
-    if (!window.setupPriceAutoFormat && window.SharedCore?.setupPriceAutoFormat) {
-        window.setupPriceAutoFormat = window.SharedCore.setupPriceAutoFormat;
-        console.log('✅ Função setupPriceAutoFormat disponível via SharedCore (compatibilidade)');
-    }
-})();
 
 // ========== AUTO-VALIDAÇÃO ==========
 setTimeout(() => {
@@ -538,4 +622,4 @@ setTimeout(() => {
     console.groupEnd();
 }, 2000);
 
-console.log(`✅ SharedCore.js pronto - ${Object.keys(SharedCore).length} funções utilitárias centralizadas`);
+console.log(`✅ SharedCore.js pronto - Constantes Supabase fixas garantidas`);
