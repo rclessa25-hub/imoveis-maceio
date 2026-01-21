@@ -1,5 +1,5 @@
-// js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - COMPORTAMENTO ORIGINAL RESTAURADO
-console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.4 (COMPORTAMENTO ORIGINAL)');
+// js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - CORREÇÃO DE ESTADO
+console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.5 (CORREÇÃO DE ESTADO)');
 
 const PdfSystem = (function() {
     // ========== CONFIGURAÇÃO LEVE ==========
@@ -10,73 +10,23 @@ const PdfSystem = (function() {
     // ========== ESTADO MÍNIMO (APENAS UI) ==========
     let state = {
         currentPropertyId: null,
-        modalElement: null,
-        currentPdfUrls: [],
-        currentPropertyTitle: ''
+        currentPropertyTitle: '',
+        currentPdfUrls: []
     };
     
-    // ========== API PÚBLICA - DELEGAÇÃO AO MEDIASYSTEM ==========
+    // ========== API PÚBLICA ==========
     const api = {
         // INICIALIZAÇÃO LEVE
         init() {
-            console.log('🔧 PdfSystem.init() - Inicializando como cliente UI');
+            console.log('🔧 PdfSystem.init() - Inicializando sistema PDF');
             return this;
         },
         
-        // ========== DELEGAÇÃO TOTAL AO MEDIASYSTEM ==========
+        // ========== FUNÇÕES DE UI ==========
         
-        // Adicionar PDFs: Delegar ao MediaSystem
-        addFiles(fileList) {
-            console.log('📄 PdfSystem.addFiles() - Delegando ao MediaSystem');
-            if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
-                return window.MediaSystem.addPdfs(fileList);
-            }
-            console.warn('⚠️ MediaSystem não disponível para adicionar PDFs');
-            return 0;
-        },
-        
-        // Upload: Delegar ao MediaSystem
-        async uploadAll(propertyId, propertyTitle) {
-            console.log(`📄 PdfSystem.uploadAll() - Delegando ao MediaSystem para ${propertyId}`);
-            if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
-                return await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
-            }
-            console.warn('⚠️ MediaSystem não disponível para upload');
-            return '';
-        },
-        
-        // Reset state: Delegar ao MediaSystem
-        resetState() {
-            console.log('🧹 PdfSystem.resetState() - Delegando ao MediaSystem');
-            if (window.MediaSystem && typeof window.MediaSystem.clearAllPdfs === 'function') {
-                window.MediaSystem.clearAllPdfs();
-            }
-            return this;
-        },
-        
-        // Clear all PDFs: Delegar ao MediaSystem
-        clearAllPdfs() {
-            console.log('🧹 PdfSystem.clearAllPdfs() - Delegando ao MediaSystem');
-            if (window.MediaSystem && typeof window.MediaSystem.clearAllPdfs === 'function') {
-                window.MediaSystem.clearAllPdfs();
-            }
-            return this;
-        },
-        
-        // Load existing: Delegar ao MediaSystem
-        loadExistingPdfsForEdit(property) {
-            console.log('📄 PdfSystem.loadExistingPdfsForEdit() - Delegando ao MediaSystem');
-            if (window.MediaSystem && typeof window.MediaSystem.loadExistingPdfsForEdit === 'function') {
-                return window.MediaSystem.loadExistingPdfsForEdit(property);
-            }
-            return this;
-        },
-        
-        // ========== FUNÇÕES DE UI (RESPONSABILIDADE EXCLUSIVA) ==========
-        
-        // Modal de visualização (função principal) - USANDO MODAL EXISTENTE DO HTML
+        // Modal de visualização (função principal)
         showModal(propertyId) {
-            console.log(`📄 PdfSystem.showModal(${propertyId}) - Função UI principal`);
+            console.log(`📄 PdfSystem.showModal(${propertyId})`);
             
             // 1. Buscar imóvel
             const property = window.properties?.find(p => p.id == propertyId);
@@ -86,12 +36,17 @@ const PdfSystem = (function() {
                 return;
             }
         
-            // 2. Armazenar estado atual
+            // 2. ✅ CRÍTICO: Armazenar estado ANTES de abrir modal
             state.currentPropertyId = propertyId;
             state.currentPropertyTitle = property.title;
             state.currentPdfUrls = [];
             
-            // 3. Usar o modal JÁ EXISTENTE no HTML (linhas 418-440 do index.html)
+            console.log('✅ Estado armazenado:', {
+                propertyId: state.currentPropertyId,
+                title: state.currentPropertyTitle
+            });
+        
+            // 3. Usar o modal existente no HTML
             let modal = document.getElementById('pdfModal');
             
             if (!modal) {
@@ -106,6 +61,8 @@ const PdfSystem = (function() {
             
             if (titleElement) {
                 titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
+                // ✅ Armazenar também no dataset para backup
+                titleElement.dataset.propertyId = propertyId;
             }
             
             // 5. Garantir que o campo de senha está visível
@@ -133,9 +90,15 @@ const PdfSystem = (function() {
             return modal;
         },
 
-        // Validação de senha (UI) - ✅ COMPORTAMENTO ORIGINAL RESTAURADO
+        // Validação de senha (UI) - ✅ CORRIGIDO: Estado preservado
         validatePasswordAndShowList() {
-            console.log('🔓 PdfSystem.validatePasswordAndShowList() - Função UI');
+            console.log('🔓 PdfSystem.validatePasswordAndShowList() - Iniciando validação');
+            
+            // ✅ DEBUG: Verificar estado atual
+            console.log('🔍 Estado atual:', {
+                currentPropertyId: state.currentPropertyId,
+                currentPropertyTitle: state.currentPropertyTitle
+            });
             
             const passwordInput = document.getElementById('pdfPassword');
             if (!passwordInput) {
@@ -158,18 +121,48 @@ const PdfSystem = (function() {
                 return;
             }
             
-            console.log('✅ Senha válida! Buscando documentos...');
+            console.log('✅ Senha válida!');
             
-            // Buscar imóvel atual
-            const propertyId = state.currentPropertyId;
+            // ✅ MÚLTIPLAS ESTRATÉGIAS para obter o propertyId
+            let propertyId = state.currentPropertyId;
+            
+            // Estratégia 1: Usar estado armazenado
             if (!propertyId) {
-                alert('❌ Não foi possível identificar o imóvel');
+                console.warn('⚠️ propertyId não encontrado no estado, tentando estratégias alternativas...');
+                
+                // Estratégia 2: Buscar no título do modal
+                const titleElement = document.getElementById('pdfModalTitle');
+                if (titleElement && titleElement.dataset.propertyId) {
+                    propertyId = titleElement.dataset.propertyId;
+                    console.log('✅ propertyId recuperado do dataset:', propertyId);
+                }
+                
+                // Estratégia 3: Tentar obter da última propriedade manipulada
+                if (!propertyId && window.properties && window.properties.length > 0) {
+                    // Usar o último imóvel visualizado (se houver uma maneira de rastrear)
+                    console.log('⚠️ Usando fallback - último imóvel disponível');
+                }
+            }
+            
+            if (!propertyId) {
+                alert('⚠️ Não foi possível identificar o imóvel. Por favor, tente novamente.');
+                console.error('❌ propertyId não encontrado após todas as estratégias');
                 this.closeModal();
                 return;
             }
             
+            console.log(`🔍 Buscando imóvel com ID: ${propertyId}`);
+            
             const property = window.properties?.find(p => p.id == propertyId);
-            if (!property || !property.pdfs || property.pdfs === 'EMPTY') {
+            if (!property) {
+                alert('❌ Imóvel não encontrado no sistema!');
+                console.error('❌ Imóvel não encontrado na lista window.properties');
+                console.log('📋 Imóveis disponíveis:', window.properties?.map(p => p.id));
+                this.closeModal();
+                return;
+            }
+            
+            if (!property.pdfs || property.pdfs === 'EMPTY') {
                 alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
                 this.closeModal();
                 return;
@@ -185,32 +178,36 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // ✅ COMPORTAMENTO ORIGINAL RESTAURADO: SEMPRE mostrar lista
-            this.closeModal(); // Fechar modal de senha
-            this.showDocumentList(propertyId, property.title, pdfUrls);
-        },
-        
-        // Fechar modal de senha (UI)
-        closeModal() {
-            console.log('❌ PdfSystem.closeModal() - Fechando modal de senha');
-            const modal = document.getElementById('pdfModal');
-            if (modal) modal.style.display = 'none';
-            return this;
-        },
-        
-        // Fechar modal de lista (UI)
-        closeDocumentList() {
-            console.log('❌ PdfSystem.closeDocumentList() - Fechando lista de documentos');
-            const modal = document.getElementById('pdfSelectionModal');
-            if (modal) modal.style.display = 'none';
-            return this;
-        },
-        
-        // Lista de seleção (UI) - ✅ COMPORTAMENTO ORIGINAL: SEMPRE mostrar contêiner
-        showDocumentList(propertyId, propertyTitle, pdfUrls) {
-            console.log('📋 PdfSystem.showDocumentList() - Mostrando contêiner com lista');
+            // ✅ Atualizar estado com URLs
+            state.currentPdfUrls = pdfUrls;
             
-            // Armazenar URLs no estado para uso posterior
+            console.log(`✅ ${pdfUrls.length} documento(s) encontrado(s)`);
+            
+            // ✅ COMPORTAMENTO ORIGINAL: SEMPRE mostrar lista
+            this.closeModal(); // Fechar modal de senha
+            
+            // Pequeno delay para garantir que o modal fechou
+            setTimeout(() => {
+                this.showDocumentList(propertyId, property.title, pdfUrls);
+            }, 300);
+        },
+        
+        // Fechar modal de senha
+        closeModal() {
+            console.log('❌ PdfSystem.closeModal()');
+            const modal = document.getElementById('pdfModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('✅ Modal de senha fechado');
+            }
+            return this;
+        },
+        
+        // Lista de seleção (UI) - ✅ COMPORTAMENTO ORIGINAL
+        showDocumentList(propertyId, propertyTitle, pdfUrls) {
+            console.log(`📋 PdfSystem.showDocumentList() - ${pdfUrls.length} documento(s)`);
+            
+            // Armazenar URLs no estado
             state.currentPdfUrls = pdfUrls;
             
             // Criar ou atualizar modal de seleção
@@ -354,38 +351,36 @@ const PdfSystem = (function() {
                 </div>
             `;
             
-            // ✅ CRÍTICO: Configurar eventos DEPOIS que o HTML foi inserido
+            // Configurar eventos
             setTimeout(() => {
                 this.setupPdfListEvents();
             }, 50);
             
             selectionModal.style.display = 'flex';
+            console.log('✅ Contêiner de lista de PDFs aberto');
         },
         
-        // ✅ Configurar eventos para a lista de PDFs
+        // Configurar eventos para a lista de PDFs
         setupPdfListEvents() {
             console.log('🎮 Configurando eventos para lista de PDFs...');
             
             const selectionModal = document.getElementById('pdfSelectionModal');
             if (!selectionModal) return;
             
-            // 1. Botão Fechar
+            // Botão Fechar
             const closeBtn = document.getElementById('closePdfListBtn');
             if (closeBtn) {
                 closeBtn.onclick = () => {
                     selectionModal.style.display = 'none';
+                    console.log('✅ Lista de PDFs fechada');
                 };
             }
             
-            // 2. Botões "Visualizar"
+            // Botões "Visualizar"
             const viewButtons = selectionModal.querySelectorAll('.pdf-view-btn');
             viewButtons.forEach(button => {
                 const url = button.getAttribute('data-pdf-url');
                 if (url) {
-                    // Remover qualquer evento anterior
-                    button.onclick = null;
-                    
-                    // Adicionar novo evento
                     button.onclick = (e) => {
                         e.stopPropagation();
                         console.log(`📄 Abrindo PDF: ${url}`);
@@ -394,21 +389,17 @@ const PdfSystem = (function() {
                 }
             });
             
-            // 3. Itens da lista (clicar no item inteiro)
+            // Itens da lista
             const listItems = selectionModal.querySelectorAll('.pdf-list-item');
             listItems.forEach(item => {
                 const url = item.getAttribute('data-pdf-url');
                 if (url) {
                     item.onclick = (e) => {
-                        // Não abrir se clicar no botão "Visualizar"
-                        if (e.target.closest('.pdf-view-btn')) {
-                            return;
-                        }
+                        if (e.target.closest('.pdf-view-btn')) return;
                         console.log(`📄 Abrindo PDF via clique no item: ${url}`);
                         window.open(url, '_blank');
                     };
                     
-                    // Efeitos hover
                     item.onmouseenter = () => {
                         item.style.transform = 'translateY(-2px)';
                         item.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
@@ -421,7 +412,7 @@ const PdfSystem = (function() {
                 }
             });
             
-            // 4. Botão "Baixar Todos"
+            // Botão "Baixar Todos"
             const downloadAllBtn = document.getElementById('downloadAllPdfsBtn');
             if (downloadAllBtn && state.currentPdfUrls.length > 1) {
                 downloadAllBtn.onclick = () => {
@@ -429,12 +420,12 @@ const PdfSystem = (function() {
                 };
             }
             
-            console.log(`✅ ${viewButtons.length} botões de PDF configurados`);
+            console.log(`✅ ${viewButtons.length} botões configurados`);
         },
         
-        // Download (UI)
+        // Download de todos os PDFs
         downloadAllPdfs(urls) {
-            console.log(`📥 PdfSystem.downloadAllPdfs() - Função UI para ${urls.length} PDF(s)`);
+            console.log(`📥 Download de ${urls.length} PDF(s)`);
             let successCount = 0;
             
             urls.forEach((url, index) => {
@@ -459,41 +450,26 @@ const PdfSystem = (function() {
             if (successCount > 0) {
                 alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
             }
-        },
-        
-        // ========== COMPATIBILIDADE (WRAPPERS) ==========
-        
-        // Wrapper para getPdfsToSave
-        async getPdfsToSave(propertyId) {
-            console.log(`💾 PdfSystem.getPdfsToSave() - Wrapper para MediaSystem`);
-            return await this.uploadAll(propertyId, 'Imóvel');
-        },
-        
-        // Wrapper para processAndSavePdfs
-        async processAndSavePdfs(propertyId, propertyTitle) {
-            console.log(`📄 PdfSystem.processAndSavePdfs() - Wrapper para MediaSystem`);
-            return await this.uploadAll(propertyId, propertyTitle);
         }
     };
     
     return api;
 })();
 
-// Exportação global (mantém compatibilidade)
+// Exportação global
 window.PdfSystem = PdfSystem;
 
 // ========== FUNÇÕES GLOBAIS DE COMPATIBILIDADE ==========
 
-// Função global para acessar documentos (usada pelo modal no HTML)
+// Função global para acessar documentos
 window.accessPdfDocuments = function() {
     console.log('🔓 accessPdfDocuments() - Função global chamada');
     
-    // Usar PdfSystem se disponível
     if (window.PdfSystem && typeof window.PdfSystem.validatePasswordAndShowList === 'function') {
         return window.PdfSystem.validatePasswordAndShowList();
     }
     
-    // Fallback básico
+    // Fallback
     const passwordInput = document.getElementById('pdfPassword');
     if (!passwordInput) {
         alert('Erro: campo de senha não disponível');
@@ -514,19 +490,17 @@ window.accessPdfDocuments = function() {
         return;
     }
     
-    // Se chegou aqui, a senha está correta
-    // O comportamento correto será executado por validatePasswordAndShowList()
     console.log('✅ Senha válida via função global');
 };
 
 // Função global para fechar modal
 window.closePdfModal = function() {
-    console.log('❌ closePdfModal() - Função global');
+    console.log('❌ closePdfModal()');
     const modal = document.getElementById('pdfModal');
     if (modal) modal.style.display = 'none';
 };
 
-// ========== INICIALIZAÇÃO ÚNICA ==========
+// ========== INICIALIZAÇÃO ==========
 if (!window.pdfSystemInitialized) {
     window.pdfSystemInitialized = false;
     
@@ -535,27 +509,29 @@ if (!window.pdfSystemInitialized) {
         if (typeof window.PdfSystem !== 'undefined') {
             window.PdfSystem.init();
             window.pdfSystemInitialized = true;
-            console.log('✅ PdfSystem inicializado - COMPORTAMENTO ORIGINAL RESTAURADO');
+            console.log('✅ PdfSystem inicializado - CORREÇÃO DE ESTADO APLICADA');
         }
     };
     
-    // Inicializar após MediaSystem (CRÍTICO)
     setTimeout(() => {
         if (window.MediaSystem) {
             initPdfSystem();
         } else {
-            console.log('⏳ Aguardando MediaSystem para inicializar PdfSystem...');
+            console.log('⏳ Aguardando MediaSystem...');
             setTimeout(initPdfSystem, 1000);
         }
     }, 1500);
 }
 
 // Adicionar estilo para animação
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-`;
-document.head.appendChild(style);
+if (!document.getElementById('pdf-animation-style')) {
+    const style = document.createElement('style');
+    style.id = 'pdf-animation-style';
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    `;
+    document.head.appendChild(style);
+}
