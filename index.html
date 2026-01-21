@@ -419,10 +419,11 @@
         <div class="pdf-modal-content">
             <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
             <div id="pdfPreview" class="pdf-preview">
-                <p>Documentos técnicos e legais disponíveis</p>
+                <p>Digite a senha para visualizar os documentos</p>
             </div>
             <input type="password" id="pdfPassword" class="pdf-password-input" 
-                   placeholder="Digite a senha para acessar" autocomplete="off">
+                   placeholder="Digite a senha para acessar" autocomplete="off"
+                   style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; margin: 1rem 0; display: block;">
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                 <button onclick="accessPdfDocuments()" 
                         style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
