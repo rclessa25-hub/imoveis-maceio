@@ -1,5 +1,5 @@
-// js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - RESTAURADO COMPORTAMENTO ORIGINAL
-console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.3 (Cliente UI) - COMPORTAMENTO ORIGINAL RESTAURADO');
+// js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - COMPORTAMENTO ORIGINAL RESTAURADO
+console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.4 (COMPORTAMENTO ORIGINAL)');
 
 const PdfSystem = (function() {
     // ========== CONFIGURAÇÃO LEVE ==========
@@ -11,7 +11,8 @@ const PdfSystem = (function() {
     let state = {
         currentPropertyId: null,
         modalElement: null,
-        currentPdfUrls: [] // ✅ ADICIONADO: armazenar URLs temporariamente
+        currentPdfUrls: [],
+        currentPropertyTitle: ''
     };
     
     // ========== API PÚBLICA - DELEGAÇÃO AO MEDIASYSTEM ==========
@@ -19,7 +20,6 @@ const PdfSystem = (function() {
         // INICIALIZAÇÃO LEVE
         init() {
             console.log('🔧 PdfSystem.init() - Inicializando como cliente UI');
-            this.ensureModalExists();
             return this;
         },
         
@@ -74,9 +74,10 @@ const PdfSystem = (function() {
         
         // ========== FUNÇÕES DE UI (RESPONSABILIDADE EXCLUSIVA) ==========
         
-        // Modal de visualização (função principal)
+        // Modal de visualização (função principal) - USANDO MODAL EXISTENTE DO HTML
         showModal(propertyId) {
             console.log(`📄 PdfSystem.showModal(${propertyId}) - Função UI principal`);
+            
             // 1. Buscar imóvel
             const property = window.properties?.find(p => p.id == propertyId);
             if (!property) {
@@ -85,198 +86,57 @@ const PdfSystem = (function() {
                 return;
             }
         
-            // 2. GARANTIR que o modal COMPLETO existe com todos os elementos
+            // 2. Armazenar estado atual
+            state.currentPropertyId = propertyId;
+            state.currentPropertyTitle = property.title;
+            state.currentPdfUrls = [];
+            
+            // 3. Usar o modal JÁ EXISTENTE no HTML (linhas 418-440 do index.html)
             let modal = document.getElementById('pdfModal');
             
-            // Se não existe ou está incompleto, recriar COMPLETAMENTE
-            if (!modal || !document.getElementById('pdfPassword')) {
-                console.log('🔄 Criando modal PDF completo (campo de senha ausente)...');
-                
-                // Remover modal antigo se existir
-                if (modal) {
-                    modal.remove();
-                }
-                
-                // Criar novo modal COMPLETO
-                modal = document.createElement('div');
-                modal.id = 'pdfModal';
-                modal.className = 'pdf-modal';
-                modal.style.cssText = `
-                    display: none;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0,0,0,0.95);
-                    z-index: 10000;
-                    align-items: center;
-                    justify-content: center;
-                `;
-                
-                // HTML COMPLETO com TODOS os elementos VISÍVEIS
-                modal.innerHTML = `
-                    <div class="pdf-modal-content" style="
-                        background: white;
-                        border-radius: 10px;
-                        padding: 2rem;
-                        max-width: 400px;
-                        width: 90%;
-                        text-align: center;
-                        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-                    ">
-                        <h3 id="pdfModalTitle" style="
-                            color: var(--primary);
-                            margin: 0 0 1rem 0;
-                            padding-right: 30px;
-                            font-size: 1.4rem;
-                        ">
-                            <i class="fas fa-file-pdf"></i> Documentos do Imóvel
-                        </h3>
-                        
-                        <div id="pdfPreview" style="
-                            margin: 1rem 0;
-                            padding: 1rem;
-                            background: #f8f9fa;
-                            border-radius: 5px;
-                            font-size: 0.9rem;
-                            color: #666;
-                        ">
-                            <p>Digite a senha para visualizar os documentos</p>
-                        </div>
-                        
-                        <!-- ✅ CAMPO DE SENHA 100% VISÍVEL -->
-                        <input type="password" 
-                               id="pdfPassword" 
-                               class="pdf-password-input"
-                               placeholder="Digite a senha para acessar"
-                               style="
-                                   width: 100%;
-                                   padding: 0.9rem;
-                                   border: 1px solid #ddd;
-                                   border-radius: 5px;
-                                   margin: 1rem 0;
-                                   font-size: 1rem;
-                                   display: block !important;
-                                   visibility: visible !important;
-                                   opacity: 1 !important;
-                               "
-                               autocomplete="off">
-                        
-                        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                            <button onclick="PdfSystem.validatePasswordAndShowList()" 
-                                    style="
-                                        background: var(--primary);
-                                        color: white;
-                                        padding: 0.9rem 1.5rem;
-                                        border: none;
-                                        border-radius: 5px;
-                                        cursor: pointer;
-                                        flex: 1;
-                                        font-size: 1rem;
-                                        font-weight: 600;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        gap: 0.5rem;
-                                    ">
-                                <i class="fas fa-lock-open"></i> Acessar
-                            </button>
-                            
-                            <button onclick="PdfSystem.closeModal()" 
-                                    style="
-                                        background: #95a5a6;
-                                        color: white;
-                                        padding: 0.9rem 1.5rem;
-                                        border: none;
-                                        border-radius: 5px;
-                                        cursor: pointer;
-                                        font-size: 1rem;
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: center;
-                                        gap: 0.5rem;
-                                    ">
-                                <i class="fas fa-times"></i> Fechar
-                            </button>
-                        </div>
-                        
-                        <p style="
-                            font-size: 0.8rem;
-                            color: #666;
-                            margin-top: 1.5rem;
-                            text-align: center;
-                        ">
-                            <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
-                        </p>
-                    </div>
-                `;
-                
-                document.body.appendChild(modal);
-                console.log('✅ Modal PDF criado com campo de senha VISÍVEL');
-            }
-        
-            // 3. Configurar título e armazenar propertyId
-            state.currentPropertyId = propertyId;
-            state.modalElement = modal;
-        
-            const titleElement = document.getElementById('pdfModalTitle');
-            const passwordInput = document.getElementById('pdfPassword');
-        
-            if (titleElement) {
-                titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
-                titleElement.dataset.propertyId = propertyId;
-            }
-        
-            // ✅ 4. GARANTIR VISIBILIDADE ABSOLUTA DO CAMPO DE SENHA
-            if (passwordInput) {
-                // Remover qualquer estilo que possa estar ocultando
-                passwordInput.style.display = 'block';
-                passwordInput.style.visibility = 'visible';
-                passwordInput.style.opacity = '1';
-                passwordInput.style.position = 'static';
-                passwordInput.style.width = '100%';
-                passwordInput.style.margin = '1rem 0';
-                passwordInput.value = ''; // Limpar campo
-                
-                // Verificar estilo do pai também
-                if (passwordInput.parentElement) {
-                    passwordInput.parentElement.style.display = 'block';
-                }
-            } else {
-                console.error('❌ Campo de senha NÃO encontrado após criação!');
-                alert('Erro: campo de senha não disponível. Recarregue a página.');
+            if (!modal) {
+                console.error('❌ Modal PDF não encontrado no HTML!');
+                alert('Erro: sistema de documentos não disponível.');
                 return;
             }
         
-            // 5. Exibir modal
+            // 4. Configurar título
+            const titleElement = document.getElementById('pdfModalTitle');
+            const passwordInput = document.getElementById('pdfPassword');
+            
+            if (titleElement) {
+                titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
+            }
+            
+            // 5. Garantir que o campo de senha está visível
+            if (passwordInput) {
+                passwordInput.value = '';
+                passwordInput.style.display = 'block';
+                passwordInput.style.visibility = 'visible';
+                passwordInput.style.opacity = '1';
+                passwordInput.style.width = '100%';
+                passwordInput.style.margin = '1rem 0';
+            }
+        
+            // 6. Exibir modal
             modal.style.display = 'flex';
         
-            // 6. Focar no campo de senha com delay para garantir visibilidade
+            // 7. Focar no campo de senha
             setTimeout(() => {
                 if (passwordInput) {
                     passwordInput.focus();
                     passwordInput.select();
                     console.log('✅ Modal aberto com foco no campo de senha');
-                    
-                    // DEBUG: Verificar visibilidade final
-                    const style = window.getComputedStyle(passwordInput);
-                    console.log('🔍 VERIFICAÇÃO FINAL - Campo senha:', {
-                        display: style.display,
-                        visibility: style.visibility,
-                        opacity: style.opacity,
-                        width: style.width,
-                        height: style.height
-                    });
                 }
             }, 100);
         
             return modal;
         },
 
-        // Validação de senha (UI) - ✅ RESTAURADO COMPORTAMENTO ORIGINAL
+        // Validação de senha (UI) - ✅ COMPORTAMENTO ORIGINAL RESTAURADO
         validatePasswordAndShowList() {
             console.log('🔓 PdfSystem.validatePasswordAndShowList() - Função UI');
+            
             const passwordInput = document.getElementById('pdfPassword');
             if (!passwordInput) {
                 alert('Erro: campo de senha não disponível');
@@ -325,23 +185,30 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // ✅ RESTAURADO COMPORTAMENTO ORIGINAL: SEMPRE mostrar lista
-            // Mostrar lista para usuário escolher (mesmo se só tem 1)
-            this.showDocumentList(propertyId, property.title, pdfUrls);
+            // ✅ COMPORTAMENTO ORIGINAL RESTAURADO: SEMPRE mostrar lista
             this.closeModal(); // Fechar modal de senha
+            this.showDocumentList(propertyId, property.title, pdfUrls);
         },
         
-        // Fechar modal (UI)
+        // Fechar modal de senha (UI)
         closeModal() {
-            console.log('❌ PdfSystem.closeModal() - Função UI');
+            console.log('❌ PdfSystem.closeModal() - Fechando modal de senha');
             const modal = document.getElementById('pdfModal');
             if (modal) modal.style.display = 'none';
             return this;
         },
         
-        // Lista de seleção (UI) - ✅ RESTAURADO: SEMPRE mostrar contêiner
+        // Fechar modal de lista (UI)
+        closeDocumentList() {
+            console.log('❌ PdfSystem.closeDocumentList() - Fechando lista de documentos');
+            const modal = document.getElementById('pdfSelectionModal');
+            if (modal) modal.style.display = 'none';
+            return this;
+        },
+        
+        // Lista de seleção (UI) - ✅ COMPORTAMENTO ORIGINAL: SEMPRE mostrar contêiner
         showDocumentList(propertyId, propertyTitle, pdfUrls) {
-            console.log('📋 PdfSystem.showDocumentList() - Função UI - MOSTRANDO SEMPRE CONTÊINER');
+            console.log('📋 PdfSystem.showDocumentList() - Mostrando contêiner com lista');
             
             // Armazenar URLs no estado para uso posterior
             state.currentPdfUrls = pdfUrls;
@@ -349,11 +216,12 @@ const PdfSystem = (function() {
             // Criar ou atualizar modal de seleção
             let selectionModal = document.getElementById('pdfSelectionModal');
             
-            // ✅ MELHORIA: Remover modal antigo completamente e recriar
+            // Remover modal antigo se existir
             if (selectionModal) {
                 selectionModal.remove();
             }
             
+            // Criar novo modal
             selectionModal = document.createElement('div');
             selectionModal.id = 'pdfSelectionModal';
             selectionModal.className = 'pdf-modal';
@@ -466,7 +334,7 @@ const PdfSystem = (function() {
                         <small style="color: #95a5a6;">
                             <i class="fas fa-info-circle"></i> Clique em "Visualizar" para abrir em nova aba
                         </small>
-                        ${pdfUrls.length > 0 ? `
+                        ${pdfUrls.length > 1 ? `
                             <button id="downloadAllPdfsBtn" 
                                     style="
                                         background: var(--success);
@@ -486,16 +354,16 @@ const PdfSystem = (function() {
                 </div>
             `;
             
-            // ✅ CRÍTICO: Adicionar eventos DEPOIS que o HTML foi inserido
+            // ✅ CRÍTICO: Configurar eventos DEPOIS que o HTML foi inserido
             setTimeout(() => {
-                this.setupPdfListEvents(pdfUrls);
+                this.setupPdfListEvents();
             }, 50);
             
             selectionModal.style.display = 'flex';
         },
         
         // ✅ Configurar eventos para a lista de PDFs
-        setupPdfListEvents(pdfUrls) {
+        setupPdfListEvents() {
             console.log('🎮 Configurando eventos para lista de PDFs...');
             
             const selectionModal = document.getElementById('pdfSelectionModal');
@@ -555,9 +423,9 @@ const PdfSystem = (function() {
             
             // 4. Botão "Baixar Todos"
             const downloadAllBtn = document.getElementById('downloadAllPdfsBtn');
-            if (downloadAllBtn && pdfUrls.length > 0) {
+            if (downloadAllBtn && state.currentPdfUrls.length > 1) {
                 downloadAllBtn.onclick = () => {
-                    this.downloadAllPdfs(pdfUrls);
+                    this.downloadAllPdfs(state.currentPdfUrls);
                 };
             }
             
@@ -592,47 +460,6 @@ const PdfSystem = (function() {
                 alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
             }
         },
-
-        // Função ensureModalExists (CRÍTICA - estava faltando)
-        ensureModalExists() {
-            if (state.modalElement) return state.modalElement;
-            
-            // Verificar se modal já existe no DOM
-            let modal = document.getElementById('pdfModal');
-            if (!modal) {
-                // Criar modal básico
-                modal = document.createElement('div');
-                modal.id = 'pdfModal';
-                modal.className = 'pdf-modal';
-                modal.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;';
-                modal.innerHTML = `
-                    <div style="background:white;border-radius:10px;padding:2rem;max-width:400px;width:90%;text-align:center;">
-                        <h3 id="pdfModalTitle" style="color:#1a5276;margin:0 0 1rem 0;">
-                            <i class="fas fa-file-pdf"></i> Documentos do Imóvel
-                        </h3>
-                        <div id="pdfPreview" style="margin:1rem 0;padding:1rem;background:#f8f9fa;border-radius:5px;">
-                            <p>Documentos técnicos e legais disponíveis</p>
-                        </div>
-                        <input type="password" id="pdfPassword" placeholder="Digite a senha para acessar" 
-                               style="width:100%;padding:0.8rem;border:1px solid #ddd;border-radius:5px;margin:1rem 0;display:block;">
-                        <div style="display:flex;gap:1rem;margin-top:1rem;">
-                            <button onclick="PdfSystem.validatePasswordAndShowList()" 
-                                    style="background:#1a5276;color:white;padding:0.8rem 1.5rem;border:none;border-radius:5px;cursor:pointer;flex:1;">
-                                <i class="fas fa-lock-open"></i> Acessar
-                            </button>
-                            <button onclick="PdfSystem.closeModal()" 
-                                    style="background:#95a5a6;color:white;padding:0.8rem 1.5rem;border:none;border-radius:5px;cursor:pointer;">
-                                <i class="fas fa-times"></i> Fechar
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }
-            
-            state.modalElement = modal;
-            return modal;
-        },
         
         // ========== COMPATIBILIDADE (WRAPPERS) ==========
         
@@ -655,7 +482,51 @@ const PdfSystem = (function() {
 // Exportação global (mantém compatibilidade)
 window.PdfSystem = PdfSystem;
 
-// Inicialização única (compatibilidade)
+// ========== FUNÇÕES GLOBAIS DE COMPATIBILIDADE ==========
+
+// Função global para acessar documentos (usada pelo modal no HTML)
+window.accessPdfDocuments = function() {
+    console.log('🔓 accessPdfDocuments() - Função global chamada');
+    
+    // Usar PdfSystem se disponível
+    if (window.PdfSystem && typeof window.PdfSystem.validatePasswordAndShowList === 'function') {
+        return window.PdfSystem.validatePasswordAndShowList();
+    }
+    
+    // Fallback básico
+    const passwordInput = document.getElementById('pdfPassword');
+    if (!passwordInput) {
+        alert('Erro: campo de senha não disponível');
+        return;
+    }
+    
+    const password = passwordInput.value.trim();
+    if (!password) {
+        alert('Digite a senha para acessar os documentos!');
+        passwordInput.focus();
+        return;
+    }
+    
+    if (password !== "doc123") {
+        alert('❌ Senha incorreta!\n\nA senha correta é: doc123');
+        passwordInput.value = '';
+        passwordInput.focus();
+        return;
+    }
+    
+    // Se chegou aqui, a senha está correta
+    // O comportamento correto será executado por validatePasswordAndShowList()
+    console.log('✅ Senha válida via função global');
+};
+
+// Função global para fechar modal
+window.closePdfModal = function() {
+    console.log('❌ closePdfModal() - Função global');
+    const modal = document.getElementById('pdfModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// ========== INICIALIZAÇÃO ÚNICA ==========
 if (!window.pdfSystemInitialized) {
     window.pdfSystemInitialized = false;
     
@@ -664,7 +535,7 @@ if (!window.pdfSystemInitialized) {
         if (typeof window.PdfSystem !== 'undefined') {
             window.PdfSystem.init();
             window.pdfSystemInitialized = true;
-            console.log('✅ PdfSystem refatorado inicializado como cliente UI');
+            console.log('✅ PdfSystem inicializado - COMPORTAMENTO ORIGINAL RESTAURADO');
         }
     };
     
@@ -678,3 +549,13 @@ if (!window.pdfSystemInitialized) {
         }
     }, 1500);
 }
+
+// Adicionar estilo para animação
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+`;
+document.head.appendChild(style);
