@@ -534,14 +534,17 @@ window.setupForm = function() {
         e.preventDefault();
         log.group('admin', 'SUBMISSÃO DO FORMULÁRIO ADMIN');
         
-        if (!window.LoadingManager || typeof window.LoadingManager.show !== 'function') {
-            log.error('admin', 'LoadingManager não disponível!');
-            alert('⚠️ Sistema temporariamente indisponível. Recarregue a página.');
-            log.groupEnd();
-            return;
+        // Nova versão otimizada - sem validação redundante
+        const loading = window.LoadingManager?.show?.(
+            'Salvando Imóvel...', 
+            'Por favor, aguarde...', 
+            { variant: 'processing' }
+        );
+
+        if (!loading) {
+            console.warn('admin', 'LoadingManager não disponível - continuando sem feedback visual');
+            // Continua o processamento normalmente, sem alertas invasivos
         }
-        
-        const loading = window.LoadingManager.show('Salvando Imóvel...', 'Por favor, aguarde...', { variant: 'processing' });
         
         const submitBtn = this.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -566,19 +569,24 @@ window.setupForm = function() {
             
             // Validação básica
             if (!propertyData.title || !propertyData.price || !propertyData.location) {
-                loading.setVariant('error');
-                loading.updateMessage('Preencha Título, Preço e Localização!');
-                setTimeout(() => {
-                    loading.hide();
+                if (loading) {
+                    loading.setVariant('error');
+                    loading.updateMessage('Preencha Título, Preço e Localização!');
+                    setTimeout(() => {
+                        loading.hide();
+                        alert('❌ Preencha Título, Preço e Localização!');
+                        if (submitBtn) submitBtn.disabled = false;
+                    }, 1500);
+                } else {
                     alert('❌ Preencha Título, Preço e Localização!');
                     if (submitBtn) submitBtn.disabled = false;
-                }, 1500);
+                }
                 log.error('admin', 'Validação falhou: campos obrigatórios vazios');
                 log.groupEnd();
                 return;
             }
             
-            loading.updateMessage('Processando dados...');
+            if (loading) loading.updateMessage('Processando dados...');
             
             if (window.editingPropertyId) {
                 // Edição de imóvel existente
@@ -621,8 +629,10 @@ window.setupForm = function() {
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
                     
                     if (success) {
-                        loading.setVariant('success');
-                        loading.updateMessage('Imóvel atualizado com sucesso!');
+                        if (loading) {
+                            loading.setVariant('success');
+                            loading.updateMessage('Imóvel atualizado com sucesso!');
+                        }
                         
                         setTimeout(() => {
                             const imageCount = updateData.images ? updateData.images.split(',').filter(url => url.trim() !== '').length : 0;
@@ -636,12 +646,16 @@ window.setupForm = function() {
                         }, 800);
                         
                     } else {
-                        loading.setVariant('error');
-                        loading.updateMessage('Falha na atualização');
-                        setTimeout(() => {
-                            loading.hide();
+                        if (loading) {
+                            loading.setVariant('error');
+                            loading.updateMessage('Falha na atualização');
+                            setTimeout(() => {
+                                loading.hide();
+                                alert('❌ Não foi possível atualizar o imóvel.');
+                            }, 1500);
+                        } else {
                             alert('❌ Não foi possível atualizar o imóvel.');
-                        }, 1500);
+                        }
                     }
                 }
                 
@@ -659,8 +673,10 @@ window.setupForm = function() {
                     const newProperty = await window.addNewProperty(propertyData);
                     
                     if (newProperty) {
-                        loading.setVariant('success');
-                        loading.updateMessage('Imóvel cadastrado com sucesso!');
+                        if (loading) {
+                            loading.setVariant('success');
+                            loading.updateMessage('Imóvel cadastrado com sucesso!');
+                        }
                         
                         setTimeout(() => {
                             let successMessage = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
@@ -668,12 +684,16 @@ window.setupForm = function() {
                         }, 800);
                         
                     } else {
-                        loading.setVariant('error');
-                        loading.updateMessage('Falha na criação');
-                        setTimeout(() => {
-                            loading.hide();
+                        if (loading) {
+                            loading.setVariant('error');
+                            loading.updateMessage('Falha na criação');
+                            setTimeout(() => {
+                                loading.hide();
+                                alert('❌ Não foi possível criar o imóvel.');
+                            }, 1500);
+                        } else {
                             alert('❌ Não foi possível criar o imóvel.');
-                        }, 1500);
+                        }
                     }
                 }
             }
@@ -681,18 +701,23 @@ window.setupForm = function() {
         } catch (error) {
             log.error('admin', `ERRO CRÍTICO: ${error.message}`);
             
-            loading.setVariant('error');
-            loading.updateMessage(error.message || 'Erro desconhecido');
-            
-            setTimeout(() => {
-                loading.hide();
+            if (loading) {
+                loading.setVariant('error');
+                loading.updateMessage(error.message || 'Erro desconhecido');
+                
+                setTimeout(() => {
+                    loading.hide();
+                    alert(`❌ Erro ao processar: ${error.message || 'Erro desconhecido'}`);
+                    if (submitBtn) submitBtn.disabled = false;
+                }, 1500);
+            } else {
                 alert(`❌ Erro ao processar: ${error.message || 'Erro desconhecido'}`);
                 if (submitBtn) submitBtn.disabled = false;
-            }, 1500);
+            }
             
         } finally {
             setTimeout(() => {
-                loading.hide();
+                if (loading) loading.hide();
                 window.cleanAdminForm('reset');
                 
                 if (submitBtn) {
@@ -968,6 +993,7 @@ setTimeout(() => {
     log.info('admin', '- Redução total: ~350 linhas');
     log.info('admin', '- Formulário funcional: ✅ SIM');
     log.info('admin', '- Foco automático removido: ✅ MELHORIA DE UX IMPLEMENTADA');
+    log.info('admin', '- Validação LoadingManager removida: ✅ REDUÇÃO DE REDUNDÂNCIA');
     log.groupEnd();
 }, 2000);
 
