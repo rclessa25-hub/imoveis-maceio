@@ -152,7 +152,7 @@ async function waitForAllPropertyImages() {
         // Se todas já estivessem carregadas
         if (loadedCount >= totalImages) {
             clearTimeout(safetyTimeout);
-            console.log(`⚡ ${totalImages} imagens já estavam carregadas');
+            console.log(`⚡ ${totalImages} imagens já estavam carregadas`);
             resolve(loadedCount);
         }
     });
