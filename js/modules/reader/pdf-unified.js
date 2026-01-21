@@ -1,13 +1,13 @@
-// js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - CORREÇÃO DE ESTADO
-console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.5 (CORREÇÃO DE ESTADO)');
+// js/modules/reader/pdf-unified.js - VERSÃO FINAL (COMPORTAMENTO ORIGINAL RESTAURADO)
+console.log('📄 pdf-unified.js - VERSÃO FINAL - SEMPRE MOSTRAR CONTÊINER');
 
 const PdfSystem = (function() {
-    // ========== CONFIGURAÇÃO LEVE ==========
+    // ========== CONFIGURAÇÃO ==========
     const CONFIG = {
         password: window.PDF_PASSWORD || "doc123"
     };
     
-    // ========== ESTADO MÍNIMO (APENAS UI) ==========
+    // ========== ESTADO ==========
     let state = {
         currentPropertyId: null,
         currentPropertyTitle: '',
@@ -16,89 +16,63 @@ const PdfSystem = (function() {
     
     // ========== API PÚBLICA ==========
     const api = {
-        // INICIALIZAÇÃO LEVE
         init() {
-            console.log('🔧 PdfSystem.init() - Inicializando sistema PDF');
+            console.log('🔧 PdfSystem.init()');
             return this;
         },
         
-        // ========== FUNÇÕES DE UI ==========
+        // ========== FUNÇÕES PRINCIPAIS ==========
         
-        // Modal de visualização (função principal)
         showModal(propertyId) {
-            console.log(`📄 PdfSystem.showModal(${propertyId})`);
+            console.log(`📄 showModal(${propertyId})`);
             
-            // 1. Buscar imóvel
             const property = window.properties?.find(p => p.id == propertyId);
             if (!property) {
-                console.error('❌ Imóvel não encontrado:', propertyId);
                 alert('❌ Imóvel não encontrado!');
                 return;
             }
         
-            // 2. ✅ CRÍTICO: Armazenar estado ANTES de abrir modal
+            // ✅ CRÍTICO: Armazenar estado
             state.currentPropertyId = propertyId;
             state.currentPropertyTitle = property.title;
-            state.currentPdfUrls = [];
-            
-            console.log('✅ Estado armazenado:', {
-                propertyId: state.currentPropertyId,
-                title: state.currentPropertyTitle
-            });
+            console.log('✅ Estado armazenado:', state.currentPropertyId);
         
-            // 3. Usar o modal existente no HTML
+            // Usar modal existente
             let modal = document.getElementById('pdfModal');
-            
             if (!modal) {
-                console.error('❌ Modal PDF não encontrado no HTML!');
                 alert('Erro: sistema de documentos não disponível.');
                 return;
             }
         
-            // 4. Configurar título
+            // Configurar título
             const titleElement = document.getElementById('pdfModalTitle');
             const passwordInput = document.getElementById('pdfPassword');
             
             if (titleElement) {
                 titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
-                // ✅ Armazenar também no dataset para backup
                 titleElement.dataset.propertyId = propertyId;
             }
             
-            // 5. Garantir que o campo de senha está visível
+            // Garantir campo visível
             if (passwordInput) {
                 passwordInput.value = '';
                 passwordInput.style.display = 'block';
                 passwordInput.style.visibility = 'visible';
                 passwordInput.style.opacity = '1';
-                passwordInput.style.width = '100%';
-                passwordInput.style.margin = '1rem 0';
             }
         
-            // 6. Exibir modal
             modal.style.display = 'flex';
-        
-            // 7. Focar no campo de senha
+            
             setTimeout(() => {
-                if (passwordInput) {
-                    passwordInput.focus();
-                    passwordInput.select();
-                    console.log('✅ Modal aberto com foco no campo de senha');
-                }
+                if (passwordInput) passwordInput.focus();
             }, 100);
         
             return modal;
         },
 
-        // Validação de senha (UI) - ✅ CORRIGIDO: Estado preservado
+        // ✅✅✅ FUNÇÃO CRÍTICA - CORRIGIDA PARA SEMPRE MOSTRAR CONTÊINER
         validatePasswordAndShowList() {
-            console.log('🔓 PdfSystem.validatePasswordAndShowList() - Iniciando validação');
-            
-            // ✅ DEBUG: Verificar estado atual
-            console.log('🔍 Estado atual:', {
-                currentPropertyId: state.currentPropertyId,
-                currentPropertyTitle: state.currentPropertyTitle
-            });
+            console.log('🔓 validatePasswordAndShowList() - INICIANDO');
             
             const passwordInput = document.getElementById('pdfPassword');
             if (!passwordInput) {
@@ -113,7 +87,6 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // Verificar senha
             if (password !== CONFIG.password && password !== "doc123") {
                 alert('❌ Senha incorreta!\n\nA senha correta é: doc123');
                 passwordInput.value = '';
@@ -121,43 +94,31 @@ const PdfSystem = (function() {
                 return;
             }
             
-            console.log('✅ Senha válida!');
+            console.log('✅ Senha válida');
             
-            // ✅ MÚLTIPLAS ESTRATÉGIAS para obter o propertyId
+            // ✅ ESTRATÉGIA 1: Usar estado atual
             let propertyId = state.currentPropertyId;
             
-            // Estratégia 1: Usar estado armazenado
+            // ✅ ESTRATÉGIA 2: Buscar no título do modal
             if (!propertyId) {
-                console.warn('⚠️ propertyId não encontrado no estado, tentando estratégias alternativas...');
-                
-                // Estratégia 2: Buscar no título do modal
                 const titleElement = document.getElementById('pdfModalTitle');
                 if (titleElement && titleElement.dataset.propertyId) {
                     propertyId = titleElement.dataset.propertyId;
-                    console.log('✅ propertyId recuperado do dataset:', propertyId);
-                }
-                
-                // Estratégia 3: Tentar obter da última propriedade manipulada
-                if (!propertyId && window.properties && window.properties.length > 0) {
-                    // Usar o último imóvel visualizado (se houver uma maneira de rastrear)
-                    console.log('⚠️ Usando fallback - último imóvel disponível');
+                    console.log('✅ propertyId do dataset:', propertyId);
                 }
             }
             
             if (!propertyId) {
-                alert('⚠️ Não foi possível identificar o imóvel. Por favor, tente novamente.');
-                console.error('❌ propertyId não encontrado após todas as estratégias');
+                alert('⚠️ Não foi possível identificar o imóvel');
                 this.closeModal();
                 return;
             }
             
-            console.log(`🔍 Buscando imóvel com ID: ${propertyId}`);
+            console.log(`🔍 Buscando imóvel ID: ${propertyId}`);
             
             const property = window.properties?.find(p => p.id == propertyId);
             if (!property) {
-                alert('❌ Imóvel não encontrado no sistema!');
-                console.error('❌ Imóvel não encontrado na lista window.properties');
-                console.log('📋 Imóveis disponíveis:', window.properties?.map(p => p.id));
+                alert('❌ Imóvel não encontrado!');
                 this.closeModal();
                 return;
             }
@@ -178,48 +139,37 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // ✅ Atualizar estado com URLs
-            state.currentPdfUrls = pdfUrls;
+            // ✅✅✅ CRÍTICO: NÃO ABRIR PDFs AUTOMATICAMENTE
+            // NÃO FAZER: window.open(pdfUrls[0], '_blank');
             
-            console.log(`✅ ${pdfUrls.length} documento(s) encontrado(s)`);
+            // ✅✅✅ SEMPRE MOSTRAR CONTÊINER
+            this.closeModal();
             
-            // ✅ COMPORTAMENTO ORIGINAL: SEMPRE mostrar lista
-            this.closeModal(); // Fechar modal de senha
-            
-            // Pequeno delay para garantir que o modal fechou
+            // Pequeno delay para transição suave
             setTimeout(() => {
                 this.showDocumentList(propertyId, property.title, pdfUrls);
             }, 300);
         },
         
-        // Fechar modal de senha
         closeModal() {
-            console.log('❌ PdfSystem.closeModal()');
             const modal = document.getElementById('pdfModal');
-            if (modal) {
-                modal.style.display = 'none';
-                console.log('✅ Modal de senha fechado');
-            }
+            if (modal) modal.style.display = 'none';
             return this;
         },
         
-        // Lista de seleção (UI) - ✅ COMPORTAMENTO ORIGINAL
+        // ✅✅✅ FUNÇÃO QUE SEMPRE MOSTRA O CONTÊINER
         showDocumentList(propertyId, propertyTitle, pdfUrls) {
-            console.log(`📋 PdfSystem.showDocumentList() - ${pdfUrls.length} documento(s)`);
+            console.log(`📋 showDocumentList() - ${pdfUrls.length} documento(s)`);
             
-            // Armazenar URLs no estado
+            // Armazenar URLs
             state.currentPdfUrls = pdfUrls;
             
-            // Criar ou atualizar modal de seleção
-            let selectionModal = document.getElementById('pdfSelectionModal');
-            
-            // Remover modal antigo se existir
-            if (selectionModal) {
-                selectionModal.remove();
-            }
+            // Remover modal anterior se existir
+            let oldModal = document.getElementById('pdfSelectionModal');
+            if (oldModal) oldModal.remove();
             
             // Criar novo modal
-            selectionModal = document.createElement('div');
+            const selectionModal = document.createElement('div');
             selectionModal.id = 'pdfSelectionModal';
             selectionModal.className = 'pdf-modal';
             selectionModal.style.cssText = `
@@ -236,15 +186,14 @@ const PdfSystem = (function() {
                 padding: 20px;
             `;
             
-            document.body.appendChild(selectionModal);
-            
-            // Gerar lista de documentos
+            // ✅ Geração segura da lista SEM onclick inline
             const pdfListHtml = pdfUrls.map((url, index) => {
                 const fileName = url.split('/').pop() || `Documento ${index + 1}`;
                 const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
+                const itemId = `pdf-item-${index}`;
                 
                 return `
-                    <div class="pdf-list-item" data-pdf-url="${url}" style="
+                    <div id="${itemId}" class="pdf-list-item" style="
                         background: white;
                         border-radius: 8px;
                         padding: 1rem;
@@ -255,7 +204,6 @@ const PdfSystem = (function() {
                         box-shadow: 0 3px 10px rgba(0,0,0,0.1);
                         cursor: pointer;
                         border-left: 4px solid var(--primary);
-                        transition: all 0.3s ease;
                     ">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -266,7 +214,7 @@ const PdfSystem = (function() {
                                 </div>
                             </div>
                         </div>
-                        <button class="pdf-view-btn" data-pdf-url="${url}" 
+                        <button class="pdf-view-btn" data-pdf-index="${index}" 
                                 style="
                                     background: var(--primary);
                                     color: white;
@@ -278,7 +226,6 @@ const PdfSystem = (function() {
                                     display: flex;
                                     align-items: center;
                                     gap: 5px;
-                                    transition: all 0.3s ease;
                                 ">
                             <i class="fas fa-eye"></i> Visualizar
                         </button>
@@ -296,7 +243,6 @@ const PdfSystem = (function() {
                     max-height: 80vh;
                     overflow-y: auto;
                     position: relative;
-                    animation: fadeIn 0.3s ease;
                 ">
                     <button id="closePdfListBtn" style="
                         position: absolute;
@@ -324,7 +270,7 @@ const PdfSystem = (function() {
                     </p>
                     
                     <div id="pdfListContainer" style="margin-bottom: 1.5rem;">
-                        ${pdfUrls.length > 0 ? pdfListHtml : '<p style="text-align: center; color: #666;">Nenhum documento disponível</p>'}
+                        ${pdfListHtml}
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -351,187 +297,123 @@ const PdfSystem = (function() {
                 </div>
             `;
             
-            // Configurar eventos
+            document.body.appendChild(selectionModal);
+            
+            // ✅✅✅ CONFIGURAR EVENTOS DEPOIS de criar o HTML
             setTimeout(() => {
-                this.setupPdfListEvents();
+                this.setupPdfListEvents(pdfUrls);
             }, 50);
             
             selectionModal.style.display = 'flex';
-            console.log('✅ Contêiner de lista de PDFs aberto');
+            console.log('✅✅✅ CONTÊINER DE PDFs ABERTO COM SUCESSO!');
         },
         
-        // Configurar eventos para a lista de PDFs
-        setupPdfListEvents() {
-            console.log('🎮 Configurando eventos para lista de PDFs...');
+        // ✅ Configuração segura de eventos
+        setupPdfListEvents(pdfUrls) {
+            console.log('🎮 Configurando eventos...');
             
-            const selectionModal = document.getElementById('pdfSelectionModal');
-            if (!selectionModal) return;
+            const modal = document.getElementById('pdfSelectionModal');
+            if (!modal) return;
             
             // Botão Fechar
             const closeBtn = document.getElementById('closePdfListBtn');
             if (closeBtn) {
                 closeBtn.onclick = () => {
-                    selectionModal.style.display = 'none';
-                    console.log('✅ Lista de PDFs fechada');
+                    modal.style.display = 'none';
+                    console.log('❌ Contêiner fechado');
                 };
             }
             
-            // Botões "Visualizar"
-            const viewButtons = selectionModal.querySelectorAll('.pdf-view-btn');
+            // Botões Visualizar
+            const viewButtons = modal.querySelectorAll('.pdf-view-btn');
             viewButtons.forEach(button => {
-                const url = button.getAttribute('data-pdf-url');
-                if (url) {
-                    button.onclick = (e) => {
+                const index = button.getAttribute('data-pdf-index');
+                if (index !== null && pdfUrls[index]) {
+                    // Clone e substitui para limpar eventos
+                    const newButton = button.cloneNode(true);
+                    button.parentNode.replaceChild(newButton, button);
+                    
+                    // Adiciona evento
+                    newButton.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        console.log(`📄 Abrindo PDF: ${url}`);
-                        window.open(url, '_blank');
-                    };
+                        console.log(`📄 Abrindo PDF ${index}: ${pdfUrls[index]}`);
+                        window.open(pdfUrls[index], '_blank');
+                    });
                 }
             });
             
             // Itens da lista
-            const listItems = selectionModal.querySelectorAll('.pdf-list-item');
-            listItems.forEach(item => {
-                const url = item.getAttribute('data-pdf-url');
-                if (url) {
-                    item.onclick = (e) => {
+            const listItems = modal.querySelectorAll('.pdf-list-item');
+            listItems.forEach((item, index) => {
+                if (pdfUrls[index]) {
+                    item.addEventListener('click', (e) => {
                         if (e.target.closest('.pdf-view-btn')) return;
-                        console.log(`📄 Abrindo PDF via clique no item: ${url}`);
-                        window.open(url, '_blank');
-                    };
-                    
-                    item.onmouseenter = () => {
-                        item.style.transform = 'translateY(-2px)';
-                        item.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
-                    };
-                    
-                    item.onmouseleave = () => {
-                        item.style.transform = 'translateY(0)';
-                        item.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1)';
-                    };
+                        console.log(`📄 Abrindo PDF ${index} via clique no item`);
+                        window.open(pdfUrls[index], '_blank');
+                    });
                 }
             });
             
-            // Botão "Baixar Todos"
-            const downloadAllBtn = document.getElementById('downloadAllPdfsBtn');
-            if (downloadAllBtn && state.currentPdfUrls.length > 1) {
-                downloadAllBtn.onclick = () => {
-                    this.downloadAllPdfs(state.currentPdfUrls);
-                };
+            // Botão Baixar Todos
+            const downloadBtn = document.getElementById('downloadAllPdfsBtn');
+            if (downloadBtn && pdfUrls.length > 1) {
+                downloadBtn.addEventListener('click', () => {
+                    this.downloadAllPdfs(pdfUrls);
+                });
             }
             
-            console.log(`✅ ${viewButtons.length} botões configurados`);
+            console.log(`✅ ${viewButtons.length} eventos configurados`);
         },
         
-        // Download de todos os PDFs
         downloadAllPdfs(urls) {
-            console.log(`📥 Download de ${urls.length} PDF(s)`);
-            let successCount = 0;
-            
+            console.log(`📥 Baixando ${urls.length} PDF(s)`);
             urls.forEach((url, index) => {
                 try {
                     const fileName = url.split('/').pop() || `documento_${index + 1}.pdf`;
-                    const tempAnchor = document.createElement('a');
-                    tempAnchor.href = url;
-                    tempAnchor.download = fileName;
-                    tempAnchor.style.display = 'none';
-                    document.body.appendChild(tempAnchor);
-                    tempAnchor.click();
-                    document.body.removeChild(tempAnchor);
-                    
-                    successCount++;
-                    console.log(`✅ Download iniciado: ${fileName}`);
-                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    console.log(`✅ Download: ${fileName}`);
                 } catch (error) {
-                    console.error(`❌ Erro ao baixar ${url}:`, error);
+                    console.error(`❌ Erro: ${url}`, error);
                 }
             });
             
-            if (successCount > 0) {
-                alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
-            }
+            alert(`✅ ${urls.length} documento(s) enviado(s) para download!`);
         }
     };
     
     return api;
 })();
 
-// Exportação global
+// ========== EXPORTAÇÃO ==========
 window.PdfSystem = PdfSystem;
 
-// ========== FUNÇÕES GLOBAIS DE COMPATIBILIDADE ==========
-
-// Função global para acessar documentos
+// ========== FUNÇÕES GLOBAIS (para o modal HTML) ==========
 window.accessPdfDocuments = function() {
-    console.log('🔓 accessPdfDocuments() - Função global chamada');
-    
-    if (window.PdfSystem && typeof window.PdfSystem.validatePasswordAndShowList === 'function') {
+    console.log('🔓 accessPdfDocuments() chamado');
+    if (window.PdfSystem && window.PdfSystem.validatePasswordAndShowList) {
         return window.PdfSystem.validatePasswordAndShowList();
     }
-    
-    // Fallback
-    const passwordInput = document.getElementById('pdfPassword');
-    if (!passwordInput) {
-        alert('Erro: campo de senha não disponível');
-        return;
-    }
-    
-    const password = passwordInput.value.trim();
-    if (!password) {
-        alert('Digite a senha para acessar os documentos!');
-        passwordInput.focus();
-        return;
-    }
-    
-    if (password !== "doc123") {
-        alert('❌ Senha incorreta!\n\nA senha correta é: doc123');
-        passwordInput.value = '';
-        passwordInput.focus();
-        return;
-    }
-    
-    console.log('✅ Senha válida via função global');
+    alert('Sistema de PDF não disponível');
 };
 
-// Função global para fechar modal
 window.closePdfModal = function() {
-    console.log('❌ closePdfModal()');
     const modal = document.getElementById('pdfModal');
     if (modal) modal.style.display = 'none';
 };
 
 // ========== INICIALIZAÇÃO ==========
 if (!window.pdfSystemInitialized) {
-    window.pdfSystemInitialized = false;
-    
-    const initPdfSystem = function() {
-        if (window.pdfSystemInitialized) return;
-        if (typeof window.PdfSystem !== 'undefined') {
-            window.PdfSystem.init();
-            window.pdfSystemInitialized = true;
-            console.log('✅ PdfSystem inicializado - CORREÇÃO DE ESTADO APLICADA');
-        }
-    };
-    
+    window.pdfSystemInitialized = true;
     setTimeout(() => {
-        if (window.MediaSystem) {
-            initPdfSystem();
-        } else {
-            console.log('⏳ Aguardando MediaSystem...');
-            setTimeout(initPdfSystem, 1000);
+        if (window.PdfSystem) {
+            window.PdfSystem.init();
+            console.log('✅ PdfSystem inicializado - CONTÊINER SEMPRE VISÍVEL');
         }
-    }, 1500);
-}
-
-// Adicionar estilo para animação
-if (!document.getElementById('pdf-animation-style')) {
-    const style = document.createElement('style');
-    style.id = 'pdf-animation-style';
-    style.textContent = `
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    `;
-    document.head.appendChild(style);
+    }, 1000);
 }
