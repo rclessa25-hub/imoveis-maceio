@@ -1,5 +1,5 @@
-// js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - CORRIGIDA
-console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.3 (Cliente UI)');
+// js/modules/reader/pdf-unified.js - VERSÃO REFATORADA (ARQUITETURAL) - RESTAURADO COMPORTAMENTO ORIGINAL
+console.log('📄 pdf-unified.js - Sistema PDF Refatorado V1.3 (Cliente UI) - COMPORTAMENTO ORIGINAL RESTAURADO');
 
 const PdfSystem = (function() {
     // ========== CONFIGURAÇÃO LEVE ==========
@@ -274,7 +274,7 @@ const PdfSystem = (function() {
             return modal;
         },
 
-        // Validação de senha (UI) - ✅ CORRIGIDO
+        // Validação de senha (UI) - ✅ RESTAURADO COMPORTAMENTO ORIGINAL
         validatePasswordAndShowList() {
             console.log('🔓 PdfSystem.validatePasswordAndShowList() - Função UI');
             const passwordInput = document.getElementById('pdfPassword');
@@ -325,16 +325,10 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // ✅ RESTAURADO: Mostrar lista de seleção antes de abrir
-            if (pdfUrls.length === 1) {
-                // Otimização: se só tem 1 PDF, abrir diretamente
-                window.open(pdfUrls[0], '_blank');
-                this.closeModal();
-            } else {
-                // Mostrar lista para usuário escolher
-                this.showDocumentList(propertyId, property.title, pdfUrls);
-                this.closeModal(); // Fechar modal de senha
-            }
+            // ✅ RESTAURADO COMPORTAMENTO ORIGINAL: SEMPRE mostrar lista
+            // Mostrar lista para usuário escolher (mesmo se só tem 1)
+            this.showDocumentList(propertyId, property.title, pdfUrls);
+            this.closeModal(); // Fechar modal de senha
         },
         
         // Fechar modal (UI)
@@ -345,45 +339,47 @@ const PdfSystem = (function() {
             return this;
         },
         
-        // Lista de seleção (UI) - ✅ CORRIGIDO: usando addEventListener
+        // Lista de seleção (UI) - ✅ RESTAURADO: SEMPRE mostrar contêiner
         showDocumentList(propertyId, propertyTitle, pdfUrls) {
-            console.log('📋 PdfSystem.showDocumentList() - Função UI');
+            console.log('📋 PdfSystem.showDocumentList() - Função UI - MOSTRANDO SEMPRE CONTÊINER');
             
             // Armazenar URLs no estado para uso posterior
             state.currentPdfUrls = pdfUrls;
             
-            // Criar modal de seleção
+            // Criar ou atualizar modal de seleção
             let selectionModal = document.getElementById('pdfSelectionModal');
             
-            if (!selectionModal) {
-                selectionModal = document.createElement('div');
-                selectionModal.id = 'pdfSelectionModal';
-                selectionModal.className = 'pdf-modal';
-                selectionModal.style.cssText = `
-                    display: flex;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0,0,0,0.9);
-                    z-index: 10001;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                `;
-                
-                document.body.appendChild(selectionModal);
+            // ✅ MELHORIA: Remover modal antigo completamente e recriar
+            if (selectionModal) {
+                selectionModal.remove();
             }
             
-            // Gerar lista de documentos com IDs únicos
+            selectionModal = document.createElement('div');
+            selectionModal.id = 'pdfSelectionModal';
+            selectionModal.className = 'pdf-modal';
+            selectionModal.style.cssText = `
+                display: flex;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                z-index: 10001;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            `;
+            
+            document.body.appendChild(selectionModal);
+            
+            // Gerar lista de documentos
             const pdfListHtml = pdfUrls.map((url, index) => {
                 const fileName = url.split('/').pop() || `Documento ${index + 1}`;
                 const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
-                const itemId = `pdf-item-${propertyId}-${index}`;
                 
                 return `
-                    <div id="${itemId}" class="pdf-list-item" style="
+                    <div class="pdf-list-item" data-pdf-url="${url}" style="
                         background: white;
                         border-radius: 8px;
                         padding: 1rem;
@@ -405,8 +401,7 @@ const PdfSystem = (function() {
                                 </div>
                             </div>
                         </div>
-                        <button data-pdf-index="${index}" 
-                                class="pdf-view-btn"
+                        <button class="pdf-view-btn" data-pdf-url="${url}" 
                                 style="
                                     background: var(--primary);
                                     color: white;
@@ -436,21 +431,21 @@ const PdfSystem = (function() {
                     max-height: 80vh;
                     overflow-y: auto;
                     position: relative;
+                    animation: fadeIn 0.3s ease;
                 ">
-                    <button onclick="PdfSystem.closeDocumentList()" 
-                            style="
-                                position: absolute;
-                                top: 10px;
-                                right: 10px;
-                                background: #e74c3c;
-                                color: white;
-                                border: none;
-                                border-radius: 50%;
-                                width: 30px;
-                                height: 30px;
-                                cursor: pointer;
-                                font-size: 1rem;
-                            ">
+                    <button id="closePdfListBtn" style="
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        background: #e74c3c;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 30px;
+                        height: 30px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                    ">
                         ×
                     </button>
                     
@@ -464,94 +459,109 @@ const PdfSystem = (function() {
                     </p>
                     
                     <div id="pdfListContainer" style="margin-bottom: 1.5rem;">
-                        ${pdfListHtml}
+                        ${pdfUrls.length > 0 ? pdfListHtml : '<p style="text-align: center; color: #666;">Nenhum documento disponível</p>'}
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <small style="color: #95a5a6;">
                             <i class="fas fa-info-circle"></i> Clique em "Visualizar" para abrir em nova aba
                         </small>
-                        <button onclick="PdfSystem.downloadAllPdfs(${JSON.stringify(pdfUrls)})" 
-                                style="
-                                    background: var(--success);
-                                    color: white;
-                                    border: none;
-                                    padding: 0.6rem 1.2rem;
-                                    border-radius: 5px;
-                                    cursor: pointer;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 5px;
-                                ">
-                            <i class="fas fa-download"></i> Baixar Todos
-                        </button>
+                        ${pdfUrls.length > 0 ? `
+                            <button id="downloadAllPdfsBtn" 
+                                    style="
+                                        background: var(--success);
+                                        color: white;
+                                        border: none;
+                                        padding: 0.6rem 1.2rem;
+                                        border-radius: 5px;
+                                        cursor: pointer;
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 5px;
+                                    ">
+                                <i class="fas fa-download"></i> Baixar Todos
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
             
-            selectionModal.style.display = 'flex';
-            
-            // ✅ ADICIONAR EVENT LISTENERS DEPOIS de criar o HTML
+            // ✅ CRÍTICO: Adicionar eventos DEPOIS que o HTML foi inserido
             setTimeout(() => {
                 this.setupPdfListEvents(pdfUrls);
-            }, 100);
+            }, 50);
+            
+            selectionModal.style.display = 'flex';
         },
         
-        // ✅ NOVO: Configurar eventos para a lista de PDFs
+        // ✅ Configurar eventos para a lista de PDFs
         setupPdfListEvents(pdfUrls) {
             console.log('🎮 Configurando eventos para lista de PDFs...');
             
-            // Adicionar evento de clique nos botões "Visualizar"
-            const viewButtons = document.querySelectorAll('.pdf-view-btn');
-            viewButtons.forEach((button, index) => {
-                // Remover qualquer evento existente
-                const newButton = button.cloneNode(true);
-                button.parentNode.replaceChild(newButton, button);
-                
-                // Adicionar novo evento
-                newButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    console.log(`📄 Abrindo PDF ${index}: ${pdfUrls[index]}`);
-                    window.open(pdfUrls[index], '_blank');
-                });
+            const selectionModal = document.getElementById('pdfSelectionModal');
+            if (!selectionModal) return;
+            
+            // 1. Botão Fechar
+            const closeBtn = document.getElementById('closePdfListBtn');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    selectionModal.style.display = 'none';
+                };
+            }
+            
+            // 2. Botões "Visualizar"
+            const viewButtons = selectionModal.querySelectorAll('.pdf-view-btn');
+            viewButtons.forEach(button => {
+                const url = button.getAttribute('data-pdf-url');
+                if (url) {
+                    // Remover qualquer evento anterior
+                    button.onclick = null;
+                    
+                    // Adicionar novo evento
+                    button.onclick = (e) => {
+                        e.stopPropagation();
+                        console.log(`📄 Abrindo PDF: ${url}`);
+                        window.open(url, '_blank');
+                    };
+                }
             });
             
-            // Adicionar evento de clique nos itens da lista
-            const listItems = document.querySelectorAll('.pdf-list-item');
-            listItems.forEach((item, index) => {
-                item.addEventListener('click', (e) => {
-                    // Não abrir se clicar no botão "Visualizar"
-                    if (e.target.closest('.pdf-view-btn')) {
-                        return;
-                    }
-                    console.log(`📄 Abrindo PDF ${index} via clique no item`);
-                    window.open(pdfUrls[index], '_blank');
-                });
-                
-                // Efeitos hover
-                item.addEventListener('mouseenter', () => {
-                    item.style.transform = 'translateY(-2px)';
-                    item.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
-                });
-                
-                item.addEventListener('mouseleave', () => {
-                    item.style.transform = 'translateY(0)';
-                    item.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1)';
-                });
+            // 3. Itens da lista (clicar no item inteiro)
+            const listItems = selectionModal.querySelectorAll('.pdf-list-item');
+            listItems.forEach(item => {
+                const url = item.getAttribute('data-pdf-url');
+                if (url) {
+                    item.onclick = (e) => {
+                        // Não abrir se clicar no botão "Visualizar"
+                        if (e.target.closest('.pdf-view-btn')) {
+                            return;
+                        }
+                        console.log(`📄 Abrindo PDF via clique no item: ${url}`);
+                        window.open(url, '_blank');
+                    };
+                    
+                    // Efeitos hover
+                    item.onmouseenter = () => {
+                        item.style.transform = 'translateY(-2px)';
+                        item.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
+                    };
+                    
+                    item.onmouseleave = () => {
+                        item.style.transform = 'translateY(0)';
+                        item.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1)';
+                    };
+                }
             });
+            
+            // 4. Botão "Baixar Todos"
+            const downloadAllBtn = document.getElementById('downloadAllPdfsBtn');
+            if (downloadAllBtn && pdfUrls.length > 0) {
+                downloadAllBtn.onclick = () => {
+                    this.downloadAllPdfs(pdfUrls);
+                };
+            }
             
             console.log(`✅ ${viewButtons.length} botões de PDF configurados`);
-        },
-        
-        // ✅ NOVO: Fechar lista de documentos
-        closeDocumentList() {
-            console.log('❌ Fechando lista de documentos');
-            const selectionModal = document.getElementById('pdfSelectionModal');
-            if (selectionModal) {
-                selectionModal.style.display = 'none';
-                // Limpar estado
-                state.currentPdfUrls = [];
-            }
         },
         
         // Download (UI)
