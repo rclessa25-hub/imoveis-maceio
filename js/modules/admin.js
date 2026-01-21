@@ -437,7 +437,8 @@ window.editProperty = function(id) {
         if (property.price.startsWith('R$')) {
             priceField.value = property.price;
         } else {
-            priceField.value = formatPriceForInputFallback(property.price) || '';
+            // ✅ ATUALIZADO: Usar função do SharedCore
+            priceField.value = window.formatPriceForInput?.(property.price) || property.price;
         }
     }
     
@@ -503,14 +504,6 @@ window.editProperty = function(id) {
     return true;
 };
 
-function formatPriceForInputFallback(value) {
-    if (!value) return '';
-    let numbersOnly = value.toString().replace(/\D/g, '');
-    if (numbersOnly === '') return '';
-    let priceNumber = parseInt(numbersOnly);
-    return 'R$ ' + priceNumber.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-}
-
 // ========== CONFIGURAÇÃO DO FORMULÁRIO ==========
 window.setupForm = function() {
     log.info('admin', 'Configurando formulário admin...');
@@ -525,8 +518,10 @@ window.setupForm = function() {
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     
-    // Configurar formatação de preço
-    setupPriceAutoFormatFallback();
+    // ✅ ATUALIZADO: Usar função do SharedCore
+    if (window.setupPriceAutoFormat) {
+        window.setupPriceAutoFormat();
+    }
     
     // Configurar submit
     const freshForm = document.getElementById('propertyForm');
@@ -594,9 +589,9 @@ window.setupForm = function() {
                 
                 const updateData = { ...propertyData };
                 
-                // Formatar preço
+                // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
                 if (updateData.price && !updateData.price.startsWith('R$')) {
-                    updateData.price = formatPriceForInputFallback(updateData.price);
+                    updateData.price = window.formatPriceForInput?.(updateData.price) || updateData.price;
                 }
                 
                 // Processar PDFs
@@ -663,9 +658,9 @@ window.setupForm = function() {
                 // Criação de novo imóvel
                 log.info('admin', 'CRIANDO novo imóvel...');
                 
-                // Formatar preço
+                // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
                 if (propertyData.price && !propertyData.price.startsWith('R$')) {
-                    propertyData.price = formatPriceForInputFallback(propertyData.price);
+                    propertyData.price = window.formatPriceForInput?.(propertyData.price) || propertyData.price;
                 }
                 
                 // Criar no banco
@@ -746,35 +741,6 @@ window.setupForm = function() {
     
     log.success('admin', 'Formulário admin configurado');
 };
-
-function setupPriceAutoFormatFallback() {
-    const priceField = document.getElementById('propPrice');
-    if (!priceField) return;
-    
-    if (priceField.value && !priceField.value.startsWith('R$')) {
-        priceField.value = formatPriceForInputFallback(priceField.value);
-    }
-    
-    priceField.addEventListener('input', function(e) {
-        if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward' || e.inputType === 'deleteByCut') {
-            return;
-        }
-        
-        const cursorPos = this.selectionStart;
-        const originalValue = this.value;
-        this.value = formatPriceForInputFallback(this.value);
-        const diff = this.value.length - originalValue.length;
-        this.setSelectionRange(cursorPos + diff, cursorPos + diff);
-    });
-    
-    priceField.addEventListener('blur', function() {
-        if (this.value && !this.value.startsWith('R$')) {
-            this.value = formatPriceForInputFallback(this.value);
-        }
-    });
-    
-    log.info('admin', 'Formatação automática de preço configurada');
-}
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
 window.syncWithSupabaseManual = async function() {
@@ -994,6 +960,8 @@ setTimeout(() => {
     log.info('admin', '- Formulário funcional: ✅ SIM');
     log.info('admin', '- Foco automático removido: ✅ MELHORIA DE UX IMPLEMENTADA');
     log.info('admin', '- Validação LoadingManager removida: ✅ REDUÇÃO DE REDUNDÂNCIA');
+    // ✅ NOVO: Consolidação de formatação de preço
+    log.info('admin', '- Funções de formatação de preço consolidadas no SharedCore: ✅ DRY IMPLEMENTADO');
     log.groupEnd();
 }, 2000);
 
