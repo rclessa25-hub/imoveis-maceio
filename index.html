@@ -415,22 +415,21 @@
 </section>
    
     <!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
-    <div id="pdfModal" class="pdf-modal" style="display: none;">
+    <div id="pdfModal" class="pdf-modal">
         <div class="pdf-modal-content">
             <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
             <div id="pdfPreview" class="pdf-preview">
-                <p>Digite a senha para visualizar os documentos</p>
+                <p>Documentos técnicos e legais disponíveis</p>
             </div>
-            <input type="password" id="pdfPassword" class="pdf-password-input" 
-                   placeholder="Digite a senha para acessar" autocomplete="off"
-                   style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; margin: 1rem 0; display: block;">
+            <form style="display: none;" aria-hidden="true" autocomplete="off">
+                <input type="text" name="dummy-username" style="display:none" autocomplete="username">
+                <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar" autocomplete="new-password">
+            </form>
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button id="pdfAccessBtn"
-                        style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
                     <i class="fas fa-lock-open"></i> Acessar
                 </button>
-                <button id="pdfCloseBtn"
-                        style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
                     <i class="fas fa-times"></i> Fechar
                 </button>
             </div>
@@ -580,39 +579,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }, 1000);
 });
 </script>
-    
-// Inicialização definitiva do sistema PDF
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Inicializando sistema PDF definitivo...');
-    
-    // Esperar um pouco para garantir que todos os módulos carregaram
-    setTimeout(() => {
-        // Configurar eventos do modal PDF
-        const pdfAccessBtn = document.getElementById('pdfAccessBtn');
-        const pdfCloseBtn = document.getElementById('pdfCloseBtn');
-        
-        if (pdfAccessBtn) {
-            pdfAccessBtn.onclick = function() {
-                console.log('🔓 Botão Acessar clicado via script');
-                if (window.PdfSystem && window.PdfSystem.validatePasswordAndShowList) {
-                    window.PdfSystem.validatePasswordAndShowList();
-                }
-            };
-        }
-        
-        if (pdfCloseBtn) {
-            pdfCloseBtn.onclick = function() {
-                console.log('❌ Botão Fechar clicado');
-                const modal = document.getElementById('pdfModal');
-                if (modal) modal.style.display = 'none';
-            };
-        }
-        
-        console.log('✅ Eventos do modal PDF configurados');
-    }, 1500);
-});
-</script>    
     
 </body>
 </html>
