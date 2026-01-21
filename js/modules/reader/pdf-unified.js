@@ -1,5 +1,5 @@
-// js/modules/reader/pdf-unified.js - VERSÃO DEFINITIVA - COMPORTAMENTO ORIGINAL RESTAURADO
-console.log('📄 pdf-unified.js - VERSÃO DEFINITIVA - FLUXO ORIGINAL GARANTIDO');
+// js/modules/reader/pdf-unified.js - VERSÃO FINAL - SEM EVENTOS DUPLICADOS
+console.log('📄 pdf-unified.js - VERSÃO FINAL - SEM POP-UPS AUTOMÁTICOS');
 
 const PdfSystem = (function() {
     // ========== CONFIGURAÇÃO ==========
@@ -11,39 +11,77 @@ const PdfSystem = (function() {
     let state = {
         currentPropertyId: null,
         currentPropertyTitle: '',
-        currentPdfUrls: []
+        currentPdfUrls: [],
+        modalOpen: false
     };
     
     // ========== API PÚBLICA ==========
     const api = {
         init() {
             console.log('🔧 PdfSystem.init() - Sistema PDF inicializado');
-            this.setupGlobalEvents();
+            
+            // REMOVER qualquer evento global anterior
+            this.removeGlobalEvents();
+            
+            // Configurar eventos UMA ÚNICA VEZ
+            this.setupModalEvents();
+            
             return this;
         },
         
-        // ========== CONFIGURAÇÃO DE EVENTOS GLOBAIS (CRÍTICO) ==========
-        setupGlobalEvents() {
-            console.log('🔧 Configurando eventos globais do PDF');
+        // ========== REMOVER EVENTOS GLOBAIS (IMPORTANTE) ==========
+        removeGlobalEvents() {
+            console.log('🧹 Removendo eventos globais anteriores...');
             
-            // Remover qualquer evento anterior para evitar duplicação
-            document.removeEventListener('click', this.handleGlobalClick);
+            // Remover event listeners se existirem
+            const pdfAccessBtn = document.getElementById('pdfAccessBtn');
+            const pdfCloseBtn = document.getElementById('pdfCloseBtn');
             
-            // Adicionar listener global para interceptar cliques
-            document.addEventListener('click', this.handleGlobalClick.bind(this));
+            if (pdfAccessBtn) {
+                const newBtn = pdfAccessBtn.cloneNode(true);
+                pdfAccessBtn.parentNode.replaceChild(newBtn, pdfAccessBtn);
+            }
             
-            console.log('✅ Eventos globais configurados');
+            if (pdfCloseBtn) {
+                const newBtn = pdfCloseBtn.cloneNode(true);
+                pdfCloseBtn.parentNode.replaceChild(newBtn, pdfCloseBtn);
+            }
         },
         
-        // Handler para interceptar cliques
-        handleGlobalClick(e) {
-            // Verificar se é clique no botão "Acessar" do modal PDF
-            if (e.target.closest('button') && 
-                e.target.closest('button').getAttribute('onclick')?.includes('accessPdfDocuments')) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔍 Interceptando clique no botão Acessar');
-                this.validatePasswordAndShowList();
+        // ========== CONFIGURAR EVENTOS DO MODAL (UMA ÚNICA VEZ) ==========
+        setupModalEvents() {
+            console.log('🔧 Configurando eventos do modal...');
+            
+            const pdfAccessBtn = document.getElementById('pdfAccessBtn');
+            const pdfCloseBtn = document.getElementById('pdfCloseBtn');
+            
+            if (pdfAccessBtn) {
+                console.log('✅ Configurando botão Acessar');
+                // REMOVER todos os eventos anteriores
+                pdfAccessBtn.replaceWith(pdfAccessBtn.cloneNode(true));
+                const newAccessBtn = document.getElementById('pdfAccessBtn');
+                
+                // Adicionar evento UMA ÚNICA VEZ
+                newAccessBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    console.log('🎯 Botão Acessar clicado VIA EVENT LISTENER');
+                    this.validatePasswordAndShowList();
+                }, true); // Use capture phase para garantir execução
+            }
+            
+            if (pdfCloseBtn) {
+                console.log('✅ Configurando botão Fechar');
+                pdfCloseBtn.replaceWith(pdfCloseBtn.cloneNode(true));
+                const newCloseBtn = document.getElementById('pdfCloseBtn');
+                
+                newCloseBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🎯 Botão Fechar clicado');
+                    this.closeModal();
+                }, true);
             }
         },
         
@@ -51,6 +89,12 @@ const PdfSystem = (function() {
         
         showModal(propertyId) {
             console.log(`📄 PdfSystem.showModal(${propertyId})`);
+            
+            // Evitar abrir múltiplos modais
+            if (state.modalOpen) {
+                console.log('⚠️ Modal já aberto, ignorando...');
+                return;
+            }
             
             const property = window.properties?.find(p => p.id == propertyId);
             if (!property) {
@@ -61,7 +105,13 @@ const PdfSystem = (function() {
             // ✅ Armazenar estado
             state.currentPropertyId = propertyId;
             state.currentPropertyTitle = property.title;
-            console.log('✅ Estado armazenado:', { propertyId, title: property.title });
+            state.modalOpen = true;
+            
+            console.log('✅ Estado armazenado:', { 
+                propertyId, 
+                title: property.title,
+                modalOpen: state.modalOpen 
+            });
         
             // Usar modal existente
             let modal = document.getElementById('pdfModal');
@@ -87,7 +137,12 @@ const PdfSystem = (function() {
                 passwordInput.value = '';
                 passwordInput.style.display = 'block';
                 passwordInput.style.visibility = 'visible';
-                passwordInput.focus();
+                
+                // Pequeno delay para garantir foco
+                setTimeout(() => {
+                    passwordInput.focus();
+                    passwordInput.select();
+                }, 100);
             }
         
             // Mostrar modal
@@ -95,13 +150,22 @@ const PdfSystem = (function() {
             console.log('✅ Modal de senha exibido');
         },
 
-        // ✅✅✅ FUNÇÃO CRÍTICA - COMPORTAMENTO ORIGINAL GARANTIDO
+        // ✅✅✅ FUNÇÃO CRÍTICA - SEM POP-UPS AUTOMÁTICOS
         validatePasswordAndShowList() {
-            console.log('🔓 PdfSystem.validatePasswordAndShowList() - INICIANDO');
+            console.log('🔓 validatePasswordAndShowList() - INICIANDO');
+            
+            // Verificar se já está processando (evitar duplicação)
+            if (state.isProcessing) {
+                console.warn('⚠️ Validação já em andamento, ignorando...');
+                return;
+            }
+            
+            state.isProcessing = true;
             
             const passwordInput = document.getElementById('pdfPassword');
             if (!passwordInput) {
                 alert('Erro: campo de senha não disponível');
+                state.isProcessing = false;
                 return;
             }
             
@@ -111,6 +175,7 @@ const PdfSystem = (function() {
             if (!password) {
                 alert('Digite a senha para acessar os documentos!');
                 passwordInput.focus();
+                state.isProcessing = false;
                 return;
             }
             
@@ -118,6 +183,7 @@ const PdfSystem = (function() {
                 alert('❌ Senha incorreta!\n\nA senha correta é: doc123');
                 passwordInput.value = '';
                 passwordInput.focus();
+                state.isProcessing = false;
                 return;
             }
             
@@ -139,6 +205,7 @@ const PdfSystem = (function() {
             if (!propertyId) {
                 alert('⚠️ Não foi possível identificar o imóvel. Por favor, tente novamente.');
                 this.closeModal();
+                state.isProcessing = false;
                 return;
             }
             
@@ -148,12 +215,14 @@ const PdfSystem = (function() {
             if (!property) {
                 alert('❌ Imóvel não encontrado no sistema!');
                 this.closeModal();
+                state.isProcessing = false;
                 return;
             }
             
             if (!property.pdfs || property.pdfs === 'EMPTY') {
                 alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
                 this.closeModal();
+                state.isProcessing = false;
                 return;
             }
             
@@ -164,6 +233,7 @@ const PdfSystem = (function() {
             if (pdfUrls.length === 0) {
                 alert('ℹ️ Nenhum documento PDF disponível.');
                 this.closeModal();
+                state.isProcessing = false;
                 return;
             }
             
@@ -175,9 +245,10 @@ const PdfSystem = (function() {
             // Fechar modal de senha
             this.closeModal();
             
-            // Pequeno delay para transição suave
+            // Pequeno delay para transição suave e evitar duplicação
             setTimeout(() => {
                 this.showDocumentList(propertyId, property.title, pdfUrls);
+                state.isProcessing = false;
             }, 300);
         },
         
@@ -186,6 +257,7 @@ const PdfSystem = (function() {
             const modal = document.getElementById('pdfModal');
             if (modal) {
                 modal.style.display = 'none';
+                state.modalOpen = false;
             }
         },
         
@@ -198,7 +270,10 @@ const PdfSystem = (function() {
             
             // Remover modal anterior se existir
             let oldModal = document.getElementById('pdfSelectionModal');
-            if (oldModal) oldModal.remove();
+            if (oldModal) {
+                console.log('🗑️ Removendo modal anterior');
+                oldModal.remove();
+            }
             
             // Criar novo modal
             const selectionModal = document.createElement('div');
@@ -222,10 +297,9 @@ const PdfSystem = (function() {
             const pdfListHtml = pdfUrls.map((url, index) => {
                 const fileName = url.split('/').pop() || `Documento ${index + 1}`;
                 const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
-                const itemId = `pdf-item-${Date.now()}-${index}`;
                 
                 return `
-                    <div id="${itemId}" class="pdf-list-item" 
+                    <div class="pdf-list-item" 
                          data-pdf-url="${url}"
                          style="
                             background: white;
@@ -357,7 +431,11 @@ const PdfSystem = (function() {
             // 1. Botão Fechar
             const closeBtn = document.getElementById('closePdfListBtn');
             if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
+                // Clonar e substituir para remover eventos anteriores
+                const newCloseBtn = closeBtn.cloneNode(true);
+                closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                
+                newCloseBtn.addEventListener('click', () => {
                     modal.style.display = 'none';
                     console.log('❌ Contêiner fechado');
                 });
@@ -368,7 +446,12 @@ const PdfSystem = (function() {
             viewButtons.forEach(button => {
                 const url = button.getAttribute('data-pdf-url');
                 if (url) {
-                    button.addEventListener('click', (e) => {
+                    // Clonar botão para remover eventos anteriores
+                    const newButton = button.cloneNode(true);
+                    button.parentNode.replaceChild(newButton, button);
+                    
+                    newButton.addEventListener('click', (e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         console.log(`📄 Abrindo PDF: ${url}`);
                         window.open(url, '_blank');
@@ -381,8 +464,14 @@ const PdfSystem = (function() {
             listItems.forEach(item => {
                 const url = item.getAttribute('data-pdf-url');
                 if (url) {
-                    item.addEventListener('click', (e) => {
+                    // Clonar item para remover eventos anteriores
+                    const newItem = item.cloneNode(true);
+                    item.parentNode.replaceChild(newItem, item);
+                    
+                    newItem.addEventListener('click', (e) => {
                         if (e.target.closest('.pdf-view-btn')) return;
+                        e.preventDefault();
+                        e.stopPropagation();
                         console.log(`📄 Abrindo PDF via clique no item: ${url}`);
                         window.open(url, '_blank');
                     });
@@ -392,7 +481,12 @@ const PdfSystem = (function() {
             // 4. Botão "Baixar Todos"
             const downloadBtn = document.getElementById('downloadAllPdfsBtn');
             if (downloadBtn && pdfUrls.length > 1) {
-                downloadBtn.addEventListener('click', () => {
+                const newDownloadBtn = downloadBtn.cloneNode(true);
+                downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
+                
+                newDownloadBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     this.downloadAllPdfs(pdfUrls);
                 });
             }
@@ -432,27 +526,22 @@ window.PdfSystem = PdfSystem;
 if (!window.pdfSystemInitialized) {
     window.pdfSystemInitialized = true;
     
-    setTimeout(() => {
-        if (window.PdfSystem) {
-            window.PdfSystem.init();
-            console.log('✅ PdfSystem DEFINITIVO inicializado - COMPORTAMENTO ORIGINAL GARANTIDO');
-        }
-    }, 1000);
-}
-
-// ========== ADICIONAR ESTILOS DE ANIMAÇÃO ==========
-if (!document.getElementById('pdf-animation-style')) {
-    const style = document.createElement('style');
-    style.id = 'pdf-animation-style';
-    style.textContent = `
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .pdf-modal {
-            animation: fadeIn 0.3s ease;
-        }
-    `;
-    document.head.appendChild(style);
+    // Inicializar após carregamento completo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (window.PdfSystem) {
+                    window.PdfSystem.init();
+                    console.log('✅ PdfSystem FINAL inicializado - SEM POP-UPS AUTOMÁTICOS');
+                }
+            }, 2000); // Dar tempo para outros scripts carregarem
+        });
+    } else {
+        setTimeout(() => {
+            if (window.PdfSystem) {
+                window.PdfSystem.init();
+                console.log('✅ PdfSystem FINAL inicializado - SEM POP-UPS AUTOMÁTICOS');
+            }
+        }, 2000);
+    }
 }
