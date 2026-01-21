@@ -1,5 +1,5 @@
-// js/modules/properties.js - COM CORREÇÃO DE UPLOAD
-console.log('🏠 properties.js - Sistema Core de Propriedades (COM CORREÇÃO DE UPLOAD)');
+// js/modules/properties.js - COM CORREÇÃO DE UPLOAD E CARREGAMENTO DE IMAGENS
+console.log('🏠 properties.js - Sistema Core de Propriedades (COM CORREÇÃO DE UPLOAD E CARREGAMENTO DE IMAGENS)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -91,6 +91,73 @@ class PropertyTemplateEngine {
 // Instância global
 window.propertyTemplates = new PropertyTemplateEngine();
 
+/**
+ * AGUARDA TODAS AS IMAGENS DOS IMÓVEIS CARREGAREM
+ * Garante que loading só fecha quando site está 100% pronto
+ */
+async function waitForAllPropertyImages() {
+    console.log('🖼️ Aguardando carregamento completo de todas as imagens...');
+    
+    // Seleciona TODAS as imagens dos cards de imóveis
+    const propertyImages = document.querySelectorAll('.property-image img, .property-gallery-image');
+    
+    if (propertyImages.length === 0) {
+        console.log('ℹ️ Nenhuma imagem de imóvel encontrada');
+        return 0;
+    }
+    
+    console.log(`📸 ${propertyImages.length} imagem(ns) de imóveis para carregar`);
+    
+    return new Promise((resolve) => {
+        let loadedCount = 0;
+        const totalImages = propertyImages.length;
+        
+        // Verificar cada imagem
+        propertyImages.forEach(img => {
+            // Se já carregou
+            if (img.complete && img.naturalWidth > 0) {
+                loadedCount++;
+                console.log(`✅ Imagem já carregada: ${img.src.substring(0, 50)}...`);
+            } 
+            // Se ainda não carregou
+            else {
+                img.onload = () => {
+                    loadedCount++;
+                    console.log(`✅ Imagem carregada: ${img.src.substring(0, 50)}...`);
+                    checkCompletion();
+                };
+                
+                img.onerror = () => {
+                    loadedCount++; // Conta mesmo se falhou
+                    console.warn(`⚠️ Falha na imagem: ${img.src.substring(0, 50)}...`);
+                    checkCompletion();
+                };
+            }
+        });
+        
+        // Timeout de segurança: máximo 10 segundos
+        const safetyTimeout = setTimeout(() => {
+            console.log(`⏰ Timeout: ${loadedCount}/${totalImages} imagens carregadas`);
+            resolve(loadedCount);
+        }, 10000); // 10 segundos máximo
+        
+        function checkCompletion() {
+            if (loadedCount >= totalImages) {
+                clearTimeout(safetyTimeout);
+                console.log(`🎉 TODAS ${totalImages} imagens dos imóveis carregadas!`);
+                resolve(loadedCount);
+            }
+        }
+        
+        // Se todas já estivessem carregadas
+        if (loadedCount >= totalImages) {
+            clearTimeout(safetyTimeout);
+            console.log(`⚡ ${totalImages} imagens já estavam carregadas');
+            resolve(loadedCount);
+        }
+    });
+}
+
 // ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO COM NOVAS MENSAGENS ==========
 window.loadPropertiesData = async function () {
     const loading = window.LoadingManager?.show?.(
@@ -150,6 +217,20 @@ window.loadPropertiesData = async function () {
         
         // Renderizar com cache otimizado
         window.renderProperties('todos');
+
+        // ✅✅✅ NOVO: AGUARDAR TODAS AS IMAGENS CARREGAREM
+        const imagesLoaded = await waitForAllPropertyImages();
+
+        // ✅ Atualizar mensagem baseada no resultado
+        if (imagesLoaded >= (document.querySelectorAll('.property-image img').length || 0)) {
+            loading?.setVariant?.('success');
+            loading?.updateMessage?.(finalMessage + ' 🖼️');
+            console.log(`✅ ${imagesLoaded} imagens carregadas - Site 100% pronto`);
+        } else {
+            loading?.setVariant?.('success');
+            loading?.updateMessage?.(`${finalMessage} (${imagesLoaded} imagens carregadas)`);
+            console.log(`⚠️ Apenas ${imagesLoaded} imagens carregadas - Algumas podem aparecer mais tarde`);
+        }
         
     } catch (error) {
         console.error('❌ Erro no carregamento:', error);
@@ -159,8 +240,8 @@ window.loadPropertiesData = async function () {
         window.renderProperties('todos');
         
     } finally {
-        // Fechar loading mais rapidamente para melhor experiência
-        setTimeout(() => loading?.hide?.(), 800);
+        // ✅ Fechar loading APÓS imagens + pequeno delay para leitura
+        setTimeout(() => loading?.hide?.(), 1200);
     }
 };
 
@@ -927,7 +1008,7 @@ if (window.properties && window.properties.length > 0) {
 })();
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js carregado com correção de upload');
+console.log('✅ properties.js carregado com correção de upload e carregamento de imagens');
 
 // Função utilitária para executar tarefas em baixa prioridade
 function runLowPriority(task) {
