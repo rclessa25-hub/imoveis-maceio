@@ -1,5 +1,5 @@
-// js/modules/reader/pdf-unified.js - VERSÃO FINAL - SEM EVENTOS DUPLICADOS
-console.log('📄 pdf-unified.js - VERSÃO FINAL - SEM POP-UPS AUTOMÁTICOS');
+// js/modules/reader/pdf-unified.js - VERSÃO FINAL - BOTÕES VISUALIZAR FUNCIONANDO
+console.log('📄 pdf-unified.js - VERSÃO FINAL - BOTÕES VISUALIZAR ATIVOS');
 
 const PdfSystem = (function() {
     // ========== CONFIGURAÇÃO ==========
@@ -12,7 +12,8 @@ const PdfSystem = (function() {
         currentPropertyId: null,
         currentPropertyTitle: '',
         currentPdfUrls: [],
-        modalOpen: false
+        modalOpen: false,
+        isProcessing: false
     };
     
     // ========== API PÚBLICA ==========
@@ -20,68 +21,49 @@ const PdfSystem = (function() {
         init() {
             console.log('🔧 PdfSystem.init() - Sistema PDF inicializado');
             
-            // REMOVER qualquer evento global anterior
-            this.removeGlobalEvents();
-            
-            // Configurar eventos UMA ÚNICA VEZ
-            this.setupModalEvents();
+            // Configurar eventos do modal principal
+            this.setupMainModalEvents();
             
             return this;
         },
         
-        // ========== REMOVER EVENTOS GLOBAIS (IMPORTANTE) ==========
-        removeGlobalEvents() {
-            console.log('🧹 Removendo eventos globais anteriores...');
-            
-            // Remover event listeners se existirem
-            const pdfAccessBtn = document.getElementById('pdfAccessBtn');
-            const pdfCloseBtn = document.getElementById('pdfCloseBtn');
-            
-            if (pdfAccessBtn) {
-                const newBtn = pdfAccessBtn.cloneNode(true);
-                pdfAccessBtn.parentNode.replaceChild(newBtn, pdfAccessBtn);
-            }
-            
-            if (pdfCloseBtn) {
-                const newBtn = pdfCloseBtn.cloneNode(true);
-                pdfCloseBtn.parentNode.replaceChild(newBtn, pdfCloseBtn);
-            }
-        },
-        
-        // ========== CONFIGURAR EVENTOS DO MODAL (UMA ÚNICA VEZ) ==========
-        setupModalEvents() {
-            console.log('🔧 Configurando eventos do modal...');
+        // ========== CONFIGURAR EVENTOS DO MODAL PRINCIPAL ==========
+        setupMainModalEvents() {
+            console.log('🔧 Configurando eventos do modal principal...');
             
             const pdfAccessBtn = document.getElementById('pdfAccessBtn');
             const pdfCloseBtn = document.getElementById('pdfCloseBtn');
             
+            // Configurar botão Acessar
             if (pdfAccessBtn) {
                 console.log('✅ Configurando botão Acessar');
-                // REMOVER todos os eventos anteriores
-                pdfAccessBtn.replaceWith(pdfAccessBtn.cloneNode(true));
-                const newAccessBtn = document.getElementById('pdfAccessBtn');
                 
-                // Adicionar evento UMA ÚNICA VEZ
-                newAccessBtn.addEventListener('click', (e) => {
+                // Remover event listeners anteriores
+                const newAccessBtn = pdfAccessBtn.cloneNode(true);
+                pdfAccessBtn.parentNode.replaceChild(newAccessBtn, pdfAccessBtn);
+                
+                // Adicionar novo event listener
+                document.getElementById('pdfAccessBtn').addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    console.log('🎯 Botão Acessar clicado VIA EVENT LISTENER');
+                    console.log('🎯 Botão Acessar clicado');
                     this.validatePasswordAndShowList();
-                }, true); // Use capture phase para garantir execução
+                });
             }
             
+            // Configurar botão Fechar
             if (pdfCloseBtn) {
                 console.log('✅ Configurando botão Fechar');
-                pdfCloseBtn.replaceWith(pdfCloseBtn.cloneNode(true));
-                const newCloseBtn = document.getElementById('pdfCloseBtn');
                 
-                newCloseBtn.addEventListener('click', (e) => {
+                const newCloseBtn = pdfCloseBtn.cloneNode(true);
+                pdfCloseBtn.parentNode.replaceChild(newCloseBtn, pdfCloseBtn);
+                
+                document.getElementById('pdfCloseBtn').addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('🎯 Botão Fechar clicado');
+                    console.log('❌ Botão Fechar clicado');
                     this.closeModal();
-                }, true);
+                });
             }
         },
         
@@ -109,8 +91,7 @@ const PdfSystem = (function() {
             
             console.log('✅ Estado armazenado:', { 
                 propertyId, 
-                title: property.title,
-                modalOpen: state.modalOpen 
+                title: property.title 
             });
         
             // Usar modal existente
@@ -135,10 +116,6 @@ const PdfSystem = (function() {
             // Limpar e focar campo de senha
             if (passwordInput) {
                 passwordInput.value = '';
-                passwordInput.style.display = 'block';
-                passwordInput.style.visibility = 'visible';
-                
-                // Pequeno delay para garantir foco
                 setTimeout(() => {
                     passwordInput.focus();
                     passwordInput.select();
@@ -245,7 +222,7 @@ const PdfSystem = (function() {
             // Fechar modal de senha
             this.closeModal();
             
-            // Pequeno delay para transição suave e evitar duplicação
+            // Pequeno delay para transição suave
             setTimeout(() => {
                 this.showDocumentList(propertyId, property.title, pdfUrls);
                 state.isProcessing = false;
@@ -261,7 +238,7 @@ const PdfSystem = (function() {
             }
         },
         
-        // ✅✅✅ FUNÇÃO QUE SEMPRE MOSTRA O CONTÊINER
+        // ✅✅✅ FUNÇÃO QUE MOSTRA O CONTÊINER COM BOTÕES FUNCIONAIS
         showDocumentList(propertyId, propertyTitle, pdfUrls) {
             console.log(`📋 Abrindo contêiner com ${pdfUrls.length} documento(s)`);
             
@@ -293,14 +270,17 @@ const PdfSystem = (function() {
                 padding: 20px;
             `;
             
-            // Gerar lista de documentos SEM onclick inline
+            // Gerar lista de documentos COM IDs únicos
             const pdfListHtml = pdfUrls.map((url, index) => {
                 const fileName = url.split('/').pop() || `Documento ${index + 1}`;
                 const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
+                const itemId = `pdf-item-${Date.now()}-${index}`;
+                const btnId = `view-btn-${Date.now()}-${index}`;
                 
                 return `
-                    <div class="pdf-list-item" 
+                    <div id="${itemId}" class="pdf-list-item" 
                          data-pdf-url="${url}"
+                         data-index="${index}"
                          style="
                             background: white;
                             border-radius: 8px;
@@ -323,8 +303,9 @@ const PdfSystem = (function() {
                                 </div>
                             </div>
                         </div>
-                        <button class="pdf-view-btn" 
+                        <button id="${btnId}" class="pdf-view-btn" 
                                 data-pdf-url="${url}"
+                                data-index="${index}"
                                 style="
                                     background: var(--primary);
                                     color: white;
@@ -413,89 +394,156 @@ const PdfSystem = (function() {
             
             document.body.appendChild(selectionModal);
             
-            // ✅ CONFIGURAR EVENTOS DEPOIS de criar o HTML
-            setTimeout(() => {
-                this.setupDocumentListEvents(pdfUrls);
-            }, 50);
+            // ✅ CONFIGURAR EVENTOS IMEDIATAMENTE
+            this.setupDocumentListEvents(pdfUrls);
             
             console.log('✅✅✅ CONTÊINER DE PDFs ABERTO COM SUCESSO!');
         },
         
-        // ✅ Configuração segura de eventos
+        // ✅✅✅ FUNÇÃO CORRIGIDA - EVENTOS FUNCIONANDO
         setupDocumentListEvents(pdfUrls) {
             console.log('🎮 Configurando eventos do contêiner...');
             
             const modal = document.getElementById('pdfSelectionModal');
-            if (!modal) return;
+            if (!modal) {
+                console.error('❌ Modal não encontrado');
+                return;
+            }
             
-            // 1. Botão Fechar
+            // 1. Botão Fechar (simples e direto)
             const closeBtn = document.getElementById('closePdfListBtn');
             if (closeBtn) {
-                // Clonar e substituir para remover eventos anteriores
-                const newCloseBtn = closeBtn.cloneNode(true);
-                closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-                
-                newCloseBtn.addEventListener('click', () => {
+                // Usar onclick direto (não precisa de clone)
+                closeBtn.onclick = () => {
                     modal.style.display = 'none';
                     console.log('❌ Contêiner fechado');
+                };
+            }
+            
+            // 2. Botões "Visualizar" - USAR DELEGAÇÃO DE EVENTOS
+            // Adicionar evento no container pai (melhor performance)
+            const container = document.getElementById('pdfListContainer');
+            if (container) {
+                container.addEventListener('click', (e) => {
+                    const viewBtn = e.target.closest('.pdf-view-btn');
+                    if (viewBtn) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const url = viewBtn.getAttribute('data-pdf-url');
+                        const index = viewBtn.getAttribute('data-index');
+                        if (url) {
+                            console.log(`📄 Botão Visualizar clicado: PDF ${index} - ${url}`);
+                            window.open(url, '_blank');
+                        }
+                    }
+                    
+                    // Também permitir clique no item inteiro
+                    const listItem = e.target.closest('.pdf-list-item');
+                    if (listItem && !e.target.closest('.pdf-view-btn')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const url = listItem.getAttribute('data-pdf-url');
+                        const index = listItem.getAttribute('data-index');
+                        if (url) {
+                            console.log(`📄 Item da lista clicado: PDF ${index} - ${url}`);
+                            window.open(url, '_blank');
+                        }
+                    }
                 });
             }
             
-            // 2. Botões "Visualizar"
-            const viewButtons = modal.querySelectorAll('.pdf-view-btn');
-            viewButtons.forEach(button => {
-                const url = button.getAttribute('data-pdf-url');
-                if (url) {
-                    // Clonar botão para remover eventos anteriores
-                    const newButton = button.cloneNode(true);
-                    button.parentNode.replaceChild(newButton, button);
-                    
-                    newButton.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log(`📄 Abrindo PDF: ${url}`);
-                        window.open(url, '_blank');
-                    });
-                }
-            });
-            
-            // 3. Itens da lista
-            const listItems = modal.querySelectorAll('.pdf-list-item');
-            listItems.forEach(item => {
-                const url = item.getAttribute('data-pdf-url');
-                if (url) {
-                    // Clonar item para remover eventos anteriores
-                    const newItem = item.cloneNode(true);
-                    item.parentNode.replaceChild(newItem, item);
-                    
-                    newItem.addEventListener('click', (e) => {
-                        if (e.target.closest('.pdf-view-btn')) return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log(`📄 Abrindo PDF via clique no item: ${url}`);
-                        window.open(url, '_blank');
-                    });
-                }
-            });
-            
-            // 4. Botão "Baixar Todos"
+            // 3. Botão "Baixar Todos"
             const downloadBtn = document.getElementById('downloadAllPdfsBtn');
             if (downloadBtn && pdfUrls.length > 1) {
-                const newDownloadBtn = downloadBtn.cloneNode(true);
-                downloadBtn.parentNode.replaceChild(newDownloadBtn, downloadBtn);
-                
-                newDownloadBtn.addEventListener('click', (e) => {
+                downloadBtn.onclick = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     this.downloadAllPdfs(pdfUrls);
-                });
+                };
             }
             
-            console.log(`✅ ${viewButtons.length} eventos configurados`);
+            // 4. Adicionar efeitos hover (opcional)
+            setTimeout(() => {
+                const listItems = modal.querySelectorAll('.pdf-list-item');
+                listItems.forEach(item => {
+                    item.onmouseenter = () => {
+                        item.style.transform = 'translateY(-2px)';
+                        item.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
+                    };
+                    
+                    item.onmouseleave = () => {
+                        item.style.transform = 'translateY(0)';
+                        item.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1)';
+                    };
+                });
+            }, 100);
+            
+            console.log(`✅ Eventos configurados para ${pdfUrls.length} PDF(s)`);
+        },
+        
+        // Método alternativo SIMPLES para configurar eventos
+        setupSimpleEvents(pdfUrls) {
+            console.log('🎮 Configurando eventos SIMPLES...');
+            
+            const modal = document.getElementById('pdfSelectionModal');
+            if (!modal) return;
+            
+            // Fechar modal
+            const closeBtn = document.getElementById('closePdfListBtn');
+            if (closeBtn) {
+                closeBtn.onclick = () => {
+                    modal.style.display = 'none';
+                };
+            }
+            
+            // Botões Visualizar - loop direto
+            setTimeout(() => {
+                const viewButtons = modal.querySelectorAll('.pdf-view-btn');
+                console.log(`🔍 Encontrados ${viewButtons.length} botões Visualizar`);
+                
+                viewButtons.forEach((btn, index) => {
+                    const url = pdfUrls[index];
+                    if (url) {
+                        // Configurar direto no onclick
+                        btn.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(`📄 Abrindo PDF ${index}: ${url}`);
+                            window.open(url, '_blank');
+                        };
+                    }
+                });
+                
+                // Itens da lista
+                const listItems = modal.querySelectorAll('.pdf-list-item');
+                listItems.forEach((item, index) => {
+                    const url = pdfUrls[index];
+                    if (url) {
+                        item.onclick = (e) => {
+                            if (e.target.closest('.pdf-view-btn')) return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log(`📄 Abrindo PDF via item ${index}`);
+                            window.open(url, '_blank');
+                        };
+                    }
+                });
+            }, 100);
+            
+            // Baixar Todos
+            const downloadBtn = document.getElementById('downloadAllPdfsBtn');
+            if (downloadBtn) {
+                downloadBtn.onclick = (e) => {
+                    e.preventDefault();
+                    this.downloadAllPdfs(pdfUrls);
+                };
+            }
         },
         
         downloadAllPdfs(urls) {
             console.log(`📥 Baixando ${urls.length} PDF(s)`);
+            let count = 0;
+            
             urls.forEach((url, index) => {
                 try {
                     const fileName = url.split('/').pop() || `documento_${index + 1}.pdf`;
@@ -506,13 +554,16 @@ const PdfSystem = (function() {
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
+                    count++;
                     console.log(`✅ Download: ${fileName}`);
                 } catch (error) {
-                    console.error(`❌ Erro: ${url}`, error);
+                    console.error(`❌ Erro ao baixar ${url}:`, error);
                 }
             });
             
-            alert(`✅ ${urls.length} documento(s) enviado(s) para download!`);
+            if (count > 0) {
+                alert(`✅ ${count} documento(s) enviado(s) para download!`);
+            }
         }
     };
     
@@ -526,22 +577,22 @@ window.PdfSystem = PdfSystem;
 if (!window.pdfSystemInitialized) {
     window.pdfSystemInitialized = true;
     
-    // Inicializar após carregamento completo
+    // Esperar DOM carregar
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 if (window.PdfSystem) {
                     window.PdfSystem.init();
-                    console.log('✅ PdfSystem FINAL inicializado - SEM POP-UPS AUTOMÁTICOS');
+                    console.log('✅ PdfSystem inicializado - BOTÕES VISUALIZAR ATIVOS');
                 }
-            }, 2000); // Dar tempo para outros scripts carregarem
+            }, 1000);
         });
     } else {
         setTimeout(() => {
             if (window.PdfSystem) {
                 window.PdfSystem.init();
-                console.log('✅ PdfSystem FINAL inicializado - SEM POP-UPS AUTOMÁTICOS');
+                console.log('✅ PdfSystem inicializado - BOTÕES VISUALIZAR ATIVOS');
             }
-        }, 2000);
+        }, 1000);
     }
 }
