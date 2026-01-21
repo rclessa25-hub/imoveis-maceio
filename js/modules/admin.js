@@ -175,16 +175,8 @@ window.cleanAdminForm = function(mode = 'reset') {
         submitBtn.disabled = false;
     }
 
-    // 5. Focar no título
-    setTimeout(() => {
-        const titleField = document.getElementById('propTitle');
-        if (titleField) {
-            titleField.focus();
-            const textLength = titleField.value.length;
-            titleField.setSelectionRange(textLength, textLength);
-            log.success('admin', 'Foco restaurado no título');
-        }
-    }, 100);
+    // 5. Nova versão - sem foco automático após limpar formulário
+    console.log('✅ Formulário limpo - pronto para novo imóvel');
 
     // 6. Evento para sistemas externos
     try {
@@ -501,15 +493,8 @@ window.editProperty = function(id) {
             propertyForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
             log.success('admin', 'Formulário em foco para edição');
             
-            setTimeout(() => {
-                const titleField = document.getElementById('propTitle');
-                if (titleField) {
-                    titleField.focus();
-                    const textLength = titleField.value.length;
-                    titleField.setSelectionRange(textLength, textLength);
-                    log.success('admin', 'Foco no campo título');
-                }
-            }, 700);
+            // Nova versão - mantém apenas o scroll, sem foco automático
+            console.log('✅ Edição iniciada - formulário pronto para edição manual');
         }
     }, 100);
 
@@ -982,6 +967,7 @@ setTimeout(() => {
     log.info('admin', '- FilterManager implementado');
     log.info('admin', '- Redução total: ~350 linhas');
     log.info('admin', '- Formulário funcional: ✅ SIM');
+    log.info('admin', '- Foco automático removido: ✅ MELHORIA DE UX IMPLEMENTADA');
     log.groupEnd();
 }, 2000);
 
