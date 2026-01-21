@@ -273,7 +273,7 @@ const PdfSystem = (function() {
             return modal;
         },
 
-        // Validação de senha (UI)
+        // Validação de senha (UI) - ✅ CORRIGIDO
         validatePasswordAndShowList() {
             console.log('🔓 PdfSystem.validatePasswordAndShowList() - Função UI');
             const passwordInput = document.getElementById('pdfPassword');
@@ -324,9 +324,16 @@ const PdfSystem = (function() {
                 return;
             }
             
-            // Abrir primeiro PDF
-            window.open(pdfUrls[0], '_blank');
-            this.closeModal();
+            // ✅ RESTAURADO: Mostrar lista de seleção antes de abrir
+            if (pdfUrls.length === 1) {
+                // Otimização: se só tem 1 PDF, abrir diretamente
+                window.open(pdfUrls[0], '_blank');
+                this.closeModal();
+            } else {
+                // Mostrar lista para usuário escolher
+                this.showDocumentList(propertyId, property.title, pdfUrls);
+                this.closeModal(); // Fechar modal de senha
+            }
         },
         
         // Fechar modal (UI)
