@@ -10,7 +10,8 @@ const PdfSystem = (function() {
     // ========== ESTADO MÍNIMO (APENAS UI) ==========
     let state = {
         currentPropertyId: null,
-        modalElement: null
+        modalElement: null,
+        currentPdfUrls: [] // ✅ ADICIONADO: armazenar URLs temporariamente
     };
     
     // ========== API PÚBLICA - DELEGAÇÃO AO MEDIASYSTEM ==========
@@ -344,9 +345,13 @@ const PdfSystem = (function() {
             return this;
         },
         
-        // Lista de seleção (UI)
+        // Lista de seleção (UI) - ✅ CORRIGIDO: usando addEventListener
         showDocumentList(propertyId, propertyTitle, pdfUrls) {
             console.log('📋 PdfSystem.showDocumentList() - Função UI');
+            
+            // Armazenar URLs no estado para uso posterior
+            state.currentPdfUrls = pdfUrls;
+            
             // Criar modal de seleção
             let selectionModal = document.getElementById('pdfSelectionModal');
             
@@ -371,13 +376,14 @@ const PdfSystem = (function() {
                 document.body.appendChild(selectionModal);
             }
             
-            // Gerar lista de documentos
+            // Gerar lista de documentos com IDs únicos
             const pdfListHtml = pdfUrls.map((url, index) => {
                 const fileName = url.split('/').pop() || `Documento ${index + 1}`;
                 const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
+                const itemId = `pdf-item-${propertyId}-${index}`;
                 
                 return `
-                    <div class="pdf-list-item" style="
+                    <div id="${itemId}" class="pdf-list-item" style="
                         background: white;
                         border-radius: 8px;
                         padding: 1rem;
@@ -388,6 +394,7 @@ const PdfSystem = (function() {
                         box-shadow: 0 3px 10px rgba(0,0,0,0.1);
                         cursor: pointer;
                         border-left: 4px solid var(--primary);
+                        transition: all 0.3s ease;
                     ">
                         <div style="flex: 1;">
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -398,7 +405,8 @@ const PdfSystem = (function() {
                                 </div>
                             </div>
                         </div>
-                        <button onclick="window.open('${url}', '_blank')" 
+                        <button data-pdf-index="${index}" 
+                                class="pdf-view-btn"
                                 style="
                                     background: var(--primary);
                                     color: white;
@@ -410,6 +418,7 @@ const PdfSystem = (function() {
                                     display: flex;
                                     align-items: center;
                                     gap: 5px;
+                                    transition: all 0.3s ease;
                                 ">
                             <i class="fas fa-eye"></i> Visualizar
                         </button>
@@ -428,7 +437,7 @@ const PdfSystem = (function() {
                     overflow-y: auto;
                     position: relative;
                 ">
-                    <button onclick="this.parentElement.parentElement.style.display = 'none'" 
+                    <button onclick="PdfSystem.closeDocumentList()" 
                             style="
                                 position: absolute;
                                 top: 10px;
@@ -454,7 +463,7 @@ const PdfSystem = (function() {
                         Selecione o documento que deseja visualizar:
                     </p>
                     
-                    <div style="margin-bottom: 1.5rem;">
+                    <div id="pdfListContainer" style="margin-bottom: 1.5rem;">
                         ${pdfListHtml}
                     </div>
                     
@@ -481,6 +490,68 @@ const PdfSystem = (function() {
             `;
             
             selectionModal.style.display = 'flex';
+            
+            // ✅ ADICIONAR EVENT LISTENERS DEPOIS de criar o HTML
+            setTimeout(() => {
+                this.setupPdfListEvents(pdfUrls);
+            }, 100);
+        },
+        
+        // ✅ NOVO: Configurar eventos para a lista de PDFs
+        setupPdfListEvents(pdfUrls) {
+            console.log('🎮 Configurando eventos para lista de PDFs...');
+            
+            // Adicionar evento de clique nos botões "Visualizar"
+            const viewButtons = document.querySelectorAll('.pdf-view-btn');
+            viewButtons.forEach((button, index) => {
+                // Remover qualquer evento existente
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                
+                // Adicionar novo evento
+                newButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    console.log(`📄 Abrindo PDF ${index}: ${pdfUrls[index]}`);
+                    window.open(pdfUrls[index], '_blank');
+                });
+            });
+            
+            // Adicionar evento de clique nos itens da lista
+            const listItems = document.querySelectorAll('.pdf-list-item');
+            listItems.forEach((item, index) => {
+                item.addEventListener('click', (e) => {
+                    // Não abrir se clicar no botão "Visualizar"
+                    if (e.target.closest('.pdf-view-btn')) {
+                        return;
+                    }
+                    console.log(`📄 Abrindo PDF ${index} via clique no item`);
+                    window.open(pdfUrls[index], '_blank');
+                });
+                
+                // Efeitos hover
+                item.addEventListener('mouseenter', () => {
+                    item.style.transform = 'translateY(-2px)';
+                    item.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
+                });
+                
+                item.addEventListener('mouseleave', () => {
+                    item.style.transform = 'translateY(0)';
+                    item.style.boxShadow = '0 3px 10px rgba(0,0,0,0.1)';
+                });
+            });
+            
+            console.log(`✅ ${viewButtons.length} botões de PDF configurados`);
+        },
+        
+        // ✅ NOVO: Fechar lista de documentos
+        closeDocumentList() {
+            console.log('❌ Fechando lista de documentos');
+            const selectionModal = document.getElementById('pdfSelectionModal');
+            if (selectionModal) {
+                selectionModal.style.display = 'none';
+                // Limpar estado
+                state.currentPdfUrls = [];
+            }
         },
         
         // Download (UI)
