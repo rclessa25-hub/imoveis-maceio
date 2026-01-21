@@ -415,21 +415,22 @@
 </section>
    
     <!-- ========== MODAL PARA DOCUMENTOS PDF ========== -->
-    <div id="pdfModal" class="pdf-modal">
+    <div id="pdfModal" class="pdf-modal" style="display: none;">
         <div class="pdf-modal-content">
             <h3 id="pdfModalTitle"><i class="fas fa-file-pdf"></i> Documentos do Imóvel</h3>
             <div id="pdfPreview" class="pdf-preview">
-                <p>Documentos técnicos e legais disponíveis</p>
+                <p>Digite a senha para visualizar os documentos</p>
             </div>
-            <form style="display: none;" aria-hidden="true" autocomplete="off">
-                <input type="text" name="dummy-username" style="display:none" autocomplete="username">
-                <input type="password" id="pdfPassword" class="pdf-password-input" placeholder="Digite a senha para acessar" autocomplete="new-password">
-            </form>
+            <input type="password" id="pdfPassword" class="pdf-password-input" 
+                   placeholder="Digite a senha para acessar" autocomplete="off"
+                   style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; margin: 1rem 0; display: block;">
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button onclick="accessPdfDocuments()" style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                <button id="pdfAccessBtn"
+                        style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
                     <i class="fas fa-lock-open"></i> Acessar
                 </button>
-                <button onclick="closePdfModal()" style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                <button id="pdfCloseBtn"
+                        style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
                     <i class="fas fa-times"></i> Fechar
                 </button>
             </div>
@@ -461,6 +462,31 @@
 
 <!-- ========== MÓDULOS PDF (DEFER) ========== -->
 <script src="js/modules/reader/pdf-unified.js" defer></script>
+
+<!-- ========== LIMPEZA DE EVENTOS DUPLICADOS ========== -->
+<script>
+// Limpeza de eventos duplicados - EXECUTAR APENAS UMA VEZ
+(function() {
+    console.log('🧹 LIMPEZA DE EVENTOS DUPLICADOS DO PDF');
+    
+    // Remover event listeners antigos
+    const cleanButton = function(buttonId) {
+        const btn = document.getElementById(buttonId);
+        if (btn) {
+            // Clonar botão (isso remove todos os event listeners)
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            console.log(`✅ Botão ${buttonId} limpo`);
+        }
+    };
+    
+    // Limpar botões do modal PDF
+    cleanButton('pdfAccessBtn');
+    cleanButton('pdfCloseBtn');
+    
+    console.log('✅ Limpeza de eventos concluída');
+})();
+</script>
 
 <!-- ========== SISTEMA DE MÍDIA UNIFICADO (DEFER) ========== -->
 <script src="js/modules/media/media-unified.js" defer></script>
