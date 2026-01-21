@@ -581,5 +581,38 @@ document.addEventListener('DOMContentLoaded', async function() {
 });
 </script>
     
+// Inicialização definitiva do sistema PDF
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Inicializando sistema PDF definitivo...');
+    
+    // Esperar um pouco para garantir que todos os módulos carregaram
+    setTimeout(() => {
+        // Configurar eventos do modal PDF
+        const pdfAccessBtn = document.getElementById('pdfAccessBtn');
+        const pdfCloseBtn = document.getElementById('pdfCloseBtn');
+        
+        if (pdfAccessBtn) {
+            pdfAccessBtn.onclick = function() {
+                console.log('🔓 Botão Acessar clicado via script');
+                if (window.PdfSystem && window.PdfSystem.validatePasswordAndShowList) {
+                    window.PdfSystem.validatePasswordAndShowList();
+                }
+            };
+        }
+        
+        if (pdfCloseBtn) {
+            pdfCloseBtn.onclick = function() {
+                console.log('❌ Botão Fechar clicado');
+                const modal = document.getElementById('pdfModal');
+                if (modal) modal.style.display = 'none';
+            };
+        }
+        
+        console.log('✅ Eventos do modal PDF configurados');
+    }, 1500);
+});
+</script>    
+    
 </body>
 </html>
