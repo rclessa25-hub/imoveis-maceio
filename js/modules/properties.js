@@ -427,7 +427,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO CORRIGIDA COM INVALIDAÇÃO DE CACHE ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO CORRIGIDA COM ORDEM CORRETA DE SALVAMENTO ==========
 window.addNewProperty = async function(propertyData) {
     console.group('➕ ADICIONANDO NOVO IMÓVEL - COM CORREÇÃO DE UPLOAD');
     console.log('📋 Dados recebidos:', propertyData);
@@ -572,17 +572,16 @@ window.addNewProperty = async function(propertyData) {
         console.log('🏠 Novo imóvel criado:', newProperty);
 
         // =========================================================
-        // 4. SALVAR LOCALMENTE
+        // 4. SALVAR LOCALMENTE (PRIMEIRO - CRÍTICO!)
         // =========================================================
         window.properties.unshift(newProperty);
-        window.savePropertiesToStorage();
-        console.log('💾 Imóvel salvo localmente');
-
-        // ⭐ SOLUÇÃO 3: INVALIDAR CACHE APÓS ADICIONAR NOVO IMÓVEL
-        if (window.propertyTemplates && window.propertyTemplates.invalidateAll) {
-            window.propertyTemplates.invalidateAll();
-            console.log('🔄 Cache invalidado após adicionar novo imóvel');
+        
+        // ✅✅✅ CORREÇÃO: SALVAR NO LOCALSTORAGE PRIMEIRO, ANTES DE QUALQUER INVALIDAÇÃO
+        const saved = window.savePropertiesToStorage();
+        if (!saved) {
+            throw new Error('Falha ao salvar no localStorage');
         }
+        console.log('💾 Imóvel salvo permanentemente no localStorage');
 
         // =========================================================
         // 5. ATUALIZAR UI
@@ -598,7 +597,21 @@ window.addNewProperty = async function(propertyData) {
         }
 
         // =========================================================
-        // 6. FEEDBACK AO USUÁRIO
+        // 6. INVALIDAR CACHE (APÓS SALVAR - NÃO INTERFERE COM PERSISTÊNCIA)
+        // =========================================================
+        // ⭐ SOLUÇÃO 3: INVALIDAR CACHE APÓS ADICIONAR NOVO IMÓVEL
+        if (window.propertyTemplates && window.propertyTemplates.invalidateAll) {
+            window.propertyTemplates.invalidateAll();
+            console.log('🔄 Cache de templates invalidado após adicionar novo imóvel');
+        }
+
+        if (window.SmartCache) {
+            SmartCache.invalidatePropertiesCache();
+            console.log('🗑️ SmartCache invalidado');
+        }
+
+        // =========================================================
+        // 7. FEEDBACK AO USUÁRIO
         // =========================================================
         const imageCount = newProperty.images
             ? newProperty.images.split(',').filter(u => u.trim() && u !== 'EMPTY').length
@@ -632,7 +645,7 @@ window.addNewProperty = async function(propertyData) {
         alert(message);
 
         // =========================================================
-        // 7. LIMPEZA DO SISTEMA DE MÍDIA
+        // 8. LIMPEZA DO SISTEMA DE MÍDIA
         // =========================================================
         setTimeout(() => {
             if (typeof MediaSystem !== 'undefined') {
@@ -640,14 +653,6 @@ window.addNewProperty = async function(propertyData) {
                 console.log('🧹 MediaSystem resetado após criação');
             }
         }, 300);
-
-        // =========================================================
-        // 8. INVALIDAR CACHE
-        // =========================================================
-        if (window.SmartCache) {
-            SmartCache.invalidatePropertiesCache();
-            console.log('🗑️ Cache invalidado');
-        }
 
         console.log('🎯 Processo de criação concluído com sucesso');
         console.groupEnd();
@@ -681,7 +686,7 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA COM INVALIDAÇÃO DE CACHE ==========
+// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA COM ORDEM CORRETA DE SALVAMENTO ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - COM CORREÇÃO DE UPLOAD:`, propertyData);
 
@@ -748,39 +753,44 @@ window.updateProperty = async function(id, propertyData) {
             }
         }
 
-        // ✅ 3. ATUALIZAR LOCALMENTE
+        // ✅ 3. ATUALIZAR LOCALMENTE (PRIMEIRO - CRÍTICO!)
         window.properties[index] = {
             ...window.properties[index],
             ...updateData,
             id: id,
             updated_at: new Date().toISOString() // ⭐ ADICIONAR timestamp
         };
-        window.savePropertiesToStorage();
-        console.log('✅ Atualização local salva');
+        
+        // ✅✅✅ CORREÇÃO: SALVAR NO LOCALSTORAGE PRIMEIRO, ANTES DE QUALQUER INVALIDAÇÃO
+        const saved = window.savePropertiesToStorage();
+        if (!saved) {
+            throw new Error('Falha ao salvar no localStorage');
+        }
+        console.log('✅ Atualização salva permanentemente no localStorage');
 
-        // ⭐ SOLUÇÃO 2: INVALIDAR CACHE DO TEMPLATE
+        // ✅ 4. INVALIDAR CACHE DO TEMPLATE (APÓS SALVAR)
         if (window.propertyTemplates && window.propertyTemplates.invalidateProperty) {
             const invalidated = window.propertyTemplates.invalidateProperty(id);
-            console.log(`🔄 Cache invalidado para imóvel ${id}: ${invalidated} template(s)`);
+            console.log(`🔄 Cache de templates invalidado para imóvel ${id}: ${invalidated} template(s)`);
         }
 
-        // ✅ 4. RENDERIZAR
+        // ✅ 5. RENDERIZAR
         if (typeof window.renderProperties === 'function') {
             window.renderProperties('todos');
         }
 
-        // ✅ 5. ATUALIZAR ADMIN
+        // ✅ 6. ATUALIZAR ADMIN
         if (typeof window.loadPropertyList === 'function') {
             setTimeout(() => window.loadPropertyList(), 300);
         }
 
-        // ✅ 6. INVALIDAR CACHE
+        // ✅ 7. INVALIDAR CACHE GLOBAL (APÓS SALVAR)
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
-            console.log('🗑️ Cache invalidado após atualizar imóvel');
+            console.log('🗑️ SmartCache invalidado após atualizar imóvel');
         }
 
-        // ✅ 7. FEEDBACK
+        // ✅ 8. FEEDBACK
         if (supabaseSuccess) {
             const pdfsCount = updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0;
             const pdfMsg = pdfsCount > 0 ? ` com ${pdfsCount} PDF(s)` : '';
@@ -798,7 +808,7 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// ========== 9. EXCLUIR IMÓVEL - VERSÃO ATUALIZADA COM INVALIDAÇÃO DE CACHE ==========
+// ========== 9. EXCLUIR IMÓVEL - VERSÃO ATUALIZADA COM ORDEM CORRETA DE SALVAMENTO ==========
 window.deleteProperty = async function(id) {
     console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
 
@@ -852,23 +862,30 @@ window.deleteProperty = async function(id) {
         }
     }
 
-    // ✅ 4. Excluir localmente (sempre)
+    // ✅ 4. Excluir localmente (PRIMEIRO - CRÍTICO!)
     const originalLength = window.properties.length;
     window.properties = window.properties.filter(p => p.id !== id);
-    window.savePropertiesToStorage();
+    
+    // ✅✅✅ CORREÇÃO: SALVAR NO LOCALSTORAGE PRIMEIRO, ANTES DE QUALQUER INVALIDAÇÃO
+    const saved = window.savePropertiesToStorage();
+    if (!saved) {
+        alert('❌ ERRO: Não foi possível salvar a exclusão permanentemente!');
+        return false;
+    }
+    console.log('✅ Exclusão salva permanentemente no localStorage');
 
-    // ⭐ SOLUÇÃO 4: INVALIDAR CACHE DO IMÓVEL EXCLUÍDO
+    // ✅ 5. INVALIDAR CACHE DO TEMPLATE (APÓS SALVAR)
     if (window.propertyTemplates && window.propertyTemplates.invalidateProperty) {
         window.propertyTemplates.invalidateProperty(id);
-        console.log(`🗑️ Cache invalidado para imóvel excluído ${id}`);
+        console.log(`🗑️ Cache de templates invalidado para imóvel excluído ${id}`);
     }
 
-    // ✅ 5. Atualizar interface
+    // ✅ 6. Atualizar interface
     if (typeof window.renderProperties === 'function') {
         window.renderProperties('todos');
     }
 
-    // ✅ 6. Atualizar lista do admin
+    // ✅ 7. Atualizar lista do admin
     if (typeof window.loadPropertyList === 'function') {
         setTimeout(() => {
             window.loadPropertyList();
@@ -876,13 +893,13 @@ window.deleteProperty = async function(id) {
         }, 300);
     }
 
-    // ✅ 7. INVALIDAR CACHE
+    // ✅ 8. INVALIDAR CACHE GLOBAL (APÓS SALVAR)
     if (window.SmartCache) {
         SmartCache.invalidatePropertiesCache();
-        console.log('🗑️ Cache invalidado após excluir imóvel');
+        console.log('🗑️ SmartCache invalidado após excluir imóvel');
     }
 
-    // ✅ 8. Feedback ao usuário
+    // ✅ 9. Feedback ao usuário
     if (supabaseSuccess) {
         alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
         console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
@@ -1030,45 +1047,96 @@ window.PropertyState = {
     save() {
         try {
             localStorage.setItem('weberlessa_properties', JSON.stringify(this.properties));
+            console.log('💾 PropertyState: Dados salvos no localStorage');
         } catch (e) {
-            console.warn('⚠️ Não foi possível salvar no localStorage');
+            console.warn('⚠️ PropertyState: Não foi possível salvar no localStorage');
         }
     }
 };
 
-// Inicializar com dados existentes
-if (window.properties && window.properties.length > 0) {
-    window.PropertyState.init(window.properties);
-    window.properties = window.PropertyState.properties; // Manter compatibilidade
-}
+// ========== 13. FUNÇÃO DE VERIFICAÇÃO DE PERSISTÊNCIA ==========
+window.checkDataPersistence = function() {
+    console.group('🔍 VERIFICAÇÃO DE PERSISTÊNCIA DE DADOS');
+    
+    // Verificar localStorage
+    const stored = localStorage.getItem('weberlessa_properties');
+    console.log('📦 localStorage disponível:', !!stored);
+    
+    if (stored) {
+        try {
+            const data = JSON.parse(stored);
+            console.log(`📊 ${data.length} imóvel(is) armazenado(s)`);
+            console.log('📋 IDs:', data.map(p => p.id).join(', '));
+        } catch (e) {
+            console.error('❌ Erro ao analisar localStorage:', e);
+        }
+    }
+    
+    // Verificar window.properties
+    console.log('🏠 window.properties:', window.properties?.length || 0, 'imóvel(is)');
+    
+    // Verificar caches
+    console.log('🗂️ propertyTemplates cache:', window.propertyTemplates?.cache?.size || 0, 'itens');
+    
+    console.groupEnd();
+    
+    return {
+        localStorage: stored ? JSON.parse(stored).length : 0,
+        memory: window.properties?.length || 0,
+        templateCache: window.propertyTemplates?.cache?.size || 0
+    };
+};
 
-// ========== 13. RECUPERAÇÃO ESSENCIAL (MANTIDA) ==========
+// ========== 14. RECUPERAÇÃO ESSENCIAL COM VERIFICAÇÃO APROFUNDADA ==========
 (function essentialPropertiesRecovery() {
     const isDebug = window.location.search.includes('debug=true');
     
     // Monitorar se properties foi carregado
     setTimeout(() => {
+        console.log('🔄 Verificando recuperação de dados...');
+        
         if (!window.properties || window.properties.length === 0) {
+            console.warn('⚠️ window.properties está vazio, recuperando do localStorage...');
+            
             const stored = localStorage.getItem('weberlessa_properties');
             if (stored) {
                 try {
                     window.properties = JSON.parse(stored);
-                    if (isDebug) console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóveis`);
-                } catch (e) {}
+                    console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóvel(is)`);
+                    
+                    // Verificar se os dados são válidos
+                    if (window.properties.length > 0) {
+                        console.log('📋 Primeiro imóvel recuperado:', window.properties[0].title);
+                    }
+                } catch (e) {
+                    console.error('❌ Erro ao parsear localStorage:', e);
+                }
             }
             
             // Fallback final
             if (!window.properties || window.properties.length === 0) {
                 window.properties = getInitialProperties();
-                if (isDebug) console.log(`✅ Usando dados iniciais: ${window.properties.length} imóveis`);
+                window.savePropertiesToStorage(); // Garantir persistência
+                console.log(`✅ Usando dados iniciais: ${window.properties.length} imóvel(is)`);
             }
             
             // Renderizar se necessário
             if (typeof window.renderProperties === 'function' && document.readyState === 'complete') {
                 setTimeout(() => window.renderProperties('todos'), 300);
             }
+        } else {
+            console.log(`✅ window.properties já possui ${window.properties.length} imóvel(is)`);
         }
-    }, 3000);
+        
+        // Forçar salvamento para garantir persistência
+        setTimeout(() => {
+            if (window.properties && window.properties.length > 0) {
+                window.savePropertiesToStorage();
+                console.log('💾 Persistência garantida após recuperação');
+            }
+        }, 1000);
+        
+    }, 2000); // Aumentado para 2 segundos para garantir carregamento completo
 })();
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
@@ -1171,4 +1239,17 @@ window.testUploadSystem = function() {
     console.groupEnd();
 };
 
-console.log('💡 Execute window.testUploadSystem() para testar o upload');
+// Adicionar função de depuração de persistência
+window.debugPersistence = function() {
+    const result = window.checkDataPersistence();
+    alert(`🔍 VERIFICAÇÃO DE PERSISTÊNCIA:\n\n` +
+          `LocalStorage: ${result.localStorage} imóvel(is)\n` +
+          `Memória: ${result.memory} imóvel(is)\n` +
+          `Cache de templates: ${result.templateCache} itens\n\n` +
+          `Verifique console para mais detalhes.`);
+};
+
+console.log('💡 Comandos disponíveis:');
+console.log('💡 - window.testUploadSystem() para testar upload');
+console.log('💡 - window.checkDataPersistence() para verificar dados');
+console.log('💡 - window.debugPersistence() para alerta de depuração');
