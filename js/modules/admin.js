@@ -434,11 +434,14 @@ window.editProperty = function(id) {
     
     const priceField = document.getElementById('propPrice');
     if (priceField && property.price) {
-        if (property.price.startsWith('R$')) {
+        // ✅ USAR SISTEMA UNIFICADO DE FORMATAÇÃO
+        if (window.SharedCore?.PriceFormatter?.formatForInput) {
+            priceField.value = window.SharedCore.PriceFormatter.formatForInput(property.price);
+        } else if (property.price.startsWith('R$')) {
             priceField.value = property.price;
         } else {
-            // ✅ ATUALIZADO: Usar função do SharedCore
-            priceField.value = window.formatPriceForInput?.(property.price) || property.price;
+            // Fallback para compatibilidade
+            priceField.value = property.price;
         }
     }
     
@@ -589,9 +592,10 @@ window.setupForm = function() {
                 
                 const updateData = { ...propertyData };
                 
-                // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
-                if (updateData.price && !updateData.price.startsWith('R$')) {
-                    updateData.price = window.formatPriceForInput?.(updateData.price) || updateData.price;
+                // Formatar preço - ✅ USAR SISTEMA UNIFICADO DE FORMATAÇÃO
+                if (updateData.price && window.SharedCore?.PriceFormatter?.formatForInput) {
+                    const formatted = window.SharedCore.PriceFormatter.formatForInput(updateData.price);
+                    if (formatted) updateData.price = formatted;
                 }
                 
                 // Processar PDFs
@@ -658,9 +662,10 @@ window.setupForm = function() {
                 // Criação de novo imóvel
                 log.info('admin', 'CRIANDO novo imóvel...');
                 
-                // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
-                if (propertyData.price && !propertyData.price.startsWith('R$')) {
-                    propertyData.price = window.formatPriceForInput?.(propertyData.price) || propertyData.price;
+                // Formatar preço - ✅ USAR SISTEMA UNIFICADO DE FORMATAÇÃO
+                if (propertyData.price && window.SharedCore?.PriceFormatter?.formatForInput) {
+                    const formatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
+                    if (formatted) propertyData.price = formatted;
                 }
                 
                 // Criar no banco
