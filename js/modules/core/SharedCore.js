@@ -138,75 +138,126 @@ const SharedCore = (function() {
         return match / Math.max(str1.length, str2.length);
     };
 
-    // ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO (MIGRADAS DO admin.js) ==========
-    const formatPriceForInput = function(value) {
-        if (!value) return '';
+    // ========== SISTEMA DE FORMATAÇÃO UNIFICADO ==========
+    const PriceFormatter = {
+        /**
+         * Formata valor para "R$ X.XXX"
+         * @param {string|number} value - Valor a formatar
+         * @returns {string} Preço formatado
+         */
+        formatForInput: function(value) {
+            if (!value && value !== 0) return '';
+            
+            // Se já formatado, retorna como está
+            if (typeof value === 'string' && value.includes('R$')) {
+                return value;
+            }
+            
+            // Converter para string e extrair números
+            const strValue = value.toString();
+            const numbersOnly = strValue.replace(/\D/g, '');
+            
+            if (numbersOnly === '') return '';
+            
+            // Converter para número
+            const numericValue = parseInt(numbersOnly);
+            if (isNaN(numericValue)) return '';
+            
+            // Formatar estilo brasileiro
+            return 'R$ ' + numericValue.toLocaleString('pt-BR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        },
         
-        // Remove tudo que não for número
-        let numbersOnly = value.toString().replace(/\D/g, '');
+        /**
+         * Extrai apenas números do preço formatado
+         * @param {string} formattedPrice - Preço formatado (ex: "R$ 450.000")
+         * @returns {string} Apenas números
+         */
+        extractNumbers: function(formattedPrice) {
+            if (!formattedPrice) return '';
+            return formattedPrice.toString().replace(/\D/g, '');
+        },
         
-        // Se não tem números, retorna vazio
-        if (numbersOnly === '') return '';
+        /**
+         * Formata para exibição (com decimais quando aplicável)
+         * @param {string|number} value - Valor a formatar
+         * @returns {string} Preço pronto para exibição
+         */
+        formatForDisplay: function(value) {
+            if (!value && value !== 0) return 'R$ 0,00';
+            
+            // Se já formatado para exibição, retorna
+            if (typeof value === 'string' && value.includes('R$') && value.includes(',')) {
+                return value;
+            }
+            
+            // Extrair números
+            const numbersOnly = value.toString().replace(/\D/g, '');
+            const numericValue = parseInt(numbersOnly) || 0;
+            
+            // Formatar com decimais
+            return numericValue.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        },
         
-        // Converte para número inteiro
-        let priceNumber = parseInt(numbersOnly);
-        
-        // Formata como "R$ X.XXX" (sem centavos)
-        let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        });
-        
-        return formatted;
-    };
-
-    // Função para obter apenas números do preço formatado
-    const getPriceNumbersOnly = function(formattedPrice) {
-        if (!formattedPrice) return '';
-        // Remove "R$ " e todos os pontos
-        return formattedPrice.replace('R$ ', '').replace(/\./g, '');
-    };
-
-    // ========== FORMATAÇÃO AUTOMÁTICA DO CAMPO PREÇO ==========
-    const setupPriceAutoFormat = function() {
-        const priceField = document.getElementById('propPrice');
-        if (!priceField) return;
-        
-        // Formatar ao carregar (se já tiver valor)
-        if (priceField.value && !priceField.value.startsWith('R$')) {
-            priceField.value = formatPriceForInput(priceField.value);
+        /**
+         * Configura formatação automática em um campo de input
+         * @param {HTMLInputElement} inputElement - Elemento input a configurar
+         */
+        setupAutoFormat: function(inputElement) {
+            if (!inputElement || inputElement.tagName !== 'INPUT') return;
+            
+            // Formatar valor inicial se existir
+            if (inputElement.value && !inputElement.value.startsWith('R$')) {
+                inputElement.value = this.formatForInput(inputElement.value);
+            }
+            
+            // Evento de input (digitação)
+            inputElement.addEventListener('input', (e) => {
+                // Permitir ações de exclusão sem formatação
+                if (e.inputType === 'deleteContentBackward' || 
+                    e.inputType === 'deleteContentForward' ||
+                    e.inputType === 'deleteByCut') {
+                    return;
+                }
+                
+                // Salvar posição do cursor
+                const cursorPos = e.target.selectionStart;
+                const originalValue = e.target.value;
+                
+                // Formatar
+                e.target.value = this.formatForInput(e.target.value);
+                
+                // Ajustar cursor
+                const diff = e.target.value.length - originalValue.length;
+                e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            });
+            
+            // Formatar ao perder foco (garantir)
+            inputElement.addEventListener('blur', (e) => {
+                if (e.target.value && !e.target.value.startsWith('R$')) {
+                    e.target.value = this.formatForInput(e.target.value);
+                }
+            });
+            
+            // Permitir Enter para submit sem interferir
+            inputElement.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.form?.dispatchEvent(new Event('submit', { cancelable: true }));
+                }
+            });
         }
-        
-        // Formatar ao digitar
-        priceField.addEventListener('input', function(e) {
-            // Permite backspace, delete, setas
-            if (e.inputType === 'deleteContentBackward' || 
-                e.inputType === 'deleteContentForward' ||
-                e.inputType === 'deleteByCut') {
-                return;
-            }
-            
-            // Salva posição do cursor
-            const cursorPos = this.selectionStart;
-            const originalValue = this.value;
-            
-            // Formata o valor
-            this.value = formatPriceForInput(this.value);
-            
-            // Ajusta posição do cursor
-            const diff = this.value.length - originalValue.length;
-            this.setSelectionRange(cursorPos + diff, cursorPos + diff);
-        });
-        
-        // Formatar ao perder foco (garantir formatação)
-        priceField.addEventListener('blur', function() {
-            if (this.value && !this.value.startsWith('R$')) {
-                this.value = formatPriceForInput(this.value);
-            }
-        });
-        
-        console.log('✅ Formatação automática de preço configurada');
     };
+
+    // Adicionar ao SharedCore
+    SharedCore.PriceFormatter = PriceFormatter;
 
     // ========== DOM UTILITIES ==========
     const elementExists = (id) => {
@@ -499,10 +550,14 @@ const SharedCore = (function() {
         truncateText,
         stringSimilarity,
         
-        // Funções de formatação de preço (MIGRADAS)
-        formatPriceForInput,
-        getPriceNumbersOnly,
-        setupPriceAutoFormat,
+        // Formatação de preço
+        PriceFormatter,
+        formatPriceForInput: PriceFormatter.formatForInput.bind(PriceFormatter),
+        getPriceNumbersOnly: PriceFormatter.extractNumbers.bind(PriceFormatter),
+        setupPriceAutoFormat: function() {
+            const priceField = document.getElementById('propPrice');
+            if (priceField) PriceFormatter.setupAutoFormat(priceField);
+        },
         
         // DOM
         elementExists,
@@ -536,6 +591,18 @@ const SharedCore = (function() {
 
 // Exportar para escopo global
 window.SharedCore = SharedCore;
+
+// ========== INICIALIZAÇÃO AUTOMÁTICA DA FORMATAÇÃO ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Aguardar carregamento do DOM e do campo de preço
+    setTimeout(() => {
+        const priceField = document.getElementById('propPrice');
+        if (priceField && SharedCore.PriceFormatter) {
+            SharedCore.PriceFormatter.setupAutoFormat(priceField);
+            console.log('✅ Formatação automática de preço configurada');
+        }
+    }, 500);
+});
 
 // ========== INICIALIZAÇÃO E COMPATIBILIDADE ==========
 function initializeGlobalCompatibility() {
