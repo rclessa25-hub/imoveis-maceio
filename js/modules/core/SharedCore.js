@@ -14,6 +14,11 @@ Object.entries(SUPABASE_CONSTANTS).forEach(([key, value]) => {
     if (typeof window[key] === 'undefined' || window[key] === 'undefined') {
         window[key] = value;
         console.log(`✅ ${key} definida:`, key.includes('KEY') ? '✅ Disponível' : value.substring(0, 50) + '...');
+    } else {
+        // ✅ NOVO: Verificar se as constantes globais são diferentes das fixas
+        if (key === 'URL' && window[key] !== value) {
+            console.warn(`⚠️ SUPABASE_URL diferente! Fixa: ${value.substring(0, 50)}... | Global: ${window[key]?.substring(0, 50)}...`);
+        }
     }
 });
 
@@ -33,6 +38,17 @@ setTimeout(() => {
         console.log('✅ Constantes corrigidas:', window.SUPABASE_URL.substring(0, 50) + '...');
     }
 }, 1000);
+
+// ========== VERIFICAÇÃO DE SEGURANÇA ==========
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO DE CONSTANTES SUPABASE (APÓS TODOS OS MÓDULOS):');
+    console.log('- SUPABASE_URL definida?', 
+        window.SUPABASE_URL && window.SUPABASE_URL.includes('supabase.co') ? '✅ SIM' : '❌ NÃO');
+    console.log('- SUPABASE_KEY definida?', 
+        window.SUPABASE_KEY && window.SUPABASE_KEY.length > 50 ? '✅ SIM' : '❌ NÃO');
+    console.log('- É do media-unified.js?', 
+        window.SUPABASE_URL && window.SUPABASE_URL === 'https://syztbxvpdaplpetmixmt.supabase.co' ? '✅ SIM' : '❌ NÃO');
+}, 2000);
 
 const SharedCore = (function() {
     // ========== PERFORMANCE ESSENCIAIS ==========
