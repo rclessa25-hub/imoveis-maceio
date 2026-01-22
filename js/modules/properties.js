@@ -1,5 +1,5 @@
-// js/modules/properties.js - COM CORREÇÃO DE UPLOAD E FORMATAÇÃO COMPATÍVEL
-console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO COMPATÍVEL)');
+// js/modules/properties.js - COM CORREÇÃO DE UPLOAD E CARREGAMENTO DE IMAGENS
+console.log('🏠 properties.js - Sistema Core de Propriedades (COM CORREÇÃO DE UPLOAD E CARREGAMENTO DE IMAGENS)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -383,9 +383,9 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO COMPATÍVEL ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO CORRIGIDA ==========
 window.addNewProperty = async function(propertyData) {
-    console.group('➕ ADICIONANDO NOVO IMÓVEL - VERSÃO COMPATÍVEL');
+    console.group('➕ ADICIONANDO NOVO IMÓVEL - COM CORREÇÃO DE UPLOAD');
     console.log('📋 Dados recebidos:', propertyData);
 
     // ✅ Validação básica
@@ -475,20 +475,6 @@ window.addNewProperty = async function(propertyData) {
                     pdfs: propertyData.pdfs || '',
                     created_at: new Date().toISOString()
                 };
-
-                // ✅✅✅ VERSÃO COMPATÍVEL: Formatar preço usando método disponível
-                if (supabaseData.price && !supabaseData.price.startsWith('R$')) {
-                    if (SharedCore?.PriceFormatter?.formatForInput) {
-                        supabaseData.price = SharedCore.PriceFormatter.formatForInput(supabaseData.price);
-                        console.log('✅ Preço formatado via PriceFormatter para Supabase');
-                    } else if (SharedCore?.formatPriceForInput) {
-                        supabaseData.price = SharedCore.formatPriceForInput(supabaseData.price);
-                        console.log('✅ Preço formatado via função de compatibilidade para Supabase');
-                    } else if (window.formatPriceForInput) {
-                        supabaseData.price = window.formatPriceForInput(supabaseData.price);
-                        console.log('✅ Preço formatado via função global (legado) para Supabase');
-                    }
-                }
 
                 console.log('📤 Enviando imóvel ao Supabase:', supabaseData);
                 supabaseResponse = await window.supabaseSaveProperty(supabaseData);
@@ -613,7 +599,7 @@ window.addNewProperty = async function(propertyData) {
             console.log('🗑️ Cache invalidado');
         }
 
-        console.log('🎯 Processo de criação concluído com sucesso (VERSÃO COMPATÍVEL)');
+        console.log('🎯 Processo de criação concluído com sucesso');
         console.groupEnd();
         
         return newProperty;
@@ -645,9 +631,9 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. ATUALIZAR IMÓVEL - VERSÃO COMPATÍVEL ==========
+// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA ==========
 window.updateProperty = async function(id, propertyData) {
-    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - VERSÃO COMPATÍVEL:`, propertyData);
+    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - COM CORREÇÃO DE UPLOAD:`, propertyData);
 
     // ✅ VALIDAÇÃO DO ID
     if (!id || id === 'null' || id === 'undefined') {
@@ -686,20 +672,6 @@ window.updateProperty = async function(id, propertyData) {
             images: propertyData.images || window.properties[index].images || '',
             pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
         };
-
-        // ✅✅✅ VERSÃO COMPATÍVEL: Formatar preço usando método disponível
-        if (updateData.price && !updateData.price.startsWith('R$')) {
-            if (SharedCore?.PriceFormatter?.formatForInput) {
-                updateData.price = SharedCore.PriceFormatter.formatForInput(updateData.price);
-                console.log('✅ Preço formatado via PriceFormatter para atualização');
-            } else if (SharedCore?.formatPriceForInput) {
-                updateData.price = SharedCore.formatPriceForInput(updateData.price);
-                console.log('✅ Preço formatado via função de compatibilidade para atualização');
-            } else if (window.formatPriceForInput) {
-                updateData.price = window.formatPriceForInput(updateData.price);
-                console.log('✅ Preço formatado via função global (legado) para atualização');
-            }
-        }
 
         // ✅ 2. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
@@ -1036,7 +1008,7 @@ if (window.properties && window.properties.length > 0) {
 })();
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js carregado - VERSÃO COMPATÍVEL com formatação unificada');
+console.log('✅ properties.js carregado com correção de upload e carregamento de imagens');
 
 // Função utilitária para executar tarefas em baixa prioridade
 function runLowPriority(task) {
@@ -1050,7 +1022,7 @@ function runLowPriority(task) {
 // Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🏠 DOM carregado - inicializando properties (VERSÃO COMPATÍVEL)...');
+        console.log('🏠 DOM carregado - inicializando properties...');
 
         // Inicializar propriedades em baixa prioridade
         runLowPriority(() => {
@@ -1069,7 +1041,7 @@ if (document.readyState === 'loading') {
         });
     });
 } else {
-    console.log('🏠 DOM já carregado - inicializando agora (VERSÃO COMPATÍVEL)...');
+    console.log('🏠 DOM já carregado - inicializando agora...');
 
     // Inicializar direto em baixa prioridade
     runLowPriority(() => {
@@ -1092,7 +1064,7 @@ window.getInitialProperties = getInitialProperties;
 
 // Adicionar função de teste de upload
 window.testUploadSystem = function() {
-    console.group('🧪 TESTE DO SISTEMA DE UPLOAD (VERSÃO COMPATÍVEL)');
+    console.group('🧪 TESTE DO SISTEMA DE UPLOAD');
     
     // Verificar constantes
     console.log('1. Verificando constantes:');
@@ -1135,56 +1107,4 @@ window.testUploadSystem = function() {
     console.groupEnd();
 };
 
-// Adicionar teste de formatação de preço
-window.testPriceFormatting = function() {
-    console.group('🧪 TESTE DE FORMATAÇÃO DE PREÇO (VERSÃO COMPATÍVEL)');
-    
-    console.log('1. Verificando funções disponíveis:');
-    console.log('- SharedCore.PriceFormatter:', SharedCore?.PriceFormatter ? '✅ Disponível' : '❌ Indisponível');
-    console.log('- SharedCore.formatPriceForInput:', typeof SharedCore?.formatPriceForInput === 'function' ? '✅ Disponível' : '❌ Indisponível');
-    console.log('- window.formatPriceForInput:', typeof window.formatPriceForInput === 'function' ? '✅ Disponível' : '❌ Indisponível');
-    
-    if (SharedCore?.PriceFormatter?.formatForInput) {
-        console.log('2. Testando PriceFormatter:');
-        const tests = [
-            { input: '450000', expected: 'R$ 450.000' },
-            { input: '2500', expected: 'R$ 2.500' },
-            { input: 'R$ 450.000', expected: 'R$ 450.000' },
-            { input: '', expected: '' },
-            { input: 'abc', expected: '' }
-        ];
-        
-        tests.forEach(test => {
-            const result = SharedCore.PriceFormatter.formatForInput(test.input);
-            const passed = result === test.expected;
-            console.log(`   "${test.input}" → "${result}" ${passed ? '✅' : '❌'} ${passed ? '' : `(esperado: "${test.expected}")`}`);
-        });
-    }
-    
-    if (SharedCore?.formatPriceForInput) {
-        console.log('3. Testando função de compatibilidade:');
-        const result = SharedCore.formatPriceForInput('300000');
-        console.log(`   "300000" → "${result}"`, result === 'R$ 300.000' ? '✅' : '❌');
-    }
-    
-    console.log('4. Testando campo de preço no DOM:');
-    const priceField = document.getElementById('propPrice');
-    if (priceField) {
-        console.log('   - Campo encontrado:', priceField.id);
-        console.log('   - Valor atual:', priceField.value || '(vazio)');
-        
-        // Testar formatação automática
-        priceField.value = '500000';
-        priceField.dispatchEvent(new Event('input'));
-        console.log('   - Após input "500000":', priceField.value);
-        
-        // Resetar
-        priceField.value = '';
-    } else {
-        console.log('   ❌ Campo propPrice não encontrado');
-    }
-    
-    console.groupEnd();
-};
-
-console.log('💡 Execute window.testPriceFormatting() para testar a formatação de preço');
+console.log('💡 Execute window.testUploadSystem() para testar o upload');
