@@ -1,5 +1,5 @@
-// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS
-console.log('🔧 SharedCore.js carregado - COM CONSTANTES FIXAS PARA SUPABASE');
+// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS E FORMATAÇÃO CORRIGIDA
+console.log('🔧 SharedCore.js carregado - COM FORMATAÇÃO DE PREÇO CORRIGIDA');
 
 // ========== CONSTANTES SUPABASE FIXAS (IMPORTANTE!) ==========
 const SUPABASE_CONSTANTS = {
@@ -14,41 +14,8 @@ Object.entries(SUPABASE_CONSTANTS).forEach(([key, value]) => {
     if (typeof window[key] === 'undefined' || window[key] === 'undefined') {
         window[key] = value;
         console.log(`✅ ${key} definida:`, key.includes('KEY') ? '✅ Disponível' : value.substring(0, 50) + '...');
-    } else {
-        // ✅ NOVO: Verificar se as constantes globais são diferentes das fixas
-        if (key === 'URL' && window[key] !== value) {
-            console.warn(`⚠️ SUPABASE_URL diferente! Fixa: ${value.substring(0, 50)}... | Global: ${window[key]?.substring(0, 50)}...`);
-        }
     }
 });
-
-// ========== VERIFICAÇÃO DE CONSTANTES ==========
-setTimeout(() => {
-    console.log('🔍 VERIFICAÇÃO DE CONSTANTES SUPABASE:');
-    console.log('- SUPABASE_URL:', window.SUPABASE_URL ? '✅ ' + window.SUPABASE_URL.substring(0, 50) + '...' : '❌ undefined');
-    console.log('- SUPABASE_KEY:', window.SUPABASE_KEY ? '✅ Disponível' : '❌ Indisponível');
-    console.log('- ADMIN_PASSWORD:', window.ADMIN_PASSWORD ? '✅ Definida' : '❌ Indefinida');
-    console.log('- PDF_PASSWORD:', window.PDF_PASSWORD ? '✅ Definida' : '❌ Indefinida');
-    
-    // Correção de emergência se ainda estiver undefined
-    if (!window.SUPABASE_URL || window.SUPABASE_URL.includes('undefined')) {
-        console.error('🚨 CORREÇÃO DE EMERGÊNCIA: SUPABASE_URL está undefined!');
-        window.SUPABASE_URL = SUPABASE_CONSTANTS.URL;
-        window.SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
-        console.log('✅ Constantes corrigidas:', window.SUPABASE_URL.substring(0, 50) + '...');
-    }
-}, 1000);
-
-// ========== VERIFICAÇÃO DE SEGURANÇA ==========
-setTimeout(() => {
-    console.log('🔍 VERIFICAÇÃO DE CONSTANTES SUPABASE (APÓS TODOS OS MÓDULOS):');
-    console.log('- SUPABASE_URL definida?', 
-        window.SUPABASE_URL && window.SUPABASE_URL.includes('supabase.co') ? '✅ SIM' : '❌ NÃO');
-    console.log('- SUPABASE_KEY definida?', 
-        window.SUPABASE_KEY && window.SUPABASE_KEY.length > 50 ? '✅ SIM' : '❌ NÃO');
-    console.log('- É do media-unified.js?', 
-        window.SUPABASE_URL && window.SUPABASE_URL === 'https://syztbxvpdaplpetmixmt.supabase.co' ? '✅ SIM' : '❌ NÃO');
-}, 2000);
 
 const SharedCore = (function() {
     // ========== PERFORMANCE ESSENCIAIS ==========
@@ -138,74 +105,114 @@ const SharedCore = (function() {
         return match / Math.max(str1.length, str2.length);
     };
 
-    // ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO (MIGRADAS DO admin.js) ==========
-    const formatPriceForInput = function(value) {
-        if (!value) return '';
+    // ========== SISTEMA DE FORMATAÇÃO UNIFICADO DE PREÇO ==========
+    const PriceFormatter = {
+        /**
+         * Formata valor para "R$ X.XXX"
+         * @param {string|number} value - Valor a formatar
+         * @returns {string} Preço formatado
+         */
+        formatForInput: function(value) {
+            if (!value && value !== 0) return '';
+            
+            // Se já formatado, retorna como está
+            if (typeof value === 'string' && value.includes('R$')) {
+                return value;
+            }
+            
+            // Converter para string e extrair números
+            const strValue = value.toString();
+            const numbersOnly = strValue.replace(/\D/g, '');
+            
+            if (numbersOnly === '') return '';
+            
+            // Converter para número
+            const numericValue = parseInt(numbersOnly);
+            if (isNaN(numericValue)) return '';
+            
+            // Formatar estilo brasileiro
+            return 'R$ ' + numericValue.toLocaleString('pt-BR', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        },
         
-        // Remove tudo que não for número
-        let numbersOnly = value.toString().replace(/\D/g, '');
+        /**
+         * Extrai apenas números do preço formatado
+         * @param {string} formattedPrice - Preço formatado (ex: "R$ 450.000")
+         * @returns {string} Apenas números
+         */
+        extractNumbers: function(formattedPrice) {
+            if (!formattedPrice) return '';
+            return formattedPrice.toString().replace(/\D/g, '');
+        },
         
-        // Se não tem números, retorna vazio
-        if (numbersOnly === '') return '';
+        /**
+         * Formata para exibição (com decimais quando aplicável)
+         * @param {string|number} value - Valor a formatar
+         * @returns {string} Preço pronto para exibição
+         */
+        formatForDisplay: function(value) {
+            if (!value && value !== 0) return 'R$ 0,00';
+            
+            // Se já formatado para exibição, retorna
+            if (typeof value === 'string' && value.includes('R$') && value.includes(',')) {
+                return value;
+            }
+            
+            // Extrair números
+            const numbersOnly = value.toString().replace(/\D/g, '');
+            const numericValue = parseInt(numbersOnly) || 0;
+            
+            // Formatar com decimais
+            return numericValue.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        },
         
-        // Converte para número inteiro
-        let priceNumber = parseInt(numbersOnly);
-        
-        // Formata como "R$ X.XXX" (sem centavos)
-        let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        });
-        
-        return formatted;
-    };
-
-    // Função para obter apenas números do preço formatado
-    const getPriceNumbersOnly = function(formattedPrice) {
-        if (!formattedPrice) return '';
-        // Remove "R$ " e todos os pontos
-        return formattedPrice.replace('R$ ', '').replace(/\./g, '');
-    };
-
-    // ========== FORMATAÇÃO AUTOMÁTICA DO CAMPO PREÇO ==========
-    const setupPriceAutoFormat = function() {
-        const priceField = document.getElementById('propPrice');
-        if (!priceField) return;
-        
-        // Formatar ao carregar (se já tiver valor)
-        if (priceField.value && !priceField.value.startsWith('R$')) {
-            priceField.value = formatPriceForInput(priceField.value);
+        /**
+         * Configura formatação automática em um campo de input
+         * @param {HTMLInputElement} inputElement - Elemento input a configurar
+         */
+        setupAutoFormat: function(inputElement) {
+            if (!inputElement || inputElement.tagName !== 'INPUT') return;
+            
+            // Formatar valor inicial se existir
+            if (inputElement.value && !inputElement.value.startsWith('R$')) {
+                inputElement.value = this.formatForInput(inputElement.value);
+            }
+            
+            // Evento de input (digitação)
+            inputElement.addEventListener('input', (e) => {
+                // Permitir ações de exclusão sem formatação
+                if (e.inputType === 'deleteContentBackward' || 
+                    e.inputType === 'deleteContentForward' ||
+                    e.inputType === 'deleteByCut') {
+                    return;
+                }
+                
+                // Salvar posição do cursor
+                const cursorPos = e.target.selectionStart;
+                const originalValue = e.target.value;
+                
+                // Formatar
+                e.target.value = this.formatForInput(e.target.value);
+                
+                // Ajustar cursor
+                const diff = e.target.value.length - originalValue.length;
+                e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
+            });
+            
+            // Formatar ao perder foco (garantir)
+            inputElement.addEventListener('blur', (e) => {
+                if (e.target.value && !e.target.value.startsWith('R$')) {
+                    e.target.value = this.formatForInput(e.target.value);
+                }
+            });
         }
-        
-        // Formatar ao digitar
-        priceField.addEventListener('input', function(e) {
-            // Permite backspace, delete, setas
-            if (e.inputType === 'deleteContentBackward' || 
-                e.inputType === 'deleteContentForward' ||
-                e.inputType === 'deleteByCut') {
-                return;
-            }
-            
-            // Salva posição do cursor
-            const cursorPos = this.selectionStart;
-            const originalValue = this.value;
-            
-            // Formata o valor
-            this.value = formatPriceForInput(this.value);
-            
-            // Ajusta posição do cursor
-            const diff = this.value.length - originalValue.length;
-            this.setSelectionRange(cursorPos + diff, cursorPos + diff);
-        });
-        
-        // Formatar ao perder foco (garantir formatação)
-        priceField.addEventListener('blur', function() {
-            if (this.value && !this.value.startsWith('R$')) {
-                this.value = formatPriceForInput(this.value);
-            }
-        });
-        
-        console.log('✅ Formatação automática de preço configurada');
     };
 
     // ========== DOM UTILITIES ==========
@@ -332,7 +339,6 @@ const SharedCore = (function() {
 
     // ========== MANIPULAÇÃO DE ARRAYS ==========
     const arrayUtils = {
-        // Mover funções que manipulam arrays aqui
         findDuplicates: (array, key) => {
             const seen = new Set();
             const duplicates = [];
@@ -499,10 +505,16 @@ const SharedCore = (function() {
         truncateText,
         stringSimilarity,
         
-        // Funções de formatação de preço (MIGRADAS)
-        formatPriceForInput,
-        getPriceNumbersOnly,
-        setupPriceAutoFormat,
+        // Sistema de formatação de preço UNIFICADO
+        PriceFormatter,
+        
+        // Funções de compatibilidade (para código legado)
+        formatPriceForInput: PriceFormatter.formatForInput.bind(PriceFormatter),
+        getPriceNumbersOnly: PriceFormatter.extractNumbers.bind(PriceFormatter),
+        setupPriceAutoFormat: function() {
+            const priceField = document.getElementById('propPrice');
+            if (priceField) PriceFormatter.setupAutoFormat(priceField);
+        },
         
         // DOM
         elementExists,
@@ -558,7 +570,7 @@ function initializeGlobalCompatibility() {
         truncateText: SharedCore.truncateText,
         stringSimilarity: SharedCore.stringSimilarity,
         
-        // Formatação de preço
+        // Formatação de preço (compatibilidade com código legado)
         formatPriceForInput: SharedCore.formatPriceForInput,
         getPriceNumbersOnly: SharedCore.getPriceNumbersOnly,
         setupPriceAutoFormat: SharedCore.setupPriceAutoFormat,
@@ -587,27 +599,22 @@ function initializeGlobalCompatibility() {
     });
     
     console.log(`✅ ${Object.keys(globalExports).length} funções disponíveis globalmente`);
-    
-    // Adicionar função de diagnóstico
-    window.diagnoseSupabase = function() {
-        console.group('🔍 DIAGNÓSTICO SUPABASE');
-        console.log('1. Constantes:');
-        console.log('- SUPABASE_URL:', window.SUPABASE_URL);
-        console.log('- SUPABASE_KEY:', window.SUPABASE_KEY ? '✅ Disponível' : '❌ Indisponível');
-        console.log('- É supabase.co?', window.SUPABASE_URL?.includes('supabase.co') ? '✅ Sim' : '❌ Não');
-        
-        console.log('2. Testando conexão...');
-        SharedCore.validateSupabaseConnection().then(result => {
-            console.log('- Conexão:', result.online);
-        });
-        
-        console.log('3. Testando upload... (execute SharedCore.testFileUpload())');
-        console.groupEnd();
-    };
 }
 
-// Executar após SharedCore estar pronto
-setTimeout(initializeGlobalCompatibility, 100);
+// ========== INICIALIZAÇÃO AUTOMÁTICA DA FORMATAÇÃO DE PREÇO ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar compatibilidade global
+    initializeGlobalCompatibility();
+    
+    // Configurar formatação automática do campo de preço
+    setTimeout(() => {
+        const priceField = document.getElementById('propPrice');
+        if (priceField && window.SharedCore?.PriceFormatter) {
+            window.SharedCore.PriceFormatter.setupAutoFormat(priceField);
+            console.log('✅ Formatação automática de preço configurada no DOMContentLoaded');
+        }
+    }, 800);
+});
 
 // ========== AUTO-VALIDAÇÃO ==========
 setTimeout(() => {
@@ -638,4 +645,4 @@ setTimeout(() => {
     console.groupEnd();
 }, 2000);
 
-console.log(`✅ SharedCore.js pronto - Constantes Supabase fixas garantidas`);
+console.log(`✅ SharedCore.js pronto - Sistema de formatação de preço corrigido`);
