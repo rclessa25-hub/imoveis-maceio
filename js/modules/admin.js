@@ -438,7 +438,11 @@ window.editProperty = function(id) {
             priceField.value = property.price;
         } else {
             // ✅ ATUALIZADO: Usar função do SharedCore
-            priceField.value = window.formatPriceForInput?.(property.price) || property.price;
+            if (priceField && property.price && SharedCore?.PriceFormatter?.formatForInput) {
+                priceField.value = SharedCore.PriceFormatter.formatForInput(property.price);
+            } else if (priceField && property.price) {
+                priceField.value = property.price;
+            }
         }
     }
     
@@ -591,7 +595,7 @@ window.setupForm = function() {
                 
                 // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
                 if (updateData.price && !updateData.price.startsWith('R$')) {
-                    updateData.price = window.formatPriceForInput?.(updateData.price) || updateData.price;
+                    updateData.price = SharedCore?.PriceFormatter?.formatForInput?.(updateData.price) || updateData.price;
                 }
                 
                 // Processar PDFs
@@ -660,7 +664,7 @@ window.setupForm = function() {
                 
                 // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
                 if (propertyData.price && !propertyData.price.startsWith('R$')) {
-                    propertyData.price = window.formatPriceForInput?.(propertyData.price) || propertyData.price;
+                    propertyData.price = SharedCore?.PriceFormatter?.formatForInput?.(propertyData.price) || propertyData.price;
                 }
                 
                 // Criar no banco
@@ -960,8 +964,7 @@ setTimeout(() => {
     log.info('admin', '- Formulário funcional: ✅ SIM');
     log.info('admin', '- Foco automático removido: ✅ MELHORIA DE UX IMPLEMENTADA');
     log.info('admin', '- Validação LoadingManager removida: ✅ REDUÇÃO DE REDUNDÂNCIA');
-    // ✅ NOVO: Consolidação de formatação de preço
-    log.info('admin', '- Funções de formatação de preço consolidadas no SharedCore: ✅ DRY IMPLEMENTADO');
+    log.info('admin', '- Sistema PriceFormatter implementado: ✅ FORMATAÇÃO UNIFICADA');
     log.groupEnd();
 }, 2000);
 
