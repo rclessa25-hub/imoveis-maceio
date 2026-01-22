@@ -476,6 +476,12 @@ window.addNewProperty = async function(propertyData) {
                     created_at: new Date().toISOString()
                 };
 
+                // ✅ ATUALIZADO: Formatar preço usando PriceFormatter
+                if (supabaseData.price && SharedCore?.PriceFormatter?.formatForInput) {
+                    const formatted = SharedCore.PriceFormatter.formatForInput(supabaseData.price);
+                    if (formatted) supabaseData.price = formatted;
+                }
+
                 console.log('📤 Enviando imóvel ao Supabase:', supabaseData);
                 supabaseResponse = await window.supabaseSaveProperty(supabaseData);
                 console.log('📡 Resposta do Supabase:', supabaseResponse);
@@ -672,6 +678,12 @@ window.updateProperty = async function(id, propertyData) {
             images: propertyData.images || window.properties[index].images || '',
             pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
         };
+
+        // ✅ ATUALIZADO: Formatar preço usando PriceFormatter
+        if (updateData.price && SharedCore?.PriceFormatter?.formatForInput) {
+            const formatted = SharedCore.PriceFormatter.formatForInput(updateData.price);
+            if (formatted) updateData.price = formatted;
+        }
 
         // ✅ 2. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
