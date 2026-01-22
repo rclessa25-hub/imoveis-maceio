@@ -10,11 +10,18 @@ class PropertyTemplateEngine {
     constructor() {
         this.cache = new Map();
         this.imageFallback = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        this.version = 1; // ⭐ NOVO: Versão do cache
     }
 
     generate(property) {
-        const cacheKey = `prop_${property.id}_${property.images?.length || 0}`;
-        if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
+        // ⭐ MODIFICADO: Inclui timestamp da última modificação no cache key
+        const lastModified = property.updated_at || property.created_at || '0';
+        const cacheKey = `prop_${property.id}_v${this.version}_${lastModified}`;
+        
+        if (this.cache.has(cacheKey)) {
+            console.log(`📦 Usando cache para imóvel ${property.id}`);
+            return this.cache.get(cacheKey);
+        }
 
         // Template minimalista com todos os elementos visuais CRÍTICOS
         const html = `
@@ -36,6 +43,7 @@ class PropertyTemplateEngine {
         `;
 
         this.cache.set(cacheKey, html);
+        console.log(`🆕 Cache gerado para imóvel ${property.id}`);
         return html;
     }
 
@@ -85,6 +93,42 @@ class PropertyTemplateEngine {
                 ${featureArray.map(f => `<span class="feature-tag ${isRural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
             </div>
         ` : '';
+    }
+
+    // ⭐ NOVO MÉTODO: Invalidar cache de um imóvel específico
+    invalidateProperty(propertyId) {
+        const keysToDelete = [];
+        for (const [key] of this.cache) {
+            if (key.startsWith(`prop_${propertyId}_`)) {
+                keysToDelete.push(key);
+            }
+        }
+        keysToDelete.forEach(key => {
+            this.cache.delete(key);
+            console.log(`🗑️ Cache invalidado: ${key}`);
+        });
+        return keysToDelete.length;
+    }
+
+    // ⭐ NOVO MÉTODO: Invalidar todo o cache
+    invalidateAll() {
+        const count = this.cache.size;
+        this.cache.clear();
+        this.version++; // Incrementa versão para forçar novos cache keys
+        console.log(`🗑️ Cache completamente limpo: ${count} itens removidos`);
+        return count;
+    }
+
+    // ⭐ NOVO MÉTODO: Invalidar cache por tempo (opcional)
+    invalidateStale(maxAgeMinutes = 5) {
+        const now = Date.now();
+        const staleTime = maxAgeMinutes * 60 * 1000;
+        const keysToDelete = [];
+        
+        // Nota: Esta implementação requer armazenar timestamp no cache
+        // Para versão simples, podemos pular e usar invalidateAll() ou invalidateProperty()
+        
+        return keysToDelete.length;
     }
 }
 
@@ -383,7 +427,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO CORRIGIDA ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO CORRIGIDA COM INVALIDAÇÃO DE CACHE ==========
 window.addNewProperty = async function(propertyData) {
     console.group('➕ ADICIONANDO NOVO IMÓVEL - COM CORREÇÃO DE UPLOAD');
     console.log('📋 Dados recebidos:', propertyData);
@@ -534,6 +578,12 @@ window.addNewProperty = async function(propertyData) {
         window.savePropertiesToStorage();
         console.log('💾 Imóvel salvo localmente');
 
+        // ⭐ SOLUÇÃO 3: INVALIDAR CACHE APÓS ADICIONAR NOVO IMÓVEL
+        if (window.propertyTemplates && window.propertyTemplates.invalidateAll) {
+            window.propertyTemplates.invalidateAll();
+            console.log('🔄 Cache invalidado após adicionar novo imóvel');
+        }
+
         // =========================================================
         // 5. ATUALIZAR UI
         // =========================================================
@@ -631,7 +681,7 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA ==========
+// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA COM INVALIDAÇÃO DE CACHE ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - COM CORREÇÃO DE UPLOAD:`, propertyData);
 
@@ -670,7 +720,8 @@ window.updateProperty = async function(id, propertyData) {
             badge: propertyData.badge || window.properties[index].badge || 'Novo',
             rural: propertyData.type === 'rural' || window.properties[index].rural || false,
             images: propertyData.images || window.properties[index].images || '',
-            pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
+            pdfs: propertyData.pdfs || window.properties[index].pdfs || '',
+            updated_at: new Date().toISOString() // ⭐ ADICIONAR timestamp
         };
 
         // ✅ 2. ATUALIZAR NO SUPABASE
@@ -701,10 +752,17 @@ window.updateProperty = async function(id, propertyData) {
         window.properties[index] = {
             ...window.properties[index],
             ...updateData,
-            id: id
+            id: id,
+            updated_at: new Date().toISOString() // ⭐ ADICIONAR timestamp
         };
         window.savePropertiesToStorage();
         console.log('✅ Atualização local salva');
+
+        // ⭐ SOLUÇÃO 2: INVALIDAR CACHE DO TEMPLATE
+        if (window.propertyTemplates && window.propertyTemplates.invalidateProperty) {
+            const invalidated = window.propertyTemplates.invalidateProperty(id);
+            console.log(`🔄 Cache invalidado para imóvel ${id}: ${invalidated} template(s)`);
+        }
 
         // ✅ 4. RENDERIZAR
         if (typeof window.renderProperties === 'function') {
@@ -740,7 +798,7 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// ========== 9. EXCLUIR IMÓVEL (MANTIDA) ==========
+// ========== 9. EXCLUIR IMÓVEL - VERSÃO ATUALIZADA COM INVALIDAÇÃO DE CACHE ==========
 window.deleteProperty = async function(id) {
     console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
 
@@ -798,6 +856,12 @@ window.deleteProperty = async function(id) {
     const originalLength = window.properties.length;
     window.properties = window.properties.filter(p => p.id !== id);
     window.savePropertiesToStorage();
+
+    // ⭐ SOLUÇÃO 4: INVALIDAR CACHE DO IMÓVEL EXCLUÍDO
+    if (window.propertyTemplates && window.propertyTemplates.invalidateProperty) {
+        window.propertyTemplates.invalidateProperty(id);
+        console.log(`🗑️ Cache invalidado para imóvel excluído ${id}`);
+    }
 
     // ✅ 5. Atualizar interface
     if (typeof window.renderProperties === 'function') {
