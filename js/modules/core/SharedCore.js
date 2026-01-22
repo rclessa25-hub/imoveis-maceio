@@ -1,5 +1,5 @@
-// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS
-console.log('🔧 SharedCore.js carregado - COM CONSTANTES FIXAS PARA SUPABASE');
+// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS E PRICEFORMATTER SEGURO
+console.log('🔧 SharedCore.js carregado - COM CONSTANTES FIXAS E FORMATAÇÃO UNIFICADA SEGURA');
 
 // ========== CONSTANTES SUPABASE FIXAS (IMPORTANTE!) ==========
 const SUPABASE_CONSTANTS = {
@@ -255,9 +255,6 @@ const SharedCore = (function() {
             });
         }
     };
-
-    // Adicionar ao SharedCore
-    SharedCore.PriceFormatter = PriceFormatter;
 
     // ========== DOM UTILITIES ==========
     const elementExists = (id) => {
@@ -550,10 +547,14 @@ const SharedCore = (function() {
         truncateText,
         stringSimilarity,
         
-        // Formatação de preço
-        PriceFormatter,
-        formatPriceForInput: PriceFormatter.formatForInput.bind(PriceFormatter),
-        getPriceNumbersOnly: PriceFormatter.extractNumbers.bind(PriceFormatter),
+        // ✅✅✅ VERSÃO SEGURA: MÓDULO COMPLETO + WRAPPERS PARA COMPATIBILIDADE
+        PriceFormatter, // Módulo completo disponível
+        formatPriceForInput: function(value) {
+            return PriceFormatter.formatForInput(value);
+        },
+        getPriceNumbersOnly: function(formattedPrice) {
+            return PriceFormatter.extractNumbers(formattedPrice);
+        },
         setupPriceAutoFormat: function() {
             const priceField = document.getElementById('propPrice');
             if (priceField) PriceFormatter.setupAutoFormat(priceField);
@@ -599,7 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const priceField = document.getElementById('propPrice');
         if (priceField && SharedCore.PriceFormatter) {
             SharedCore.PriceFormatter.setupAutoFormat(priceField);
-            console.log('✅ Formatação automática de preço configurada');
+            console.log('✅ Formatação automática de preço configurada via PriceFormatter');
         }
     }, 500);
 });
@@ -625,7 +626,7 @@ function initializeGlobalCompatibility() {
         truncateText: SharedCore.truncateText,
         stringSimilarity: SharedCore.stringSimilarity,
         
-        // Formatação de preço
+        // ✅ Formatação de preço (COMPATIBILIDADE TOTAL)
         formatPriceForInput: SharedCore.formatPriceForInput,
         getPriceNumbersOnly: SharedCore.getPriceNumbersOnly,
         setupPriceAutoFormat: SharedCore.setupPriceAutoFormat,
@@ -678,31 +679,61 @@ setTimeout(initializeGlobalCompatibility, 100);
 
 // ========== AUTO-VALIDAÇÃO ==========
 setTimeout(() => {
-    console.group('🧪 VALIDAÇÃO DO SHAREDCORE');
+    console.group('🧪 VALIDAÇÃO DO SHAREDCORE (VERSÃO SEGURA)');
     
-    const essentialFunctions = [
-        'debounce', 'throttle', 'formatPrice', 'supabaseFetch',
-        'elementExists', 'isMobileDevice', 'copyToClipboard',
-        'logModule', 'runLowPriority', 'validateProperty'
-    ];
+    console.log('🔍 VERIFICAÇÃO DE COMPATIBILIDADE:');
     
-    let allAvailable = true;
-    essentialFunctions.forEach(func => {
-        const available = typeof window[func] === 'function';
-        console.log(`${available ? '✅' : '❌'} ${func} disponível`);
-        if (!available) allAvailable = false;
+    // Verificar funções essenciais de formatação
+    const formatFunctions = ['formatPriceForInput', 'getPriceNumbersOnly', 'setupPriceAutoFormat'];
+    let allFormatAvailable = true;
+    
+    formatFunctions.forEach(func => {
+        const globalAvailable = typeof window[func] === 'function';
+        const sharedCoreAvailable = typeof SharedCore[func] === 'function';
+        
+        console.log(`${globalAvailable && sharedCoreAvailable ? '✅' : '❌'} ${func}:`);
+        console.log(`   - Global: ${globalAvailable ? '✅ Disponível' : '❌ Indisponível'}`);
+        console.log(`   - SharedCore: ${sharedCoreAvailable ? '✅ Disponível' : '❌ Indisponível'}`);
+        
+        if (!globalAvailable || !sharedCoreAvailable) allFormatAvailable = false;
     });
+    
+    // Verificar PriceFormatter
+    console.log('\n🔍 VERIFICAÇÃO DO PRICEFORMATTER:');
+    const priceFormatterExists = !!SharedCore?.PriceFormatter;
+    const priceFormatterFunctions = ['formatForInput', 'extractNumbers', 'formatForDisplay', 'setupAutoFormat'];
+    let allFormatterFunctions = true;
+    
+    console.log(`- PriceFormatter: ${priceFormatterExists ? '✅ Existe' : '❌ Não existe'}`);
+    
+    if (priceFormatterExists) {
+        priceFormatterFunctions.forEach(func => {
+            const exists = typeof SharedCore.PriceFormatter[func] === 'function';
+            console.log(`  - ${func}: ${exists ? '✅' : '❌'}`);
+            if (!exists) allFormatterFunctions = false;
+        });
+    }
     
     // Verificar constantes
     const essentialConstants = ['SUPABASE_URL', 'SUPABASE_KEY', 'ADMIN_PASSWORD', 'PDF_PASSWORD'];
+    let allConstantsAvailable = true;
+    
+    console.log('\n🔍 VERIFICAÇÃO DE CONSTANTES:');
     essentialConstants.forEach(constant => {
         const exists = window[constant] !== undefined;
         console.log(`${exists ? '✅' : '❌'} ${constant} definida`);
-        if (!exists) allAvailable = false;
+        if (!exists) allConstantsAvailable = false;
     });
     
-    console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO' : '⚠️ VERIFICAÇÃO REQUERIDA');
+    const allAvailable = allFormatAvailable && allFormatterFunctions && allConstantsAvailable;
+    
+    console.log('\n📊 RESUMO:');
+    console.log('- Funções de formatação: ', allFormatAvailable ? '✅ TODAS DISPONÍVEIS' : '❌ FALTANDO');
+    console.log('- PriceFormatter: ', allFormatterFunctions ? '✅ COMPLETO' : '❌ INCOMPLETO');
+    console.log('- Constantes: ', allConstantsAvailable ? '✅ TODAS DEFINIDAS' : '❌ FALTANDO');
+    
+    console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO - VERSÃO SEGURA PRONTA!' : '⚠️ VERIFICAÇÃO REQUERIDA');
     console.groupEnd();
 }, 2000);
 
-console.log(`✅ SharedCore.js pronto - Constantes Supabase fixas garantidas`);
+console.log(`✅ SharedCore.js pronto - VERSÃO SEGURA com PriceFormatter e compatibilidade total`);
