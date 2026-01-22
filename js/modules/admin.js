@@ -434,14 +434,11 @@ window.editProperty = function(id) {
     
     const priceField = document.getElementById('propPrice');
     if (priceField && property.price) {
-        // ✅✅✅ CORREÇÃO: Usar função do SharedCore consistentemente
-        if (window.formatPriceForInput) {
-            priceField.value = window.formatPriceForInput(property.price);
-        } else if (property.price.startsWith('R$')) {
+        if (property.price.startsWith('R$')) {
             priceField.value = property.price;
         } else {
-            // Fallback mínimo
-            priceField.value = 'R$ ' + property.price.toString().replace(/\D/g, '');
+            // ✅ ATUALIZADO: Usar função do SharedCore
+            priceField.value = window.formatPriceForInput?.(property.price) || property.price;
         }
     }
     
@@ -521,22 +518,9 @@ window.setupForm = function() {
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     
-    // ✅✅✅ CORREÇÃO: Usar função do SharedCore consistentemente
+    // ✅ ATUALIZADO: Usar função do SharedCore
     if (window.setupPriceAutoFormat) {
         window.setupPriceAutoFormat();
-    } else {
-        // Fallback mínimo se SharedCore não estiver disponível
-        const priceField = document.getElementById('propPrice');
-        if (priceField) {
-            priceField.addEventListener('input', function(e) {
-                if (!['deleteContentBackward', 'deleteContentForward', 'deleteByCut'].includes(e.inputType)) {
-                    let value = this.value.replace(/\D/g, '');
-                    if (value) {
-                        this.value = 'R$ ' + parseInt(value).toLocaleString('pt-BR');
-                    }
-                }
-            });
-        }
     }
     
     // Configurar submit
@@ -605,7 +589,7 @@ window.setupForm = function() {
                 
                 const updateData = { ...propertyData };
                 
-                // Formatar preço - ✅✅✅ CORREÇÃO: Usar função do SharedCore consistentemente
+                // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
                 if (updateData.price && !updateData.price.startsWith('R$')) {
                     updateData.price = window.formatPriceForInput?.(updateData.price) || updateData.price;
                 }
@@ -674,7 +658,7 @@ window.setupForm = function() {
                 // Criação de novo imóvel
                 log.info('admin', 'CRIANDO novo imóvel...');
                 
-                // Formatar preço - ✅✅✅ CORREÇÃO: Usar função do SharedCore consistentemente
+                // Formatar preço - ✅ ATUALIZADO: Usar função do SharedCore
                 if (propertyData.price && !propertyData.price.startsWith('R$')) {
                     propertyData.price = window.formatPriceForInput?.(propertyData.price) || propertyData.price;
                 }
