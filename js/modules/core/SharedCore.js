@@ -1,5 +1,5 @@
-// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS E PRICEFORMATTER SEGURO
-console.log('🔧 SharedCore.js carregado - COM CONSTANTES FIXAS E FORMATAÇÃO UNIFICADA SEGURA');
+// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS
+console.log('🔧 SharedCore.js carregado - COM CONSTANTES FIXAS PARA SUPABASE');
 
 // ========== CONSTANTES SUPABASE FIXAS (IMPORTANTE!) ==========
 const SUPABASE_CONSTANTS = {
@@ -138,122 +138,74 @@ const SharedCore = (function() {
         return match / Math.max(str1.length, str2.length);
     };
 
-    // ========== SISTEMA DE FORMATAÇÃO UNIFICADO ==========
-    const PriceFormatter = {
-        /**
-         * Formata valor para "R$ X.XXX"
-         * @param {string|number} value - Valor a formatar
-         * @returns {string} Preço formatado
-         */
-        formatForInput: function(value) {
-            if (!value && value !== 0) return '';
-            
-            // Se já formatado, retorna como está
-            if (typeof value === 'string' && value.includes('R$')) {
-                return value;
-            }
-            
-            // Converter para string e extrair números
-            const strValue = value.toString();
-            const numbersOnly = strValue.replace(/\D/g, '');
-            
-            if (numbersOnly === '') return '';
-            
-            // Converter para número
-            const numericValue = parseInt(numbersOnly);
-            if (isNaN(numericValue)) return '';
-            
-            // Formatar estilo brasileiro
-            return 'R$ ' + numericValue.toLocaleString('pt-BR', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            });
-        },
+    // ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO (MIGRADAS DO admin.js) ==========
+    const formatPriceForInput = function(value) {
+        if (!value) return '';
         
-        /**
-         * Extrai apenas números do preço formatado
-         * @param {string} formattedPrice - Preço formatado (ex: "R$ 450.000")
-         * @returns {string} Apenas números
-         */
-        extractNumbers: function(formattedPrice) {
-            if (!formattedPrice) return '';
-            return formattedPrice.toString().replace(/\D/g, '');
-        },
+        // Remove tudo que não for número
+        let numbersOnly = value.toString().replace(/\D/g, '');
         
-        /**
-         * Formata para exibição (com decimais quando aplicável)
-         * @param {string|number} value - Valor a formatar
-         * @returns {string} Preço pronto para exibição
-         */
-        formatForDisplay: function(value) {
-            if (!value && value !== 0) return 'R$ 0,00';
-            
-            // Se já formatado para exibição, retorna
-            if (typeof value === 'string' && value.includes('R$') && value.includes(',')) {
-                return value;
-            }
-            
-            // Extrair números
-            const numbersOnly = value.toString().replace(/\D/g, '');
-            const numericValue = parseInt(numbersOnly) || 0;
-            
-            // Formatar com decimais
-            return numericValue.toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        },
+        // Se não tem números, retorna vazio
+        if (numbersOnly === '') return '';
         
-        /**
-         * Configura formatação automática em um campo de input
-         * @param {HTMLInputElement} inputElement - Elemento input a configurar
-         */
-        setupAutoFormat: function(inputElement) {
-            if (!inputElement || inputElement.tagName !== 'INPUT') return;
-            
-            // Formatar valor inicial se existir
-            if (inputElement.value && !inputElement.value.startsWith('R$')) {
-                inputElement.value = this.formatForInput(inputElement.value);
-            }
-            
-            // Evento de input (digitação)
-            inputElement.addEventListener('input', (e) => {
-                // Permitir ações de exclusão sem formatação
-                if (e.inputType === 'deleteContentBackward' || 
-                    e.inputType === 'deleteContentForward' ||
-                    e.inputType === 'deleteByCut') {
-                    return;
-                }
-                
-                // Salvar posição do cursor
-                const cursorPos = e.target.selectionStart;
-                const originalValue = e.target.value;
-                
-                // Formatar
-                e.target.value = this.formatForInput(e.target.value);
-                
-                // Ajustar cursor
-                const diff = e.target.value.length - originalValue.length;
-                e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
-            });
-            
-            // Formatar ao perder foco (garantir)
-            inputElement.addEventListener('blur', (e) => {
-                if (e.target.value && !e.target.value.startsWith('R$')) {
-                    e.target.value = this.formatForInput(e.target.value);
-                }
-            });
-            
-            // Permitir Enter para submit sem interferir
-            inputElement.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.target.form?.dispatchEvent(new Event('submit', { cancelable: true }));
-                }
-            });
+        // Converte para número inteiro
+        let priceNumber = parseInt(numbersOnly);
+        
+        // Formata como "R$ X.XXX" (sem centavos)
+        let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+        
+        return formatted;
+    };
+
+    // Função para obter apenas números do preço formatado
+    const getPriceNumbersOnly = function(formattedPrice) {
+        if (!formattedPrice) return '';
+        // Remove "R$ " e todos os pontos
+        return formattedPrice.replace('R$ ', '').replace(/\./g, '');
+    };
+
+    // ========== FORMATAÇÃO AUTOMÁTICA DO CAMPO PREÇO ==========
+    const setupPriceAutoFormat = function() {
+        const priceField = document.getElementById('propPrice');
+        if (!priceField) return;
+        
+        // Formatar ao carregar (se já tiver valor)
+        if (priceField.value && !priceField.value.startsWith('R$')) {
+            priceField.value = formatPriceForInput(priceField.value);
         }
+        
+        // Formatar ao digitar
+        priceField.addEventListener('input', function(e) {
+            // Permite backspace, delete, setas
+            if (e.inputType === 'deleteContentBackward' || 
+                e.inputType === 'deleteContentForward' ||
+                e.inputType === 'deleteByCut') {
+                return;
+            }
+            
+            // Salva posição do cursor
+            const cursorPos = this.selectionStart;
+            const originalValue = this.value;
+            
+            // Formata o valor
+            this.value = formatPriceForInput(this.value);
+            
+            // Ajusta posição do cursor
+            const diff = this.value.length - originalValue.length;
+            this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+        });
+        
+        // Formatar ao perder foco (garantir formatação)
+        priceField.addEventListener('blur', function() {
+            if (this.value && !this.value.startsWith('R$')) {
+                this.value = formatPriceForInput(this.value);
+            }
+        });
+        
+        console.log('✅ Formatação automática de preço configurada');
     };
 
     // ========== DOM UTILITIES ==========
@@ -547,18 +499,10 @@ const SharedCore = (function() {
         truncateText,
         stringSimilarity,
         
-        // ✅✅✅ VERSÃO SEGURA: MÓDULO COMPLETO + WRAPPERS PARA COMPATIBILIDADE
-        PriceFormatter, // Módulo completo disponível
-        formatPriceForInput: function(value) {
-            return PriceFormatter.formatForInput(value);
-        },
-        getPriceNumbersOnly: function(formattedPrice) {
-            return PriceFormatter.extractNumbers(formattedPrice);
-        },
-        setupPriceAutoFormat: function() {
-            const priceField = document.getElementById('propPrice');
-            if (priceField) PriceFormatter.setupAutoFormat(priceField);
-        },
+        // Funções de formatação de preço (MIGRADAS)
+        formatPriceForInput,
+        getPriceNumbersOnly,
+        setupPriceAutoFormat,
         
         // DOM
         elementExists,
@@ -593,18 +537,6 @@ const SharedCore = (function() {
 // Exportar para escopo global
 window.SharedCore = SharedCore;
 
-// ========== INICIALIZAÇÃO AUTOMÁTICA DA FORMATAÇÃO ==========
-document.addEventListener('DOMContentLoaded', function() {
-    // Aguardar carregamento do DOM e do campo de preço
-    setTimeout(() => {
-        const priceField = document.getElementById('propPrice');
-        if (priceField && SharedCore.PriceFormatter) {
-            SharedCore.PriceFormatter.setupAutoFormat(priceField);
-            console.log('✅ Formatação automática de preço configurada via PriceFormatter');
-        }
-    }, 500);
-});
-
 // ========== INICIALIZAÇÃO E COMPATIBILIDADE ==========
 function initializeGlobalCompatibility() {
     console.log('🔗 Inicializando compatibilidade global...');
@@ -626,7 +558,7 @@ function initializeGlobalCompatibility() {
         truncateText: SharedCore.truncateText,
         stringSimilarity: SharedCore.stringSimilarity,
         
-        // ✅ Formatação de preço (COMPATIBILIDADE TOTAL)
+        // Formatação de preço
         formatPriceForInput: SharedCore.formatPriceForInput,
         getPriceNumbersOnly: SharedCore.getPriceNumbersOnly,
         setupPriceAutoFormat: SharedCore.setupPriceAutoFormat,
@@ -679,61 +611,31 @@ setTimeout(initializeGlobalCompatibility, 100);
 
 // ========== AUTO-VALIDAÇÃO ==========
 setTimeout(() => {
-    console.group('🧪 VALIDAÇÃO DO SHAREDCORE (VERSÃO SEGURA)');
+    console.group('🧪 VALIDAÇÃO DO SHAREDCORE');
     
-    console.log('🔍 VERIFICAÇÃO DE COMPATIBILIDADE:');
+    const essentialFunctions = [
+        'debounce', 'throttle', 'formatPrice', 'supabaseFetch',
+        'elementExists', 'isMobileDevice', 'copyToClipboard',
+        'logModule', 'runLowPriority', 'validateProperty'
+    ];
     
-    // Verificar funções essenciais de formatação
-    const formatFunctions = ['formatPriceForInput', 'getPriceNumbersOnly', 'setupPriceAutoFormat'];
-    let allFormatAvailable = true;
-    
-    formatFunctions.forEach(func => {
-        const globalAvailable = typeof window[func] === 'function';
-        const sharedCoreAvailable = typeof SharedCore[func] === 'function';
-        
-        console.log(`${globalAvailable && sharedCoreAvailable ? '✅' : '❌'} ${func}:`);
-        console.log(`   - Global: ${globalAvailable ? '✅ Disponível' : '❌ Indisponível'}`);
-        console.log(`   - SharedCore: ${sharedCoreAvailable ? '✅ Disponível' : '❌ Indisponível'}`);
-        
-        if (!globalAvailable || !sharedCoreAvailable) allFormatAvailable = false;
+    let allAvailable = true;
+    essentialFunctions.forEach(func => {
+        const available = typeof window[func] === 'function';
+        console.log(`${available ? '✅' : '❌'} ${func} disponível`);
+        if (!available) allAvailable = false;
     });
-    
-    // Verificar PriceFormatter
-    console.log('\n🔍 VERIFICAÇÃO DO PRICEFORMATTER:');
-    const priceFormatterExists = !!SharedCore?.PriceFormatter;
-    const priceFormatterFunctions = ['formatForInput', 'extractNumbers', 'formatForDisplay', 'setupAutoFormat'];
-    let allFormatterFunctions = true;
-    
-    console.log(`- PriceFormatter: ${priceFormatterExists ? '✅ Existe' : '❌ Não existe'}`);
-    
-    if (priceFormatterExists) {
-        priceFormatterFunctions.forEach(func => {
-            const exists = typeof SharedCore.PriceFormatter[func] === 'function';
-            console.log(`  - ${func}: ${exists ? '✅' : '❌'}`);
-            if (!exists) allFormatterFunctions = false;
-        });
-    }
     
     // Verificar constantes
     const essentialConstants = ['SUPABASE_URL', 'SUPABASE_KEY', 'ADMIN_PASSWORD', 'PDF_PASSWORD'];
-    let allConstantsAvailable = true;
-    
-    console.log('\n🔍 VERIFICAÇÃO DE CONSTANTES:');
     essentialConstants.forEach(constant => {
         const exists = window[constant] !== undefined;
         console.log(`${exists ? '✅' : '❌'} ${constant} definida`);
-        if (!exists) allConstantsAvailable = false;
+        if (!exists) allAvailable = false;
     });
     
-    const allAvailable = allFormatAvailable && allFormatterFunctions && allConstantsAvailable;
-    
-    console.log('\n📊 RESUMO:');
-    console.log('- Funções de formatação: ', allFormatAvailable ? '✅ TODAS DISPONÍVEIS' : '❌ FALTANDO');
-    console.log('- PriceFormatter: ', allFormatterFunctions ? '✅ COMPLETO' : '❌ INCOMPLETO');
-    console.log('- Constantes: ', allConstantsAvailable ? '✅ TODAS DEFINIDAS' : '❌ FALTANDO');
-    
-    console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO - VERSÃO SEGURA PRONTA!' : '⚠️ VERIFICAÇÃO REQUERIDA');
+    console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO' : '⚠️ VERIFICAÇÃO REQUERIDA');
     console.groupEnd();
 }, 2000);
 
-console.log(`✅ SharedCore.js pronto - VERSÃO SEGURA com PriceFormatter e compatibilidade total`);
+console.log(`✅ SharedCore.js pronto - Constantes Supabase fixas garantidas`);
