@@ -117,6 +117,42 @@ const SharedCore = (function() {
     // ========== SISTEMA DE FORMATAÇÃO UNIFICADO DE PREÇO ==========
     const PriceFormatter = {
         /**
+         * Formata número com separadores de milhar garantidos
+         * @param {number} number - Número a formatar
+         * @returns {string} Número formatado com pontos
+         */
+        formatNumberWithSeparators: function(number) {
+            if (isNaN(number) || !number) return '0';
+            
+            // Garantir que é inteiro
+            const intNumber = Math.floor(Number(number));
+            
+            // Usar toLocaleString com configuração explícita
+            let formatted = intNumber.toLocaleString('pt-BR', {
+                useGrouping: true,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+            
+            // Verificar se tem separadores
+            if (formatted.includes('.')) {
+                return formatted;
+            }
+            
+            // Fallback manual para navegadores que não respeitam useGrouping
+            const numStr = intNumber.toString();
+            const parts = [];
+            
+            // Processar de 3 em 3 dígitos do final para o início
+            for (let i = numStr.length; i > 0; i -= 3) {
+                const start = Math.max(0, i - 3);
+                parts.unshift(numStr.substring(start, i));
+            }
+            
+            return parts.join('.');
+        },
+
+        /**
          * Formata valor para "R$ X.XXX"
          * @param {string|number} value - Valor a formatar
          * @returns {string} Preço formatado
@@ -124,26 +160,25 @@ const SharedCore = (function() {
         formatForInput: function(value) {
             if (!value && value !== 0) return '';
             
-            // Se já formatado, retorna como está
+            // Se já formatado com R$, limpar e reformatar
             if (typeof value === 'string' && value.includes('R$')) {
-                return value;
+                const numbersOnly = value.replace(/\D/g, '');
+                if (numbersOnly === '') return value;
+                
+                const numericValue = parseInt(numbersOnly);
+                if (isNaN(numericValue)) return value;
+                
+                return 'R$ ' + this.formatNumberWithSeparators(numericValue);
             }
             
-            // Converter para string e extrair números
-            const strValue = value.toString();
-            const numbersOnly = strValue.replace(/\D/g, '');
-            
+            // Extrair números
+            const numbersOnly = value.toString().replace(/\D/g, '');
             if (numbersOnly === '') return '';
             
-            // Converter para número
             const numericValue = parseInt(numbersOnly);
             if (isNaN(numericValue)) return '';
             
-            // Formatar estilo brasileiro
-            return 'R$ ' + numericValue.toLocaleString('pt-BR', {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            });
+            return 'R$ ' + this.formatNumberWithSeparators(numericValue);
         },
         
         /**
