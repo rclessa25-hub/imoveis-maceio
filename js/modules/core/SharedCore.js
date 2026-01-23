@@ -1,16 +1,25 @@
-// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS E FORMATAÇÃO CORRIGIDA
+// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS E FORMATAÇÃO CORRIGIDA (CORRIGIDO)
 console.log('🔧 SharedCore.js carregado - COM FORMATAÇÃO DE PREÇO CORRIGIDA');
 
 // ========== CONSTANTES SUPABASE FIXAS (IMPORTANTE!) ==========
-const SUPABASE_CONSTANTS = {
-    URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
-    KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
-    ADMIN_PASSWORD: "wl654",
-    PDF_PASSWORD: "doc123"
-};
+// Verificar se já foi declarado por outro módulo (media-unified.js)
+if (typeof SUPABASE_CONSTANTS === 'undefined') {
+    const SUPABASE_CONSTANTS = {
+        URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
+        KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+        ADMIN_PASSWORD: "wl654",
+        PDF_PASSWORD: "doc123"
+    };
+    
+    // Exportar para escopo global se não existir
+    window.SUPABASE_CONSTANTS = SUPABASE_CONSTANTS;
+    console.log('✅ SUPABASE_CONSTANTS definido por SharedCore');
+} else {
+    console.log('✅ SUPABASE_CONSTANTS já definido por outro módulo');
+}
 
 // ========== GARANTIR QUE AS CONSTANTES EXISTAM GLOBALMENTE ==========
-Object.entries(SUPABASE_CONSTANTS).forEach(([key, value]) => {
+Object.entries(window.SUPABASE_CONSTANTS).forEach(([key, value]) => {
     if (typeof window[key] === 'undefined' || window[key] === 'undefined') {
         window[key] = value;
         console.log(`✅ ${key} definida:`, key.includes('KEY') ? '✅ Disponível' : value.substring(0, 50) + '...');
@@ -268,8 +277,8 @@ const SharedCore = (function() {
     const supabaseFetch = async (endpoint, options = {}) => {
         try {
             // ✅ USAR CONSTANTES FIXAS, NÃO window.SUPABASE_URL
-            const SUPABASE_URL = SUPABASE_CONSTANTS.URL;
-            const SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+            const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
+            const SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
             
             const proxyUrl = 'https://corsproxy.io/?';
             const targetUrl = `${SUPABASE_URL}/rest/v1${endpoint}`;
@@ -370,8 +379,8 @@ const SharedCore = (function() {
     // Função de validação de Supabase
     const validateSupabaseConnection = async () => {
         try {
-            const SUPABASE_URL = SUPABASE_CONSTANTS.URL;
-            const SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+            const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
+            const SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
             
             const response = await fetch(`${SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
                 headers: {
@@ -437,8 +446,8 @@ const SharedCore = (function() {
     const testFileUpload = async () => {
         console.group('🧪 TESTE DE UPLOAD DE ARQUIVOS');
         
-        const SUPABASE_URL = SUPABASE_CONSTANTS.URL;
-        const SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+        const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
+        const SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
         
         console.log('🔧 Configuração:', {
             SUPABASE_URL: SUPABASE_URL.substring(0, 50) + '...',
@@ -542,7 +551,7 @@ const SharedCore = (function() {
         testFileUpload,
         
         // Constantes (exportadas para compatibilidade)
-        SUPABASE_CONSTANTS
+        SUPABASE_CONSTANTS: window.SUPABASE_CONSTANTS
     };
 })();
 
@@ -644,5 +653,22 @@ setTimeout(() => {
     console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO' : '⚠️ VERIFICAÇÃO REQUERIDA');
     console.groupEnd();
 }, 2000);
+
+// ========== GARANTIR QUE SUPABASE_CONSTANTS SEJA ÚNICA ==========
+(function ensureUniqueSupabaseConstants() {
+    if (window.SUPABASE_CONSTANTS && window.SUPABASE_CONSTANTS.URL) {
+        console.log('✅ SUPABASE_CONSTANTS já existe, usando referência existente');
+        return;
+    }
+    
+    window.SUPABASE_CONSTANTS = {
+        URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
+        KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+        ADMIN_PASSWORD: "wl654",
+        PDF_PASSWORD: "doc123"
+    };
+    
+    console.log('✅ SUPABASE_CONSTANTS definido globalmente');
+})();
 
 console.log(`✅ SharedCore.js pronto - Sistema de formatação de preço corrigido`);
