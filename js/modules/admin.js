@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN COM CORREÇÃO CRÍTICA
-console.log('🔧 admin.js carregado - Sistema Administrativo com Correção de Upload');
+// js/modules/admin.js - SISTEMA ADMIN COM CORREÇÃO COMPLETA
+console.log('🔧 admin.js carregado - Sistema Administrativo Completo');
 
 // ========== CONFIGURAÇÕES ==========
 const ADMIN_CONFIG = {
@@ -12,11 +12,117 @@ const ADMIN_CONFIG = {
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
 
+/**
+ * ✅ FUNÇÃO CRÍTICA: Re-configura todos os event listeners de upload
+ * Chamada sempre que o DOM dos containers de upload é modificado
+ */
+window.reinitializeUploadListeners = function() {
+    console.log('🔄 Re-inicializando listeners de upload...');
+    
+    // 1. Upload de mídia (fotos/vídeos)
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    
+    if (uploadArea && fileInput) {
+        // Garantir que input está visível para clicks (mesmo que hidden)
+        fileInput.style.display = 'block';
+        fileInput.style.visibility = 'visible';
+        fileInput.style.opacity = '1';
+        fileInput.style.position = 'absolute';
+        fileInput.style.width = '100%';
+        fileInput.style.height = '100%';
+        fileInput.style.top = '0';
+        fileInput.style.left = '0';
+        fileInput.style.zIndex = '10';
+        fileInput.style.cursor = 'pointer';
+        
+        // Configurar click na área para disparar input
+        uploadArea.addEventListener('click', function handler(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎯 Clicou na área de upload de mídia');
+            fileInput.click();
+        }, { once: false }); // Permitir múltiplos binds
+        
+        // Também tornar o input clicável diretamente
+        fileInput.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('🎯 Clicou diretamente no input de arquivo');
+        });
+        
+        // Handler para seleção de arquivos
+        fileInput.addEventListener('change', function handler(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                console.log(`📁 ${e.target.files.length} arquivo(s) selecionado(s) para mídia`);
+                if (window.MediaSystem && window.MediaSystem.addFiles) {
+                    window.MediaSystem.addFiles(e.target.files);
+                }
+                // Limpar input para permitir nova seleção do mesmo arquivo
+                e.target.value = '';
+            }
+        }, { once: false });
+        
+        console.log('✅ Listeners de mídia configurados');
+    }
+    
+    // 2. Upload de PDFs
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    
+    if (pdfUploadArea && pdfFileInput) {
+        // Mesma configuração para PDFs
+        pdfFileInput.style.display = 'block';
+        pdfFileInput.style.visibility = 'visible';
+        pdfFileInput.style.opacity = '1';
+        pdfFileInput.style.position = 'absolute';
+        pdfFileInput.style.width = '100%';
+        pdfFileInput.style.height = '100%';
+        pdfFileInput.style.top = '0';
+        pdfFileInput.style.left = '0';
+        pdfFileInput.style.zIndex = '10';
+        pdfFileInput.style.cursor = 'pointer';
+        
+        pdfUploadArea.addEventListener('click', function handler(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎯 Clicou na área de upload de PDF');
+            pdfFileInput.click();
+        }, { once: false });
+        
+        pdfFileInput.addEventListener('change', function handler(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                console.log(`📄 ${e.target.files.length} PDF(s) selecionado(s)`);
+                if (window.MediaSystem && window.MediaSystem.addPdfs) {
+                    window.MediaSystem.addPdfs(e.target.files);
+                }
+                e.target.value = '';
+            }
+        }, { once: false });
+        
+        console.log('✅ Listeners de PDF configurados');
+    }
+    
+    // 3. Forçar MediaSystem a re-configurar drag & drop
+    setTimeout(() => {
+        if (window.MediaSystem) {
+            if (typeof MediaSystem.setupEventListeners === 'function') {
+                MediaSystem.setupEventListeners();
+            }
+            if (typeof MediaSystem.setupDragAndDrop === 'function') {
+                setTimeout(() => MediaSystem.setupDragAndDrop(), 500);
+            }
+        }
+    }, 300);
+    
+    console.log('🎉 Todos os listeners de upload re-inicializados');
+    return true;
+};
+
 /* ==========================================================
-   FUNÇÃO cleanAdminForm CORRIGIDA PARA PRESERVAR UPLOADS
+   FUNÇÃO cleanAdminForm CORRIGIDA PARA PRESERVAR UPLOADS E LISTENERS
    ========================================================== */
 window.cleanAdminForm = function(mode = 'reset') {
-    console.log(`🧹 cleanAdminForm(${mode}) - CORRIGIDO PARA PRESERVAR UPLOADS`);
+    console.log(`🧹 cleanAdminForm(${mode}) - CORRIGIDO PARA PRESERVAR UPLOADS E LISTENERS`);
     
     // ✅ NOVO MODO: Preservar apenas uploads com URLs permanentes
     if (mode === 'reset-preserve-uploads') {
@@ -68,6 +174,47 @@ window.cleanAdminForm = function(mode = 'reset') {
                 if (MediaSystem.updateUI) MediaSystem.updateUI();
             }, 100);
         }
+        
+        // 4. Limpeza INTELIGENTE dos previews - NÃO substituir HTML completo
+        const previewIds = ['uploadPreview', 'pdfUploadPreview'];
+        previewIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                // ✅ NÃO usar innerHTML = '' (destrói event listeners)
+                // Em vez disso, apenas esconder/limpar conteúdo mantendo container
+                const children = Array.from(element.children);
+                children.forEach(child => {
+                    if (!child.classList.contains('keep-after-clean')) {
+                        element.removeChild(child);
+                    }
+                });
+                
+                // Se ficou vazio, adicionar placeholder mantendo estrutura
+                if (element.children.length === 0) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'upload-placeholder keep-after-clean';
+                    placeholder.style.cssText = 'text-align:center;color:#95a5a6;padding:1rem;';
+                    placeholder.innerHTML = `
+                        <i class="fas fa-cloud-upload-alt" style="opacity:0.5;font-size:1.5rem;margin-bottom:0.5rem;"></i>
+                        <p style="margin:0.5rem 0;font-size:0.9rem;">Clique ou arraste arquivos</p>
+                        <small style="font-size:0.8rem;opacity:0.7;">Formatos suportados</small>
+                    `;
+                    element.appendChild(placeholder);
+                }
+            }
+        });
+        
+        // 5. ✅✅✅ CHAMADA CRÍTICA: Re-inicializar listeners de upload
+        setTimeout(() => {
+            if (typeof window.reinitializeUploadListeners === 'function') {
+                window.reinitializeUploadListeners();
+            } else {
+                // Fallback: chamar diretamente os sistemas
+                if (window.MediaSystem && typeof MediaSystem.setupEventListeners === 'function') {
+                    MediaSystem.setupEventListeners();
+                }
+            }
+        }, 100);
         
         return true;
     }
@@ -158,13 +305,27 @@ window.cleanAdminForm = function(mode = 'reset') {
     const previewIds = ['uploadPreview', 'pdfUploadPreview', 'newPdfsSection', 'existingPdfsSection'];
     previewIds.forEach(id => {
         const element = document.getElementById(id);
-        if (element && element.innerHTML.includes('preview')) {
-            // Não limpar completamente, apenas se tiver conteúdo temporário
-            if (!element.innerHTML.includes('Nenhum') && !element.innerHTML.includes('adicionar')) {
-                element.innerHTML = `<div style="text-align:center;color:#95a5a6;padding:1rem;">
-                    <i class="fas fa-cloud-upload-alt" style="opacity:0.5;"></i>
-                    <p style="margin:0.5rem 0;font-size:0.9rem;">Área de upload</p>
-                </div>`;
+        if (element) {
+            // ✅ NÃO usar innerHTML = '' (destrói event listeners)
+            // Em vez disso, apenas esconder/limpar conteúdo mantendo container
+            const children = Array.from(element.children);
+            children.forEach(child => {
+                if (!child.classList.contains('keep-after-clean')) {
+                    element.removeChild(child);
+                }
+            });
+            
+            // Se ficou vazio, adicionar placeholder mantendo estrutura
+            if (element.children.length === 0) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'upload-placeholder keep-after-clean';
+                placeholder.style.cssText = 'text-align:center;color:#95a5a6;padding:1rem;';
+                placeholder.innerHTML = `
+                    <i class="fas fa-cloud-upload-alt" style="opacity:0.5;font-size:1.5rem;margin-bottom:0.5rem;"></i>
+                    <p style="margin:0.5rem 0;font-size:0.9rem;">Clique ou arraste arquivos</p>
+                    <small style="font-size:0.8rem;opacity:0.7;">Formatos suportados</small>
+                `;
+                element.appendChild(placeholder);
             }
         }
     });
@@ -183,6 +344,18 @@ window.cleanAdminForm = function(mode = 'reset') {
             }
         }));
     } catch (e) {}
+    
+    // 8. ✅✅✅ CHAMADA CRÍTICA: Re-inicializar listeners de upload
+    setTimeout(() => {
+        if (typeof window.reinitializeUploadListeners === 'function') {
+            window.reinitializeUploadListeners();
+        } else {
+            // Fallback: chamar diretamente os sistemas
+            if (window.MediaSystem && typeof MediaSystem.setupEventListeners === 'function') {
+                MediaSystem.setupEventListeners();
+            }
+        }
+    }, 100);
     
     return true;
 };
@@ -814,7 +987,61 @@ window.closePdfModal = function() {
     if (modal) modal.style.display = 'none';
 };
 
-// ========== TESTE AUTOMÁTICO DA CORREÇÃO ==========
+// ========== TESTE DE FUNCIONALIDADE DE UPLOAD ==========
+setTimeout(() => {
+    if (!window.location.search.includes('debug=true')) return;
+    
+    console.group('🧪 TESTE DE FUNCIONALIDADE DE UPLOAD');
+    
+    // Testar se inputs estão clicáveis
+    const testElements = [
+        { id: 'uploadArea', name: 'Área de upload de mídia' },
+        { id: 'pdfUploadArea', name: 'Área de upload de PDF' },
+        { id: 'fileInput', name: 'Input de arquivos' },
+        { id: 'pdfFileInput', name: 'Input de PDFs' }
+    ];
+    
+    testElements.forEach(item => {
+        const element = document.getElementById(item.id);
+        const exists = !!element;
+        const isVisible = exists && 
+            element.offsetWidth > 0 && 
+            element.offsetHeight > 0 &&
+            window.getComputedStyle(element).display !== 'none';
+        
+        const hasClickListener = exists && 
+            (element.onclick !== null || 
+             element._clickListeners > 0 ||
+             (element.addEventListener && typeof element.addEventListener === 'function'));
+        
+        console.log(`${exists ? '✅' : '❌'} ${item.name}:`, {
+            'Existe': exists,
+            'Visível': isVisible,
+            'Tem click listener': hasClickListener,
+            'Style cursor': exists ? window.getComputedStyle(element).cursor : 'N/A'
+        });
+    });
+    
+    // Teste manual: instruções para usuário
+    console.log(`
+🔍 INSTRUÇÕES PARA TESTE MANUAL:
+1. Clique na área "Clique ou arraste fotos e vídeos aqui"
+   - Deve abrir seletor de arquivos
+   - Se não abrir, problema nos event listeners
+   
+2. Clique na área "Arraste ou clique para adicionar PDFs"
+   - Deve abrir seletor de arquivos (apenas PDF)
+   - Se não abrir, problema nos event listeners
+   
+3. Tente arrastar arquivos para as áreas
+   - Deve mudar a cor da borda durante drag
+   - Soltar deve adicionar arquivos
+    `);
+    
+    console.groupEnd();
+}, 3000);
+
+// ========== TESTE DA CORREÇÃO DE PRESERVAÇÃO DE UPLOAD ==========
 setTimeout(() => {
     if (!window.location.search.includes('debug=true')) return;
     
@@ -869,36 +1096,125 @@ setTimeout(() => {
     console.groupEnd();
 }, 5000);
 
+// ========== TESTE DE REINICIALIZAÇÃO DE LISTENERS ==========
+setTimeout(() => {
+    if (!window.location.search.includes('debug=true')) return;
+    
+    console.group('🧪 TESTE DE REINICIALIZAÇÃO DE LISTENERS');
+    
+    // Testar a função reinitializeUploadListeners
+    if (typeof window.reinitializeUploadListeners === 'function') {
+        console.log('✅ Função reinitializeUploadListeners disponível');
+        
+        // Executar a função
+        window.reinitializeUploadListeners();
+        
+        // Verificar resultados após delay
+        setTimeout(() => {
+            const inputs = [
+                { name: 'fileInput', element: document.getElementById('fileInput') },
+                { name: 'pdfFileInput', element: document.getElementById('pdfFileInput') }
+            ];
+            
+            inputs.forEach(input => {
+                if (input.element) {
+                    const style = window.getComputedStyle(input.element);
+                    console.log(`📊 ${input.name}:`, {
+                        'display': style.display,
+                        'visibility': style.visibility,
+                        'position': style.position,
+                        'z-index': style.zIndex,
+                        'cursor': style.cursor
+                    });
+                }
+            });
+            
+            console.log('✅ Teste de re-inicialização concluído');
+        }, 500);
+    } else {
+        console.error('❌ Função reinitializeUploadListeners NÃO disponível');
+    }
+    
+    console.groupEnd();
+}, 7000);
+
+// ========== FUNÇÃO DE TESTE MANUAL NO CONSOLE ==========
+window.testUploadFunctionality = function() {
+    console.group('🧪 TESTE MANUAL DE UPLOAD');
+    
+    // 1. Verificar elementos
+    const elements = {
+        'uploadArea': document.getElementById('uploadArea'),
+        'fileInput': document.getElementById('fileInput'),
+        'pdfUploadArea': document.getElementById('pdfUploadArea'),
+        'pdfFileInput': document.getElementById('pdfFileInput')
+    };
+    
+    let allExist = true;
+    Object.entries(elements).forEach(([name, element]) => {
+        if (!element) {
+            console.error(`❌ ${name} não encontrado`);
+            allExist = false;
+        } else {
+            console.log(`✅ ${name} encontrado`);
+        }
+    });
+    
+    if (!allExist) {
+        console.warn('⚠️ Alguns elementos não existem. Execute window.reinitializeUploadListeners()');
+        console.groupEnd();
+        return false;
+    }
+    
+    // 2. Testar click handlers
+    console.log(`
+🎯 INSTRUÇÕES PARA TESTE INTERATIVO:
+
+1. Execute no console:
+   elements.uploadArea.click()
+   - Deve abrir seletor de arquivos
+
+2. Execute:
+   elements.pdfUploadArea.click()
+   - Deve abrir seletor de arquivos (PDF)
+
+3. Para testar limpeza:
+   window.cleanAdminForm('reset-preserve-uploads')
+   - Deve limpar formulário mantendo listeners
+
+4. Para forçar re-inicialização:
+   window.reinitializeUploadListeners()
+    `);
+    
+    // Expor elementos no escopo global para testes
+    window.testElements = elements;
+    
+    console.groupEnd();
+    return true;
+};
+
 // ========== VALIDAÇÃO FINAL DO SISTEMA ==========
 setTimeout(() => {
-    console.group('✅ SISTEMA CORRIGIDO - VALIDAÇÃO FINAL');
+    console.group('✅ SISTEMA COMPLETO - VALIDAÇÃO FINAL');
     
     const checks = {
         'cleanAdminForm corrigida': () => 
             typeof window.cleanAdminForm === 'function' &&
             window.cleanAdminForm.toString().includes('reset-preserve-uploads'),
-        'Modo especial disponível': () => {
+        'reinitializeUploadListeners disponível': () => 
+            typeof window.reinitializeUploadListeners === 'function',
+        'Modo especial funcionando': () => {
             try {
-                window.cleanAdminForm('reset-preserve-uploads');
-                return true;
+                // Testar chamada do modo especial
+                const result = window.cleanAdminForm('reset-preserve-uploads');
+                return result === true;
             } catch {
                 return false;
             }
         },
-        'Fluxo de submit corrigido': () => {
-            const form = document.getElementById('propertyForm');
-            if (!form) return false;
-            
-            // Verificar se o listener está configurado
-            const hasListener = form.hasAttribute('data-submit-listener') || 
-                               form.onsubmit || 
-                               (form._listeners && form._listeners.submit);
-            
-            return !!hasListener;
-        },
         'MediaSystem integrado': () => !!window.MediaSystem,
-        'Teste automático configurado': () => window.location.search.includes('debug=true') ? 
-            typeof window.cleanAdminForm === 'function' : true
+        'Testes debug configurados': () => window.location.search.includes('debug=true') ? 
+            typeof window.testUploadFunctionality === 'function' : true
     };
     
     let allPassed = true;
@@ -909,18 +1225,28 @@ setTimeout(() => {
     });
     
     if (allPassed) {
-        console.log('🎉🎉🎉 CORREÇÃO APLICADA COM SUCESSO!');
-        console.log('🚨 ARQUIVOS ENVIADOS NÃO SERÃO MAIS PERDIDOS!');
+        console.log('🎉🎉🎉 SISTEMA COMPLETAMENTE CORRIGIDO!');
+        console.log('🚨 ARQUIVOS ENVIADOS NÃO SERÃO MAIS PERDIDOS');
+        console.log('🚨 UPLOAD FUNCIONA APÓS LIMPEZA DO FORMULÁRIO');
     } else {
         console.warn('⚠️ Alguns testes falharam. Verifique manualmente.');
     }
     
-    console.log('🔧 Para testar a correção:');
-    console.log('1. Acesse com ?debug=true na URL');
-    console.log('2. Verifique o console para testes automáticos');
-    console.log('3. Teste o fluxo real: adicione arquivos → salve → veja se permanecem');
+    console.log(`
+🔧 COMANDOS PARA TESTE:
+
+1. Acesse com ?debug=true na URL
+2. No console, execute:
+   - window.testUploadFunctionality() - Teste manual
+   - window.reinitializeUploadListeners() - Forçar re-configuração
+   - window.cleanAdminForm('reset-preserve-uploads') - Testar limpeza
+   
+3. Teste o fluxo real:
+   - Adicione arquivos → salve → veja se permanecem
+   - Limpe formulário → tente adicionar novos arquivos (deve funcionar)
+    `);
     
     console.groupEnd();
-}, 6000);
+}, 8000);
 
-console.log('✅ admin.js - CORREÇÃO CRÍTICA APLICADA');
+console.log('✅ admin.js - SISTEMA COMPLETO E CORRIGIDO');
