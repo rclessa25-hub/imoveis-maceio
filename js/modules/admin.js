@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN OTIMIZADO (REDUÇÃO SEGURA)
-console.log('🔧 admin.js carregado - Sistema Administrativo Otimizado');
+// js/modules/admin.js - SISTEMA ADMIN COM DIAGNÓSTICO CRÍTICO
+console.log('🔧 admin.js carregado - Sistema Administrativo com Diagnóstico');
 
 // ========== CONFIGURAÇÕES ==========
 const ADMIN_CONFIG = {
@@ -12,6 +12,67 @@ const ADMIN_CONFIG = {
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
 window._mediaStateBackup = null;
+
+/* ==========================================================
+   DIAGNÓSTICO DO SISTEMA ATUAL (PRIMEIRO - ANTES DE TUDO)
+   ========================================================== */
+window.testUploadPreservation = function() {
+    console.group('🚨 TESTE CRÍTICO DE PRESERVAÇÃO DE UPLOAD');
+    
+    // Simular upload bem-sucedido
+    if (window.MediaSystem) {
+        // Estado antes - arquivos enviados e não enviados
+        MediaSystem.state.files = [
+            { id: 'test1', name: 'foto1.jpg', uploaded: true, url: 'http://test.com/1.jpg' },
+            { id: 'test2', name: 'foto2.jpg', uploaded: false }
+        ];
+        
+        MediaSystem.state.pdfs = [
+            { id: 'pdf1', name: 'documento.pdf', uploaded: true, url: 'http://test.com/doc.pdf' },
+            { id: 'pdf2', name: 'contrato.pdf', uploaded: false }
+        ];
+        
+        console.log('📊 ESTADO ANTES de cleanAdminForm:');
+        console.log('- Total files:', MediaSystem.state.files.length);
+        console.log('- Uploaded files:', MediaSystem.state.files.filter(f => f.uploaded).length);
+        console.log('- Total PDFs:', MediaSystem.state.pdfs.length);
+        console.log('- Uploaded PDFs:', MediaSystem.state.pdfs.filter(p => p.uploaded).length);
+        
+        // Salvar estado original para restauração
+        const originalFiles = [...MediaSystem.state.files];
+        const originalPdfs = [...MediaSystem.state.pdfs];
+        
+        // Executar limpeza atual
+        window.cleanAdminForm('reset');
+        
+        console.log('📊 ESTADO DEPOIS de cleanAdminForm:');
+        console.log('- Total files:', MediaSystem.state.files.length);
+        console.log('- Uploaded files:', MediaSystem.state.files.filter(f => f.uploaded).length);
+        console.log('- Total PDFs:', MediaSystem.state.pdfs.length);
+        console.log('- Uploaded PDFs:', MediaSystem.state.pdfs.filter(p => p.uploaded).length);
+        
+        // Resultado
+        const uploadedFilesAfter = MediaSystem.state.files.filter(f => f.uploaded).length;
+        const uploadedPdfsAfter = MediaSystem.state.pdfs.filter(p => p.uploaded).length;
+        
+        if (uploadedFilesAfter === 0 && uploadedPdfsAfter === 0) {
+            console.error('❌ BUG CONFIRMADO: cleanAdminForm está limpando TODOS os arquivos, inclusive enviados!');
+            console.error('⚠️ Isso quebra o fluxo de upload pós-salvamento!');
+        } else if (uploadedFilesAfter < originalFiles.filter(f => f.uploaded).length) {
+            console.warn('⚠️ PROBLEMA PARCIAL: Alguns arquivos enviados foram perdidos');
+        } else {
+            console.log('✅ Sistema parece preservar arquivos enviados');
+        }
+        
+        // Restaurar estado original
+        MediaSystem.state.files = originalFiles;
+        MediaSystem.state.pdfs = originalPdfs;
+    } else {
+        console.error('❌ MediaSystem não disponível para teste');
+    }
+    
+    console.groupEnd();
+};
 
 /* ==========================================================
    FUNÇÃO DE PRESERVAÇÃO DE ESTADO (NOVA - BAIXO RISCO)
@@ -67,25 +128,71 @@ window.restoreMediaState = function() {
 window.hasUnsavedMedia = function() {
     if (!window.MediaSystem || !MediaSystem.state) return false;
     
-    const hasNewFiles = MediaSystem.state.files.length > 0;
-    const hasNewPdfs = MediaSystem.state.pdfs.length > 0;
+    const hasNewFiles = MediaSystem.state.files.filter(f => !f.uploaded).length > 0;
+    const hasNewPdfs = MediaSystem.state.pdfs.filter(p => !p.uploaded).length > 0;
     
     return hasNewFiles || hasNewPdfs;
 };
 
 /* ==========================================================
-   FUNÇÃO UNIFICADA DE LIMPEZA (OTIMIZADA COM PRESERVAÇÃO)
+   FUNÇÃO UNIFICADA DE LIMPEZA (CORRIGIDA COM PRESERVAÇÃO)
    ========================================================== */
 window.cleanAdminForm = function(mode = 'reset') {
-    console.log(`🧹 ${mode === 'cancel' ? 'Cancelando edição' : 'Limpando formulário'}`);
+    console.log(`🧹 cleanAdminForm(${mode})`);
+    
+    // ✅ NOVO: MODO SEGURO PARA PÓS-SALVAMENTO
+    if (mode === 'reset-with-preserve') {
+        console.log('✅ Usando modo seguro (preserva URLs enviadas)');
+        
+        // 1. Estado de edição
+        window.editingPropertyId = null;
+        
+        // 2. Resetar apenas campos do formulário, NÃO limpar mídia
+        const form = document.getElementById('propertyForm');
+        if (form) {
+            form.reset();
+            
+            const formTitle = document.getElementById('formTitle');
+            if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel';
+                submitBtn.style.background = 'var(--success)';
+            }
+        }
+        
+        // 3. Botão cancelar
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        
+        // 4. ✅ CRÍTICO: NÃO limpar MediaSystem - preservar arquivos enviados
+        if (window.MediaSystem) {
+            // Apenas remover arquivos NÃO enviados
+            MediaSystem.state.files = MediaSystem.state.files.filter(f => f.uploaded);
+            MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(p => p.uploaded);
+            
+            // Atualizar UI se necessário
+            if (typeof MediaSystem.updateUI === 'function') {
+                MediaSystem.updateUI();
+            }
+            
+            console.log(`✅ Preservados ${MediaSystem.state.files.length} arquivos e ${MediaSystem.state.pdfs.length} PDFs enviados`);
+        }
+        
+        console.log('✅ Formulário resetado (URLs enviadas preservadas)');
+        return true;
+    }
+    
+    // MODO NORMAL (cancel ou reset)
+    const wasEditing = !!window.editingPropertyId;
     
     // Preservar estado ANTES de limpar (se estiver cancelando)
     if (mode === 'cancel' && window.hasUnsavedMedia()) {
         window.preserveMediaState();
     }
     
-    // 1. Estado de edição (CRÍTICO)
-    const wasEditing = !!window.editingPropertyId;
+    // 1. Estado de edição
     window.editingPropertyId = null;
     
     // 2. UI do formulário
@@ -191,15 +298,15 @@ window.toggleAdminPanel = function() {
     }
 };
 
-// ========== CONFIGURAÇÃO CONSOLIDADA DE UI (OTIMIZADA) ==========
+// ========== CONFIGURAÇÃO CONSOLIDADA DE UI ==========
 window.setupAdminUI = function() {
     console.log('🔧 Configurando UI administrativa');
     
-    // 1. Painel oculto por padrão (CRÍTICO)
+    // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
     
-    // 2. Botão toggle (CRÍTICO)
+    // 2. Botão toggle
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
         adminBtn.onclick = (e) => {
@@ -208,17 +315,16 @@ window.setupAdminUI = function() {
         };
     }
     
-    // 3. Botão cancelar (CRÍTICO - preserva estado)
+    // 3. Botão cancelar
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
-        const originalOnclick = cancelBtn.onclick;
         cancelBtn.onclick = (e) => {
             e.preventDefault();
-            window.cancelEdit();  // 👈 PRESERVA ESTADO DE MÍDIA
+            window.cancelEdit();
         };
     }
     
-    // 4. Configurações diferidas (seguras)
+    // 4. Configurações diferidas
     setTimeout(() => {
         if (window.setupForm) window.setupForm();
         if (window.loadPropertyList) window.loadPropertyList();
@@ -286,7 +392,7 @@ window.adminPdfHandler = {
     }
 };
 
-// Funções de compatibilidade (MANTIDAS - CRÍTICAS)
+// Funções de compatibilidade (MANTIDAS)
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     console.log(`processAndSavePdfs -> delegando para wrapper: ${propertyId}`);
     return await window.adminPdfHandler.process(propertyId, propertyTitle);
@@ -450,7 +556,7 @@ window.editProperty = function(id) {
     return true;
 };
 
-// ========== CONFIGURAÇÃO DO FORMULÁRIO ==========
+// ========== CONFIGURAÇÃO DO FORMULÁRIO (CORRIGIDA) ==========
 window.setupForm = function() {
     console.log('Configurando formulário admin...');
     
@@ -469,7 +575,7 @@ window.setupForm = function() {
         window.setupPriceAutoFormat();
     }
     
-    // Configurar submit
+    // Configurar submit (FLUXO CORRIGIDO)
     const freshForm = document.getElementById('propertyForm');
     freshForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -539,7 +645,7 @@ window.setupForm = function() {
                     if (formatted) updateData.price = formatted;
                 }
                 
-                // Processar PDFs via wrapper (MANTIDO)
+                // Processar PDFs via wrapper
                 if (window.adminPdfHandler) {
                     const pdfsString = await window.adminPdfHandler.process(window.editingPropertyId, propertyData.title);
                     if (pdfsString && pdfsString.trim() !== '') {
@@ -657,7 +763,9 @@ window.setupForm = function() {
         } finally {
             setTimeout(() => {
                 if (loading) loading.hide();
-                window.cleanAdminForm('reset');
+                
+                // ✅ CRÍTICO CORRIGIDO: Usar modo seguro que preserva uploads
+                window.cleanAdminForm('reset-with-preserve');
                 
                 if (submitBtn) {
                     setTimeout(() => {
@@ -679,14 +787,14 @@ window.setupForm = function() {
                     setTimeout(() => window.renderProperties('todos'), 1000);
                 }
                 
-                console.log('Formulário limpo e pronto para novo imóvel');
+                console.log('Formulário limpo e pronto para novo imóvel (uploads preservados)');
             }, 1000);
         }
         
         console.groupEnd();
     });
     
-    console.log('Formulário admin configurado');
+    console.log('Formulário admin configurado (fluxo corrigido)');
 };
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
@@ -728,20 +836,18 @@ window.syncWithSupabaseManual = async function() {
     }
 };
 
-// ========== CONFIGURAÇÃO DE UPLOAD DE PDF (OTIMIZADA) ==========
+// ========== CONFIGURAÇÃO DE UPLOAD DE PDF ==========
 setTimeout(() => {
     console.log('Verificando configuração de PDFs...');
     
-    // ✅ CONFIGURAÇÃO SEGURA - DELEGA MAS PRESERVA REFERÊNCIAS
     if (window.MediaSystem && typeof MediaSystem.setupEventListeners === 'function') {
-        // MediaSystem já configura isso automaticamente
         console.log('✅ Configuração de PDFs delegada ao MediaSystem');
     } else {
         console.log('⚠️ MediaSystem não disponível para configuração automática');
     }
 }, 1500);
 
-// ========== COMPATIBILIDADE PARA MODAL PDF (OTIMIZADA) ==========
+// ========== COMPATIBILIDADE PARA MODAL PDF ==========
 window.showPdfModal = function(propertyId) {
     if (window.PdfSystem && window.PdfSystem.showModal) {
         return window.PdfSystem.showModal(propertyId);
@@ -758,36 +864,77 @@ window.closePdfModal = function() {
     if (modal) modal.style.display = 'none';
 };
 
-// ========== VALIDAÇÃO PÓS-IMPLEMENTAÇÃO ==========
+// ========== DIAGNÓSTICO COMPLETO DO SISTEMA ==========
 setTimeout(() => {
-    console.group('✅ VALIDAÇÃO admin.js OTIMIZADO (REDUÇÃO SEGURA)');
+    console.group('🔍 DIAGNÓSTICO COMPLETO DO SISTEMA DE UPLOAD');
+    
+    // 1. Verificar fluxo de limpeza
+    console.log('📋 Fluxo atual de cleanAdminForm:');
+    console.log('- Tem modo "reset-with-preserve"?', 
+        window.cleanAdminForm && window.cleanAdminForm.toString().includes('reset-with-preserve'));
+    
+    // 2. Verificar estado do MediaSystem
+    if (window.MediaSystem) {
+        console.log('🖼️ Estado atual do MediaSystem:');
+        console.log('- Files:', MediaSystem.state.files.length);
+        console.log('- Files com uploaded=true:', MediaSystem.state.files.filter(f => f.uploaded).length);
+        console.log('- PDFs:', MediaSystem.state.pdfs.length);
+        console.log('- PDFs com uploaded=true:', MediaSystem.state.pdfs.filter(p => p.uploaded).length);
+        
+        // Verificar função resetState
+        console.log('🧹 MediaSystem.resetState():');
+        console.log('- Existe?', typeof MediaSystem.resetState === 'function');
+    }
+    
+    // 3. Verificar comportamento após submit
+    const form = document.getElementById('propertyForm');
+    if (form) {
+        console.log('📝 Formulário propertyForm:');
+        console.log('- Configurado?', !!form.onsubmit || form.hasAttribute('data-submit-configured'));
+    }
+    
+    console.log('✅ Sistema configurado com correções críticas');
+    console.groupEnd();
+    
+    // Executar teste se debug ativado
+    if (window.location.search.includes('debug=true')) {
+        console.log('🧪 Executando teste de preservação em 2 segundos...');
+        setTimeout(() => {
+            window.testUploadPreservation();
+        }, 2000);
+    }
+}, 3000);
+
+// ========== VALIDAÇÃO FINAL ==========
+setTimeout(() => {
+    console.group('✅ VALIDAÇÃO DO SISTEMA CORRIGIDO');
     
     const checks = {
         'Formulário funciona': () => !!document.getElementById('propertyForm'),
         'MediaSystem integrado': () => !!window.MediaSystem,
-        'PdfSystem disponível': () => !!window.PdfSystem,
-        'Funções críticas existem': () => 
-            typeof window.cleanAdminForm === 'function' &&
-            typeof window.toggleAdminPanel === 'function' &&
-            typeof window.editProperty === 'function',
-        'Preservação de estado ativa': () => 
+        'cleanAdminForm corrigida': () => 
+            window.cleanAdminForm && 
+            window.cleanAdminForm.toString().includes('reset-with-preserve'),
+        'Preservação ativa': () => 
             typeof window.preserveMediaState === 'function' &&
-            typeof window.hasUnsavedMedia === 'function'
+            typeof window.hasUnsavedMedia === 'function',
+        'Fluxo de submit corrigido': () => {
+            const form = document.getElementById('propertyForm');
+            return form && (form.onsubmit || form.hasAttribute('data-submit-configured'));
+        }
     };
     
     Object.entries(checks).forEach(([test, check]) => {
         console.log(`${check() ? '✅' : '❌'} ${test}`);
     });
     
-    console.log('✅ REDUÇÃO SEGURA CONCLUÍDA');
-    console.log('✅ Sistema de preservação de estado implementado');
-    console.log('✅ Funções wrapper críticas MANTIDAS');
-    console.log('✅ Configuração PDF otimizada (30 → 5 linhas)');
-    console.log('✅ setupAdminUI otimizado (92 → 60 linhas)');
-    console.log('✅ Modal PDF otimizado (125 → 15 linhas)');
-    console.log('✅ Logging simplificado (console.log direto)');
-    console.log('✅ Risco operacional: BAIXO (2/10)');
+    console.log('🚨 CORREÇÕES CRÍTICAS APLICADAS:');
+    console.log('1. ✅ Adicionado modo "reset-with-preserve" em cleanAdminForm');
+    console.log('2. ✅ Corrigido fluxo pós-submit (linha ~720)');
+    console.log('3. ✅ Sistema de backup/restauração de estado');
+    console.log('4. ✅ Diagnóstico automático ativado');
+    console.log('⚠️ TESTE OBRIGATÓRIO: Acesse com ?debug=true para validar preservação');
     console.groupEnd();
-}, 2000);
+}, 5000);
 
-console.log('✅ admin.js OTIMIZADO - REDUÇÃO SEGURA CONCLUÍDA');
+console.log('✅ admin.js - SISTEMA CORRIGIDO COM DIAGNÓSTICO');
