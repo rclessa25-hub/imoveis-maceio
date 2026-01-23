@@ -1,20 +1,29 @@
 // js/modules/media/media-unified.js - VERSÃO DEFINITIVA COM CORREÇÃO DE SUPABASE
 console.log('🔄 media-unified.js - VERSÃO DEFINITIVA COM CONSTANTES FIXAS');
 
-// ========== CONSTANTES SUPABASE FIXAS (NUNCA USAR undefined) ==========
-const SUPABASE_CONSTANTS = {
-    URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
-    KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo'
-};
+// ========== USAR window.SUPABASE_CONSTANTS DE SharedCore.js ==========
+// Comentar declaração duplicada para evitar erro de compilação
+// const SUPABASE_CONSTANTS comentada para evitar duplicação
+
+// Verificar se as constantes Supabase já estão definidas globalmente
+if (typeof window.SUPABASE_CONSTANTS === 'undefined') {
+    window.SUPABASE_CONSTANTS = {
+        URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
+        KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+        ADMIN_PASSWORD: "wl654",  // Adicionar também aqui para consistência
+        PDF_PASSWORD: "doc123"
+    };
+    console.log('✅ SUPABASE_CONSTANTS definido em media-unified.js');
+}
 
 // Garantir que as constantes globais existam
 if (typeof window.SUPABASE_URL === 'undefined' || window.SUPABASE_URL === 'undefined') {
-    window.SUPABASE_URL = SUPABASE_CONSTANTS.URL;
+    window.SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
     console.log('✅ SUPABASE_URL definida:', window.SUPABASE_URL.substring(0, 50) + '...');
 }
 
 if (typeof window.SUPABASE_KEY === 'undefined' || !window.SUPABASE_KEY) {
-    window.SUPABASE_KEY = SUPABASE_CONSTANTS.KEY;
+    window.SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
     console.log('✅ SUPABASE_KEY definida');
 }
 
@@ -1016,9 +1025,9 @@ const MediaSystem = {
                 return [];
             }
             
-            // ✅ USAR CONSTANTES FIXAS, NUNCA window.SUPABASE_URL
-            const SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
-            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+            // ✅ USAR window.SUPABASE_CONSTANTS, NUNCA declarar novamente
+            const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
+            const SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
             
             const bucket = this.config.buckets[this.config.currentSystem];
             const uploadedUrls = [];
@@ -1483,12 +1492,13 @@ const MediaSystem = {
     console.log('🔍 VERIFICAÇÃO FINAL DE CONSTANTES:');
     console.log('- window.SUPABASE_URL:', window.SUPABASE_URL ? '✅ ' + window.SUPABASE_URL.substring(0, 50) + '...' : '❌ undefined');
     console.log('- window.SUPABASE_KEY:', window.SUPABASE_KEY ? '✅ Disponível' : '❌ Indisponível');
+    console.log('- window.SUPABASE_CONSTANTS:', window.SUPABASE_CONSTANTS ? '✅ Definido' : '❌ Indefinido');
     
     // Forçar correção se ainda estiver undefined
     if (!window.SUPABASE_URL || window.SUPABASE_URL.includes('undefined')) {
         console.warn('⚠️ CORRIGINDO SUPABASE_URL EM TEMPO DE EXECUÇÃO');
-        window.SUPABASE_URL = 'https://syztbxvpdaplpetmixmt.supabase.co';
-        window.SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo';
+        window.SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
+        window.SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
         console.log('✅ Constantes corrigidas:', window.SUPABASE_URL.substring(0, 50) + '...');
     }
 
