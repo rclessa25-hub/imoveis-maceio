@@ -259,6 +259,39 @@ const SharedCore = (function() {
         }
     };
 
+    // ========== UTILITÁRIO DE CARREGAMENTO DE IMAGENS ==========
+    const ImageLoader = {
+        waitForCriticalImages: async function(selectors = ['.hero img', '.property-image img'], maxWait = 3000) {
+            const images = [];
+            selectors.forEach(selector => {
+                images.push(...document.querySelectorAll(selector));
+            });
+            
+            const limitedImages = images.slice(0, 8);
+            if (limitedImages.length === 0) return 0;
+            
+            return new Promise((resolve) => {
+                let loaded = 0;
+                limitedImages.forEach(img => {
+                    if (img.complete || img.tagName === 'I') {
+                        loaded++;
+                    } else {
+                        img.onload = img.onerror = () => {
+                            loaded++;
+                            if (loaded >= limitedImages.length) resolve(loaded);
+                        };
+                    }
+                });
+                
+                if (loaded >= limitedImages.length) {
+                    resolve(loaded);
+                } else {
+                    setTimeout(() => resolve(loaded), maxWait);
+                }
+            });
+        }
+    };
+
     // ========== DOM UTILITIES ==========
     const elementExists = (id) => {
         return document.getElementById(id) !== null;
@@ -551,6 +584,9 @@ const SharedCore = (function() {
         
         // Sistema de formatação de preço UNIFICADO
         PriceFormatter,
+        
+        // Sistema de carregamento de imagens
+        ImageLoader,
         
         // Funções de compatibilidade (para código legado)
         formatPriceForInput: PriceFormatter.formatForInput.bind(PriceFormatter),
