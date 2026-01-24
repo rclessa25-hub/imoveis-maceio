@@ -294,48 +294,32 @@ window.LoadingManager = (function() {
      * @returns {Object} Instância do loading para controle
      */
     function show(title = 'Carregando...', message = 'Por favor, aguarde.', options = {}) {
-        // Inicializar se necessário
         init();
         
-        // Registrar estado
         state.isVisible = true;
         state.startTime = Date.now();
         state.currentOperation = title;
         
-        // Configurar elementos
+        // Configuração concisa (INLINE)
         elements.title.textContent = title;
         elements.message.textContent = message;
+        elements.container.className = 'loading-container' + (options.variant ? ` loading-variant-${options.variant}` : '');
         
-        // Aplicar variante
-        elements.container.className = 'loading-container';
-        if (options.variant) {
-            elements.container.classList.add(`loading-variant-${options.variant}`);
-        }
-        
-        // Configurar progresso
         if (options.showProgress) {
             elements.container.classList.add('loading-with-progress');
             setProgress(options.progress || 0);
-        } else {
-            elements.container.classList.remove('loading-with-progress');
         }
         
-        // Mostrar overlay com animação
+        // Mostrar imediatamente (sem setTimeout desnecessário)
         elements.overlay.style.display = 'flex';
+        elements.overlay.classList.add('show');
         
-        setTimeout(() => {
-            elements.overlay.classList.add('show');
-        }, 10);
-        
-        console.log(`⏳ Loading: "${title}" - ${message}`);
-        
-        // Retornar interface de controle
         return {
-            updateMessage: (newMessage) => updateMessage(newMessage),
-            updateTitle: (newTitle) => updateTitle(newTitle),
-            setProgress: (percent) => setProgress(percent),
-            setVariant: (variant) => setVariant(variant),
-            hide: () => hide(),
+            updateMessage,
+            updateTitle,
+            setProgress,
+            setVariant,
+            hide: () => hide(false),
             getState: () => ({ ...state })
         };
     }
@@ -554,80 +538,5 @@ window.LoadingManager = (function() {
         createOverlay: init // Alias para compatibilidade
     };
 })();
-
-// ========== COMPATIBILIDADE COM CÓDIGO LEGADO ==========
-// Garantir que funções globais antigas ainda funcionem
-(function ensureLoadingCompatibility() {
-    console.log('🔄 Configurando compatibilidade do sistema de loading...');
-    
-    // Criar aliases globais para compatibilidade
-    if (!window.showLoading && window.LoadingManager?.show) {
-        window.showLoading = window.LoadingManager.show.bind(window.LoadingManager);
-        console.log('✅ showLoading disponível via LoadingManager');
-    }
-    
-    if (!window.hideLoading && window.LoadingManager?.hide) {
-        window.hideLoading = window.LoadingManager.hide.bind(window.LoadingManager);
-        console.log('✅ hideLoading disponível via LoadingManager');
-    }
-    
-    if (!window.updateLoading && window.LoadingManager?.updateMessage) {
-        window.updateLoading = window.LoadingManager.updateMessage.bind(window.LoadingManager);
-        console.log('✅ updateLoading disponível via LoadingManager');
-    }
-    
-    if (!window.createOverlay && window.LoadingManager?.init) {
-        window.createOverlay = window.LoadingManager.init.bind(window.LoadingManager);
-        console.log('✅ createOverlay disponível via LoadingManager');
-    }
-})();
-
-// ========== VALIDAÇÃO AUTOMÁTICA ==========
-setTimeout(() => {
-    console.group('🧪 VALIDAÇÃO DO LOADING MANAGER');
-    
-    const tests = [
-        {
-            name: 'LoadingManager disponível globalmente',
-            test: () => typeof window.LoadingManager !== 'undefined',
-            critical: true
-        },
-        {
-            name: 'Método show disponível',
-            test: () => typeof window.LoadingManager?.show === 'function',
-            critical: true
-        },
-        {
-            name: 'Método hide disponível',
-            test: () => typeof window.LoadingManager?.hide === 'function',
-            critical: true
-        },
-        {
-            name: 'Funções de compatibilidade disponíveis',
-            test: () => typeof window.showLoading === 'function' && 
-                       typeof window.hideLoading === 'function',
-            critical: false // Não crítico, são fallbacks
-        },
-        {
-            name: 'Elementos DOM criados',
-            test: () => document.getElementById('global-loading-overlay') !== null,
-            critical: true
-        }
-    ];
-    
-    let allPassed = true;
-    let passed = 0;
-    
-    tests.forEach((t, i) => {
-        const result = t.test();
-        console.log(`${result ? '✅' : '❌'} ${i + 1}. ${t.name}`);
-        if (result) passed++;
-        if (!result && t.critical) allPassed = false;
-    });
-    
-    console.log(`📊 Resultado: ${passed}/${tests.length} testes passados`);
-    console.log(allPassed ? '🎉 SISTEMA DE LOADING VALIDADO' : '⚠️ VERIFICAÇÃO REQUERIDA');
-    console.groupEnd();
-}, 1000);
 
 console.log('✅ LoadingManager.js carregado - Sistema unificado pronto');
