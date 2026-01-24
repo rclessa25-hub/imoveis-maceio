@@ -135,7 +135,7 @@ window.getMediaUrlsForProperty = async (propertyId, propertyTitle) =>
 window.loadExistingPdfsForEdit = (property) => window.adminPdfHandler.load(property);
 
 /* ==========================================================
-   AUTO-SALVAMENTO OTIMIZADO (50 linhas vs 120+)
+   AUTO-SALVAMENTO OTIMIZADO COM PERSISTÊNCIA DE PDFs CORRIGIDA
    ========================================================== */
 window.triggerAutoSave = function(reason = 'media_deletion') {
     if (!window.editingPropertyId) return;
@@ -170,13 +170,26 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
             
             const updateData = { ...propertyData };
             
-            // Processar PDFs via wrapper
+            // ✅✅✅ CRÍTICO: Processar PDFs e garantir logging
             if (window.adminPdfHandler) {
                 const pdfsString = await window.adminPdfHandler.process(
                     window.editingPropertyId, 
                     propertyData.title
                 );
-                if (pdfsString?.trim()) updateData.pdfs = pdfsString;
+                if (pdfsString?.trim()) {
+                    updateData.pdfs = pdfsString;
+                    console.log('✅ PDFs processados no auto-save:', {
+                        count: pdfsString.split(',').filter(p => p.trim()).length,
+                        preview: pdfsString.substring(0, 100) + '...'
+                    });
+                } else {
+                    console.log('ℹ️ Nenhum PDF para processar no auto-save');
+                    // Manter PDFs existentes se não houver novos
+                    const currentProperty = window.properties?.find(p => p.id == window.editingPropertyId);
+                    if (currentProperty?.pdfs) {
+                        updateData.pdfs = currentProperty.pdfs;
+                    }
+                }
             }
             
             // Processar mídia
@@ -185,15 +198,42 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                 if (mediaUrls?.trim()) updateData.images = mediaUrls;
             }
             
-            // Atualizar array local e banco
+            // ✅✅✅ ATUALIZAR LOCALMENTE PRIMEIRO (feedback imediato)
             window.updateLocalProperty(window.editingPropertyId, updateData);
+            
+            // ✅✅✅ CRÍTICO: SALVAR NO SUPABASE E VERIFICAR
             if (typeof window.updateProperty === 'function') {
-                await window.updateProperty(window.editingPropertyId, updateData);
-                Helpers.showNotification('✅ Alterações salvas');
+                console.log('📤 Enviando auto-save para Supabase...', {
+                    propertyId: window.editingPropertyId,
+                    hasPdfs: !!updateData.pdfs,
+                    pdfsCount: updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0
+                });
+                
+                const supabaseSuccess = await window.updateProperty(window.editingPropertyId, updateData);
+                
+                if (supabaseSuccess) {
+                    console.log('✅✅✅ AUTO-SAVE: PDFs persistidos no Supabase com sucesso!');
+                    Helpers.showNotification('✅ Alterações salvas permanentemente');
+                } else {
+                    console.error('❌❌❌ AUTO-SAVE FALHOU: PDFs não foram para o Supabase!');
+                    Helpers.showNotification('⚠️ Alterações salvas apenas localmente', 'error');
+                    
+                    // ✅ Tentar novamente uma vez
+                    setTimeout(async () => {
+                        console.log('🔄 Tentando reenviar para Supabase...');
+                        const retrySuccess = await window.updateProperty(window.editingPropertyId, updateData);
+                        if (retrySuccess) {
+                            console.log('✅ Reenvio bem-sucedido!');
+                        }
+                    }, 2000);
+                }
+            } else {
+                console.error('❌ updateProperty() não disponível');
+                Helpers.showNotification('❌ Erro: Sistema offline', 'error');
             }
             
         } catch (error) {
-            console.error('Auto-salvamento falhou:', error);
+            console.error('❌ Auto-salvamento falhou:', error);
             Helpers.showNotification('❌ Erro ao salvar', 'error');
         } finally {
             if (submitBtn) {
@@ -275,7 +315,7 @@ window.toggleAdminPanel = function() {
                     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
                 }, 300);
-            }
+                }
         }
     } else {
         alert('❌ Senha incorreta!');
@@ -455,7 +495,9 @@ window.setupForm = function() {
                 if (typeof window.updateProperty === 'function') {
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
                     if (success) {
-                        Helpers.showNotification('✅ Imóvel atualizado!');
+                        Helpers.showNotification('✅ Imóvel atualizado permanentemente!');
+                    } else {
+                        Helpers.showNotification('⚠️ Imóvel atualizado apenas localmente', 'error');
                     }
                 }
                 
@@ -590,4 +632,4 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js OTIMIZADO - ~45% REDUÇÃO CONCLUÍDA');
+console.log('✅ admin.js OTIMIZADO - COM PERSISTÊNCIA DE PDFs CORRIGIDA');
