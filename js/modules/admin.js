@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN COM UPLOAD FUNCIONAL
-console.log('🔧 admin.js carregado - Sistema Administrativo com Upload Funcional');
+// js/modules/admin.js - CORREÇÃO DO ERRO DE LOADINGMANAGER
+console.log('🔧 admin.js carregado - Correção do LoadingManager');
 
 // ========== CONFIGURAÇÕES ==========
 const ADMIN_CONFIG = {
@@ -22,10 +22,9 @@ window._mediaState = {
 
 /**
  * CONFIGURAÇÃO DIRETA DOS INPUTS DE UPLOAD
- * Método mais simples e confiável
  */
 window.setupUploadInputs = function() {
-    console.log('🎯 Configurando inputs de upload DIRETAMENTE...');
+    console.log('🎯 Configurando inputs de upload...');
     
     // 1. INPUT DE FOTOS/VIDEOS
     const fileInput = document.getElementById('fileInput');
@@ -61,7 +60,6 @@ window.setupUploadInputs = function() {
         
         // Listener SIMPLES e DIRETO na área
         freshArea.addEventListener('click', function(e) {
-            console.log('🎯 Área de upload CLICADA');
             e.preventDefault();
             e.stopPropagation();
             freshInput.click();
@@ -72,28 +70,20 @@ window.setupUploadInputs = function() {
             if (e.target.files && e.target.files.length > 0) {
                 console.log(`📁 ${e.target.files.length} arquivo(s) selecionado(s)`);
                 
-                // Verificar se MediaSystem está pronto
                 if (window.MediaSystem && typeof window.MediaSystem.addFiles === 'function') {
                     const added = window.MediaSystem.addFiles(e.target.files);
                     console.log(`✅ ${added} arquivo(s) adicionado(s) ao MediaSystem`);
                     
-                    // Atualizar UI IMEDIATAMENTE
                     setTimeout(() => {
                         if (window.MediaSystem.updateUI) {
                             window.MediaSystem.updateUI();
                         }
                     }, 50);
-                } else {
-                    console.error('❌ MediaSystem não disponível');
-                    alert('⚠️ Sistema de mídia não está carregado. Recarregue a página.');
                 }
                 
-                // Limpar input
                 e.target.value = '';
             }
         });
-        
-        console.log('✅ Input de fotos/vídeos configurado');
     }
     
     // 2. INPUT DE PDFs
@@ -103,7 +93,6 @@ window.setupUploadInputs = function() {
     if (pdfFileInput && pdfUploadArea) {
         console.log('📄 Configurando input de PDFs...');
         
-        // Garantir que o input está visível e clicável
         pdfFileInput.style.cssText = `
             position: absolute;
             width: 100%;
@@ -117,26 +106,21 @@ window.setupUploadInputs = function() {
             visibility: visible !important;
         `;
         
-        // Remover TODOS os listeners antigos
         const newPdfInput = pdfFileInput.cloneNode(true);
         pdfFileInput.parentNode.replaceChild(newPdfInput, pdfFileInput);
         
         const newPdfArea = pdfUploadArea.cloneNode(true);
         pdfUploadArea.parentNode.replaceChild(newPdfArea, pdfUploadArea);
         
-        // Obter elementos FRESCOS
         const freshPdfInput = document.getElementById('pdfFileInput');
         const freshPdfArea = document.getElementById('pdfUploadArea');
         
-        // Listener SIMPLES e DIRETO na área
         freshPdfArea.addEventListener('click', function(e) {
-            console.log('🎯 Área de PDF CLICADA');
             e.preventDefault();
             e.stopPropagation();
             freshPdfInput.click();
         });
         
-        // Listener DIRETO no input
         freshPdfInput.addEventListener('change', function(e) {
             if (e.target.files && e.target.files.length > 0) {
                 console.log(`📄 ${e.target.files.length} PDF(s) selecionado(s)`);
@@ -145,7 +129,6 @@ window.setupUploadInputs = function() {
                     const added = window.MediaSystem.addPdfs(e.target.files);
                     console.log(`✅ ${added} PDF(s) adicionado(s) ao MediaSystem`);
                     
-                    // Atualizar UI IMEDIATAMENTE
                     setTimeout(() => {
                         if (window.MediaSystem.updateUI) {
                             window.MediaSystem.updateUI();
@@ -153,81 +136,35 @@ window.setupUploadInputs = function() {
                     }, 50);
                 }
                 
-                // Limpar input
                 e.target.value = '';
             }
         });
-        
-        console.log('✅ Input de PDFs configurado');
     }
     
     window._mediaState.initialized = true;
-    console.log('🎉 Sistema de upload configurado com sucesso');
-    return true;
-};
-
-/**
- * FORÇAR REINICIALIZAÇÃO DOS UPLOADS
- * Chamar sempre que houver problemas
- */
-window.fixUploadSystem = function() {
-    console.log('🔧 FORÇANDO correção do sistema de upload...');
-    window._mediaState.initialized = false;
-    
-    // Remover elementos problemáticos
-    const inputs = ['fileInput', 'pdfFileInput'];
-    const areas = ['uploadArea', 'pdfUploadArea'];
-    
-    inputs.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            const newElement = element.cloneNode(true);
-            element.parentNode.replaceChild(newElement, element);
-        }
-    });
-    
-    areas.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            const newElement = element.cloneNode(true);
-            element.parentNode.replaceChild(newElement, element);
-        }
-    });
-    
-    // Reconfigurar após pequeno delay
-    setTimeout(() => {
-        window.setupUploadInputs();
-    }, 100);
-    
+    console.log('🎉 Sistema de upload configurado');
     return true;
 };
 
 /* ==========================================================
-   FUNÇÃO cleanAdminForm COMPLETAMENTE REESCRITA
+   FUNÇÃO cleanAdminForm
    ========================================================== */
 window.cleanAdminForm = function(mode = 'reset') {
-    console.log(`🧹 cleanAdminForm(${mode}) - REESCRITA COMPLETA`);
+    console.log(`🧹 cleanAdminForm(${mode})`);
     
-    // ✅ REGISTRAR QUANDO FOI LIMPO
     window._mediaState.lastCleanTime = Date.now();
-    
-    // 1. SEMPRE LIMPAR estado de edição
-    const wasEditing = !!window.editingPropertyId;
     window.editingPropertyId = null;
     
-    // 2. LIMPAR FORMULÁRIO COMPLETAMENTE
+    // Limpar formulário
     const form = document.getElementById('propertyForm');
     if (form) {
-        console.log('📝 Resetando formulário...');
         form.reset();
-        
-        // Valores padrão
         document.getElementById('propType').value = 'residencial';
         document.getElementById('propBadge').value = 'Novo';
         document.getElementById('propHasVideo').checked = false;
     }
     
-    // 3. RESETAR UI
+    // Resetar UI
     document.getElementById('formTitle').textContent = 'Adicionar Novo Imóvel';
     
     const cancelBtn = document.getElementById('cancelEditBtn');
@@ -243,45 +180,29 @@ window.cleanAdminForm = function(mode = 'reset') {
         submitBtn.disabled = false;
     }
     
-    // 4. ✅✅✅ CRÍTICO: LIMPAR MediaSystem COMPLETAMENTE
+    // Limpar MediaSystem
     if (window.MediaSystem) {
-        console.log('🔄 LIMPANDO MediaSystem COMPLETAMENTE...');
+        console.log('🔄 Limpando MediaSystem...');
         
-        // Método 1: Usar resetState se disponível
         if (typeof MediaSystem.resetState === 'function') {
             MediaSystem.resetState();
-            console.log('✅ MediaSystem.resetState() executado');
-        }
-        
-        // Método 2: Limpar manualmente se necessário
-        else if (MediaSystem.state) {
+        } else if (MediaSystem.state) {
             MediaSystem.state.files = [];
             MediaSystem.state.pdfs = [];
             MediaSystem.state.existing = [];
             MediaSystem.state.existingPdfs = [];
             MediaSystem.state.currentPropertyId = null;
             MediaSystem.state.isUploading = false;
-            console.log('✅ Estado do MediaSystem limpo manualmente');
         }
         
-        // Método 3: Chamar funções de limpeza específicas
-        if (typeof MediaSystem.clearAll === 'function') {
-            MediaSystem.clearAll();
-        }
-        if (typeof MediaSystem.clearAllPdfs === 'function') {
-            MediaSystem.clearAllPdfs();
-        }
-        
-        // ✅ CORREÇÃO: Atualizar UI para mostrar que está vazio
         setTimeout(() => {
             if (MediaSystem.updateUI) {
                 MediaSystem.updateUI();
-                console.log('✅ UI do MediaSystem atualizada (vazia)');
             }
         }, 50);
     }
     
-    // 5. LIMPAR PREVIEWS VISUAIS
+    // Limpar previews
     const previewContainers = ['uploadPreview', 'pdfUploadPreview'];
     previewContainers.forEach(id => {
         const container = document.getElementById(id);
@@ -290,21 +211,16 @@ window.cleanAdminForm = function(mode = 'reset') {
                 <div style="text-align: center; color: #95a5a6; padding: 2rem;">
                     <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; opacity: 0.5; margin-bottom: 1rem;"></i>
                     <p style="margin: 0.5rem 0; font-size: 0.9rem;">Nenhum arquivo selecionado</p>
-                    <small style="font-size: 0.8rem; opacity: 0.7;">Clique na área acima para adicionar</small>
                 </div>
             `;
         }
     });
     
-    // 6. ✅✅✅ RECONFIGURAR UPLOADS APÓS LIMPEZA
+    // Reconfigurar uploads
     setTimeout(() => {
-        console.log('🔄 Reconfigurando sistema de upload após limpeza...');
         window.setupUploadInputs();
     }, 100);
     
-    console.log(`✅ Formulário limpo ${mode === 'cancel' ? '(cancelamento)' : ''}`);
-    
-    // Feedback visual
     if (mode === 'cancel' && window.showNotification) {
         window.showNotification('Edição cancelada', 'info');
     }
@@ -313,22 +229,17 @@ window.cleanAdminForm = function(mode = 'reset') {
 };
 
 /* ==========================================================
-   FUNÇÃO cancelEdit SIMPLIFICADA
+   FUNÇÃO cancelEdit
    ========================================================== */
 window.cancelEdit = function() {
-    console.group('admin', 'cancelEdit()');
-    
     if (window.editingPropertyId) {
         const confirmCancel = confirm('Deseja realmente cancelar a edição?\n\nTodas as alterações NÃO SALVAS serão perdidas.');
         if (!confirmCancel) {
-            console.log('Cancelamento abortado');
-            console.groupEnd();
             return false;
         }
     }
     
     window.cleanAdminForm('cancel');
-    console.groupEnd();
     return true;
 };
 
@@ -336,11 +247,7 @@ window.cancelEdit = function() {
 window.toggleAdminPanel = function() {
     const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha de administrador:");
     
-    if (password === null) {
-        console.log('Usuário cancelou o acesso');
-        return;
-    }
-    
+    if (password === null) return;
     if (password === "") {
         alert('⚠️ Campo de senha vazio!');
         return;
@@ -351,8 +258,6 @@ window.toggleAdminPanel = function() {
         if (panel) {
             const isVisible = panel.style.display === 'block';
             panel.style.display = isVisible ? 'none' : 'block';
-            
-            console.log(`Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
             if (!isVisible) {
                 setTimeout(() => {
@@ -375,11 +280,9 @@ window.toggleAdminPanel = function() {
 window.setupAdminUI = function() {
     console.log('🔧 Configurando UI administrativa');
     
-    // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
     
-    // 2. Botão toggle
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
         adminBtn.onclick = (e) => {
@@ -388,7 +291,6 @@ window.setupAdminUI = function() {
         };
     }
     
-    // 3. Botão cancelar
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.onclick = (e) => {
@@ -397,11 +299,8 @@ window.setupAdminUI = function() {
         };
     }
     
-    // 4. ✅ CONFIGURAR UPLOADS NA INICIALIZAÇÃO
     setTimeout(() => {
-        console.log('⚙️ Configurando sistema na inicialização...');
         window.setupUploadInputs();
-        
         if (window.setupForm) window.setupForm();
         if (window.loadPropertyList) window.loadPropertyList();
     }, 800);
@@ -420,23 +319,14 @@ if (document.readyState === 'loading') {
     }, 300);
 }
 
-// ========== INTEGRAÇÃO DIRETA COM MediaSystem ==========
+// ========== INTEGRAÇÃO COM MediaSystem ==========
 window.handleNewMediaFiles = function(files) {
-    console.log('➕ Adicionando', files.length, 'arquivo(s) de mídia');
-    
-    if (!window.MediaSystem) {
-        console.error('❌ MediaSystem não disponível');
-        return 0;
-    }
-    
-    if (typeof MediaSystem.addFiles !== 'function') {
-        console.error('❌ MediaSystem.addFiles não é uma função');
+    if (!window.MediaSystem || typeof MediaSystem.addFiles !== 'function') {
         return 0;
     }
     
     const result = MediaSystem.addFiles(files);
     
-    // Atualizar UI
     setTimeout(() => {
         if (MediaSystem.updateUI) {
             MediaSystem.updateUI();
@@ -447,15 +337,12 @@ window.handleNewMediaFiles = function(files) {
 };
 
 window.handleNewPdfFiles = function(files) {
-    console.log('➕ Adicionando', files.length, 'PDF(s)');
-    
     if (!window.MediaSystem || typeof MediaSystem.addPdfs !== 'function') {
         return 0;
     }
     
     const result = MediaSystem.addPdfs(files);
     
-    // Atualizar UI
     setTimeout(() => {
         if (MediaSystem.updateUI) {
             MediaSystem.updateUI();
@@ -465,65 +352,9 @@ window.handleNewPdfFiles = function(files) {
     return result;
 };
 
-window.loadExistingMediaForEdit = function(property) {
-    if (window.MediaSystem && MediaSystem.loadExisting) {
-        MediaSystem.loadExisting(property);
-        
-        // Atualizar UI após carregar
-        setTimeout(() => {
-            if (MediaSystem.updateUI) {
-                MediaSystem.updateUI();
-            }
-        }, 100);
-    }
-};
-
-// ========== WRAPPER SIMPLIFICADO DE PDFs ==========
-window.adminPdfHandler = {
-    clear: function() {
-        return window.MediaSystem?.clearAllPdfs?.() || 0;
-    },
-    
-    load: function(property) {
-        return window.MediaSystem?.loadExistingPdfsForEdit?.(property) || 0;
-    },
-    
-    process: async function(id, title) {
-        return await (window.MediaSystem?.processAndSavePdfs?.(id, title) || '');
-    }
-};
-
-// Funções de compatibilidade
-window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    return await window.adminPdfHandler.process(propertyId, propertyTitle);
-};
-
-window.clearAllPdfs = function() {
-    return window.adminPdfHandler.clear();
-};
-
-window.loadExistingPdfsForEdit = function(property) {
-    return window.adminPdfHandler.load(property);
-};
-
-window.getPdfsToSave = async function(propertyId) {
-    return await window.processAndSavePdfs(propertyId, 'Imóvel');
-};
-
-window.clearProcessedPdfs = function() {
-    if (MediaSystem?.state?.pdfs) {
-        MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
-        if (MediaSystem.updateUI) {
-            MediaSystem.updateUI();
-        }
-    }
-};
-
 // ========== FUNÇÕES DO FORMULÁRIO ==========
 
 window.loadPropertyList = function() {
-    console.log('📋 Carregando lista de imóveis...');
-    
     const container = document.getElementById('propertyList');
     const countElement = document.getElementById('propertyCount');
     
@@ -558,25 +389,18 @@ window.loadPropertyList = function() {
         `;
         container.appendChild(item);
     });
-    
-    console.log(`✅ ${window.properties.length} imóveis listados`);
 };
 
-// ========== FUNÇÃO editProperty CORRIGIDA ==========
+// ========== FUNÇÃO editProperty ==========
 window.editProperty = function(id) {
-    console.group(`✏️ EDITANDO IMÓVEL ${id}`);
-    
     const property = window.properties.find(p => p.id === id);
     if (!property) {
         alert('❌ Imóvel não encontrado!');
-        console.groupEnd();
         return;
     }
 
-    // ✅ LIMPAR TUDO ANTES DE EDITAR (evita vazamento)
     window.cleanAdminForm('reset');
     
-    // Preencher formulário
     document.getElementById('propTitle').value = property.title || '';
     
     const priceField = document.getElementById('propPrice');
@@ -595,7 +419,6 @@ window.editProperty = function(id) {
     document.getElementById('propBadge').value = property.badge || 'Novo';
     document.getElementById('propHasVideo').checked = property.has_video === true || property.has_video === 'true' || false;
 
-    // Atualizar UI
     document.getElementById('formTitle').textContent = `Editando: ${property.title}`;
 
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
@@ -612,12 +435,10 @@ window.editProperty = function(id) {
 
     window.editingPropertyId = property.id;
 
-    // Carregar mídia existente (com delay para garantir DOM)
     setTimeout(() => {
         if (window.MediaSystem && MediaSystem.loadExisting) {
             MediaSystem.loadExisting(property);
             
-            // Atualizar UI após carregar
             setTimeout(() => {
                 if (MediaSystem.updateUI) {
                     MediaSystem.updateUI();
@@ -626,7 +447,6 @@ window.editProperty = function(id) {
         }
     }, 150);
 
-    // Abrir painel se estiver fechado
     setTimeout(() => {
         const adminPanel = document.getElementById('adminPanel');
         if (adminPanel && adminPanel.style.display !== 'block') {
@@ -639,12 +459,10 @@ window.editProperty = function(id) {
         }
     }, 100);
 
-    console.log(`✅ Imóvel ${id} pronto para edição`);
-    console.groupEnd();
     return true;
 };
 
-// ========== CONFIGURAÇÃO DO FORMULÁRIO (FLUXO CORRETO) ==========
+// ========== CONFIGURAÇÃO DO FORMULÁRIO (CORRIGIDA) ==========
 window.setupForm = function() {
     console.log('⚙️ Configurando formulário...');
     
@@ -654,26 +472,29 @@ window.setupForm = function() {
         return;
     }
     
-    // Clonar para remover listeners antigos
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     
-    // Formatação de preço
     if (window.setupPriceAutoFormat) {
         window.setupPriceAutoFormat();
     }
     
-    // Configurar submit CORRETO
     const freshForm = document.getElementById('propertyForm');
     freshForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         console.group('💾 SALVANDO IMÓVEL');
         
-        const loading = window.LoadingManager?.show?.(
-            'Salvando Imóvel...', 
-            'Por favor, aguarde...', 
-            { variant: 'processing' }
-        );
+        // ✅ CORREÇÃO CRÍTICA: Verificar se LoadingManager existe
+        let loading = null;
+        if (window.LoadingManager && typeof window.LoadingManager.show === 'function') {
+            loading = window.LoadingManager.show(
+                'Salvando Imóvel...', 
+                'Por favor, aguarde...', 
+                { variant: 'processing' }
+            );
+        } else {
+            console.warn('⚠️ LoadingManager não disponível');
+        }
         
         const submitBtn = this.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -682,7 +503,6 @@ window.setupForm = function() {
         }
         
         try {
-            // Coletar dados
             const propertyData = {
                 title: document.getElementById('propTitle').value,
                 price: document.getElementById('propPrice').value,
@@ -694,22 +514,24 @@ window.setupForm = function() {
                 has_video: document.getElementById('propHasVideo')?.checked || false
             };
             
-            // Validação
             if (!propertyData.title || !propertyData.price || !propertyData.location) {
                 alert('❌ Preencha Título, Preço e Localização!');
                 if (submitBtn) submitBtn.disabled = false;
-                if (loading) loading.hide();
+                if (loading && loading.hide) loading.hide();
                 console.groupEnd();
                 return;
             }
             
+            // ✅ CORREÇÃO: Atualizar mensagem apenas se loading existir
+            if (loading && loading.updateMessage) {
+                loading.updateMessage('Processando dados...');
+            }
+            
             if (window.editingPropertyId) {
-                // EDIÇÃO
                 console.log(`✏️ Editando imóvel ${window.editingPropertyId}`);
                 
                 const updateData = { ...propertyData };
                 
-                // Processar PDFs
                 if (window.adminPdfHandler) {
                     const pdfsString = await window.adminPdfHandler.process(window.editingPropertyId, propertyData.title);
                     if (pdfsString && pdfsString.trim() !== '') {
@@ -717,7 +539,6 @@ window.setupForm = function() {
                     }
                 }
                 
-                // Processar mídia
                 if (window.MediaSystem && window.MediaSystem.getOrderedMediaUrls) {
                     const ordered = window.MediaSystem.getOrderedMediaUrls();
                     if (ordered.images && ordered.images.trim() !== '') {
@@ -725,18 +546,24 @@ window.setupForm = function() {
                     }
                 }
                 
-                // Salvar
                 if (typeof window.updateProperty === 'function') {
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
                     
+                    // ✅ CORREÇÃO: Verificar loading antes de usar
                     if (success) {
-                        if (loading) loading.setVariant('success').updateMessage('Imóvel atualizado!');
+                        if (loading && loading.setVariant && loading.updateMessage) {
+                            loading.setVariant('success');
+                            loading.updateMessage('Imóvel atualizado com sucesso!');
+                        }
                         
                         setTimeout(() => {
                             alert(`✅ Imóvel "${updateData.title}" atualizado com sucesso!`);
                         }, 800);
                     } else {
-                        if (loading) loading.setVariant('error').updateMessage('Falha na atualização');
+                        if (loading && loading.setVariant && loading.updateMessage) {
+                            loading.setVariant('error');
+                            loading.updateMessage('Falha na atualização');
+                        }
                         setTimeout(() => {
                             alert('❌ Não foi possível atualizar o imóvel.');
                         }, 800);
@@ -744,21 +571,25 @@ window.setupForm = function() {
                 }
                 
             } else {
-                // NOVO IMÓVEL
                 console.log('🆕 Criando novo imóvel...');
                 
-                // Criar no banco
                 if (typeof window.addNewProperty === 'function') {
                     const newProperty = await window.addNewProperty(propertyData);
                     
                     if (newProperty) {
-                        if (loading) loading.setVariant('success').updateMessage('Imóvel cadastrado!');
+                        if (loading && loading.setVariant && loading.updateMessage) {
+                            loading.setVariant('success');
+                            loading.updateMessage('Imóvel cadastrado com sucesso!');
+                        }
                         
                         setTimeout(() => {
                             alert(`✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`);
                         }, 800);
                     } else {
-                        if (loading) loading.setVariant('error').updateMessage('Falha na criação');
+                        if (loading && loading.setVariant && loading.updateMessage) {
+                            loading.setVariant('error');
+                            loading.updateMessage('Falha na criação');
+                        }
                         setTimeout(() => {
                             alert('❌ Não foi possível criar o imóvel.');
                         }, 800);
@@ -770,14 +601,25 @@ window.setupForm = function() {
             console.error('❌ ERRO:', error);
             alert(`❌ Erro: ${error.message}`);
             
-            if (loading) loading.hide();
-            if (submitBtn) submitBtn.disabled = false;
+            // ✅ CORREÇÃO: Fechar loading se existir
+            if (loading && loading.hide) {
+                loading.hide();
+            }
+            
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = window.editingPropertyId ? 
+                    '<i class="fas fa-save"></i> Salvar Alterações' : 
+                    '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+            }
             
         } finally {
             setTimeout(() => {
-                if (loading) loading.hide();
+                // ✅ CORREÇÃO: Verificar se loading existe antes de chamar hide()
+                if (loading && loading.hide) {
+                    loading.hide();
+                }
                 
-                // ✅✅✅ LIMPAR COMPLETAMENTE APÓS SALVAR
                 window.cleanAdminForm('reset');
                 
                 if (submitBtn) {
@@ -786,7 +628,6 @@ window.setupForm = function() {
                     submitBtn.style.background = 'var(--success)';
                 }
                 
-                // Atualizar listas
                 if (typeof window.loadPropertyList === 'function') {
                     setTimeout(() => window.loadPropertyList(), 500);
                 }
@@ -794,7 +635,7 @@ window.setupForm = function() {
                     setTimeout(() => window.renderProperties('todos'), 800);
                 }
                 
-                console.log('✅ Processo concluído - Formulário limpo');
+                console.log('✅ Processo concluído');
             }, 1000);
         }
         
@@ -807,8 +648,6 @@ window.setupForm = function() {
 // ========== SINCRONIZAÇÃO MANUAL ==========
 window.syncWithSupabaseManual = async function() {
     if (confirm('🔄 Sincronizar com banco online?')) {
-        console.log('Sincronizando...');
-        
         const syncBtn = document.getElementById('syncButton');
         if (syncBtn) {
             syncBtn.disabled = true;
@@ -838,118 +677,4 @@ window.syncWithSupabaseManual = async function() {
     }
 };
 
-// ========== TESTE DE UPLOAD NO CONSOLE ==========
-setTimeout(() => {
-    if (window.location.search.includes('debug=true')) {
-        console.group('🧪 DIAGNÓSTICO DE UPLOAD');
-        
-        console.log('🎯 Elementos críticos:');
-        ['uploadArea', 'fileInput', 'pdfUploadArea', 'pdfFileInput'].forEach(id => {
-            const el = document.getElementById(id);
-            console.log(`  ${el ? '✅' : '❌'} ${id}:`, {
-                existe: !!el,
-                display: el ? window.getComputedStyle(el).display : 'N/A',
-                position: el ? window.getComputedStyle(el).position : 'N/A',
-                zIndex: el ? window.getComputedStyle(el).zIndex : 'N/A',
-                cursor: el ? window.getComputedStyle(el).cursor : 'N/A'
-            });
-        });
-        
-        console.log('🛠️ Comandos de teste:');
-        console.log(`
-1. Testar clique manual:
-   document.getElementById('uploadArea').click()
-   
-2. Forçar reconfiguração:
-   window.fixUploadSystem()
-   
-3. Testar adição direta:
-   const file = new File(['test'], 'test.jpg', {type: 'image/jpeg'});
-   window.handleNewMediaFiles([file])
-   
-4. Limpar tudo:
-   window.cleanAdminForm('reset')
-        `);
-        
-        console.groupEnd();
-    }
-}, 2000);
-
-// ========== FUNÇÃO DE EMERGÊNCIA ==========
-window.emergencyUploadFix = function() {
-    console.warn('🚨 ATIVAÇÃO DE MODO DE EMERGÊNCIA PARA UPLOAD');
-    
-    // 1. Remover todos os event listeners
-    const elements = [
-        'uploadArea', 'fileInput', 'pdfUploadArea', 'pdfFileInput',
-        'uploadPreview', 'pdfUploadPreview'
-    ];
-    
-    elements.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            const newEl = el.cloneNode(true);
-            el.parentNode.replaceChild(newEl, el);
-        }
-    });
-    
-    // 2. Resetar MediaSystem completamente
-    if (window.MediaSystem) {
-        if (MediaSystem.resetState) MediaSystem.resetState();
-        if (MediaSystem.state) {
-            MediaSystem.state.files = [];
-            MediaSystem.state.pdfs = [];
-        }
-    }
-    
-    // 3. Configurar do zero
-    setTimeout(() => {
-        // Estilos garantidos
-        const fileInput = document.getElementById('fileInput');
-        const pdfInput = document.getElementById('pdfFileInput');
-        
-        if (fileInput) {
-            fileInput.style.cssText = `
-                position: absolute !important;
-                width: 100% !important;
-                height: 100% !important;
-                top: 0 !important;
-                left: 0 !important;
-                opacity: 0 !important;
-                cursor: pointer !important;
-                z-index: 9999 !important;
-                display: block !important;
-                visibility: visible !important;
-            `;
-        }
-        
-        if (pdfInput) {
-            pdfInput.style.cssText = fileInput.style.cssText;
-        }
-        
-        // Listeners diretos
-        const uploadArea = document.getElementById('uploadArea');
-        if (uploadArea && fileInput) {
-            uploadArea.onclick = function(e) {
-                e.preventDefault();
-                console.log('EMERGENCY: Área clicada');
-                fileInput.click();
-            };
-            
-            fileInput.onchange = function(e) {
-                if (e.target.files.length > 0 && window.MediaSystem?.addFiles) {
-                    window.MediaSystem.addFiles(e.target.files);
-                    setTimeout(() => {
-                        if (MediaSystem.updateUI) MediaSystem.updateUI();
-                    }, 50);
-                }
-                e.target.value = '';
-            };
-        }
-        
-        console.log('✅ MODO DE EMERGÊNCIA ATIVADO - Upload deve funcionar');
-        alert('🚨 Modo de emergência ativado. Tente o upload novamente.');
-    }, 100);
-};
-
-console.log('✅ admin.js - SISTEMA DE UPLOAD CORRIGIDO E SIMPLIFICADO');
+console.log('✅ admin.js - CORREÇÃO DO LOADINGMANAGER APLICADA');
