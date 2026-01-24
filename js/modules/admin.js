@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN COM PERSISTÊNCIA DE PDFs GARANTIDA
-console.log('🔧 admin.js com persistência de PDFs carregado');
+// js/modules/admin.js - SISTEMA ADMIN COM PERSISTÊNCIA DE PDFs GARANTIDA (CORRIGIDO)
+console.log('🔧 admin.js com persistência de PDFs carregado (SEM updated_at)');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -117,7 +117,7 @@ const Helpers = {
 };
 
 /* ==========================================================
-   SISTEMA DE PDFs COM PERSISTÊNCIA GARANTIDA NO SUPABASE
+   SISTEMA DE PDFs COM PERSISTÊNCIA GARANTIDA NO SUPABASE (CORRIGIDO)
    ========================================================== */
 window.adminPdfHandler = {
     clear: function() {
@@ -131,7 +131,7 @@ window.adminPdfHandler = {
                window.PdfSystem?.loadExistingPdfsForEdit?.(property);
     },
     
-    // ✅ FUNÇÃO CRÍTICA: Processa e SALVA PDFs definitivamente no Supabase
+    // ✅ FUNÇÃO CRÍTICA: Processa e SALVA PDFs definitivamente no Supabase (CORRIGIDA)
     process: async function(id, title) {
         console.group('[adminPdfHandler] PROCESSANDO PDFs DEFINITIVAMENTE');
         console.log('📋 Parâmetros:', { id, title });
@@ -163,7 +163,7 @@ window.adminPdfHandler = {
                 pdfUrls = await this.processPdfsManually(id, title);
             }
             
-            // ✅ GARANTIR PERSISTÊNCIA IMEDIATA NO SUPABASE
+            // ✅ GARANTIR PERSISTÊNCIA IMEDIATA NO SUPABASE (SEM updated_at)
             if (pdfUrls?.trim()) {
                 const persistSuccess = await this.persistPdfsToSupabase(id, pdfUrls);
                 if (persistSuccess) {
@@ -186,7 +186,7 @@ window.adminPdfHandler = {
         }
     },
     
-    // ✅ MÉTODO NOVO: Persistir PDFs diretamente no Supabase
+    // ✅ MÉTODO NOVO: Persistir PDFs diretamente no Supabase (CORRIGIDO - SEM updated_at)
     persistPdfsToSupabase: async function(propertyId, pdfUrls) {
         console.log('[adminPdfHandler] Persistindo PDFs no Supabase:', {
             propertyId,
@@ -204,7 +204,7 @@ window.adminPdfHandler = {
         }
         
         try {
-            // Atualizar APENAS o campo pdfs no Supabase
+            // ✅ CORREÇÃO CRÍTICA: Atualizar APENAS o campo pdfs (SEM updated_at)
             const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
                 method: 'PATCH',
                 headers: {
@@ -214,8 +214,8 @@ window.adminPdfHandler = {
                     'Prefer': 'return=representation'
                 },
                 body: JSON.stringify({ 
-                    pdfs: pdfUrls,
-                    updated_at: new Date().toISOString() 
+                    pdfs: pdfUrls
+                    // ❌ REMOVIDO: updated_at: new Date().toISOString() - NÃO EXISTE NA TABELA
                 })
             });
             
@@ -233,6 +233,29 @@ window.adminPdfHandler = {
                     status: response.status,
                     error: errorText
                 });
+                
+                // ✅ TENTAR ESTRATÉGIA ALTERNATIVA: Atualizar apenas se ID for numérico
+                if (propertyId && !isNaN(propertyId)) {
+                    console.log('🔄 Tentando com ID numérico:', propertyId);
+                    const numericResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${Number(propertyId)}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': window.SUPABASE_KEY,
+                            'Authorization': `Bearer ${window.SUPABASE_KEY}`,
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({ 
+                            pdfs: pdfUrls
+                        })
+                    });
+                    
+                    if (numericResponse.ok) {
+                        console.log('✅ PDFs atualizados com ID numérico');
+                        return true;
+                    }
+                }
+                
                 return false;
             }
         } catch (error) {
@@ -744,7 +767,7 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         ...window.properties[index],
         ...updatedData,
         id: propertyId,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString() // ✅ Mantido apenas localmente
     };
     
     // Atualizar UI
@@ -797,7 +820,7 @@ setTimeout(() => {
    FUNÇÃO DE TESTE PARA DIAGNÓSTICO DE PDFs
    ========================================================== */
 window.testPdfPersistence = async function() {
-    console.group('🧪 TESTE DE PERSISTÊNCIA DE PDFs');
+    console.group('🧪 TESTE DE PERSISTÊNCIA DE PDFs (SEM updated_at)');
     
     if (!window.editingPropertyId) {
         console.error('❌ Nenhum imóvel em edição');
@@ -858,8 +881,7 @@ window.testPdfPersistence = async function() {
     console.log('\n4. Forçando atualização completa...');
     const updateData = {
         title: property.title,
-        pdfs: property.pdfs || '',
-        updated_at: new Date().toISOString()
+        pdfs: property.pdfs || ''
     };
     
     if (window.updateProperty) {
@@ -906,4 +928,4 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - SISTEMA DE PERSISTÊNCIA DE PDFs IMPLEMENTADO');
+console.log('✅ admin.js - SISTEMA DE PERSISTÊNCIA DE PDFs IMPLEMENTADO (SEM updated_at)');
