@@ -135,7 +135,7 @@ window.getMediaUrlsForProperty = async (propertyId, propertyTitle) =>
 window.loadExistingPdfsForEdit = (property) => window.adminPdfHandler.load(property);
 
 /* ==========================================================
-   AUTO-SALVAMENTO OTIMIZADO (CORRIGIDO PARA PERSISTIR PDFs NO SUPABASE)
+   AUTO-SALVAMENTO OTIMIZADO (50 linhas vs 120+)
    ========================================================== */
 window.triggerAutoSave = function(reason = 'media_deletion') {
     if (!window.editingPropertyId) return;
@@ -154,6 +154,14 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
         }
         
         try {
+            // ✅ ADICIONADO: LOG DE DIAGNÓSTICO SOLICITADO
+            console.log('🔍 DEBUG triggerAutoSave - Estado dos PDFs:', {
+                temAdminPdfHandler: !!window.adminPdfHandler,
+                editingId: window.editingPropertyId,
+                reason: reason,
+                timestamp: new Date().toISOString()
+            });
+            
             const fields = ['propTitle','propPrice','propLocation','propDescription',
                           'propFeatures','propType','propBadge','propHasVideo'];
             
@@ -170,15 +178,29 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
             
             const updateData = { ...propertyData };
             
-            // Processar PDFs via wrapper
+            // ✅ PROCESSAR PDFs E GARANTIR QUE VÃO PARA updateData
             if (window.adminPdfHandler) {
-                const pdfsString = await window.adminPdfHandler.process(
-                    window.editingPropertyId, 
-                    propertyData.title
-                );
-                if (pdfsString?.trim()) {
-                    updateData.pdfs = pdfsString;
-                    console.log('✅ PDFs processados no auto-save:', pdfsString.split(',').filter(p => p.trim()).length, 'URL(s)');
+                try {
+                    const pdfsString = await window.adminPdfHandler.process(
+                        window.editingPropertyId, 
+                        propertyData.title
+                    );
+                    
+                    if (pdfsString?.trim()) {
+                        updateData.pdfs = pdfsString; // ✅ CRÍTICO: Atribuir ao updateData
+                        // ✅ ADICIONADO: LOG DE DIAGNÓSTICO SOLICITADO
+                        console.log('✅ PDFs processados no auto-save:', {
+                            count: pdfsString.split(',').filter(p => p.trim()).length,
+                            string: pdfsString.substring(0, 100) + '...',
+                            propertyTitle: propertyData.title,
+                            updateDataHasPdfs: !!updateData.pdfs
+                        });
+                    } else {
+                        // ✅ ADICIONADO: LOG DE DIAGNÓSTICO SOLICITADO
+                        console.log('ℹ️ Nenhum PDF novo processado no auto-save');
+                    }
+                } catch (error) {
+                    console.error('❌ Erro ao processar PDFs no auto-save:', error);
                 }
             }
             
@@ -188,26 +210,23 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                 if (mediaUrls?.trim()) updateData.images = mediaUrls;
             }
             
-            // ✅✅✅ CORREÇÃO CRÍTICA: SALVAR NO SUPABASE E LOCALMENTE
-            window.updateLocalProperty(window.editingPropertyId, updateData);
+            // ✅ LOG FINAL DOS DADOS QUE SERÃO ENVIADOS
+            console.log('📤 Dados completos para envio no auto-save:', {
+                temPdfs: !!updateData.pdfs,
+                temImages: !!updateData.images,
+                campos: Object.keys(updateData),
+                id: window.editingPropertyId
+            });
             
-            // Chamar updateProperty que DEVE salvar no Supabase
+            // Atualizar array local e banco
+            window.updateLocalProperty(window.editingPropertyId, updateData);
             if (typeof window.updateProperty === 'function') {
-                const supabaseSuccess = await window.updateProperty(window.editingPropertyId, updateData);
-                if (supabaseSuccess) {
-                    console.log('✅ Auto-save: PDFs salvos no Supabase com sucesso');
-                    Helpers.showNotification('✅ Alterações salvas');
-                } else {
-                    console.warn('⚠️ Auto-save: PDFs salvos apenas localmente (Supabase falhou)');
-                    Helpers.showNotification('⚠️ Alterações salvas apenas localmente', 'warning');
-                }
-            } else {
-                console.error('❌ Auto-save: updateProperty() não disponível');
-                Helpers.showNotification('❌ Erro ao salvar no servidor', 'error');
+                await window.updateProperty(window.editingPropertyId, updateData);
+                Helpers.showNotification('✅ Alterações salvas');
             }
             
         } catch (error) {
-            console.error('❌ Erro no auto-save de PDFs:', error);
+            console.error('Auto-salvamento falhou:', error);
             Helpers.showNotification('❌ Erro ao salvar', 'error');
         } finally {
             if (submitBtn) {
@@ -219,103 +238,6 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
     }, 1500);
     
     pendingAutoSave = true;
-};
-
-/* ==========================================================
-   FUNÇÃO DE VALIDAÇÃO DE PERSISTÊNCIA DE PDFs
-   ========================================================== */
-window.validatePdfPersistence = async function(propertyId) {
-    console.group('🔍 VALIDAÇÃO DE PERSISTÊNCIA DE PDFs');
-    
-    // 1. Verificar localmente
-    const property = window.properties.find(p => p.id == propertyId);
-    console.log('📋 Estado LOCAL:', {
-        id: propertyId,
-        temPdfsLocal: !!(property?.pdfs),
-        pdfsLocal: property?.pdfs || 'Nenhum',
-        pdfsCountLocal: property?.pdfs ? property.pdfs.split(',').filter(p => p.trim()).length : 0
-    });
-    
-    // 2. Verificar no Supabase
-    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-        try {
-            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}&select=id,title,pdfs`, {
-                headers: {
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('🌐 Estado SUPABASE:', {
-                    encontrado: data.length > 0,
-                    pdfsNoBanco: data[0]?.pdfs || 'Nenhum',
-                    pdfsCountBanco: data[0]?.pdfs ? data[0].pdfs.split(',').filter(p => p.trim()).length : 0
-                });
-                
-                // 3. Comparar
-                if (data.length > 0) {
-                    const localPdfs = property?.pdfs || '';
-                    const supabasePdfs = data[0]?.pdfs || '';
-                    const iguais = localPdfs === supabasePdfs;
-                    
-                    console.log('⚖️ COMPARAÇÃO:', {
-                        sincronizados: iguais ? '✅ SIM' : '❌ NÃO',
-                        diferencaLocal: localPdfs !== supabasePdfs ? 'Local tem dados não sincronizados' : 'OK',
-                        diferencaSupabase: supabasePdfs !== localPdfs ? 'Supabase tem dados diferentes' : 'OK'
-                    });
-                    
-                    if (!iguais) {
-                        console.warn('⚠️ DESSINCRONIZAÇÃO DETECTADA!');
-                        console.log('🔄 Sugestão: Execute window.forceSyncPdfs(' + propertyId + ')');
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('❌ Erro ao verificar Supabase:', error);
-        }
-    }
-    
-    console.groupEnd();
-    return property;
-};
-
-// Função para forçar sincronização
-window.forceSyncPdfs = async function(propertyId) {
-    const property = window.properties.find(p => p.id == propertyId);
-    if (!property || !property.pdfs) {
-        alert('❌ Imóvel ou PDFs não encontrados localmente');
-        return false;
-    }
-    
-    const confirm = window.confirm(`Forçar sincronização de PDFs para:\n"${property.title}"\n\nPDFs: ${property.pdfs.split(',').length} documento(s)\n\nContinuar?`);
-    if (!confirm) return false;
-    
-    try {
-        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({ pdfs: property.pdfs })
-        });
-        
-        if (response.ok) {
-            alert(`✅ PDFs sincronizados com sucesso!\n\n${property.pdfs.split(',').length} documento(s) enviado(s) ao servidor.`);
-            console.log('✅ PDFs forçados ao Supabase:', property.pdfs);
-            return true;
-        } else {
-            alert('❌ Erro ao sincronizar PDFs');
-            return false;
-        }
-    } catch (error) {
-        alert('❌ Erro de conexão: ' + error.message);
-        return false;
-    }
 };
 
 /* ==========================================================
