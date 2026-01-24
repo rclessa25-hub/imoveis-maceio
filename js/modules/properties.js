@@ -680,14 +680,14 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. ATUALIZAR IMÓVEL - VERSÃO SEGURA COM COMPATIBILIDADE E PERSISTÊNCIA DE PDFs CORRIGIDA ==========
+// ========== 8. ATUALIZAR IMÓVEL - VERSÃO SEGURA COM COMPATIBILIDADE E CORREÇÃO DE PDFs ==========
 window.updateProperty = async function(id, propertyData) {
-    console.group(`✏️ ATUALIZANDO IMÓVEL ${id} - COM PERSISTÊNCIA DE PDFs:`);
-    console.log('📋 Dados recebidos:', {
-        title: propertyData.title,
-        hasPdfs: !!propertyData.pdfs,
+    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - VERSÃO SEGURA COM COMPATIBILIDADE:`, propertyData);
+    console.log('📤 Enviando para Supabase - Dados incluindo PDFs:', {
+        id: id,
+        temPdfs: !!propertyData.pdfs,
         pdfsCount: propertyData.pdfs ? propertyData.pdfs.split(',').filter(p => p.trim()).length : 0,
-        pdfsPreview: propertyData.pdfs ? propertyData.pdfs.substring(0, 100) + '...' : 'Nenhum'
+        pdfs: propertyData.pdfs ? propertyData.pdfs.substring(0, 100) + '...' : 'Nenhum'
     });
 
     // ✅ VALIDAÇÃO DO ID
@@ -698,7 +698,6 @@ window.updateProperty = async function(id, propertyData) {
             id = window.editingPropertyId;
         } else {
             alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!');
-            console.groupEnd();
             return false;
         }
     }
@@ -710,7 +709,6 @@ window.updateProperty = async function(id, propertyData) {
     if (index === -1) {
         console.error('❌ Imóvel não encontrado! IDs disponíveis:', window.properties.map(p => p.id));
         alert(`❌ Imóvel não encontrado!\n\nIDs disponíveis: ${window.properties.map(p => p.id).join(', ')}`);
-        console.groupEnd();
         return false;
     }
 
@@ -720,6 +718,7 @@ window.updateProperty = async function(id, propertyData) {
             let formattedPrice = propertyData.price;
             let formatMethod = 'nenhum';
             
+            // Tentar SharedCore primeiro (sistema moderno)
             if (window.SharedCore?.PriceFormatter?.formatForInput) {
                 try {
                     const sharedCoreFormatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
@@ -733,6 +732,7 @@ window.updateProperty = async function(id, propertyData) {
                 }
             }
             
+            // Fallback para método antigo
             if (formatMethod === 'nenhum' && window.formatPriceForInput) {
                 try {
                     const oldFormatted = window.formatPriceForInput(propertyData.price);
@@ -746,7 +746,9 @@ window.updateProperty = async function(id, propertyData) {
                 }
             }
             
+            // Garantir formato R$ se ainda não estiver
             if (formatMethod === 'nenhum' && !formattedPrice.startsWith('R$')) {
+                // Formatação básica de fallback
                 formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
                 formatMethod = 'fallback';
                 console.log(`💰 Preço formatado via fallback: ${formattedPrice}`);
@@ -756,7 +758,7 @@ window.updateProperty = async function(id, propertyData) {
             console.log(`✅ Formatação usada: ${formatMethod}`);
         }
 
-        // ✅✅✅ 2. DADOS PARA SUPABASE - GARANTIR QUE PDFs ESTÁ INCLUÍDO
+        // ✅ 2. DADOS PARA SUPABASE (INCLUINDO PDFs - CORREÇÃO CRÍTICA)
         const updateData = {
             title: propertyData.title || window.properties[index].title,
             price: propertyData.price || window.properties[index].price,
@@ -768,22 +770,14 @@ window.updateProperty = async function(id, propertyData) {
             badge: propertyData.badge || window.properties[index].badge || 'Novo',
             rural: propertyData.type === 'rural' || window.properties[index].rural || false,
             images: propertyData.images || window.properties[index].images || '',
-            pdfs: propertyData.pdfs || window.properties[index].pdfs || '' // ✅✅✅ CRÍTICO
+            pdfs: propertyData.pdfs || window.properties[index].pdfs || '' // ✅✅✅ CRÍTICO: Incluir PDFs
         };
 
-        console.log('📤 Dados para Supabase:', {
-            temPdfs: !!updateData.pdfs,
-            pdfsCount: updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0,
-            pdfsPreview: updateData.pdfs ? updateData.pdfs.substring(0, 80) + '...' : 'Nenhum'
-        });
-
-        // ✅✅✅ 3. ATUALIZAR NO SUPABASE - COM VERIFICAÇÃO DE PDFs
+        // ✅ 3. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
-        let supabaseResponse = null;
-        
         if (window.SUPABASE_URL && window.SUPABASE_KEY) {
             try {
-                console.log('🌐 Enviando UPDATE para Supabase...');
+                console.log('🌐 Enviando UPDATE para Supabase com PDFs:', updateData.pdfs ? 'SIM' : 'NÃO');
                 
                 const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${id}`, {
                     method: 'PATCH',
@@ -793,56 +787,32 @@ window.updateProperty = async function(id, propertyData) {
                         'Authorization': `Bearer ${window.SUPABASE_KEY}`,
                         'Prefer': 'return=representation'
                     },
-                    body: JSON.stringify(updateData)
-                });
-
-                console.log('📡 Resposta do Supabase:', {
-                    status: response.status,
-                    ok: response.ok,
-                    statusText: response.statusText
+                    body: JSON.stringify(updateData) // ✅ Agora inclui pdfs
                 });
 
                 if (response.ok) {
                     supabaseSuccess = true;
-                    supabaseResponse = await response.json();
+                    console.log(`✅ Imóvel ${id} ATUALIZADO NO SUPABASE com PDFs`);
                     
-                    console.log(`✅✅✅ Imóvel ${id} ATUALIZADO NO SUPABASE com PDFs!`);
-                    console.log('📊 Resposta detalhada:', {
-                        pdfsInResponse: supabaseResponse[0]?.pdfs ? '✅ Sim' : '❌ Não',
-                        pdfsCount: supabaseResponse[0]?.pdfs ? 
-                            supabaseResponse[0].pdfs.split(',').filter(p => p.trim()).length : 0
-                    });
-                    
-                    // ✅ VERIFICAR SE PDFs FOI REALMENTE SALVO
-                    if (updateData.pdfs && (!supabaseResponse[0]?.pdfs || supabaseResponse[0].pdfs !== updateData.pdfs)) {
-                        console.warn('⚠️ ATENÇÃO: PDFs pode não ter sido salvo corretamente no Supabase!');
-                        console.log('🔍 Comparação:', {
-                            enviado: updateData.pdfs.substring(0, 50) + '...',
-                            recebido: supabaseResponse[0]?.pdfs?.substring(0, 50) + '...' || 'Nada'
-                        });
-                    }
+                    // Verificar resposta
+                    const responseData = await response.json();
+                    console.log('📊 Resposta Supabase:', responseData[0]?.pdfs ? 'PDFs confirmados' : 'PDFs não retornados');
                 } else {
-                    const errorText = await response.text();
-                    console.error('❌ Erro do Supabase:', errorText);
+                    console.error('❌ Erro no Supabase:', await response.text());
                 }
             } catch (error) {
                 console.error('❌ Erro de conexão com Supabase:', error);
             }
-        } else {
-            console.warn('⚠️ Credenciais Supabase não disponíveis');
         }
 
-        // ✅ 4. ATUALIZAR LOCALMENTE (mesmo se Supabase falhou)
+        // ✅ 4. ATUALIZAR LOCALMENTE
         window.properties[index] = {
             ...window.properties[index],
             ...updateData,
-            id: id,
-            updated_at: new Date().toISOString(),
-            supabase_sync: supabaseSuccess ? 'success' : 'failed'
+            id: id
         };
-        
         window.savePropertiesToStorage();
-        console.log('💾 Atualização local salva');
+        console.log('✅ Atualização local salva');
 
         // ✅ 5. RENDERIZAR
         if (typeof window.renderProperties === 'function') {
@@ -857,38 +827,23 @@ window.updateProperty = async function(id, propertyData) {
         // ✅ 7. INVALIDAR CACHE
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
-            console.log('🗑️ Cache invalidado');
+            console.log('🗑️ Cache invalidado após atualizar imóvel');
         }
 
-        // ✅ 8. FEEDBACK DETALHADO
-        const pdfsCount = updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0;
-        
+        // ✅ 8. FEEDBACK
         if (supabaseSuccess) {
-            console.log(`🎯 SUCESSO COMPLETO: ${pdfsCount} PDF(s) persistido(s) no Supabase`);
-            
-            // Feedback silencioso no console, não alert (para não interromper auto-save)
-            if (pdfsCount > 0) {
-                console.log(`📄 PDFs salvos: ${updateData.pdfs.split(',').map(url => 
-                    url.split('/').pop().substring(0, 20) + '...'
-                ).join(', ')}`);
-            }
-            
-            // ✅ VALIDAÇÃO FINAL: Verificar no Supabase após 2 segundos
-            setTimeout(() => {
-                window.validatePdfPersistence?.(id);
-            }, 2000);
-            
+            const pdfsCount = updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0;
+            const pdfMsg = pdfsCount > 0 ? ` com ${pdfsCount} PDF(s)` : '';
+            alert(`✅ Imóvel "${updateData.title}" atualizado PERMANENTEMENTE${pdfMsg}!`);
         } else {
-            console.warn(`⚠️ ATENÇÃO: ${pdfsCount} PDF(s) salvo(s) apenas LOCALMENTE`);
-            console.log('🔧 Execute window.forceSyncPdfs(' + id + ') para sincronizar manualmente');
+            alert(`⚠️ Imóvel "${updateData.title}" atualizado apenas LOCALMENTE.\n\nAlterações serão sincronizadas quando possível.`);
         }
 
-        console.groupEnd();
-        return supabaseSuccess;
+        return supabaseSuccess; // ✅ Retorna true/false para indicar sucesso no Supabase
 
     } catch (error) {
         console.error('❌ ERRO ao atualizar imóvel:', error);
-        console.groupEnd();
+        alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
         return false;
     }
 };
@@ -1160,124 +1115,6 @@ if (window.properties && window.properties.length > 0) {
     }, 3000);
 })();
 
-// ========== 14. FUNÇÕES DE VALIDAÇÃO DE PERSISTÊNCIA DE PDFs ==========
-
-window.validatePdfPersistence = async function(propertyId) {
-    console.group('🔍 VALIDAÇÃO DE PERSISTÊNCIA DE PDFs');
-    
-    // 1. Verificar localmente
-    const property = window.properties.find(p => p.id == propertyId);
-    console.log('📋 Estado LOCAL:', {
-        id: propertyId,
-        temPdfsLocal: !!(property?.pdfs),
-        pdfsLocal: property?.pdfs || 'Nenhum',
-        pdfsCountLocal: property?.pdfs ? property.pdfs.split(',').filter(p => p.trim()).length : 0
-    });
-    
-    // 2. Verificar no Supabase
-    if (window.SUPABASE_URL && window.SUPABASE_KEY) {
-        try {
-            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}&select=id,title,pdfs`, {
-                headers: {
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('🌐 Estado SUPABASE:', {
-                    encontrado: data.length > 0,
-                    pdfsNoBanco: data[0]?.pdfs || 'Nenhum',
-                    pdfsCountBanco: data[0]?.pdfs ? data[0].pdfs.split(',').filter(p => p.trim()).length : 0
-                });
-                
-                // 3. Comparar
-                if (data.length > 0) {
-                    const localPdfs = property?.pdfs || '';
-                    const supabasePdfs = data[0]?.pdfs || '';
-                    const iguais = localPdfs === supabasePdfs;
-                    
-                    console.log('⚖️ COMPARAÇÃO:', {
-                        sincronizados: iguais ? '✅ SIM' : '❌ NÃO',
-                        diferencaLocal: localPdfs !== supabasePdfs ? 'Local tem dados não sincronizados' : 'OK',
-                        diferencaSupabase: supabasePdfs !== localPdfs ? 'Supabase tem dados diferentes' : 'OK'
-                    });
-                    
-                    if (!iguais) {
-                        console.warn('⚠️ DESSINCRONIZAÇÃO DETECTADA!');
-                        console.log('🔄 Sugestão: Execute window.forceSyncPdfs(' + propertyId + ')');
-                        return false;
-                    } else {
-                        console.log('🎯 PDFs PERMANENTEMENTE PERSISTIDOS NO SUPABASE!');
-                        return true;
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('❌ Erro ao verificar Supabase:', error);
-        }
-    }
-    
-    console.groupEnd();
-    return property?.pdfs ? true : false;
-};
-
-window.forceSyncPdfs = async function(propertyId) {
-    const property = window.properties.find(p => p.id == propertyId);
-    if (!property || !property.pdfs) {
-        alert('❌ Imóvel ou PDFs não encontrados localmente');
-        return false;
-    }
-    
-    const confirm = window.confirm(`Forçar sincronização de PDFs para:\n"${property.title}"\n\nPDFs: ${property.pdfs.split(',').length} documento(s)\n\nContinuar?`);
-    if (!confirm) return false;
-    
-    try {
-        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify({ pdfs: property.pdfs })
-        });
-        
-        if (response.ok) {
-            alert(`✅ PDFs sincronizados com sucesso!\n\n${property.pdfs.split(',').length} documento(s) enviado(s) ao servidor.`);
-            console.log('✅ PDFs forçados ao Supabase:', property.pdfs);
-            return true;
-        } else {
-            alert('❌ Erro ao sincronizar PDFs');
-            return false;
-        }
-    } catch (error) {
-        alert('❌ Erro de conexão: ' + error.message);
-        return false;
-    }
-};
-
-// ========== 15. VERIFICAÇÃO AO CARREGAR ==========
-(function checkPdfPersistenceOnLoad() {
-    setTimeout(() => {
-        console.log('🔍 Verificando persistência de PDFs ao carregar...');
-        
-        // Verificar se há propriedades com PDFs
-        const propertiesWithPdfs = window.properties?.filter(p => p.pdfs && p.pdfs.trim() && p.pdfs !== 'EMPTY');
-        
-        if (propertiesWithPdfs && propertiesWithPdfs.length > 0) {
-            console.log(`📊 ${propertiesWithPdfs.length} imóvel(is) com PDFs localmente`);
-            
-            // Verificar o primeiro para debug
-            if (propertiesWithPdfs[0]) {
-                window.validatePdfPersistence?.(propertiesWithPdfs[0].id);
-            }
-        }
-    }, 3000);
-})();
-
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js carregado com correção de upload, carregamento de imagens e COMPATIBILIDADE TOTAL');
 
@@ -1438,4 +1275,4 @@ window.testPriceFormatting = function() {
 
 console.log('💡 Execute window.testUploadSystem() para testar o upload');
 console.log('💡 Execute window.testPriceFormatting() para testar a formatação de preços');
-console.log('🔧 PERSISTÊNCIA DE PDFs CORRIGIDA - Execute window.validatePdfPersistence(ID) para verificar');
+console.log('🔍 Funções de debug disponíveis: window.validatePdfPersistence(id) e window.forceSyncPdfs(id)');
