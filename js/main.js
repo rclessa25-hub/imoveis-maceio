@@ -128,74 +128,10 @@ window.initializeWeberLessaSystem = async function() {
 
 /**
  * FUNÇÃO AUXILIAR: AGUARDAR IMAGENS CRÍTICAS
- * Otimiza a experiência aguardando apenas imagens essenciais
+ * Utiliza o ImageLoader do SharedCore quando disponível
  */
 async function waitForCriticalImages() {
-    // Seleciona apenas imagens críticas para a primeira impressão
-    const criticalSelectors = [
-        '.hero img',
-        '.property-image img',
-        '.service-icon i', // Ícones de serviços
-        '.logo img'
-    ];
-    
-    let criticalImages = [];
-    criticalSelectors.forEach(selector => {
-        criticalImages.push(...document.querySelectorAll(selector));
-    });
-    
-    // Limita a 8 imagens para não bloquear muito tempo
-    criticalImages = criticalImages.slice(0, 8);
-    
-    if (criticalImages.length === 0) {
-        console.log('ℹ️ Nenhuma imagem crítica encontrada');
-        return 0;
-    }
-    
-    console.log(`⏳ Aguardando ${criticalImages.length} imagem(ns) crítica(s)...`);
-    
-    return new Promise((resolve) => {
-        let loadedCount = 0;
-        const totalImages = criticalImages.length;
-        
-        // Verificar imagens já carregadas
-        criticalImages.forEach(img => {
-            if (img.complete || (img.tagName === 'I')) {
-                loadedCount++;
-            } else {
-                img.onload = () => {
-                    loadedCount++;
-                    checkCompletion();
-                };
-                
-                img.onerror = () => {
-                    loadedCount++; // Conta mesmo se falhar
-                    checkCompletion();
-                };
-            }
-        });
-        
-        // Timeout de segurança (máximo 3 segundos)
-        const safetyTimeout = setTimeout(() => {
-            console.log(`⏰ Timeout: ${loadedCount}/${totalImages} imagens carregadas`);
-            resolve(loadedCount);
-        }, 3000);
-        
-        function checkCompletion() {
-            if (loadedCount >= totalImages) {
-                clearTimeout(safetyTimeout);
-                console.log(`✅ Todas as ${totalImages} imagens críticas carregadas`);
-                resolve(loadedCount);
-            }
-        }
-        
-        // Se todas já estiverem carregadas
-        if (loadedCount >= totalImages) {
-            clearTimeout(safetyTimeout);
-            console.log(`⚡ ${totalImages} imagens já estavam carregadas`);
-            resolve(loadedCount);
-        }
-    });
+    return window.SharedCore?.ImageLoader?.waitForCriticalImages?.() || 0;
 }
 
 /**
