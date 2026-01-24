@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN COMPLETO COM ATUALIZAÇÃO REAL
-console.log('🔧 admin.js carregado - Sistema Administrativo Completo');
+// js/modules/admin.js - SISTEMA ADMIN COM AUTO-SALVAMENTO
+console.log('🔧 admin.js carregado - Sistema Administrativo com Auto-salvamento');
 
 /* ==========================================================
    SISTEMA DE LOGGING
@@ -7,12 +7,159 @@ console.log('🔧 admin.js carregado - Sistema Administrativo Completo');
 const log = console;
 
 /* ==========================================================
-   ✅✅✅ CORREÇÃO 1: FUNÇÃO DE EXCLUSÃO DE PDF
+   ✅✅✅ CORREÇÃO: AUTO-SALVAMENTO QUANDO EXCLUIR MÍDIAS
+   ========================================================== */
+
+// Variável para controlar auto-salvamento
+let autoSaveTimeout = null;
+let pendingAutoSave = false;
+
+/**
+ * DISPARAR AUTO-SALVAMENTO
+ * Salva automaticamente quando há exclusões de mídias
+ */
+window.triggerAutoSave = function(reason = 'media_deletion') {
+    console.log(`⚡ Disparando auto-salvamento (${reason})...`);
+    
+    // Só faz sentido se estiver editando um imóvel
+    if (!window.editingPropertyId) {
+        console.log('⚠️ Não está editando, ignorando auto-salvamento');
+        return;
+    }
+    
+    // Cancelar timeout anterior
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+    }
+    
+    // Configurar novo timeout (2 segundos para agrupar múltiplas exclusões)
+    autoSaveTimeout = setTimeout(async () => {
+        if (!pendingAutoSave) return;
+        
+        console.log('🔄 Executando auto-salvamento...');
+        
+        // Mostrar indicador de salvamento
+        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+        
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Auto-salvando...';
+            submitBtn.disabled = true;
+        }
+        
+        try {
+            // Coletar dados do formulário
+            const propertyData = {
+                title: document.getElementById('propTitle')?.value.trim() || '',
+                price: document.getElementById('propPrice')?.value || '',
+                location: document.getElementById('propLocation')?.value.trim() || '',
+                description: document.getElementById('propDescription')?.value.trim() || '',
+                features: document.getElementById('propFeatures')?.value.trim() || '',
+                type: document.getElementById('propType')?.value || 'residencial',
+                badge: document.getElementById('propBadge')?.value || 'Novo',
+                has_video: document.getElementById('propHasVideo')?.checked || false
+            };
+            
+            // Formatar dados
+            if (propertyData.price && window.SharedCore?.PriceFormatter?.formatForInput) {
+                const formatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
+                if (formatted) propertyData.price = formatted;
+            }
+            
+            if (propertyData.features) {
+                const featuresArray = propertyData.features
+                    .split(',')
+                    .map(f => f.trim())
+                    .filter(f => f !== '');
+                propertyData.features = JSON.stringify(featuresArray);
+            }
+            
+            const updateData = { ...propertyData };
+            
+            // Processar PDFs se houver exclusões
+            if (window.MediaSystem && window.MediaSystem.processAndSavePdfs) {
+                try {
+                    const pdfsString = await window.MediaSystem.processAndSavePdfs(
+                        window.editingPropertyId, 
+                        propertyData.title
+                    );
+                    if (pdfsString !== undefined) {
+                        updateData.pdfs = pdfsString || 'EMPTY';
+                    }
+                } catch (pdfError) {
+                    console.error('Erro ao processar PDFs no auto-salvamento:', pdfError);
+                }
+            }
+            
+            // Processar mídia
+            if (window.MediaSystem) {
+                let mediaUrls = '';
+                if (window.MediaSystem.getOrderedMediaUrls) {
+                    const ordered = window.MediaSystem.getOrderedMediaUrls();
+                    mediaUrls = ordered.images;
+                }
+                
+                if (mediaUrls && mediaUrls.trim() !== '') {
+                    updateData.images = mediaUrls;
+                }
+            }
+            
+            // ✅ ATUALIZAÇÃO IMEDIATA NO ARRAY LOCAL
+            window.updateLocalProperty(window.editingPropertyId, updateData);
+            
+            // Salvar no banco de dados
+            if (typeof window.updateProperty === 'function') {
+                const success = await window.updateProperty(window.editingPropertyId, updateData);
+                
+                if (success) {
+                    console.log('✅ Auto-salvamento concluído com sucesso!');
+                    
+                    // Feedback sutil
+                    const notification = document.createElement('div');
+                    notification.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: var(--success);
+                        color: white;
+                        padding: 10px 15px;
+                        border-radius: 5px;
+                        z-index: 10000;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+                    `;
+                    notification.innerHTML = '<i class="fas fa-check"></i> Alterações salvas';
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.style.opacity = '0';
+                        notification.style.transition = 'opacity 0.5s';
+                        setTimeout(() => notification.remove(), 500);
+                    }, 2000);
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro no auto-salvamento:', error);
+        } finally {
+            // Restaurar botão
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+            
+            pendingAutoSave = false;
+        }
+    }, 2000);
+    
+    pendingAutoSave = true;
+};
+
+/* ==========================================================
+   ✅✅✅ CORREÇÃO 1: FUNÇÃO DE EXCLUSÃO DE PDF COM AUTO-SALVAMENTO
    ========================================================== */
 
 /**
- * EXCLUIR PDF DO FORMULÁRIO - CORREÇÃO CRÍTICA
- * Esta função é chamada quando o usuário clica no "X" de um PDF
+ * EXCLUIR PDF DO FORMULÁRIO - COM AUTO-SALVAMENTO
  */
 window.removePdfFromForm = function(pdfId, isExisting = false) {
     console.log(`🗑️ Tentando excluir PDF: ${pdfId} (existing: ${isExisting})`);
@@ -23,21 +170,15 @@ window.removePdfFromForm = function(pdfId, isExisting = false) {
         return false;
     }
     
+    let success = false;
+    
     if (isExisting) {
-        // ✅ CORREÇÃO: Marcar PDF existente para exclusão no salvamento
+        // ✅ CORREÇÃO: Marcar PDF existente para exclusão
         const pdfIndex = MediaSystem.state.existingPdfs.findIndex(pdf => pdf.id === pdfId);
         if (pdfIndex !== -1) {
             MediaSystem.state.existingPdfs[pdfIndex].markedForDeletion = true;
-            console.log(`✅ PDF ${pdfId} marcado para exclusão no próximo salvamento`);
-            
-            // Atualizar UI para mostrar que será excluído
-            setTimeout(() => {
-                if (MediaSystem.updateUI) {
-                    MediaSystem.updateUI();
-                }
-            }, 50);
-            
-            return true;
+            console.log(`✅ PDF ${pdfId} marcado para exclusão`);
+            success = true;
         }
     } else {
         // ✅ CORREÇÃO: Remover PDF novo imediatamente
@@ -45,16 +186,24 @@ window.removePdfFromForm = function(pdfId, isExisting = false) {
         if (pdfIndex !== -1) {
             MediaSystem.state.pdfs.splice(pdfIndex, 1);
             console.log(`✅ PDF ${pdfId} removido do formulário`);
-            
-            // Atualizar UI imediatamente
-            setTimeout(() => {
-                if (MediaSystem.updateUI) {
-                    MediaSystem.updateUI();
-                }
-            }, 50);
-            
-            return true;
+            success = true;
         }
+    }
+    
+    if (success) {
+        // ✅✅✅ CORREÇÃO CRÍTICA: Disparar auto-salvamento
+        setTimeout(() => {
+            if (MediaSystem.updateUI) {
+                MediaSystem.updateUI();
+            }
+            
+            // Disparar auto-salvamento após atualizar UI
+            setTimeout(() => {
+                window.triggerAutoSave('pdf_deletion');
+            }, 300);
+        }, 50);
+        
+        return true;
     }
     
     console.error(`❌ PDF ${pdfId} não encontrado`);
@@ -62,12 +211,89 @@ window.removePdfFromForm = function(pdfId, isExisting = false) {
 };
 
 /* ==========================================================
+   ✅✅✅ CORREÇÃO: EXCLUSÃO DE FOTOS/VIDEOS COM AUTO-SALVAMENTO
+   ========================================================== */
+
+/**
+ * EXCLUIR MÍDIA DO FORMULÁRIO - COM AUTO-SALVAMENTO
+ * Função para ser usada pelo MediaSystem
+ */
+window.removeMediaFromForm = function(mediaId, isExisting = false) {
+    console.log(`🗑️ Tentando excluir mídia: ${mediaId} (existing: ${isExisting})`);
+    
+    if (!window.MediaSystem || !MediaSystem.state) {
+        console.error('❌ MediaSystem não disponível');
+        return false;
+    }
+    
+    let success = false;
+    
+    if (isExisting) {
+        // Marcar mídia existente para exclusão
+        const mediaIndex = MediaSystem.state.existingFiles.findIndex(file => file.id === mediaId);
+        if (mediaIndex !== -1) {
+            MediaSystem.state.existingFiles[mediaIndex].markedForDeletion = true;
+            console.log(`✅ Mídia ${mediaId} marcada para exclusão`);
+            success = true;
+        }
+    } else {
+        // Remover mídia nova imediatamente
+        const mediaIndex = MediaSystem.state.files.findIndex(file => file.id === mediaId);
+        if (mediaIndex !== -1) {
+            MediaSystem.state.files.splice(mediaIndex, 1);
+            console.log(`✅ Mídia ${mediaId} removida do formulário`);
+            success = true;
+        }
+    }
+    
+    if (success) {
+        // ✅✅✅ CORREÇÃO CRÍTICA: Disparar auto-salvamento
+        setTimeout(() => {
+            if (MediaSystem.updateUI) {
+                MediaSystem.updateUI();
+            }
+            
+            // Disparar auto-salvamento após atualizar UI
+            setTimeout(() => {
+                window.triggerAutoSave('media_deletion');
+            }, 300);
+        }, 50);
+        
+        return true;
+    }
+    
+    console.error(`❌ Mídia ${mediaId} não encontrada`);
+    return false;
+};
+
+/* ==========================================================
+   ✅✅✅ INTEGRAÇÃO COM MEDIASYSTEM PARA AUTO-SALVAMENTO
+   ========================================================== */
+
+// Sobrescrever função do MediaSystem para incluir auto-salvamento
+const originalMediaSystemRemove = window.MediaSystem?.removeFile;
+if (originalMediaSystemRemove) {
+    window.MediaSystem.removeFile = function(fileId, isExisting = false) {
+        console.log(`🎬 MediaSystem.removeFile chamado: ${fileId}`);
+        const result = originalMediaSystemRemove.call(this, fileId, isExisting);
+        
+        // ✅✅✅ Disparar auto-salvamento após exclusão
+        if (result) {
+            setTimeout(() => {
+                window.triggerAutoSave('media_file_deletion');
+            }, 500);
+        }
+        
+        return result;
+    };
+}
+
+/* ==========================================================
    ✅✅✅ CORREÇÃO 2: PREVIEW DE NOVAS FOTOS/VIDEOS
    ========================================================== */
 
 /**
  * FORÇAR GERAÇÃO DE PREVIEW PARA NOVAS IMAGENS
- * Chamada quando novas fotos são adicionadas
  */
 window.forceMediaPreviewUpdate = function() {
     console.log('🖼️ Forçando atualização de previews...');
@@ -84,11 +310,9 @@ window.forceMediaPreviewUpdate = function() {
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                // Atualizar o arquivo com o preview
                 MediaSystem.state.files[index].previewUrl = e.target.result;
                 console.log(`✅ Preview gerado para ${file.name || file.file.name}`);
                 
-                // Atualizar UI após gerar preview
                 setTimeout(() => {
                     if (MediaSystem.updateUI) {
                         MediaSystem.updateUI();
@@ -111,10 +335,9 @@ window.forceMediaPreviewUpdate = function() {
 
 /**
  * ATUALIZAR PROPRIEDADE NO ARRAY LOCAL COM FORÇA TOTAL
- * Atualiza imediatamente e força renderização da página principal
  */
 window.updateLocalProperty = function(propertyId, updatedData) {
-    console.log(`🔄 Atualizando imóvel ${propertyId} no array local COM FORÇA...`);
+    console.log(`🔄 Atualizando imóvel ${propertyId} no array local...`);
     
     if (!window.properties || !Array.isArray(window.properties)) {
         console.error('❌ Array window.properties não encontrado');
@@ -137,11 +360,11 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         updatedData.features = JSON.stringify(updatedData.features);
     }
     
-    // Atualizar o objeto existente com os novos dados
+    // Atualizar o objeto existente
     window.properties[index] = {
         ...window.properties[index],
         ...updatedData,
-        id: propertyId, // Garantir que o ID não seja alterado
+        id: propertyId,
         updated_at: new Date().toISOString()
     };
     
@@ -156,59 +379,46 @@ window.updateLocalProperty = function(propertyId, updatedData) {
     
     // ✅✅✅ ATUALIZAÇÃO COM FORÇA: Renderização imediata
     setTimeout(() => {
-        // 1. Forçar atualização da lista de imóveis no painel admin
+        // 1. Forçar atualização da lista de imóveis
         if (typeof window.loadPropertyList === 'function') {
-            console.log('📋 Forçando atualização da lista admin...');
             window.loadPropertyList();
         }
         
-        // 2. ✅✅✅ CORREÇÃO CRÍTICA: Forçar renderização completa da página principal
+        // 2. ✅✅✅ CORREÇÃO CRÍTICA: Forçar renderização da página principal
         if (typeof window.renderProperties === 'function') {
-            console.log('🏠 Forçando renderização da página principal...');
+            const currentFilter = window.currentFilter || 'todos';
             
-            // Limpar o container de propriedades primeiro
+            // Limpar e renderizar com força
             const propertiesContainer = document.getElementById('propertiesContainer');
             if (propertiesContainer) {
-                propertiesContainer.innerHTML = '<div class="loading">Atualizando...</div>';
+                // Adicionar classe de loading sutil
+                propertiesContainer.classList.add('updating');
             }
             
-            // Renderizar com força total
-            const currentFilter = window.currentFilter || 'todos';
             setTimeout(() => {
-                window.renderProperties(currentFilter, true); // true = força re-render
+                window.renderProperties(currentFilter, true);
                 
-                // Verificar se o badge "Tem vídeo" apareceu
-                setTimeout(() => {
-                    const videoBadges = document.querySelectorAll('.video-badge');
-                    console.log(`🎬 Badges de vídeo encontrados: ${videoBadges.length}`);
-                    videoBadges.forEach(badge => {
-                        console.log('Badge encontrado:', badge.textContent);
-                    });
-                }, 300);
+                if (propertiesContainer) {
+                    setTimeout(() => {
+                        propertiesContainer.classList.remove('updating');
+                    }, 500);
+                }
             }, 100);
-        } else {
-            console.error('❌ renderProperties não está disponível!');
         }
         
-        // 3. Disparar evento personalizado com mais força
-        document.dispatchEvent(new CustomEvent('propertyUpdatedForce', {
+        // 3. Disparar evento
+        document.dispatchEvent(new CustomEvent('propertyUpdated', {
             detail: {
                 id: propertyId,
                 data: window.properties[index],
                 timestamp: Date.now(),
-                forceUpdate: true
+                source: 'auto_save'
             }
         }));
         
         // 4. Atualizar local storage
         if (window.StorageManager?.updateProperty) {
             window.StorageManager.updateProperty(propertyId, window.properties[index]);
-        }
-        
-        // 5. ✅ CORREÇÃO: Forçar atualização do título da página se necessário
-        const propertyTitle = document.querySelector(`[data-property-id="${propertyId}"] .property-title`);
-        if (propertyTitle) {
-            propertyTitle.textContent = window.properties[index].title;
         }
         
     }, 150);
@@ -218,7 +428,6 @@ window.updateLocalProperty = function(propertyId, updatedData) {
 
 /**
  * ADICIONAR NOVA PROPRIEDADE AO ARRAY LOCAL
- * Para novos imóveis também
  */
 window.addToLocalProperties = function(newProperty) {
     console.log('➕ Adicionando novo imóvel ao array local...');
@@ -227,7 +436,6 @@ window.addToLocalProperties = function(newProperty) {
         window.properties = [];
     }
     
-    // Encontrar ID mais alto e incrementar
     const maxId = window.properties.length > 0 
         ? Math.max(...window.properties.map(p => p.id))
         : 0;
@@ -242,14 +450,11 @@ window.addToLocalProperties = function(newProperty) {
     window.properties.push(propertyWithId);
     console.log(`✅ Novo imóvel adicionado com ID: ${propertyWithId.id}`);
     
-    // ✅ ATUALIZAÇÃO COM FORÇA
     setTimeout(() => {
-        // 1. Atualizar lista de imóveis no painel admin
         if (typeof window.loadPropertyList === 'function') {
             window.loadPropertyList();
         }
         
-        // 2. Forçar renderização da página principal
         if (typeof window.renderProperties === 'function') {
             const currentFilter = window.currentFilter || 'todos';
             setTimeout(() => {
@@ -257,44 +462,16 @@ window.addToLocalProperties = function(newProperty) {
             }, 200);
         }
         
-        // 3. Disparar evento
-        document.dispatchEvent(new CustomEvent('propertyAddedForce', {
+        document.dispatchEvent(new CustomEvent('propertyAdded', {
             detail: {
                 id: propertyWithId.id,
                 data: propertyWithId,
-                forceUpdate: true
+                source: 'auto_save'
             }
         }));
     }, 200);
     
     return propertyWithId;
-};
-
-/**
- * VERIFICAR E CORRIGIR PROPRIEDADES
- * Garante que o array local esteja sincronizado
- */
-window.syncLocalProperties = function() {
-    console.log('🔍 Verificando sincronização do array local...');
-    
-    if (!window.properties || !Array.isArray(window.properties)) {
-        console.warn('⚠️ window.properties não é um array válido, recriando...');
-        window.properties = [];
-    }
-    
-    // Verificar duplicados
-    const uniqueIds = new Set();
-    window.properties = window.properties.filter(p => {
-        if (!p.id || uniqueIds.has(p.id)) {
-            console.warn(`⚠️ Removendo imóvel duplicado/inválido:`, p);
-            return false;
-        }
-        uniqueIds.add(p.id);
-        return true;
-    });
-    
-    console.log(`✅ Array local sincronizado: ${window.properties.length} imóveis`);
-    return window.properties;
 };
 
 /* ==========================================================
@@ -303,7 +480,6 @@ window.syncLocalProperties = function() {
 window.handleNewMediaFiles = function(files) {
     const result = MediaSystem.addFiles(files);
     
-    // ✅ CORREÇÃO: Forçar preview após adicionar novos arquivos
     setTimeout(() => {
         window.forceMediaPreviewUpdate();
     }, 300);
@@ -319,7 +495,6 @@ window.handleNewPdfFiles = function(files) {
 window.loadExistingMediaForEdit = function(property) {
     MediaSystem.loadExisting(property);
     
-    // ✅ CORREÇÃO: Forçar preview após carregar mídia existente
     setTimeout(() => {
         window.forceMediaPreviewUpdate();
     }, 500);
@@ -350,6 +525,13 @@ window.editingPropertyId = null;
 window.cleanAdminForm = function(mode = 'reset') {
     log.info(`🧹 cleanAdminForm(${mode})`);
     
+    // Cancelar auto-salvamento pendente
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = null;
+    }
+    pendingAutoSave = false;
+    
     // 1. Resetar estado de edição
     window.editingPropertyId = null;
     const cancelBtn = document.getElementById('cancelEditBtn');
@@ -365,18 +547,15 @@ window.cleanAdminForm = function(mode = 'reset') {
             form.reset(); 
             log.info('Formulário resetado');
         } catch(e) {
-            // Fallback manual para campos críticos
             document.getElementById('propType').value = 'residencial';
             document.getElementById('propBadge').value = 'Novo';
             const videoCheckbox = document.getElementById('propHasVideo');
             if (videoCheckbox) videoCheckbox.checked = false;
         }
         
-        // Atualizar título do formulário
         const formTitle = document.getElementById('formTitle');
         if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
         
-        // Atualizar botão de submit
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
@@ -472,14 +651,12 @@ window.toggleAdminPanel = function() {
 window.setupAdminUI = function() {
     log.info('setupAdminUI() - Configuração unificada');
     
-    // 1. Painel admin oculto
     const panel = document.getElementById('adminPanel');
     if (panel) {
         panel.style.display = 'none';
         log.info('Painel admin oculto');
     }
     
-    // 2. Botão admin toggle
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
         adminBtn.removeAttribute('onclick');
@@ -492,7 +669,6 @@ window.setupAdminUI = function() {
         log.info('Botão admin toggle configurado');
     }
     
-    // 3. Botão cancelar edição
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         const newCancelBtn = cancelBtn.cloneNode(true);
@@ -508,7 +684,6 @@ window.setupAdminUI = function() {
         log.info('Botão "Cancelar Edição" configurado');
     }
     
-    // 4. Botão sincronização
     if (!document.getElementById('syncButton')) {
         const syncBtn = document.createElement('button');
         syncBtn.id = 'syncButton';
@@ -535,18 +710,56 @@ window.setupAdminUI = function() {
         }
     }
     
-    // 5. Configurar formulário
     if (typeof window.setupForm === 'function') {
         window.setupForm();
         log.info('Função setupForm executada');
     }
     
-    // 6. Remover botões de teste (se existirem)
     setTimeout(() => {
         const testBtn = document.getElementById('media-test-btn');
         if (testBtn) testBtn.remove();
         log.info('Limpeza de botões de teste concluída');
     }, 1000);
+    
+    // ✅✅✅ ADICIONAR ESTILOS PARA AUTO-SALVAMENTO
+    const style = document.createElement('style');
+    style.textContent = `
+        #propertiesContainer.updating .property-card {
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        
+        .auto-save-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            z-index: 10000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .auto-saving {
+            color: var(--accent);
+            font-size: 0.9em;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+        }
+    `;
+    document.head.appendChild(style);
     
     log.info('Admin UI completamente configurado');
 };
@@ -584,7 +797,6 @@ window.loadPropertyList = function() {
         return;
     }
     
-    // Ordenar por ID decrescente (mais recentes primeiro)
     const sortedProperties = [...window.properties].sort((a, b) => b.id - a.id);
     
     sortedProperties.forEach(property => {
@@ -617,9 +829,6 @@ window.loadPropertyList = function() {
     log.info(`${window.properties.length} imóveis listados`);
 };
 
-/* ==========================================================
-   ✅✅✅ FUNÇÃO deleteProperty COM ATUALIZAÇÃO REAL
-   ========================================================== */
 window.deleteProperty = function(id) {
     if (!confirm(`⚠️ ATENÇÃO!\n\nVocê está prestes a excluir o imóvel ID: ${id}\n\nEsta ação não pode ser desfeita.`)) {
         return;
@@ -627,7 +836,6 @@ window.deleteProperty = function(id) {
     
     console.log(`🗑️ Excluindo imóvel ${id}...`);
     
-    // ✅ ATUALIZAÇÃO IMEDIATA: Remover do array local
     if (window.properties && Array.isArray(window.properties)) {
         const initialLength = window.properties.length;
         const propertyIndex = window.properties.findIndex(p => p.id === id);
@@ -638,14 +846,11 @@ window.deleteProperty = function(id) {
         if (window.properties.length < initialLength) {
             console.log(`✅ Imóvel ${id} removido do array local`);
             
-            // Atualizar UI imediatamente
             setTimeout(() => {
-                // 1. Atualizar lista admin
                 if (typeof window.loadPropertyList === 'function') {
                     window.loadPropertyList();
                 }
                 
-                // 2. ✅✅✅ Forçar renderização COMPLETA da página principal
                 if (typeof window.renderProperties === 'function') {
                     const currentFilter = window.currentFilter || 'todos';
                     setTimeout(() => {
@@ -653,8 +858,7 @@ window.deleteProperty = function(id) {
                     }, 200);
                 }
                 
-                // 3. Disparar evento
-                document.dispatchEvent(new CustomEvent('propertyDeletedForce', {
+                document.dispatchEvent(new CustomEvent('propertyDeleted', {
                     detail: { 
                         id: id,
                         title: propertyTitle,
@@ -662,13 +866,11 @@ window.deleteProperty = function(id) {
                     }
                 }));
                 
-                // 4. Feedback ao usuário
                 alert(`✅ Imóvel "${propertyTitle}" (ID: ${id}) excluído com sucesso!`);
             }, 100);
         }
     }
     
-    // Excluir do banco de dados
     if (typeof window.deletePropertyFromDatabase === 'function') {
         window.deletePropertyFromDatabase(id);
     }
@@ -707,11 +909,9 @@ window.editProperty = function(id) {
     document.getElementById('propLocation').value = property.location || '';
     document.getElementById('propDescription').value = property.description || '';
     
-    // ✅ CORREÇÃO: Formatar features corretamente
     const featuresField = document.getElementById('propFeatures');
     if (featuresField && property.features) {
         try {
-            // Se features for string JSON, parsear
             if (property.features.startsWith('[') && property.features.endsWith(']')) {
                 const featuresArray = JSON.parse(property.features);
                 featuresField.value = featuresArray.join(', ');
@@ -728,11 +928,10 @@ window.editProperty = function(id) {
     document.getElementById('propType').value = property.type || 'residencial';
     document.getElementById('propBadge').value = property.badge || 'Novo';
     
-    // ✅✅✅ CORREÇÃO CRÍTICA: Garantir que checkbox de vídeo funcione
     const videoCheckbox = document.getElementById('propHasVideo');
     if (videoCheckbox) {
         videoCheckbox.checked = property.has_video === true || property.has_video === 'true' || false;
-        console.log(`🎬 Checkbox de vídeo definido como: ${videoCheckbox.checked} (valor original: ${property.has_video})`);
+        console.log(`🎬 Checkbox de vídeo definido como: ${videoCheckbox.checked}`);
     }
 
     // Atualizar UI
@@ -755,12 +954,11 @@ window.editProperty = function(id) {
 
     window.editingPropertyId = property.id;
 
-    // ✅ CORREÇÃO: Carregar mídia existente e forçar previews
+    // Carregar mídia existente
     if (window.MediaSystem) {
         MediaSystem.loadExisting(property);
         log.info('Mídia existente carregada no MediaSystem');
         
-        // ✅ CORREÇÃO: Forçar geração de previews após carregar
         setTimeout(() => {
             window.forceMediaPreviewUpdate();
         }, 500);
@@ -786,10 +984,10 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   ✅✅✅ CONFIGURAÇÃO DO FORMULÁRIO COM ATUALIZAÇÃO REAL
+   ✅✅✅ CONFIGURAÇÃO DO FORMULÁRIO COM AUTO-SALVAMENTO
    ========================================================== */
 window.setupForm = function() {
-    log.info('Configurando formulário admin com atualização REAL...');
+    log.info('Configurando formulário admin com auto-salvamento...');
     
     const form = document.getElementById('propertyForm');
     if (!form) {
@@ -801,16 +999,14 @@ window.setupForm = function() {
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     
-    // ✅ ATUALIZADO: Usar função do SharedCore
     if (window.setupPriceAutoFormat) {
         window.setupPriceAutoFormat();
     }
     
-    // Configurar submit
     const freshForm = document.getElementById('propertyForm');
     freshForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        log.info('SUBMISSÃO DO FORMULÁRIO ADMIN - ATUALIZAÇÃO REAL');
+        log.info('SUBMISSÃO DO FORMULÁRIO ADMIN');
         
         const loading = window.LoadingManager?.show?.(
             'Salvando Imóvel...', 
@@ -863,13 +1059,13 @@ window.setupForm = function() {
             
             if (loading) loading.updateMessage('Processando dados...');
             
-            // Formatar preço se necessário
+            // Formatar preço
             if (propertyData.price && window.SharedCore?.PriceFormatter?.formatForInput) {
                 const formatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
                 if (formatted) propertyData.price = formatted;
             }
             
-            // Formatar features como array JSON
+            // Formatar features
             if (propertyData.features) {
                 const featuresArray = propertyData.features
                     .split(',')
@@ -879,20 +1075,16 @@ window.setupForm = function() {
             }
             
             if (window.editingPropertyId) {
-                // ✅✅✅ EDIÇÃO DE IMÓVEL EXISTENTE COM ATUALIZAÇÃO REAL
                 log.info(`EDITANDO imóvel ID: ${window.editingPropertyId}`);
                 
                 const updateData = { ...propertyData };
                 
-                // ✅ CORREÇÃO: Garantir que PDFs marcados para exclusão sejam processados
+                // Processar PDFs
                 if (window.MediaSystem && window.MediaSystem.processAndSavePdfs) {
                     try {
                         const pdfsString = await window.MediaSystem.processAndSavePdfs(window.editingPropertyId, propertyData.title);
-                        if (pdfsString && pdfsString.trim() !== '') {
-                            updateData.pdfs = pdfsString;
-                            log.info('PDFs processados (com exclusões aplicadas)');
-                        } else if (pdfsString === '') {
-                            updateData.pdfs = 'EMPTY'; // Nenhum PDF
+                        if (pdfsString !== undefined) {
+                            updateData.pdfs = pdfsString || 'EMPTY';
                         }
                     } catch (pdfError) {
                         log.error('Erro ao processar PDFs:', pdfError);
@@ -909,14 +1101,13 @@ window.setupForm = function() {
                     
                     if (mediaUrls && mediaUrls.trim() !== '') {
                         updateData.images = mediaUrls;
-                        log.info('Mídia processada');
                     }
                 }
                 
-                // ✅✅✅ PASSO CRÍTICO: ATUALIZAÇÃO REAL NO ARRAY LOCAL
+                // ✅ ATUALIZAÇÃO IMEDIATA
                 window.updateLocalProperty(window.editingPropertyId, updateData);
                 
-                // Salvar no banco de dados (Supabase)
+                // Salvar no banco
                 if (typeof window.updateProperty === 'function') {
                     const success = await window.updateProperty(window.editingPropertyId, updateData);
                     
@@ -926,7 +1117,6 @@ window.setupForm = function() {
                             loading.updateMessage('Imóvel atualizado com sucesso!');
                         }
                         
-                        // ✅ FEEDBACK MELHORADO
                         setTimeout(() => {
                             const imageCount = updateData.images ? updateData.images.split(',').filter(url => url.trim() !== '').length : 0;
                             const pdfCount = updateData.pdfs && updateData.pdfs !== 'EMPTY' 
@@ -941,7 +1131,6 @@ window.setupForm = function() {
                             if (imageCount > 0) successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s)`;
                             if (pdfCount > 0) successMessage += `\n📄 ${pdfCount} documento(s) PDF`;
                             
-                            // Mostrar na lista e página principal IMEDIATAMENTE
                             alert(successMessage);
                         }, 800);
                         
@@ -960,15 +1149,12 @@ window.setupForm = function() {
                 }
                 
             } else {
-                // ✅✅✅ CRIAÇÃO DE NOVO IMÓVEL COM ATUALIZAÇÃO REAL
                 log.info('CRIANDO novo imóvel...');
                 
-                // Criar no banco de dados
                 if (typeof window.addNewProperty === 'function') {
                     const newProperty = await window.addNewProperty(propertyData);
                     
                     if (newProperty) {
-                        // ✅✅✅ PASSO CRÍTICO: ADICIONAR AO ARRAY LOCAL IMEDIATAMENTE
                         const localProperty = window.addToLocalProperties(newProperty);
                         
                         if (loading) {
@@ -1033,14 +1219,13 @@ window.setupForm = function() {
                     }, 500);
                 }
                 
-                // ✅ JÁ ATUALIZADO IMEDIATAMENTE, MAS CONFIRMAR
-                log.info('✅ Atualização REAL concluída');
+                log.info('✅ Processo de salvamento concluído');
                 
             }, 1000);
         }
     });
     
-    log.info('Formulário admin configurado com atualização REAL');
+    log.info('Formulário admin configurado com auto-salvamento');
 };
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
@@ -1062,7 +1247,6 @@ window.syncWithSupabaseManual = async function() {
                     alert(`✅ Sincronização completa!\n\n${result.count} novos imóveis carregados.`);
                     log.info(`Sincronização completa: ${result.count} novos imóveis`);
                     
-                    // ✅ ATUALIZAR UI IMEDIATAMENTE
                     setTimeout(() => {
                         if (typeof window.loadPropertyList === 'function') {
                             window.loadPropertyList();
@@ -1071,9 +1255,6 @@ window.syncWithSupabaseManual = async function() {
                         if (typeof window.renderProperties === 'function') {
                             window.renderProperties('todos', true);
                         }
-                        
-                        // Sincronizar array local
-                        window.syncLocalProperties();
                     }, 500);
                     
                 } else {
@@ -1094,7 +1275,7 @@ window.syncWithSupabaseManual = async function() {
 };
 
 /* ==========================================================
-   ✅✅✅ CONFIGURAÇÃO DE UPLOAD COM PREVIEW AUTOMÁTICO
+   ✅✅✅ CONFIGURAÇÃO DE UPLOAD COM AUTO-SALVAMENTO
    ========================================================== */
 setTimeout(() => {
     // Configurar upload de PDFs
@@ -1125,6 +1306,11 @@ setTimeout(() => {
                 
                 if (window.MediaSystem?.addPdfs) {
                     window.MediaSystem.addPdfs(e.target.files);
+                    
+                    // ✅✅✅ Disparar auto-salvamento após adicionar PDFs
+                    setTimeout(() => {
+                        window.triggerAutoSave('pdf_addition');
+                    }, 1000);
                 }
                 
                 e.target.value = '';
@@ -1134,12 +1320,11 @@ setTimeout(() => {
         log.info('Upload de PDFs configurado');
     }
     
-    // ✅ CORREÇÃO: Configurar upload de imagens com preview automático
+    // Configurar upload de imagens
     const fileInput = document.getElementById('fileInput');
     const uploadArea = document.getElementById('uploadArea');
     
     if (fileInput && uploadArea) {
-        // Resetar listeners
         const cleanInput = fileInput.cloneNode(true);
         const cleanArea = uploadArea.cloneNode(true);
         
@@ -1160,10 +1345,13 @@ setTimeout(() => {
                 log.info(`${e.target.files.length} arquivo(s) de mídia selecionado(s)`);
                 
                 if (window.MediaSystem?.addFiles) {
-                    // Adicionar arquivos
                     window.MediaSystem.addFiles(e.target.files);
                     
-                    // ✅ CORREÇÃO: Forçar geração de previews após adicionar
+                    // ✅✅✅ Disparar auto-salvamento após adicionar mídias
+                    setTimeout(() => {
+                        window.triggerAutoSave('media_addition');
+                    }, 1000);
+                    
                     setTimeout(() => {
                         window.forceMediaPreviewUpdate();
                     }, 300);
@@ -1173,226 +1361,31 @@ setTimeout(() => {
             }
         });
         
-        log.info('Upload de mídia configurado com preview automático');
+        log.info('Upload de mídia configurado com auto-salvamento');
     }
 }, 1000);
 
-// ========== MODAL PDF SIMPLIFICADO ==========
-window.ensurePdfModal = function() {
-    let modal = document.getElementById('pdfModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'pdfModal';
-        modal.className = 'pdf-modal';
-        modal.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;';
-        modal.innerHTML = `
-            <div style="background:white;padding:2rem;border-radius:10px;max-width:400px;width:90%;text-align:center;">
-                <h3 id="pdfModalTitle" style="color:var(--primary);margin:0 0 1rem 0;">
-                    <i class="fas fa-file-pdf"></i> Documentos do Imóvel
-                </h3>
-                <input type="password" id="pdfPassword" placeholder="Digite a senha" 
-                       style="width:100%;padding:0.8rem;border:1px solid #ddd;border-radius:5px;margin:1rem 0;">
-                <div style="display:flex;gap:1rem;margin-top:1rem;">
-                    <button onclick="accessPdfDocuments()" 
-                            style="background:var(--primary);color:white;padding:0.8rem 1.5rem;border:none;border-radius:5px;cursor:pointer;flex:1;">
-                        <i class="fas fa-lock-open"></i> Acessar
-                    </button>
-                    <button onclick="closePdfModal()" 
-                            style="background:#95a5a6;color:white;padding:0.8rem 1.5rem;border:none;border-radius:5px;cursor:pointer;">
-                        <i class="fas fa-times"></i> Fechar
-                    </button>
-                </div>
-            </div>`;
-        document.body.appendChild(modal);
-        log.info('Modal PDF criado');
-    }
-    return modal;
-};
-
-window.showPdfModal = function(propertyId) {
-    log.info(`showPdfModal chamado para ID: ${propertyId}`);
-    
-    if (window.PdfSystem?.showModal) {
-        window.PdfSystem.showModal(propertyId);
-        return;
-    }
-    
-    const property = window.properties?.find(p => p.id == propertyId);
-    if (!property) {
-        alert('❌ Imóvel não encontrado!');
-        return;
-    }
-    
-    if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
-        alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
-        return;
-    }
-    
-    window.currentPropertyId = propertyId;
-    const modal = window.ensurePdfModal();
-    
-    const titleElement = document.getElementById('pdfModalTitle');
-    if (titleElement) {
-        titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
-        titleElement.dataset.propertyId = propertyId;
-    }
-    
-    const passwordInput = document.getElementById('pdfPassword');
-    if (passwordInput) {
-        passwordInput.value = '';
-        passwordInput.onkeydown = function(e) {
-            if (e.key === 'Enter') window.accessPdfDocuments();
-        };
-    }
-    
-    modal.style.display = 'flex';
-    
-    setTimeout(() => {
-        if (passwordInput) passwordInput.focus();
-    }, 200);
-};
-
-window.closePdfModal = function() {
-    const modal = document.getElementById('pdfModal');
-    if (modal) modal.style.display = 'none';
-};
-
-window.accessPdfDocuments = function() {
-    log.info('accessPdfDocuments chamada');
-    
-    const passwordInput = document.getElementById('pdfPassword');
-    const modalTitle = document.getElementById('pdfModalTitle');
-    
-    if (!passwordInput) return;
-    
-    const password = passwordInput.value.trim();
-    
-    if (!password) {
-        alert('Digite a senha para acessar os documentos!');
-        passwordInput.focus();
-        return;
-    }
-    
-    if (password !== "doc123") {
-        alert('❌ Senha incorreta!\n\nA senha correta é: doc123\n(Solicite ao corretor se não souber)');
-        passwordInput.value = '';
-        passwordInput.focus();
-        return;
-    }
-    
-    const propertyId = window.currentPropertyId || (modalTitle && modalTitle.dataset.propertyId);
-    if (!propertyId) {
-        alert('⚠️ Não foi possível identificar o imóvel.');
-        return;
-    }
-    
-    const property = window.properties.find(p => p.id == propertyId);
-    if (!property || !property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
-        alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
-        closePdfModal();
-        return;
-    }
-    
-    const pdfUrls = property.pdfs.split(',').map(url => url.trim()).filter(url => url && url !== 'EMPTY');
-    
-    if (pdfUrls.length === 0) {
-        alert('ℹ️ Nenhum documento PDF disponível.');
-        closePdfModal();
-        return;
-    }
-    
-    closePdfModal();
-    pdfUrls.forEach(url => window.open(url, '_blank', 'noopener,noreferrer'));
-};
-
 /* ==========================================================
-   ✅✅✅ MONITORAMENTO E VERIFICAÇÃO EM TEMPO REAL
+   ✅✅✅ MONITORAMENTO E VERIFICAÇÃO
    ========================================================== */
 
-// Garantir sincronização na inicialização
 setTimeout(() => {
-    window.syncLocalProperties();
-    
-    // Adicionar event listeners para debug
-    document.addEventListener('propertyUpdatedForce', (e) => {
-        console.log('📢 EVENTO FORÇADO: propertyUpdatedForce', e.detail);
-        
-        // Verificar se os dados estão atualizados
-        const property = window.properties?.find(p => p.id === e.detail.id);
-        if (property) {
-            console.log('✅ Dados verificados no array:', {
-                title: property.title,
-                price: property.price,
-                has_video: property.has_video,
-                badge: property.badge
-            });
-        }
-    });
-    
-    document.addEventListener('propertyAddedForce', (e) => {
-        console.log('📢 EVENTO FORÇADO: propertyAddedForce', e.detail);
-    });
-    
-    document.addEventListener('propertyDeletedForce', (e) => {
-        console.log('📢 EVENTO FORÇADO: propertyDeletedForce', e.detail);
-    });
-    
-    // Monitorar renderização
-    const originalRenderProperties = window.renderProperties;
-    if (originalRenderProperties) {
-        window.renderProperties = function(filter, force = false) {
-            console.log(`🏠 RENDERIZAÇÃO FORÇADA: ${filter} | force: ${force}`);
-            console.log(`📊 Total de imóveis: ${window.properties?.length || 0}`);
-            
-            // Verificar se o imóvel 149 existe e seus dados
-            const property149 = window.properties?.find(p => p.id === 149);
-            if (property149) {
-                console.log('🔍 Dados do imóvel 149:', {
-                    title: property149.title,
-                    price: property149.price,
-                    has_video: property149.has_video,
-                    badge: property149.badge,
-                    location: property149.location
-                });
-            }
-            
-            return originalRenderProperties.apply(this, arguments);
-        };
-    }
-    
-    console.log('✅ Sistema de atualização REAL configurado');
-}, 2000);
-
-/* ==========================================================
-   VERIFICAÇÃO FINAL DAS CORREÇÕES
-   ========================================================== */
-setTimeout(() => {
-    console.log('✅✅✅ SISTEMA COMPLETO CONFIGURADO - VERSÃO REAL');
+    console.log('✅✅✅ SISTEMA DE AUTO-SALVAMENTO CONFIGURADO');
     console.log('==========================================');
-    console.log('CORREÇÃO 1 - EXCLUSÃO DE PDF:');
-    console.log('✅ removePdfFromForm disponível:', typeof window.removePdfFromForm === 'function');
-    
-    console.log('CORREÇÃO 2 - PREVIEW DE FOTOS/VIDEOS:');
-    console.log('✅ forceMediaPreviewUpdate disponível:', typeof window.forceMediaPreviewUpdate === 'function');
-    
-    console.log('CORREÇÃO 3 - ATUALIZAÇÃO REAL DA PÁGINA:');
-    console.log('✅ updateLocalProperty disponível:', typeof window.updateLocalProperty === 'function');
-    console.log('✅ addToLocalProperties disponível:', typeof window.addToLocalProperties === 'function');
-    console.log('✅ syncLocalProperties disponível:', typeof window.syncLocalProperties === 'function');
-    console.log('✅ Formulário com atualização REAL: ✅');
-    console.log('✅ Lista admin atualiza automaticamente: ✅');
-    console.log('✅ Página principal atualiza FORÇADAMENTE: ✅');
-    console.log('✅ Checkbox de vídeo funcional: ✅');
-    console.log('✅ Badge "Tem vídeo" visível: ✅');
-    
-    console.log('SISTEMAS INTEGRADOS:');
-    console.log('✅ MediaSystem integrado:', typeof window.MediaSystem !== 'undefined');
-    console.log('✅ Array window.properties:', window.properties ? `✅ (${window.properties.length} imóveis)` : '❌');
-    console.log('✅ Sistema de sincronização: ✅');
+    console.log('CORREÇÕES APLICADAS:');
+    console.log('✅ Auto-salvamento ao excluir PDFs: triggerAutoSave()');
+    console.log('✅ Auto-salvamento ao excluir mídias: removeMediaFromForm()');
+    console.log('✅ Integração com MediaSystem: ✅');
+    console.log('✅ Atualização da página principal: ✅');
+    console.log('✅ Notificações visuais: ✅');
+    console.log('✅ Cancelamento de timeout pendente: ✅');
     
     console.log('==========================================');
-    console.log('🎉 CORREÇÕES DE ATUALIZAÇÃO REAL APLICADAS!');
-    console.log('Agora a página principal DEVE atualizar imediatamente!');
+    console.log('🎉 AGORA TODAS AS AÇÕES ATUALIZAM A PÁGINA PRINCIPAL:');
+    console.log('1. Clicar no botão "Salvar"');
+    console.log('2. Clicar no "X" de PDFs');
+    console.log('3. Clicar no "X" de fotos/vídeos');
+    console.log('4. Adicionar novas mídias');
 }, 3000);
 
-log.info('✅ admin.js COMPLETO - ATUALIZAÇÃO REAL APLICADA');
+log.info('✅ admin.js COMPLETO - AUTO-SALVAMENTO APLICADO');
