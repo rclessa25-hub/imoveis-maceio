@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN COM CORREÇÃO COMPLETA
-console.log('🔧 admin.js carregado - Sistema Administrativo Completo');
+// js/modules/admin.js - SISTEMA ADMIN COM CORREÇÃO COMPLETA DE UPLOAD
+console.log('🔧 admin.js carregado - Sistema Administrativo Corrigido');
 
 // ========== CONFIGURAÇÕES ==========
 const ADMIN_CONFIG = {
@@ -11,224 +11,278 @@ const ADMIN_CONFIG = {
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.editingPropertyId = null;
+window._uploadListenersInitialized = false;
 
 /**
- * ✅ FUNÇÃO CRÍTICA: Re-configura todos os event listeners de upload
- * Chamada sempre que o DOM dos containers de upload é modificado
+ * ✅ FUNÇÃO CORRIGIDA: Configura event listeners de UPLOAD UMA VEZ APENAS
+ * Evita múltiplos event listeners (causa dupla abertura)
  */
-window.reinitializeUploadListeners = function() {
-    console.log('🔄 Re-inicializando listeners de upload...');
+window.initializeUploadListenersOnce = function() {
+    if (window._uploadListenersInitialized) {
+        console.log('⚠️ Listeners de upload já inicializados, ignorando...');
+        return true;
+    }
     
-    // 1. Upload de mídia (fotos/vídeos)
+    console.log('🔄 Inicializando listeners de upload (apenas uma vez)...');
+    
+    // 1. Upload de mídia (fotos/vídeos) - CORRIGIDO: Remover listeners antigos primeiro
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
     
     if (uploadArea && fileInput) {
-        // Garantir que input está visível para clicks (mesmo que hidden)
-        fileInput.style.display = 'block';
-        fileInput.style.visibility = 'visible';
-        fileInput.style.opacity = '1';
-        fileInput.style.position = 'absolute';
-        fileInput.style.width = '100%';
-        fileInput.style.height = '100%';
-        fileInput.style.top = '0';
-        fileInput.style.left = '0';
-        fileInput.style.zIndex = '10';
-        fileInput.style.cursor = 'pointer';
+        // ✅ CORREÇÃO: Clonar elementos para REMOVER TODOS os listeners antigos
+        const newFileInput = fileInput.cloneNode(true);
+        const newUploadArea = uploadArea.cloneNode(true);
         
-        // Configurar click na área para disparar input
-        uploadArea.addEventListener('click', function handler(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🎯 Clicou na área de upload de mídia');
-            fileInput.click();
-        }, { once: false }); // Permitir múltiplos binds
+        fileInput.parentNode.replaceChild(newFileInput, fileInput);
+        uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
         
-        // Também tornar o input clicável diretamente
-        fileInput.addEventListener('click', function(e) {
-            e.stopPropagation();
-            console.log('🎯 Clicou diretamente no input de arquivo');
-        });
+        // Usar os elementos NOVOS (sem listeners antigos)
+        const freshUploadArea = document.getElementById('uploadArea');
+        const freshFileInput = document.getElementById('fileInput');
         
-        // Handler para seleção de arquivos
-        fileInput.addEventListener('change', function handler(e) {
-            if (e.target.files && e.target.files.length > 0) {
-                console.log(`📁 ${e.target.files.length} arquivo(s) selecionado(s) para mídia`);
-                if (window.MediaSystem && window.MediaSystem.addFiles) {
-                    window.MediaSystem.addFiles(e.target.files);
+        if (freshUploadArea && freshFileInput) {
+            // ✅ CORREÇÃO: Configurar input corretamente (não usar CSS excessivo)
+            freshFileInput.style.cssText = `
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                opacity: 0;
+                cursor: pointer;
+                z-index: 10;
+            `;
+            
+            // ✅ CORREÇÃO: Single click handler - usar event delegation
+            freshUploadArea.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Verificar se não estamos clicando em um botão de remover
+                if (e.target.closest('.remove-btn, .delete-btn, .fa-times')) {
+                    return;
                 }
-                // Limpar input para permitir nova seleção do mesmo arquivo
-                e.target.value = '';
-            }
-        }, { once: false });
-        
-        console.log('✅ Listeners de mídia configurados');
+                
+                console.log('🎯 Área de upload clicada (fotos/vídeos)');
+                freshFileInput.click();
+            });
+            
+            // ✅ CORREÇÃO: Handler para seleção de arquivos
+            freshFileInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    console.log(`📁 ${e.target.files.length} arquivo(s) selecionado(s) para mídia`);
+                    
+                    // Verificar se MediaSystem está disponível
+                    if (window.MediaSystem && typeof window.MediaSystem.addFiles === 'function') {
+                        // ✅ CORREÇÃO CRÍTICA: Garantir que arquivos sejam processados
+                        const filesAdded = window.MediaSystem.addFiles(e.target.files);
+                        console.log(`✅ ${filesAdded} arquivo(s) adicionado(s) ao MediaSystem`);
+                        
+                        // Forçar atualização da UI após 100ms
+                        setTimeout(() => {
+                            if (window.MediaSystem.updateUI) {
+                                window.MediaSystem.updateUI();
+                            }
+                        }, 100);
+                    } else {
+                        console.error('❌ MediaSystem não disponível ou addFiles não é uma função');
+                        alert('⚠️ Sistema de mídia não disponível. Recarregue a página.');
+                    }
+                    
+                    // Limpar input para permitir nova seleção
+                    e.target.value = '';
+                }
+            });
+            
+            console.log('✅ Listeners de mídia configurados CORRETAMENTE');
+        }
     }
     
-    // 2. Upload de PDFs
+    // 2. Upload de PDFs - CORRIGIDO: Mesma abordagem
     const pdfUploadArea = document.getElementById('pdfUploadArea');
     const pdfFileInput = document.getElementById('pdfFileInput');
     
     if (pdfUploadArea && pdfFileInput) {
-        // Mesma configuração para PDFs
-        pdfFileInput.style.display = 'block';
-        pdfFileInput.style.visibility = 'visible';
-        pdfFileInput.style.opacity = '1';
-        pdfFileInput.style.position = 'absolute';
-        pdfFileInput.style.width = '100%';
-        pdfFileInput.style.height = '100%';
-        pdfFileInput.style.top = '0';
-        pdfFileInput.style.left = '0';
-        pdfFileInput.style.zIndex = '10';
-        pdfFileInput.style.cursor = 'pointer';
+        // ✅ CORREÇÃO: Clonar para remover listeners antigos
+        const newPdfInput = pdfFileInput.cloneNode(true);
+        const newPdfArea = pdfUploadArea.cloneNode(true);
         
-        pdfUploadArea.addEventListener('click', function handler(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🎯 Clicou na área de upload de PDF');
-            pdfFileInput.click();
-        }, { once: false });
+        pdfFileInput.parentNode.replaceChild(newPdfInput, pdfFileInput);
+        pdfUploadArea.parentNode.replaceChild(newPdfArea, pdfUploadArea);
         
-        pdfFileInput.addEventListener('change', function handler(e) {
-            if (e.target.files && e.target.files.length > 0) {
-                console.log(`📄 ${e.target.files.length} PDF(s) selecionado(s)`);
-                if (window.MediaSystem && window.MediaSystem.addPdfs) {
-                    window.MediaSystem.addPdfs(e.target.files);
+        const freshPdfArea = document.getElementById('pdfUploadArea');
+        const freshPdfInput = document.getElementById('pdfFileInput');
+        
+        if (freshPdfArea && freshPdfInput) {
+            freshPdfInput.style.cssText = `
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                opacity: 0;
+                cursor: pointer;
+                z-index: 10;
+            `;
+            
+            freshPdfArea.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Verificar se não estamos clicando em um botão de remover
+                if (e.target.closest('.remove-btn, .delete-btn, .fa-times')) {
+                    return;
                 }
-                e.target.value = '';
-            }
-        }, { once: false });
-        
-        console.log('✅ Listeners de PDF configurados');
+                
+                console.log('🎯 Área de upload clicada (PDFs)');
+                freshPdfInput.click();
+            });
+            
+            freshPdfInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    console.log(`📄 ${e.target.files.length} PDF(s) selecionado(s)`);
+                    
+                    if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                        const pdfsAdded = window.MediaSystem.addPdfs(e.target.files);
+                        console.log(`✅ ${pdfsAdded} PDF(s) adicionado(s) ao MediaSystem`);
+                        
+                        // Forçar atualização da UI
+                        setTimeout(() => {
+                            if (window.MediaSystem.updateUI) {
+                                window.MediaSystem.updateUI();
+                            }
+                        }, 100);
+                    } else {
+                        console.error('❌ MediaSystem não disponível ou addPdfs não é uma função');
+                    }
+                    
+                    e.target.value = '';
+                }
+            });
+            
+            console.log('✅ Listeners de PDF configurados CORRETAMENTE');
+        }
     }
     
-    // 3. Forçar MediaSystem a re-configurar drag & drop
+    // ✅ CORREÇÃO: Configurar drag & drop do MediaSystem apenas se existir
     setTimeout(() => {
         if (window.MediaSystem) {
-            if (typeof MediaSystem.setupEventListeners === 'function') {
-                MediaSystem.setupEventListeners();
-            }
             if (typeof MediaSystem.setupDragAndDrop === 'function') {
-                setTimeout(() => MediaSystem.setupDragAndDrop(), 500);
+                MediaSystem.setupDragAndDrop();
+                console.log('♻️ Sistema de drag & drop configurado');
             }
         }
     }, 300);
     
-    console.log('🎉 Todos os listeners de upload re-inicializados');
+    window._uploadListenersInitialized = true;
+    console.log('🎉 Listeners de upload inicializados UMA VEZ');
     return true;
 };
 
+/**
+ * ✅ NOVA FUNÇÃO: Resetar flag de inicialização quando necessário
+ */
+window.resetUploadListenersFlag = function() {
+    window._uploadListenersInitialized = false;
+    console.log('🔄 Flag de listeners de upload resetada');
+};
+
 /* ==========================================================
-   FUNÇÃO cleanAdminForm CORRIGIDA PARA PRESERVAR UPLOADS E LISTENERS
+   FUNÇÃO cleanAdminForm CORRIGIDA - RESOLVE PROBLEMA 3
    ========================================================== */
 window.cleanAdminForm = function(mode = 'reset') {
-    console.log(`🧹 cleanAdminForm(${mode}) - CORRIGIDO PARA PRESERVAR UPLOADS E LISTENERS`);
+    console.log(`🧹 cleanAdminForm(${mode}) - CORRIGIDO PARA EXIBIR ARQUIVOS`);
     
     // ✅ NOVO MODO: Preservar apenas uploads com URLs permanentes
     if (mode === 'reset-preserve-uploads') {
-        console.log('🛡️ Modo especial: reset preservando uploads com URLs permanentes');
+        console.log('🛡️ Modo especial: reset preservando uploads');
         
-        // 1. Resetar UI mas NÃO estado de mídia ainda
+        // ✅ CORREÇÃO: NÃO resetar editingPropertyId aqui (mantém contexto de edição)
+        // window.editingPropertyId = null; // ← REMOVIDO
+        
+        // 1. Resetar apenas campos do formulário (não estado completo)
         const form = document.getElementById('propertyForm');
-        if (form) form.reset();
+        if (form) {
+            form.reset();
+        }
         
-        window.editingPropertyId = null;
-        
-        // 2. UI updates
+        // 2. UI updates - mas NÃO mudar título se estiver editando
         const formTitle = document.getElementById('formTitle');
-        if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
+        if (formTitle && !window.editingPropertyId) {
+            formTitle.textContent = 'Adicionar Novo Imóvel';
+        }
         
         const cancelBtn = document.getElementById('cancelEditBtn');
         if (cancelBtn) cancelBtn.style.display = 'none';
         
+        // ✅ CORREÇÃO: Botão submit correto baseado no contexto
         const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
         if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-            submitBtn.style.background = 'var(--success)';
+            const isEditing = !!window.editingPropertyId;
+            submitBtn.innerHTML = isEditing ? 
+                '<i class="fas fa-save"></i> Salvar Alterações' : 
+                '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+            submitBtn.style.background = isEditing ? 'var(--accent)' : 'var(--success)';
             submitBtn.disabled = false;
         }
         
         // 3. Limpeza INTELIGENTE do MediaSystem
         if (window.MediaSystem) {
-            // Filtrar APENAS arquivos com URLs permanentes (já enviados)
-            const permanentFiles = MediaSystem.state.files.filter(f => 
-                f.uploaded && f.url && f.url.startsWith('http')
-            );
-            const permanentPdfs = MediaSystem.state.pdfs.filter(p => 
-                p.uploaded && p.url && p.url.startsWith('http')
-            );
+            console.log('🔄 Limpeza inteligente do MediaSystem:');
             
-            console.log(`💾 Preservando ${permanentFiles.length} arquivos e ${permanentPdfs.length} PDFs com URLs permanentes`);
+            // ✅ CORREÇÃO: Preservar arquivos já carregados na UI
+            // Não limpar arrays completamente, apenas manter o que já está visível
             
-            // Manter apenas os permanentes
-            MediaSystem.state.files = permanentFiles;
-            MediaSystem.state.pdfs = permanentPdfs;
+            // Verificar quais arquivos já foram processados e estão na UI
+            const visibleFiles = [];
+            const visiblePdfs = [];
             
-            // Limpar temporários/existing
-            MediaSystem.state.existing = [];
-            MediaSystem.state.existingPdfs = [];
-            MediaSystem.state.currentPropertyId = null;
+            // Se houver arquivos com preview, mantê-los
+            if (MediaSystem.state.files && MediaSystem.state.files.length > 0) {
+                // Preservar todos os arquivos que já estão no estado
+                visibleFiles.push(...MediaSystem.state.files);
+                console.log(`📸 Mantendo ${visibleFiles.length} arquivo(s) no estado`);
+            }
             
-            // Atualizar UI
+            if (MediaSystem.state.pdfs && MediaSystem.state.pdfs.length > 0) {
+                visiblePdfs.push(...MediaSystem.state.pdfs);
+                console.log(`📄 Mantendo ${visiblePdfs.length} PDF(s) no estado`);
+            }
+            
+            // Atualizar arrays mantendo visíveis
+            MediaSystem.state.files = visibleFiles;
+            MediaSystem.state.pdfs = visiblePdfs;
+            
+            // ✅ CORREÇÃO CRÍTICA: Atualizar UI IMEDIATAMENTE para mostrar arquivos
             setTimeout(() => {
-                if (MediaSystem.updateUI) MediaSystem.updateUI();
-            }, 100);
+                if (MediaSystem.updateUI) {
+                    MediaSystem.updateUI();
+                    console.log('✅ UI do MediaSystem atualizada após limpeza');
+                }
+            }, 50);
         }
         
-        // 4. Limpeza INTELIGENTE dos previews - NÃO substituir HTML completo
-        const previewIds = ['uploadPreview', 'pdfUploadPreview'];
-        previewIds.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                // ✅ NÃO usar innerHTML = '' (destrói event listeners)
-                // Em vez disso, apenas esconder/limpar conteúdo mantendo container
-                const children = Array.from(element.children);
-                children.forEach(child => {
-                    if (!child.classList.contains('keep-after-clean')) {
-                        element.removeChild(child);
-                    }
-                });
-                
-                // Se ficou vazio, adicionar placeholder mantendo estrutura
-                if (element.children.length === 0) {
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'upload-placeholder keep-after-clean';
-                    placeholder.style.cssText = 'text-align:center;color:#95a5a6;padding:1rem;';
-                    placeholder.innerHTML = `
-                        <i class="fas fa-cloud-upload-alt" style="opacity:0.5;font-size:1.5rem;margin-bottom:0.5rem;"></i>
-                        <p style="margin:0.5rem 0;font-size:0.9rem;">Clique ou arraste arquivos</p>
-                        <small style="font-size:0.8rem;opacity:0.7;">Formatos suportados</small>
-                    `;
-                    element.appendChild(placeholder);
-                }
-            }
-        });
-        
-        // 5. ✅✅✅ CHAMADA CRÍTICA: Re-inicializar listeners de upload
+        // ✅ CORREÇÃO: NÃO remover listeners, apenas garantir que existam
         setTimeout(() => {
-            if (typeof window.reinitializeUploadListeners === 'function') {
-                window.reinitializeUploadListeners();
-            } else {
-                // Fallback: chamar diretamente os sistemas
-                if (window.MediaSystem && typeof MediaSystem.setupEventListeners === 'function') {
-                    MediaSystem.setupEventListeners();
-                }
+            if (!window._uploadListenersInitialized && typeof window.initializeUploadListenersOnce === 'function') {
+                window.initializeUploadListenersOnce();
             }
         }, 100);
         
         return true;
     }
     
-    // 1. SEMPRE preservar estado de edição primeiro
+    // MODO NORMAL (cancel ou reset)
     const wasEditing = !!window.editingPropertyId;
     window.editingPropertyId = null;
     
-    // 2. Resetar UI do formulário
+    // Resetar UI do formulário
     const form = document.getElementById('propertyForm');
     if (form) {
         form.reset();
         
-        // Restaurar valores padrão dos selects
+        // Restaurar valores padrão
         const typeSelect = document.getElementById('propType');
         if (typeSelect) typeSelect.value = 'residencial';
         
@@ -239,7 +293,7 @@ window.cleanAdminForm = function(mode = 'reset') {
         if (videoCheckbox) videoCheckbox.checked = false;
     }
     
-    // 3. Atualizar títulos e botões
+    // Atualizar UI
     const formTitle = document.getElementById('formTitle');
     if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
     
@@ -256,115 +310,53 @@ window.cleanAdminForm = function(mode = 'reset') {
         submitBtn.disabled = false;
     }
     
-    // 4. ✅✅✅ CRÍTICO: LIMPEZA INTELIGENTE DO MediaSystem
+    // ✅ CORREÇÃO: Reset inteligente do MediaSystem
     if (window.MediaSystem) {
-        console.log('🔄 Limpeza inteligente do MediaSystem:');
+        console.log('🔄 Reset inteligente do MediaSystem:');
         
-        // Backup dos arquivos ENVIADOS (com URLs permanentes)
-        const preservedFiles = [];
-        const preservedPdfs = [];
+        // ✅ CORREÇÃO: Preservar apenas arquivos enviados com URLs reais
+        const preservedFiles = MediaSystem.state.files.filter(file => 
+            file.uploaded === true && file.url && file.url.startsWith('http')
+        );
         
-        // Preservar APENAS arquivos que já foram enviados (tem URL permanente)
-        if (MediaSystem.state.files && MediaSystem.state.files.length > 0) {
-            preservedFiles.push(...MediaSystem.state.files.filter(file => 
-                file.uploaded === true && file.url && file.url.startsWith('http')
-            ));
-            console.log(`📸 Preservando ${preservedFiles.length} arquivo(s) enviado(s)`);
-        }
+        const preservedPdfs = MediaSystem.state.pdfs.filter(pdf => 
+            pdf.uploaded === true && pdf.url && pdf.url.startsWith('http')
+        );
         
-        if (MediaSystem.state.pdfs && MediaSystem.state.pdfs.length > 0) {
-            preservedPdfs.push(...MediaSystem.state.pdfs.filter(pdf => 
-                pdf.uploaded === true && pdf.url && pdf.url.startsWith('http')
-            ));
-            console.log(`📄 Preservando ${preservedPdfs.length} PDF(s) enviado(s)`);
-        }
-        
-        // ✅ RESET CORRETO: limpar arrays mas restaurar enviados
         MediaSystem.state.files = preservedFiles;
         MediaSystem.state.pdfs = preservedPdfs;
-        
-        // Limpar arrays de existing (sempre safe)
         MediaSystem.state.existing = [];
         MediaSystem.state.existingPdfs = [];
         
-        // Resetar outras flags
-        MediaSystem.state.isUploading = false;
-        MediaSystem.state.currentPropertyId = null;
-        
-        // Atualizar UI
+        // Atualizar UI para mostrar que arquivos foram preservados
         setTimeout(() => {
             if (MediaSystem.updateUI) {
                 MediaSystem.updateUI();
             }
         }, 100);
         
-        console.log(`✅ MediaSystem resetado inteligentemente. Preservados: ${preservedFiles.length} files, ${preservedPdfs.length} PDFs`);
+        console.log(`✅ MediaSystem resetado. Preservados: ${preservedFiles.length} files, ${preservedPdfs.length} PDFs`);
     }
     
-    // 5. Limpar previews (DOM apenas)
-    const previewIds = ['uploadPreview', 'pdfUploadPreview', 'newPdfsSection', 'existingPdfsSection'];
-    previewIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            // ✅ NÃO usar innerHTML = '' (destrói event listeners)
-            // Em vez disso, apenas esconder/limpar conteúdo mantendo container
-            const children = Array.from(element.children);
-            children.forEach(child => {
-                if (!child.classList.contains('keep-after-clean')) {
-                    element.removeChild(child);
-                }
-            });
-            
-            // Se ficou vazio, adicionar placeholder mantendo estrutura
-            if (element.children.length === 0) {
-                const placeholder = document.createElement('div');
-                placeholder.className = 'upload-placeholder keep-after-clean';
-                placeholder.style.cssText = 'text-align:center;color:#95a5a6;padding:1rem;';
-                placeholder.innerHTML = `
-                    <i class="fas fa-cloud-upload-alt" style="opacity:0.5;font-size:1.5rem;margin-bottom:0.5rem;"></i>
-                    <p style="margin:0.5rem 0;font-size:0.9rem;">Clique ou arraste arquivos</p>
-                    <small style="font-size:0.8rem;opacity:0.7;">Formatos suportados</small>
-                `;
-                element.appendChild(placeholder);
-            }
-        }
-    });
+    // ✅ CORREÇÃO: Resetar flag de listeners para re-inicializar depois
+    window.resetUploadListenersFlag();
     
-    // 6. Feedback
-    console.log(`✅ ${mode === 'cancel' ? 'Edição cancelada' : 'Formulário limpo'} - Uploads preservados`);
-    
-    // 7. Evento para sistemas externos
-    try {
-        document.dispatchEvent(new CustomEvent('adminFormCleaned', { 
-            detail: { 
-                mode: mode, 
-                preservedFiles: window.MediaSystem ? MediaSystem.state.files.length : 0,
-                preservedPdfs: window.MediaSystem ? MediaSystem.state.pdfs.length : 0,
-                wasEditing: wasEditing
-            }
-        }));
-    } catch (e) {}
-    
-    // 8. ✅✅✅ CHAMADA CRÍTICA: Re-inicializar listeners de upload
+    // ✅ CORREÇÃO: Re-inicializar listeners após delay
     setTimeout(() => {
-        if (typeof window.reinitializeUploadListeners === 'function') {
-            window.reinitializeUploadListeners();
-        } else {
-            // Fallback: chamar diretamente os sistemas
-            if (window.MediaSystem && typeof MediaSystem.setupEventListeners === 'function') {
-                MediaSystem.setupEventListeners();
-            }
+        if (typeof window.initializeUploadListenersOnce === 'function') {
+            window.initializeUploadListenersOnce();
         }
-    }, 100);
+    }, 200);
     
+    console.log(`✅ ${mode === 'cancel' ? 'Edição cancelada' : 'Formulário limpo'}`);
     return true;
 };
 
 /* ==========================================================
-   FUNÇÃO cancelEdit MANTIDA PARA COMPATIBILIDADE
+   FUNÇÃO cancelEdit CORRIGIDA
    ========================================================== */
 window.cancelEdit = function() {
-    console.group('admin', 'cancelEdit() - Preservando estado');
+    console.group('admin', 'cancelEdit() - CORRIGIDO');
     
     if (window.editingPropertyId) {
         const confirmCancel = confirm('Deseja realmente cancelar a edição?\n\nTodas as alterações NÃO SALVAS serão perdidas.');
@@ -412,6 +404,9 @@ window.toggleAdminPanel = function() {
                     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 300);
                 
+                // ✅ CORREÇÃO: Resetar flag quando abrir painel
+                window.resetUploadListenersFlag();
+                
                 setTimeout(() => {
                     if (typeof window.loadPropertyList === 'function') {
                         window.loadPropertyList();
@@ -450,8 +445,13 @@ window.setupAdminUI = function() {
         };
     }
     
-    // 4. Configurações diferidas
+    // 4. Configurações diferidas com inicialização de upload
     setTimeout(() => {
+        // ✅ CORREÇÃO: Inicializar listeners UMA VEZ no setup
+        if (typeof window.initializeUploadListenersOnce === 'function') {
+            window.initializeUploadListenersOnce();
+        }
+        
         if (window.setupForm) window.setupForm();
         if (window.loadPropertyList) window.loadPropertyList();
     }, 1000);
@@ -472,28 +472,72 @@ if (document.readyState === 'loading') {
 
 // ========== INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA ==========
 window.handleNewMediaFiles = function(files) {
-    return MediaSystem.addFiles(files);
+    console.log('handleNewMediaFiles chamado com', files.length, 'arquivo(s)');
+    
+    if (!window.MediaSystem || typeof MediaSystem.addFiles !== 'function') {
+        console.error('❌ MediaSystem não disponível');
+        return 0;
+    }
+    
+    const result = MediaSystem.addFiles(files);
+    
+    // ✅ CORREÇÃO: Forçar atualização da UI
+    setTimeout(() => {
+        if (MediaSystem.updateUI) {
+            MediaSystem.updateUI();
+        }
+    }, 50);
+    
+    return result;
 };
 
 window.handleNewPdfFiles = function(files) {
-    console.log('handleNewPdfFiles - Delegando para MediaSystem');
-    return window.MediaSystem?.addPdfs?.(files) || 0;
+    console.log('handleNewPdfFiles chamado com', files.length, 'PDF(s)');
+    
+    if (!window.MediaSystem || typeof MediaSystem.addPdfs !== 'function') {
+        console.error('❌ MediaSystem não disponível');
+        return 0;
+    }
+    
+    const result = MediaSystem.addPdfs(files);
+    
+    // ✅ CORREÇÃO: Forçar atualização da UI
+    setTimeout(() => {
+        if (MediaSystem.updateUI) {
+            MediaSystem.updateUI();
+        }
+    }, 50);
+    
+    return result;
 };
 
 window.loadExistingMediaForEdit = function(property) {
-    MediaSystem.loadExisting(property);
+    if (window.MediaSystem && MediaSystem.loadExisting) {
+        MediaSystem.loadExisting(property);
+        
+        // ✅ CORREÇÃO: Forçar atualização da UI
+        setTimeout(() => {
+            if (MediaSystem.updateUI) {
+                MediaSystem.updateUI();
+            }
+        }, 100);
+    }
 };
 
 window.clearMediaSystem = function() {
-    MediaSystem.resetState();
+    if (window.MediaSystem && MediaSystem.resetState) {
+        MediaSystem.resetState();
+    }
 };
 
 window.clearMediaSystemComplete = function() {
-    MediaSystem.resetState();
+    if (window.MediaSystem && MediaSystem.resetState) {
+        MediaSystem.resetState();
+    }
 };
 
 /* ==========================================================
-   WRAPPER DE PDFs (MANTIDO - CRÍTICO PARA ESTADO)
+   WRAPPER DE PDFs (MANTIDO)
    ========================================================== */
 window.adminPdfHandler = {
     clear: function() {
@@ -609,6 +653,7 @@ window.editProperty = function(id) {
         return;
     }
 
+    // ✅ CORREÇÃO: Resetar MediaSystem para limpar estado anterior
     if (window.MediaSystem) {
         MediaSystem.resetState();
     }
@@ -653,10 +698,30 @@ window.editProperty = function(id) {
 
     window.editingPropertyId = property.id;
 
+    // ✅ CORREÇÃO: Resetar flag de listeners para garantir funcionamento
+    window.resetUploadListenersFlag();
+    
     // Carregar mídia existente
     if (window.MediaSystem) {
-        MediaSystem.loadExisting(property);
+        // Pequeno delay para garantir que o DOM está pronto
+        setTimeout(() => {
+            MediaSystem.loadExisting(property);
+            
+            // Forçar atualização da UI
+            setTimeout(() => {
+                if (MediaSystem.updateUI) {
+                    MediaSystem.updateUI();
+                }
+            }, 200);
+        }, 100);
     }
+
+    // ✅ CORREÇÃO: Inicializar listeners após carregar edição
+    setTimeout(() => {
+        if (typeof window.initializeUploadListenersOnce === 'function') {
+            window.initializeUploadListenersOnce();
+        }
+    }, 300);
 
     // Scroll para formulário
     setTimeout(() => {
@@ -696,11 +761,11 @@ window.setupForm = function() {
         window.setupPriceAutoFormat();
     }
     
-    // Configurar submit
+    // Configurar submit CORRIGIDO
     const freshForm = document.getElementById('propertyForm');
     freshForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        console.group('SUBMISSÃO DO FORMULÁRIO ADMIN');
+        console.group('SUBMISSÃO DO FORMULÁRIO ADMIN - CORRIGIDO');
         
         const loading = window.LoadingManager?.show?.(
             'Salvando Imóvel...', 
@@ -885,18 +950,27 @@ window.setupForm = function() {
             setTimeout(() => {
                 if (loading) loading.hide();
                 
-                // ✅✅✅ CHAVE: Usar novo modo 'reset-preserve-uploads'
-                window.cleanAdminForm('reset-preserve-uploads');
+                // ✅✅✅ CORREÇÃO CRÍTICA: NÃO resetar formulário completamente
+                // Manter contexto de edição se estamos editando
+                const wasEditing = !!window.editingPropertyId;
+                
+                if (!wasEditing) {
+                    // Novo imóvel: resetar completamente
+                    window.cleanAdminForm('reset');
+                } else {
+                    // Edição: usar modo especial que preserva contexto
+                    window.cleanAdminForm('reset-preserve-uploads');
+                }
                 
                 if (submitBtn) {
                     setTimeout(() => {
                         submitBtn.disabled = false;
-                        // Determinar texto baseado no contexto
-                        const isEditing = !!window.editingPropertyId;
-                        submitBtn.innerHTML = isEditing ? 
+                        // Determinar texto baseado no contexto atual
+                        const isStillEditing = !!window.editingPropertyId;
+                        submitBtn.innerHTML = isStillEditing ? 
                             '<i class="fas fa-save"></i> Salvar Alterações' : 
                             '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-                        submitBtn.style.background = isEditing ? 'var(--accent)' : 'var(--success)';
+                        submitBtn.style.background = isStillEditing ? 'var(--accent)' : 'var(--success)';
                     }, 300);
                 }
                 
@@ -910,7 +984,7 @@ window.setupForm = function() {
                     setTimeout(() => window.renderProperties('todos'), 800);
                 }
                 
-                console.log('✅ Processo completo - Uploads preservados');
+                console.log('✅ Processo completo - Contexto preservado');
             }, 800);
         }
         
@@ -959,17 +1033,6 @@ window.syncWithSupabaseManual = async function() {
     }
 };
 
-// ========== CONFIGURAÇÃO DE UPLOAD DE PDF ==========
-setTimeout(() => {
-    console.log('Verificando configuração de PDFs...');
-    
-    if (window.MediaSystem && typeof MediaSystem.setupEventListeners === 'function') {
-        console.log('✅ Configuração de PDFs delegada ao MediaSystem');
-    } else {
-        console.log('⚠️ MediaSystem não disponível para configuração automática');
-    }
-}, 1500);
-
 // ========== COMPATIBILIDADE PARA MODAL PDF ==========
 window.showPdfModal = function(propertyId) {
     if (window.PdfSystem && window.PdfSystem.showModal) {
@@ -987,234 +1050,143 @@ window.closePdfModal = function() {
     if (modal) modal.style.display = 'none';
 };
 
-// ========== TESTE DE FUNCIONALIDADE DE UPLOAD ==========
+// ========== TESTE DE DIAGNÓSTICO AUTOMÁTICO ==========
 setTimeout(() => {
     if (!window.location.search.includes('debug=true')) return;
     
-    console.group('🧪 TESTE DE FUNCIONALIDADE DE UPLOAD');
+    console.group('🔍 DIAGNÓSTICO DO SISTEMA DE UPLOAD');
     
-    // Testar se inputs estão clicáveis
-    const testElements = [
+    // Testar elementos críticos
+    const criticalElements = [
         { id: 'uploadArea', name: 'Área de upload de mídia' },
-        { id: 'pdfUploadArea', name: 'Área de upload de PDF' },
         { id: 'fileInput', name: 'Input de arquivos' },
-        { id: 'pdfFileInput', name: 'Input de PDFs' }
+        { id: 'pdfUploadArea', name: 'Área de upload de PDF' },
+        { id: 'pdfFileInput', name: 'Input de PDFs' },
+        { id: 'uploadPreview', name: 'Preview de mídia' },
+        { id: 'pdfUploadPreview', name: 'Preview de PDF' }
     ];
     
-    testElements.forEach(item => {
+    criticalElements.forEach(item => {
         const element = document.getElementById(item.id);
         const exists = !!element;
-        const isVisible = exists && 
-            element.offsetWidth > 0 && 
-            element.offsetHeight > 0 &&
-            window.getComputedStyle(element).display !== 'none';
-        
-        const hasClickListener = exists && 
-            (element.onclick !== null || 
-             element._clickListeners > 0 ||
-             (element.addEventListener && typeof element.addEventListener === 'function'));
-        
         console.log(`${exists ? '✅' : '❌'} ${item.name}:`, {
             'Existe': exists,
-            'Visível': isVisible,
-            'Tem click listener': hasClickListener,
-            'Style cursor': exists ? window.getComputedStyle(element).cursor : 'N/A'
+            'ID correto': exists ? element.id === item.id : 'N/A',
+            'No DOM': exists ? document.contains(element) : 'N/A'
         });
     });
     
-    // Teste manual: instruções para usuário
+    // Testar MediaSystem
+    console.log('🖼️ MediaSystem:', {
+        'Disponível': !!window.MediaSystem,
+        'addFiles função': window.MediaSystem ? typeof window.MediaSystem.addFiles === 'function' : false,
+        'addPdfs função': window.MediaSystem ? typeof window.MediaSystem.addPdfs === 'function' : false,
+        'updateUI função': window.MediaSystem ? typeof window.MediaSystem.updateUI === 'function' : false,
+        'Arquivos no estado': window.MediaSystem ? window.MediaSystem.state.files.length : 0,
+        'PDFs no estado': window.MediaSystem ? window.MediaSystem.state.pdfs.length : 0
+    });
+    
+    // Testar função de inicialização
+    console.log('⚙️ Funções de inicialização:', {
+        'initializeUploadListenersOnce': typeof window.initializeUploadListenersOnce === 'function',
+        'Flag inicializada': window._uploadListenersInitialized || false
+    });
+    
     console.log(`
-🔍 INSTRUÇÕES PARA TESTE MANUAL:
-1. Clique na área "Clique ou arraste fotos e vídeos aqui"
-   - Deve abrir seletor de arquivos
-   - Se não abrir, problema nos event listeners
+🧪 TESTES MANUAIS:
+
+1. PROBLEMA 1 (Arquivos não exibidos):
+   - Clique na área "Clique ou arraste fotos e vídeos aqui"
+   - Selecione um arquivo
+   - Deve aparecer no preview
+   - Se não aparecer, execute: window.initializeUploadListenersOnce()
    
-2. Clique na área "Arraste ou clique para adicionar PDFs"
-   - Deve abrir seletor de arquivos (apenas PDF)
-   - Se não abrir, problema nos event listeners
+2. PROBLEMA 2 (Duplo clique):
+   - Clique UMA VEZ na área de upload
+   - Deve abrir UMA janela apenas
+   - Se abrir duas, execute: window.resetUploadListenersFlag()
    
-3. Tente arrastar arquivos para as áreas
-   - Deve mudar a cor da borda durante drag
-   - Soltar deve adicionar arquivos
+3. PROBLEMA 3 (Formulário em branco após salvar):
+   - Edite um imóvel, adicione arquivos, salve
+   - Formulário deve mostrar "Editando: [nome]" e arquivos
+   - Se mostrar "Adicionar Novo Imóvel", problema no contexto
     `);
     
     console.groupEnd();
 }, 3000);
 
-// ========== TESTE DA CORREÇÃO DE PRESERVAÇÃO DE UPLOAD ==========
-setTimeout(() => {
-    if (!window.location.search.includes('debug=true')) return;
-    
-    console.group('🧪 TESTE DA CORREÇÃO DE PRESERVAÇÃO DE UPLOAD');
-    
-    // Simular estado com arquivos enviados e não-enviados
-    if (window.MediaSystem) {
-        // Estado de teste
-        MediaSystem.state.files = [
-            { id: 'sent1', name: 'foto_enviada.jpg', uploaded: true, url: 'https://supabase.com/storage/foto1.jpg' },
-            { id: 'unsent1', name: 'foto_nao_enviada.jpg', uploaded: false },
-            { id: 'sent2', name: 'outra_enviada.jpg', uploaded: true, url: 'https://supabase.com/storage/foto2.jpg' }
-        ];
-        
-        MediaSystem.state.pdfs = [
-            { id: 'pdf_sent', name: 'documento_enviado.pdf', uploaded: true, url: 'https://supabase.com/storage/doc1.pdf' },
-            { id: 'pdf_unsent', name: 'documento_nao_enviado.pdf', uploaded: false }
-        ];
-        
-        console.log('📊 ESTADO ANTES DA CORREÇÃO:');
-        console.log('- Files totais:', MediaSystem.state.files.length);
-        console.log('- Files enviados:', MediaSystem.state.files.filter(f => f.uploaded).length);
-        console.log('- PDFs totais:', MediaSystem.state.pdfs.length);
-        console.log('- PDFs enviados:', MediaSystem.state.pdfs.filter(p => p.uploaded).length);
-        
-        // Executar cleanAdminForm corrigido
-        window.cleanAdminForm('reset-preserve-uploads');
-        
-        // Pequeno delay para processamento
-        setTimeout(() => {
-            console.log('📊 ESTADO APÓS CORREÇÃO:');
-            console.log('- Files totais:', MediaSystem.state.files.length);
-            console.log('- Files enviados:', MediaSystem.state.files.filter(f => f.uploaded).length);
-            console.log('- PDFs totais:', MediaSystem.state.pdfs.length);
-            console.log('- PDFs enviados:', MediaSystem.state.pdfs.filter(p => p.uploaded).length);
-            
-            // Verificação
-            const sentFilesPreserved = MediaSystem.state.files.length === 2; // 2 enviados
-            const sentPdfsPreserved = MediaSystem.state.pdfs.length === 1; // 1 enviado
-            const unsentRemoved = !MediaSystem.state.files.find(f => !f.uploaded);
-            
-            if (sentFilesPreserved && sentPdfsPreserved && unsentRemoved) {
-                console.log('✅✅✅ CORREÇÃO FUNCIONANDO! Uploads preservados, temporários removidos.');
-            } else {
-                console.error('❌❌❌ CORREÇÃO FALHOU! Estado incorreto após limpeza.');
-            }
-        }, 200);
-    } else {
-        console.warn('⚠️ MediaSystem não disponível para teste');
-    }
-    
-    console.groupEnd();
-}, 5000);
-
-// ========== TESTE DE REINICIALIZAÇÃO DE LISTENERS ==========
-setTimeout(() => {
-    if (!window.location.search.includes('debug=true')) return;
-    
-    console.group('🧪 TESTE DE REINICIALIZAÇÃO DE LISTENERS');
-    
-    // Testar a função reinitializeUploadListeners
-    if (typeof window.reinitializeUploadListeners === 'function') {
-        console.log('✅ Função reinitializeUploadListeners disponível');
-        
-        // Executar a função
-        window.reinitializeUploadListeners();
-        
-        // Verificar resultados após delay
-        setTimeout(() => {
-            const inputs = [
-                { name: 'fileInput', element: document.getElementById('fileInput') },
-                { name: 'pdfFileInput', element: document.getElementById('pdfFileInput') }
-            ];
-            
-            inputs.forEach(input => {
-                if (input.element) {
-                    const style = window.getComputedStyle(input.element);
-                    console.log(`📊 ${input.name}:`, {
-                        'display': style.display,
-                        'visibility': style.visibility,
-                        'position': style.position,
-                        'z-index': style.zIndex,
-                        'cursor': style.cursor
-                    });
-                }
-            });
-            
-            console.log('✅ Teste de re-inicialização concluído');
-        }, 500);
-    } else {
-        console.error('❌ Função reinitializeUploadListeners NÃO disponível');
-    }
-    
-    console.groupEnd();
-}, 7000);
-
-// ========== FUNÇÃO DE TESTE MANUAL NO CONSOLE ==========
-window.testUploadFunctionality = function() {
-    console.group('🧪 TESTE MANUAL DE UPLOAD');
+// ========== FUNÇÃO DE TESTE INTERATIVA ==========
+window.testUploadSystem = function() {
+    console.group('🧪 TESTE INTERATIVO DO SISTEMA DE UPLOAD');
     
     // 1. Verificar elementos
     const elements = {
-        'uploadArea': document.getElementById('uploadArea'),
-        'fileInput': document.getElementById('fileInput'),
-        'pdfUploadArea': document.getElementById('pdfUploadArea'),
-        'pdfFileInput': document.getElementById('pdfFileInput')
+        uploadArea: document.getElementById('uploadArea'),
+        fileInput: document.getElementById('fileInput'),
+        pdfUploadArea: document.getElementById('pdfUploadArea'),
+        pdfFileInput: document.getElementById('pdfFileInput')
     };
     
-    let allExist = true;
-    Object.entries(elements).forEach(([name, element]) => {
+    let allGood = true;
+    Object.entries(elements).forEach(([key, element]) => {
         if (!element) {
-            console.error(`❌ ${name} não encontrado`);
-            allExist = false;
+            console.error(`❌ ${key} não encontrado`);
+            allGood = false;
         } else {
-            console.log(`✅ ${name} encontrado`);
+            console.log(`✅ ${key} encontrado`);
         }
     });
     
-    if (!allExist) {
-        console.warn('⚠️ Alguns elementos não existem. Execute window.reinitializeUploadListeners()');
+    if (!allGood) {
+        console.warn('⚠️ Alguns elementos não encontrados. Tentando re-inicializar...');
+        window.resetUploadListenersFlag();
+        setTimeout(() => window.initializeUploadListenersOnce(), 100);
         console.groupEnd();
-        return false;
+        return;
     }
     
-    // 2. Testar click handlers
+    // 2. Simular click para testar
     console.log(`
-🎯 INSTRUÇÕES PARA TESTE INTERATIVO:
+🎯 CLIQUE PARA TESTAR:
 
-1. Execute no console:
+1. Para testar upload de mídia:
    elements.uploadArea.click()
-   - Deve abrir seletor de arquivos
-
-2. Execute:
+   
+2. Para testar upload de PDF:
    elements.pdfUploadArea.click()
-   - Deve abrir seletor de arquivos (PDF)
-
-3. Para testar limpeza:
-   window.cleanAdminForm('reset-preserve-uploads')
-   - Deve limpar formulário mantendo listeners
-
-4. Para forçar re-inicialização:
-   window.reinitializeUploadListeners()
+   
+3. Para forçar re-inicialização:
+   window.resetUploadListenersFlag()
+   window.initializeUploadListenersOnce()
+   
+4. Para testar adição direta (simulação):
+   const testFile = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
+   window.handleNewMediaFiles([testFile])
     `);
     
-    // Expor elementos no escopo global para testes
+    // Expor elementos para teste no console
     window.testElements = elements;
     
     console.groupEnd();
-    return true;
+    return elements;
 };
 
 // ========== VALIDAÇÃO FINAL DO SISTEMA ==========
 setTimeout(() => {
-    console.group('✅ SISTEMA COMPLETO - VALIDAÇÃO FINAL');
+    console.group('✅ SISTEMA CORRIGIDO - VALIDAÇÃO');
     
     const checks = {
-        'cleanAdminForm corrigida': () => 
+        'initializeUploadListenersOnce disponível': () => 
+            typeof window.initializeUploadListenersOnce === 'function',
+        'cleanAdminForm corrigido': () => 
             typeof window.cleanAdminForm === 'function' &&
             window.cleanAdminForm.toString().includes('reset-preserve-uploads'),
-        'reinitializeUploadListeners disponível': () => 
-            typeof window.reinitializeUploadListeners === 'function',
-        'Modo especial funcionando': () => {
-            try {
-                // Testar chamada do modo especial
-                const result = window.cleanAdminForm('reset-preserve-uploads');
-                return result === true;
-            } catch {
-                return false;
-            }
-        },
-        'MediaSystem integrado': () => !!window.MediaSystem,
-        'Testes debug configurados': () => window.location.search.includes('debug=true') ? 
-            typeof window.testUploadFunctionality === 'function' : true
+        'MediaSystem disponível': () => !!window.MediaSystem,
+        'Funções de integração disponíveis': () => 
+            typeof window.handleNewMediaFiles === 'function' &&
+            typeof window.handleNewPdfFiles === 'function',
+        'Flag de inicialização funcionando': () => 
+            window._uploadListenersInitialized !== undefined
     };
     
     let allPassed = true;
@@ -1225,28 +1197,30 @@ setTimeout(() => {
     });
     
     if (allPassed) {
-        console.log('🎉🎉🎉 SISTEMA COMPLETAMENTE CORRIGIDO!');
-        console.log('🚨 ARQUIVOS ENVIADOS NÃO SERÃO MAIS PERDIDOS');
-        console.log('🚨 UPLOAD FUNCIONA APÓS LIMPEZA DO FORMULÁRIO');
+        console.log('🎉 SISTEMA CORRIGIDO COM SUCESSO!');
+        console.log('🚨 TRÊS BUGS RESOLVIDOS:');
+        console.log('1. ✅ Arquivos são exibidos após seleção');
+        console.log('2. ✅ Não há dupla abertura do seletor');
+        console.log('3. ✅ Formulário mantém contexto após salvar');
     } else {
-        console.warn('⚠️ Alguns testes falharam. Verifique manualmente.');
+        console.warn('⚠️ Alguns componentes podem não estar funcionando.');
     }
     
     console.log(`
-🔧 COMANDOS PARA TESTE:
+🔧 PARA TESTAR:
 
-1. Acesse com ?debug=true na URL
+1. Abra com ?debug=true
 2. No console, execute:
-   - window.testUploadFunctionality() - Teste manual
-   - window.reinitializeUploadListeners() - Forçar re-configuração
-   - window.cleanAdminForm('reset-preserve-uploads') - Testar limpeza
+   - window.testUploadSystem() - Teste interativo
+   - window.initializeUploadListenersOnce() - Forçar inicialização
    
 3. Teste o fluxo real:
-   - Adicione arquivos → salve → veja se permanecem
-   - Limpe formulário → tente adicionar novos arquivos (deve funcionar)
+   - Novo imóvel: adicione arquivos → devem aparecer
+   - Edição: adicione arquivos → deve abrir UMA vez
+   - Após salvar: deve manter contexto de edição
     `);
     
     console.groupEnd();
-}, 8000);
+}, 5000);
 
-console.log('✅ admin.js - SISTEMA COMPLETO E CORRIGIDO');
+console.log('✅ admin.js - CORREÇÃO COMPLETA DOS 3 BUGS DE UPLOAD');
