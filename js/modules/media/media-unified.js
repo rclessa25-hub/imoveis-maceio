@@ -1,5 +1,5 @@
-// js/modules/media/media-unified.js - VERSÃO COMPLETA 100% FUNCIONAL
-console.log('🔄 media-unified.js - VERSÃO COMPLETA COM PREVIEW 100% FUNCIONAL');
+// js/modules/media/media-unified.js - VERSÃO DEFINITIVA 100% FUNCIONAL
+console.log('🔄 media-unified.js - VERSÃO DEFINITIVA COM PREVIEW 100% FUNCIONAL');
 
 // ========== USAR window.SUPABASE_CONSTANTS DE SharedCore.js ==========
 if (typeof window.SUPABASE_CONSTANTS === 'undefined') {
@@ -422,57 +422,42 @@ const MediaSystem = {
         });
     },
 
-    // ========== FUNÇÃO CRÍTICA: getMediaPreviewHTML - VERSÃO FINAL CORRIGIDA ==========
+    // ========== FUNÇÃO CRÍTICA: getMediaPreviewHTML - VERSÃO DEFINITIVA CORRIGIDA ==========
     getMediaPreviewHTML: function(item) {
         console.log(`🔍 Gerando preview para: ${item.name || item.id}`);
         
-        // ✅✅✅ DETECTAR TIPO PRIMEIRO (ANTES DE VERIFICAR URL)
+        // ✅✅✅ DETECTAR TIPO COM LÓGICA ROBUSTA
         const isImage = this.isImageFile(item);
         const isVideo = this.isVideoFile(item);
         const isPdf = this.isPdfFile(item);
         
-        console.log(`📊 Detecção: ${isImage ? 'IMAGEM' : ''} ${isVideo ? 'VÍDEO' : ''} ${isPdf ? 'PDF' : ''}`);
+        console.log(`📊 Detecção: ${isImage ? 'IMAGEM' : ''} ${isVideo ? 'VÍDEO' : ''} ${isPdf ? 'PDF' : ''}`, {
+            name: item.name,
+            type: item.type,
+            fileType: item.file ? item.file.type : 'sem file'
+        });
         
-        // ✅ CRÍTICO: Se sabemos que é uma imagem, mas não temos URL, usar fallback especial
-        if (isImage && (!item.url && !item.preview)) {
-            console.log(`🖼️ Imagem sem URL, usando fallback especial: ${item.name}`);
-            return this.getImageFallbackPreview(item.name);
-        }
-        
-        // ✅ AGORA SIM, buscar URL para mostrar
-        let mediaUrl = null;
-        
-        // 1. Verificar se temos URL permanente válida
-        if (item.url && this.isValidUrl(item.url)) {
-            mediaUrl = item.url;
-            console.log(`✅ Usando URL permanente: ${item.url.substring(0, 80)}...`);
-        } 
-        // 2. Se não, verificar preview
-        else if (item.preview && this.isValidUrl(item.preview)) {
-            mediaUrl = item.preview;
-            console.log(`⚠️ Usando preview: ${item.preview.substring(0, 80)}...`);
-        }
-        // 3. Se for um arquivo com blob URL, usar diretamente
-        else if (item.preview && item.preview.startsWith('blob:')) {
-            mediaUrl = item.preview;
-            console.log(`📎 Usando blob URL para: ${item.name}`);
-        }
-        // 4. Verificar se é uma URL do Supabase que precisa ser reconstruída
-        else if (item.url && !this.isValidUrl(item.url)) {
-            const reconstructedUrl = this.reconstructSupabaseUrl(item.url);
-            if (reconstructedUrl) {
-                mediaUrl = reconstructedUrl;
-                console.log(`🔧 URL reconstruída: ${reconstructedUrl.substring(0, 80)}...`);
-            }
-        }
-        
-        // ✅ SE FOR IMAGEM: Mostrar a imagem real ou fallback
+        // ✅ SE FOR IMAGEM: Mostrar a imagem ou fallback
         if (isImage) {
+            // Tentar obter URL para mostrar
+            let mediaUrl = null;
+            
+            // 1. Verificar URL permanente
+            if (item.url && this.isValidUrl(item.url)) {
+                mediaUrl = item.url;
+                console.log(`✅ Usando URL permanente: ${item.url.substring(0, 80)}...`);
+            } 
+            // 2. Verificar preview (blob URL)
+            else if (item.preview && this.isValidUrl(item.preview)) {
+                mediaUrl = item.preview;
+                console.log(`⚠️ Usando blob URL: ${item.preview.substring(0, 80)}...`);
+            }
+            
             if (mediaUrl) {
                 console.log(`🖼️ Mostrando imagem real: ${item.name}`);
                 return this.getImagePreview(mediaUrl, item.name);
             } else {
-                console.log(`🖼️ Imagem sem URL válida, usando fallback: ${item.name}`);
+                console.log(`🖼️ Imagem sem URL, usando fallback: ${item.name}`);
                 return this.getImageFallbackPreview(item.name);
             }
         }
@@ -489,13 +474,157 @@ const MediaSystem = {
             return this.getPdfPreview(item.name);
         }
         
-        // ✅ FALLBACK genérico (só chega aqui se não for imagem, vídeo ou PDF)
+        // ✅ SE CHEGOU ATÉ AQUI, é porque não foi detectado como imagem, vídeo ou PDF
+        // Vamos fazer uma última tentativa: verificar se tem um arquivo original
+        if (item.file) {
+            console.log(`🔍 Item tem arquivo original, verificando tipo...`, {
+                fileType: item.file.type,
+                fileName: item.file.name
+            });
+            
+            // Verificar se o arquivo original é imagem
+            if (item.file.type && item.file.type.includes('image')) {
+                console.log(`🖼️ Detectado como imagem pelo tipo do arquivo: ${item.file.type}`);
+                let mediaUrl = item.preview || item.url;
+                if (mediaUrl) {
+                    return this.getImagePreview(mediaUrl, item.name);
+                } else {
+                    return this.getImageFallbackPreview(item.name);
+                }
+            }
+            
+            // Verificar se o arquivo original é vídeo
+            if (item.file.type && item.file.type.includes('video')) {
+                console.log(`🎥 Detectado como vídeo pelo tipo do arquivo: ${item.file.type}`);
+                return this.getVideoPreview(item.name);
+            }
+            
+            // Verificar se o arquivo original é PDF
+            if (item.file.type && item.file.type.includes('pdf')) {
+                console.log(`📄 Detectado como PDF pelo tipo do arquivo: ${item.file.type}`);
+                return this.getPdfPreview(item.name);
+            }
+        }
+        
+        // ✅ FALLBACK FINAL
         console.warn(`⚠️ Tipo não reconhecido para: ${item.name}`, {
             url: item.url,
             preview: item.preview,
-            type: item.type
+            type: item.type,
+            file: item.file ? { type: item.file.type, name: item.file.name } : 'sem file',
+            isImage: this.isImageFile(item),
+            isVideo: this.isVideoFile(item),
+            isPdf: this.isPdfFile(item)
         });
         return this.getFallbackPreview(item, 'Arquivo');
+    },
+
+    // ========== FUNÇÃO isImageFile - VERSÃO DEFINITIVA CORRIGIDA ==========
+    isImageFile: function(item) {
+        // 1. Verificar flag explícita
+        if (item.isImage === true) return true;
+        if (item.isImage === false) return false;
+        
+        // 2. Verificar por tipo MIME no item
+        if (item.type && item.type.includes('image')) return true;
+        
+        // 3. Verificar por tipo MIME no arquivo original (CRÍTICO PARA SEU CASO)
+        if (item.file && item.file.type && item.file.type.includes('image')) return true;
+        
+        // 4. Verificar por extensão no nome
+        if (item.name) {
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.jfif', '.svg'];
+            const nameLower = item.name.toLowerCase();
+            
+            if (imageExtensions.some(ext => nameLower.endsWith(ext))) {
+                return true;
+            }
+            
+            // Se o nome começa com "Imagem_" ou contém "image"
+            if (nameLower.includes('imagem_') || nameLower.startsWith('imagem') || nameLower.includes('image')) {
+                return true;
+            }
+        }
+        
+        // 5. Verificar por URL com extensão de imagem
+        if (item.url || item.preview) {
+            const url = (item.url || item.preview).toLowerCase();
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
+            
+            if (imageExtensions.some(ext => url.includes(ext))) {
+                return true;
+            }
+            
+            // Verificar tipo MIME na URL
+            if (url.includes('image/') || url.includes('data:image')) {
+                return true;
+            }
+            
+            // Verificar se é blob URL (provavelmente é imagem)
+            if (url.startsWith('blob:') && item.file && item.file.type.includes('image')) {
+                return true;
+            }
+        }
+        
+        // 6. Verificar se é um arquivo existente
+        if (item.isExisting && item.preview) {
+            return true;
+        }
+        
+        // 7. Se foi adicionado via upload e tem preview blob, provavelmente é imagem
+        if (item.isNew && item.preview && item.preview.startsWith('blob:')) {
+            return true; // Assumir que é imagem
+        }
+        
+        return false;
+    },
+
+    isVideoFile: function(item) {
+        // 1. Flag explícita
+        if (item.isVideo === true) return true;
+        
+        // 2. Tipo MIME no item
+        if (item.type && item.type.includes('video')) return true;
+        
+        // 3. Tipo MIME no arquivo original
+        if (item.file && item.file.type && item.file.type.includes('video')) return true;
+        
+        // 4. Extensão no nome
+        if (item.name) {
+            const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.wmv', '.flv'];
+            if (videoExtensions.some(ext => item.name.toLowerCase().endsWith(ext))) {
+                return true;
+            }
+        }
+        
+        // 5. URL com extensão ou tipo MIME
+        const url = item.url || item.preview || '';
+        const urlLower = url.toLowerCase();
+        
+        if (urlLower.includes('.mp4') || urlLower.includes('.mov') || 
+            urlLower.includes('.avi') || urlLower.includes('video/')) {
+            return true;
+        }
+        
+        return false;
+    },
+
+    isPdfFile: function(item) {
+        // 1. Tipo MIME
+        if (item.type && item.type.includes('pdf')) return true;
+        
+        // 2. Tipo MIME no arquivo
+        if (item.file && item.file.type && item.file.type.includes('pdf')) return true;
+        
+        // 3. Extensão no nome
+        if (item.name && item.name.toLowerCase().endsWith('.pdf')) {
+            return true;
+        }
+        
+        // 4. URL
+        const url = item.url || item.preview || '';
+        return url.toLowerCase().includes('.pdf') || 
+               url.toLowerCase().includes('application/pdf');
     },
 
     // ========== NOVA FUNÇÃO: getImageFallbackPreview ==========
@@ -515,7 +644,7 @@ const MediaSystem = {
         `;
     },
 
-    // ========== PREVIEW DE IMAGEM - COM FALLBACK MELHORADO ==========
+    // ========== PREVIEW DE IMAGEM ==========
     getImagePreview: function(imageUrl, altText) {
         const shortName = altText ? altText.substring(0, 20) : 'Imagem';
         
@@ -545,462 +674,6 @@ const MediaSystem = {
                  "
                  loading="lazy">
         `;
-    },
-
-    // ========== FUNÇÕES DE DETECÇÃO CORRIGIDAS ==========
-    isImageFile: function(item) {
-        // 1. Verificar flag explícita
-        if (item.isImage === true) return true;
-        if (item.isImage === false) return false;
-        
-        // 2. Verificar por tipo MIME
-        if (item.type && item.type.includes('image')) return true;
-        
-        // 3. Verificar por extensão no nome (CRÍTICO PARA SEU CASO)
-        if (item.name) {
-            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.jfif'];
-            const nameLower = item.name.toLowerCase();
-            
-            // Verificar se termina com extensão de imagem
-            if (imageExtensions.some(ext => nameLower.endsWith(ext))) {
-                return true;
-            }
-            
-            // ✅ NOVO: Se o nome começa com "Imagem_" (seus casos), assumir que é imagem
-            if (nameLower.includes('imagem_') || nameLower.startsWith('imagem')) {
-                return true;
-            }
-            
-            // ✅ NOVO: Se o item tem arquivo (file) e é do tipo image
-            if (item.file && item.file.type && item.file.type.includes('image')) {
-                return true;
-            }
-        }
-        
-        // 4. Verificar por URL
-        if (item.url || item.preview) {
-            const url = (item.url || item.preview).toLowerCase();
-            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
-            
-            if (imageExtensions.some(ext => url.includes(ext))) {
-                return true;
-            }
-            
-            if (url.includes('image/')) {
-                return true;
-            }
-        }
-        
-        // 5. Verificar se é um arquivo existente com preview
-        if (item.isExisting && item.preview) {
-            return true;
-        }
-        
-        return false;
-    },
-
-    isVideoFile: function(item) {
-        if (item.isVideo === true) return true;
-        if (item.type && item.type.includes('video')) return true;
-        
-        if (item.name) {
-            const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
-            return videoExtensions.some(ext => 
-                item.name.toLowerCase().endsWith(ext)
-            );
-        }
-        
-        const url = item.url || item.preview || '';
-        return url.toLowerCase().includes('.mp4') || 
-               url.toLowerCase().includes('.mov') ||
-               url.toLowerCase().includes('video/');
-    },
-
-    isPdfFile: function(item) {
-        if (item.type && item.type.includes('pdf')) return true;
-        
-        if (item.name && item.name.toLowerCase().endsWith('.pdf')) {
-            return true;
-        }
-        
-        const url = item.url || item.preview || '';
-        return url.toLowerCase().includes('.pdf') || 
-               url.toLowerCase().includes('application/pdf');
-    },
-
-    // ========== FUNÇÕES DE VALIDAÇÃO DE URL ==========
-    isValidUrl: function(url) {
-        if (!url || typeof url !== 'string') return false;
-        
-        if (url.startsWith('http://') || url.startsWith('https://') || 
-            url.startsWith('blob:') || url.startsWith('data:')) {
-            return true;
-        }
-        
-        const supabaseKeywords = ['supabase.co', 'storage/v1', 'object/public'];
-        if (supabaseKeywords.some(keyword => url.includes(keyword))) {
-            return true;
-        }
-        
-        return false;
-    },
-
-    reconstructSupabaseUrl: function(filename) {
-        if (!filename || typeof filename !== 'string') return null;
-        
-        const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
-        const bucket = this.config.buckets[this.config.currentSystem];
-        
-        if (filename.startsWith('http')) return filename;
-        
-        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidPattern.test(filename)) {
-            console.warn(`⚠️ URL é apenas UUID: ${filename}`);
-            return null;
-        }
-        
-        if (filename.includes('.')) {
-            try {
-                const reconstructedUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${filename}`;
-                console.log(`🔧 URL reconstruída: ${reconstructedUrl.substring(0, 80)}...`);
-                return reconstructedUrl;
-            } catch (error) {
-                console.error(`❌ Erro ao reconstruir URL para ${filename}:`, error);
-                return null;
-            }
-        }
-        
-        return null;
-    },
-
-    // ========== FUNÇÃO loadExisting CORRIGIDA ==========
-    loadExisting: function(property) {
-        if (!property) return;
-        
-        console.log(`📥 Carregando mídia existente para imóvel ${property.id}`);
-        this.state.currentPropertyId = property.id;
-        
-        this.state.existing = [];
-        this.state.existingPdfs = [];
-        
-        if (property.images && property.images !== 'EMPTY') {
-            const urls = property.images.split(',')
-                .map(url => url.trim())
-                .filter(url => url && url !== 'EMPTY');
-            
-            console.log(`📸 ${urls.length} URL(s) de mídia encontrada(s)`);
-            
-            this.state.existing = urls.map((url, index) => {
-                let finalUrl = url;
-                if (!this.isValidUrl(url)) {
-                    const reconstructed = this.reconstructSupabaseUrl(url);
-                    if (reconstructed) {
-                        finalUrl = reconstructed;
-                        console.log(`🔧 URL corrigida: ${url} → ${reconstructed.substring(0, 80)}...`);
-                    }
-                }
-                
-                const item = {
-                    url: finalUrl,
-                    preview: finalUrl,
-                    id: `existing_${property.id}_${index}`,
-                    name: this.extractFileName(finalUrl),
-                    type: this.getFileTypeFromUrl(finalUrl),
-                    isExisting: true,
-                    markedForDeletion: false,
-                    isVisible: true,
-                    isImage: this.isImageFile({ url: finalUrl, name: this.extractFileName(finalUrl) })
-                };
-                
-                console.log(`   📄 Item ${index + 1}:`, {
-                    name: item.name,
-                    url: finalUrl.substring(0, 80) + (finalUrl.length > 80 ? '...' : ''),
-                    isImage: item.isImage
-                });
-                
-                return item;
-            });
-        }
-        
-        if (property.pdfs && property.pdfs !== 'EMPTY') {
-            const pdfUrls = property.pdfs.split(',')
-                .map(url => url.trim())
-                .filter(url => url && url !== 'EMPTY');
-            
-            this.state.existingPdfs = pdfUrls.map((url, index) => ({
-                url: url,
-                id: `existing_pdf_${property.id}_${index}`,
-                name: this.extractFileName(url),
-                isExisting: true,
-                markedForDeletion: false
-            }));
-        }
-        
-        setTimeout(() => {
-            this.updateUI();
-            this.forceReloadPreviews();
-        }, 100);
-        
-        return this;
-    },
-
-    // ========== FUNÇÃO addFiles CORRIGIDA ==========
-    addFiles: function(fileList) {
-        if (!fileList || fileList.length === 0) return 0;
-        
-        const filesArray = Array.from(fileList);
-        let addedCount = 0;
-        
-        filesArray.forEach(file => {
-            if (this.validateFile(file)) {
-                const newItem = {
-                    file: file,
-                    id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    preview: URL.createObjectURL(file),
-                    isImage: this.config.allowedTypes.images.includes(file.type),
-                    isVideo: this.config.allowedTypes.videos.includes(file.type),
-                    isNew: true,
-                    uploaded: false
-                };
-                
-                if (!newItem.isImage && !newItem.isVideo) {
-                    newItem.isImage = this.isImageFile(newItem);
-                    newItem.isVideo = this.isVideoFile(newItem);
-                }
-                
-                this.state.files.push(newItem);
-                addedCount++;
-                
-                console.log(`📁 Arquivo adicionado: ${file.name}`, {
-                    isImage: newItem.isImage,
-                    isVideo: newItem.isVideo,
-                    type: file.type
-                });
-            }
-        });
-        
-        console.log(`📁 ${addedCount}/${filesArray.length} arquivo(s) adicionado(s)`);
-        this.updateUI();
-        return addedCount;
-    },
-
-    // ========== FUNÇÃO extractFileName MELHORADA ==========
-    extractFileName: function(url) {
-        if (!url) return 'Arquivo';
-        
-        try {
-            if (url.includes('/')) {
-                const parts = url.split('/');
-                let fileName = parts[parts.length - 1] || 'Arquivo';
-                
-                try { 
-                    fileName = decodeURIComponent(fileName); 
-                } catch (e) {}
-                
-                fileName = fileName.split('?')[0];
-                
-                if (fileName.length < 5 || fileName.match(/^[0-9a-f]{8}-/i)) {
-                    if (url.includes('media_')) {
-                        const match = url.match(/media_[^\/]+_([^\/]+)$/);
-                        if (match && match[1]) {
-                            fileName = match[1];
-                        }
-                    }
-                    
-                    if (fileName.length < 5) {
-                        if (url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png')) {
-                            fileName = 'Imagem_' + Date.now().toString().substr(-6);
-                        } else {
-                            fileName = 'Arquivo_' + Date.now().toString().substr(-6);
-                        }
-                    }
-                }
-                
-                return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
-            } 
-            else {
-                if (url.match(/^[0-9a-f]{8}-/i)) {
-                    return 'Imagem_' + Date.now().toString().substr(-6);
-                }
-                return url.length > 50 ? url.substring(0, 47) + '...' : url;
-            }
-        } catch (error) {
-            console.error('❌ Erro ao extrair nome do arquivo:', error);
-            return 'Imagem_' + Date.now().toString().substr(-6);
-        }
-    },
-
-    // ========== FUNÇÃO getFileTypeFromUrl MELHORADA ==========
-    getFileTypeFromUrl: function(url) {
-        if (!url) return 'file';
-        
-        try {
-            const urlLower = url.toLowerCase();
-            
-            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.jfif'];
-            if (imageExtensions.some(ext => urlLower.includes(ext))) {
-                return 'image';
-            }
-            
-            const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
-            if (videoExtensions.some(ext => urlLower.includes(ext))) {
-                return 'video';
-            }
-            
-            if (urlLower.includes('.pdf')) {
-                return 'pdf';
-            }
-            
-            if (urlLower.includes('image/')) return 'image';
-            if (urlLower.includes('video/')) return 'video';
-            if (urlLower.includes('application/pdf')) return 'pdf';
-            
-            return 'file';
-        } catch (error) {
-            console.error('❌ Erro ao detectar tipo do arquivo:', error);
-            return 'file';
-        }
-    },
-
-    // ========== FUNÇÃO forceReloadPreviews ==========
-    forceReloadPreviews: function() {
-        console.group('🔄 FORÇANDO RELOAD DE TODOS OS PREVIEWS');
-        
-        let updatedCount = 0;
-        
-        [...this.state.existing, ...this.state.files].forEach(item => {
-            if (item.url && !item.preview) {
-                item.preview = item.url;
-                console.log(`✅ Preview restaurado para: ${item.name}`);
-                updatedCount++;
-            } 
-            else if (item.url && item.preview && item.url !== item.preview) {
-                const urlValid = this.isValidUrl(item.url);
-                
-                if (urlValid) {
-                    if (item.preview.startsWith('blob:')) {
-                        URL.revokeObjectURL(item.preview);
-                    }
-                    
-                    item.preview = item.url;
-                    console.log(`🔄 Preview atualizado: ${item.name}`);
-                    updatedCount++;
-                }
-            }
-            
-            if (!item.isImage && !item.isVideo) {
-                item.isImage = this.isImageFile(item);
-                item.isVideo = this.isVideoFile(item);
-                
-                if (item.isImage || item.isVideo) {
-                    console.log(`🏷️ Flag corrigida para ${item.name}: isImage=${item.isImage}, isVideo=${item.isVideo}`);
-                    updatedCount++;
-                }
-            }
-        });
-        
-        if (updatedCount > 0) {
-            console.log(`📊 ${updatedCount} item(s) atualizado(s)`);
-            setTimeout(() => this.updateUI(), 50);
-        }
-        
-        console.groupEnd();
-        return this;
-    },
-
-    // ========== FUNÇÃO updateUI ==========
-    updateUI: function() {
-        if (this._updateTimeout) clearTimeout(this._updateTimeout);
-        
-        this._updateTimeout = setTimeout(() => {
-            this.renderMediaPreview();
-            this.renderPdfPreview();
-        }, 50);
-    },
-
-    // ========== FUNÇÃO renderMediaPreview ==========
-    renderMediaPreview: function() {
-        const container = document.getElementById('uploadPreview');
-        if (!container) return;
-        
-        const allFiles = [...this.state.existing, ...this.state.files];
-        
-        if (allFiles.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
-                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
-                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
-                </div>
-            `;
-            return;
-        }
-        
-        let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
-        
-        allFiles.forEach(item => {
-            const isMarked = item.markedForDeletion;
-            const isExisting = item.isExisting;
-            const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
-            const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
-            
-            html += `
-            <div class="media-preview-item draggable-item" 
-                     draggable="true"
-                     data-id="${item.id}"
-                     title="Arraste para reordenar"
-                     style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
-                    
-                    <div style="width:100%;height:70px;overflow:hidden;">
-                        ${this.getMediaPreviewHTML(item)}
-                    </div>
-                    
-                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                            ${item.name || this.extractFileName(item.url)}
-                        </span>
-                    </div>
-                    
-                    <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.7);color:white;width:22px;height:22px;border-radius:0 0 8px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:10;">
-                        <i class="fas fa-arrows-alt"></i>
-                    </div>
-                    
-                    <div class="order-indicator" style="
-                        position:absolute;
-                        bottom:2px;
-                        right:2px;
-                        background:rgba(0,0,0,0.8);
-                        color:white;
-                        width:18px;
-                        height:18px;
-                        border-radius:50%;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:10px;
-                        font-weight:bold;
-                        z-index:5;
-                    ">${allFiles.findIndex(f => f.id === item.id) + 1}</div>
-                    
-                    <button onclick="MediaSystem.removeFile('${item.id}')" 
-                            style="position:absolute;top:0;right:0;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;width:24px;height:24px;cursor:pointer;font-size:14px;font-weight:bold;z-index:10;border-radius:0 0 0 8px;display:flex;align-items:center;justify-content:center;">
-                        ${isMarked ? '↺' : '×'}
-                    </button>
-                    
-                    ${isExisting ? 
-                        `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.5rem;padding:1px 3px;border-radius:2px;z-index:10;">
-                            ${isMarked ? 'EXCLUIR' : 'Existente'}
-                        </div>` : ''
-                    }
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-        container.innerHTML = html;
     },
 
     // ========== PREVIEW DE VÍDEO ==========
@@ -1052,6 +725,124 @@ const MediaSystem = {
                 </div>
             </div>
         `;
+    },
+
+    // ========== FUNÇÃO addFiles CORRIGIDA - GARANTIR QUE TYPE ESTÁ CORRETO ==========
+    addFiles: function(fileList) {
+        if (!fileList || fileList.length === 0) return 0;
+        
+        const filesArray = Array.from(fileList);
+        let addedCount = 0;
+        
+        filesArray.forEach(file => {
+            if (this.validateFile(file)) {
+                // ✅ CRÍTICO: Determinar se é imagem ou vídeo CORRETAMENTE
+                const isImage = this.config.allowedTypes.images.includes(file.type);
+                const isVideo = this.config.allowedTypes.videos.includes(file.type);
+                
+                const newItem = {
+                    file: file, // Manter o arquivo original
+                    id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type, // ✅ Manter o type original do arquivo
+                    preview: URL.createObjectURL(file),
+                    isImage: isImage,
+                    isVideo: isVideo,
+                    isNew: true,
+                    uploaded: false
+                };
+                
+                // ✅ DEBUG detalhado
+                console.log(`📁 Adicionando arquivo:`, {
+                    name: file.name,
+                    type: file.type,
+                    isImage: newItem.isImage,
+                    isVideo: newItem.isVideo,
+                    preview: newItem.preview.substring(0, 80) + '...'
+                });
+                
+                this.state.files.push(newItem);
+                addedCount++;
+            }
+        });
+        
+        console.log(`📁 ${addedCount}/${filesArray.length} arquivo(s) adicionado(s)`);
+        this.updateUI();
+        return addedCount;
+    },
+
+    // ========== FUNÇÃO loadExisting CORRIGIDA ==========
+    loadExisting: function(property) {
+        if (!property) return;
+        
+        console.log(`📥 Carregando mídia existente para imóvel ${property.id}`);
+        this.state.currentPropertyId = property.id;
+        
+        this.state.existing = [];
+        this.state.existingPdfs = [];
+        
+        if (property.images && property.images !== 'EMPTY') {
+            const urls = property.images.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            
+            console.log(`📸 ${urls.length} URL(s) de mídia encontrada(s)`);
+            
+            this.state.existing = urls.map((url, index) => {
+                let finalUrl = url;
+                if (!this.isValidUrl(url)) {
+                    const reconstructed = this.reconstructSupabaseUrl(url);
+                    if (reconstructed) {
+                        finalUrl = reconstructed;
+                        console.log(`🔧 URL corrigida: ${url} → ${reconstructed.substring(0, 80)}...`);
+                    }
+                }
+                
+                const fileName = this.extractFileName(finalUrl);
+                const item = {
+                    url: finalUrl,
+                    preview: finalUrl,
+                    id: `existing_${property.id}_${index}`,
+                    name: fileName,
+                    type: this.getFileTypeFromUrl(finalUrl),
+                    isExisting: true,
+                    markedForDeletion: false,
+                    isVisible: true,
+                    isImage: this.isImageFile({ url: finalUrl, name: fileName, type: this.getFileTypeFromUrl(finalUrl) })
+                };
+                
+                console.log(`   📄 Item ${index + 1}:`, {
+                    name: item.name,
+                    url: finalUrl.substring(0, 80) + (finalUrl.length > 80 ? '...' : ''),
+                    type: item.type,
+                    isImage: item.isImage
+                });
+                
+                return item;
+            });
+        }
+        
+        if (property.pdfs && property.pdfs !== 'EMPTY') {
+            const pdfUrls = property.pdfs.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            
+            this.state.existingPdfs = pdfUrls.map((url, index) => ({
+                url: url,
+                id: `existing_pdf_${property.id}_${index}`,
+                name: this.extractFileName(url),
+                isExisting: true,
+                markedForDeletion: false
+            }));
+        }
+        
+        setTimeout(() => {
+            this.updateUI();
+            this.forceReloadPreviews();
+        }, 100);
+        
+        return this;
     },
 
     // ========== REMOVER ARQUIVO ==========
@@ -1205,6 +996,9 @@ const MediaSystem = {
                 images: results.images ? `${results.images.split(',').length} URL(s)` : 'Nenhuma',
                 pdfs: results.pdfs ? `${results.pdfs.split(',').length} URL(s)` : 'Nenhum'
             });
+            
+            // ✅ ATUALIZAR STATE APÓS UPLOAD
+            this.updateStateAfterUpload(results, results.pdfs);
             
             setTimeout(() => {
                 this.forceReloadPreviews();
@@ -1393,6 +1187,52 @@ const MediaSystem = {
         return this;
     },
 
+    // ========== FUNÇÃO forceReloadPreviews - CORRIGIR FLAGS ==========
+    forceReloadPreviews: function() {
+        console.group('🔄 FORÇANDO RELOAD DE TODOS OS PREVIEWS');
+        
+        let updatedCount = 0;
+        
+        // Para arquivos novos (com file object)
+        this.state.files.forEach(item => {
+            // ✅ GARANTIR que as flags estão corretas
+            if (item.file) {
+                const shouldBeImage = this.config.allowedTypes.images.includes(item.file.type);
+                const shouldBeVideo = this.config.allowedTypes.videos.includes(item.file.type);
+                
+                if (item.isImage !== shouldBeImage || item.isVideo !== shouldBeVideo) {
+                    item.isImage = shouldBeImage;
+                    item.isVideo = shouldBeVideo;
+                    item.type = item.file.type; // ✅ Manter type correto
+                    
+                    console.log(`🏷️ Flags corrigidas para ${item.name}:`, {
+                        isImage: item.isImage,
+                        isVideo: item.isVideo,
+                        type: item.type
+                    });
+                    updatedCount++;
+                }
+            }
+        });
+        
+        // Para arquivos existentes
+        this.state.existing.forEach(item => {
+            if (item.url && !item.preview) {
+                item.preview = item.url;
+                console.log(`✅ Preview restaurado para: ${item.name}`);
+                updatedCount++;
+            }
+        });
+        
+        if (updatedCount > 0) {
+            console.log(`📊 ${updatedCount} item(s) atualizado(s)`);
+            setTimeout(() => this.updateUI(), 50);
+        }
+        
+        console.groupEnd();
+        return this;
+    },
+
     ensurePermanentUrls: function() {
         console.log('🔍 Verificando URLs permanentes...');
         
@@ -1512,6 +1352,97 @@ const MediaSystem = {
         this.state.existingPdfs = this.state.existingPdfs.filter(item => !item.markedForDeletion);
     },
 
+    // ========== UI UPDATES ==========
+    updateUI: function() {
+        if (this._updateTimeout) clearTimeout(this._updateTimeout);
+        
+        this._updateTimeout = setTimeout(() => {
+            this.renderMediaPreview();
+            this.renderPdfPreview();
+        }, 50);
+    },
+
+    renderMediaPreview: function() {
+        const container = document.getElementById('uploadPreview');
+        if (!container) return;
+        
+        const allFiles = [...this.state.existing, ...this.state.files];
+        
+        if (allFiles.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
+        
+        allFiles.forEach(item => {
+            const isMarked = item.markedForDeletion;
+            const isExisting = item.isExisting;
+            const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
+            const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
+            
+            html += `
+            <div class="media-preview-item draggable-item" 
+                     draggable="true"
+                     data-id="${item.id}"
+                     title="Arraste para reordenar"
+                     style="position:relative;width:110px;height:110px;border-radius:8px;overflow:hidden;border:2px solid ${borderColor};background:${bgColor};cursor:grab;">
+                    
+                    <div style="width:100%;height:70px;overflow:hidden;">
+                        ${this.getMediaPreviewHTML(item)}
+                    </div>
+                    
+                    <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+                        <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            ${item.name || this.extractFileName(item.url)}
+                        </span>
+                    </div>
+                    
+                    <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.7);color:white;width:22px;height:22px;border-radius:0 0 8px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:10;">
+                        <i class="fas fa-arrows-alt"></i>
+                    </div>
+                    
+                    <div class="order-indicator" style="
+                        position:absolute;
+                        bottom:2px;
+                        right:2px;
+                        background:rgba(0,0,0,0.8);
+                        color:white;
+                        width:18px;
+                        height:18px;
+                        border-radius:50%;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:10px;
+                        font-weight:bold;
+                        z-index:5;
+                    ">${allFiles.findIndex(f => f.id === item.id) + 1}</div>
+                    
+                    <button onclick="MediaSystem.removeFile('${item.id}')" 
+                            style="position:absolute;top:0;right:0;background:${isMarked ? '#c0392b' : '#e74c3c'};color:white;border:none;width:24px;height:24px;cursor:pointer;font-size:14px;font-weight:bold;z-index:10;border-radius:0 0 0 8px;display:flex;align-items:center;justify-content:center;">
+                        ${isMarked ? '↺' : '×'}
+                    </button>
+                    
+                    ${isExisting ? 
+                        `<div style="position:absolute;bottom:2px;left:2px;background:${isMarked ? '#e74c3c' : '#27ae60'};color:white;font-size:0.5rem;padding:1px 3px;border-radius:2px;z-index:10;">
+                            ${isMarked ? 'EXCLUIR' : 'Existente'}
+                        </div>` : ''
+                    }
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    },
+
     renderPdfPreview: function() {
         const container = document.getElementById('pdfUploadPreview');
         if (!container) return;
@@ -1567,6 +1498,7 @@ const MediaSystem = {
         container.innerHTML = html;
     },
 
+    // ========== UTILITIES ==========
     setupEventListeners: function() {
         console.log('🔧 Configurando event listeners unificados...');
         
@@ -1622,6 +1554,126 @@ const MediaSystem = {
         }, 500);
     },
 
+    isValidUrl: function(url) {
+        if (!url || typeof url !== 'string') return false;
+        
+        if (url.startsWith('http://') || url.startsWith('https://') || 
+            url.startsWith('blob:') || url.startsWith('data:')) {
+            return true;
+        }
+        
+        const supabaseKeywords = ['supabase.co', 'storage/v1', 'object/public'];
+        if (supabaseKeywords.some(keyword => url.includes(keyword))) {
+            return true;
+        }
+        
+        return false;
+    },
+
+    reconstructSupabaseUrl: function(filename) {
+        if (!filename || typeof filename !== 'string') return null;
+        
+        const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
+        const bucket = this.config.buckets[this.config.currentSystem];
+        
+        if (filename.startsWith('http')) return filename;
+        
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidPattern.test(filename)) {
+            console.warn(`⚠️ URL é apenas UUID: ${filename}`);
+            return null;
+        }
+        
+        if (filename.includes('.')) {
+            try {
+                const reconstructedUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${filename}`;
+                console.log(`🔧 URL reconstruída: ${reconstructedUrl.substring(0, 80)}...`);
+                return reconstructedUrl;
+            } catch (error) {
+                console.error(`❌ Erro ao reconstruir URL para ${filename}:`, error);
+                return null;
+            }
+        }
+        
+        return null;
+    },
+
+    extractFileName: function(url) {
+        if (!url) return 'Arquivo';
+        
+        try {
+            if (url.includes('/')) {
+                const parts = url.split('/');
+                let fileName = parts[parts.length - 1] || 'Arquivo';
+                
+                try { 
+                    fileName = decodeURIComponent(fileName); 
+                } catch (e) {}
+                
+                fileName = fileName.split('?')[0];
+                
+                if (fileName.length < 5 || fileName.match(/^[0-9a-f]{8}-/i)) {
+                    if (url.includes('media_')) {
+                        const match = url.match(/media_[^\/]+_([^\/]+)$/);
+                        if (match && match[1]) {
+                            fileName = match[1];
+                        }
+                    }
+                    
+                    if (fileName.length < 5) {
+                        if (url.includes('.jpg') || url.includes('.jpeg') || url.includes('.png')) {
+                            fileName = 'Imagem_' + Date.now().toString().substr(-6);
+                        } else {
+                            fileName = 'Arquivo_' + Date.now().toString().substr(-6);
+                        }
+                    }
+                }
+                
+                return fileName.length > 50 ? fileName.substring(0, 47) + '...' : fileName;
+            } 
+            else {
+                if (url.match(/^[0-9a-f]{8}-/i)) {
+                    return 'Imagem_' + Date.now().toString().substr(-6);
+                }
+                return url.length > 50 ? url.substring(0, 47) + '...' : url;
+            }
+        } catch (error) {
+            console.error('❌ Erro ao extrair nome do arquivo:', error);
+            return 'Imagem_' + Date.now().toString().substr(-6);
+        }
+    },
+
+    getFileTypeFromUrl: function(url) {
+        if (!url) return 'file';
+        
+        try {
+            const urlLower = url.toLowerCase();
+            
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.jfif'];
+            if (imageExtensions.some(ext => urlLower.includes(ext))) {
+                return 'image';
+            }
+            
+            const videoExtensions = ['.mp4', '.mov', '.avi', '.mkv', '.webm'];
+            if (videoExtensions.some(ext => urlLower.includes(ext))) {
+                return 'video';
+            }
+            
+            if (urlLower.includes('.pdf')) {
+                return 'pdf';
+            }
+            
+            if (urlLower.includes('image/')) return 'image';
+            if (urlLower.includes('video/')) return 'video';
+            if (urlLower.includes('application/pdf')) return 'pdf';
+            
+            return 'file';
+        } catch (error) {
+            console.error('❌ Erro ao detectar tipo do arquivo:', error);
+            return 'file';
+        }
+    },
+
     generateFileName: function(file, propertyId, type) {
         const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2, 10);
@@ -1654,18 +1706,16 @@ setTimeout(() => {
         console.group('🐛 DIAGNÓSTICO DO SISTEMA DE MÍDIA');
         console.log('📊 Estado atual:', {
             existing: MediaSystem.state.existing.length,
-            files: MediaSystem.state.files.length,
-            existingPdfs: MediaSystem.state.existingPdfs.length,
-            pdfs: MediaSystem.state.pdfs.length
+            files: MediaSystem.state.files.length
         });
         
-        MediaSystem.state.existing.forEach((item, index) => {
-            console.log(`   📄 Item ${index + 1}:`, {
+        MediaSystem.state.files.forEach((item, index) => {
+            console.log(`   📄 Arquivo ${index + 1}:`, {
                 name: item.name,
-                url: item.url,
-                preview: item.preview,
+                type: item.type,
                 isImage: item.isImage,
-                isVideo: item.isVideo
+                isVideo: item.isVideo,
+                fileType: item.file ? item.file.type : 'sem file'
             });
         });
         
@@ -1673,7 +1723,7 @@ setTimeout(() => {
     };
     
     console.log('💡 Execute debugMediaSystem() para diagnóstico');
-    console.log('💡 Execute MediaSystem.forceReloadPreviews() para corrigir previews');
+    console.log('💡 Execute MediaSystem.forceReloadPreviews() para corrigir flags');
     
 }, 1000);
 
