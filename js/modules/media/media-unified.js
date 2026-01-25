@@ -1,5 +1,5 @@
 // js/modules/media/media-unified.js - VERSÃO DEFINITIVA COM CORREÇÃO DE SUPABASE
-console.log('🔄 media-unified.js - VERSÃO DEFINITIVA COM CONSTANTES FIXAS');
+console.log('🔄 media-unified.js - VERSÃO DEFINITIVA COM CONSTANTES FIXAS E PREVIEW CORRIGIDO');
 
 // ========== USAR window.SUPABASE_CONSTANTS DE SharedCore.js ==========
 // Comentar declaração duplicada para evitar erro de compilação
@@ -529,12 +529,23 @@ const MediaSystem = {
                    url.toLowerCase().includes('application/pdf');
         },
 
-        // ========== FUNÇÃO DE PREVIEW CORRIGIDA - VERSÃO DEFINITIVA (SUBSTITUÍDA) ==========
+        // ========== FUNÇÃO DE PREVIEW CORRIGIDA - VERSÃO DEFINITIVA COM MELHORIAS ==========
         getMediaPreviewHTML: function(item) {
             console.log(`🔍 Gerando preview para: ${item.name || item.id}`);
             
-            // ✅ CRÍTICO: Priorizar URL permanente sobre preview temporário
+            // ✅✅✅ CORREÇÃO CRÍTICA: SEMPRE priorizar URL permanente
+            // Se tem URL permanente (do Supabase), usar ela
+            // Se não, usar preview temporário (blob:)
+            // Se não tem nenhum, usar fallback
             const mediaUrl = item.url || item.preview;
+            
+            // DEBUG: Log para diagnóstico
+            if (item.url && item.preview && item.url !== item.preview) {
+                console.log(`🔄 URL vs Preview DIFERENTES para ${item.name}:`);
+                console.log(`   URL (permanente): ${item.url.substring(0, 80)}...`);
+                console.log(`   Preview (temporário): ${item.preview.substring(0, 80)}...`);
+                console.log(`   Usando: ${item.url.substring(0, 80)}...`);
+            }
             
             if (!mediaUrl) {
                 console.warn(`❌ Sem URL para ${item.name}`);
@@ -687,7 +698,7 @@ const MediaSystem = {
             return this;
         },
 
-        // ========== FUNÇÃO CRÍTICA: ATUALIZAR ESTADO APÓS UPLOAD (NOVA) ==========
+        // ========== FUNÇÃO CRÍTICA: ATUALIZAR ESTADO APÓS UPLOAD (MELHORADA) ==========
         updateStateAfterUpload: function(uploadedUrls, uploadedPdfs) {
             console.group('🔄 ATUALIZANDO ESTADO APÓS UPLOAD');
             
@@ -738,13 +749,25 @@ const MediaSystem = {
                 }
             });
             
+            // ✅ 4. GARANTIR QUE PREVIEWS APONTEM PARA URLS PERMANENTES (ADICIONADO)
+            [...this.state.existing, ...this.state.files].forEach(item => {
+                if (item.url && item.preview && item.url !== item.preview) {
+                    // Liberar URL temporária se necessário
+                    if (item.preview.startsWith('blob:')) {
+                        URL.revokeObjectURL(item.preview);
+                    }
+                    item.preview = item.url;
+                    console.log(`🔄 Preview sincronizado com URL permanente: ${item.name}`);
+                }
+            });
+            
             console.log('✅ Estado atualizado após upload');
             console.groupEnd();
             
             return this;
         },
 
-        // ========== FUNÇÃO DE EMERGÊNCIA: FORÇAR RELOAD DE PREVIEWS (NOVA) ==========
+        // ========== FUNÇÃO DE EMERGÊNCIA: FORÇAR RELOAD DE PREVIEWS (COMPLETA) ==========
         forceReloadPreviews: function() {
             console.group('🔄 FORÇANDO RELOAD DE TODOS OS PREVIEWS');
             
@@ -753,6 +776,12 @@ const MediaSystem = {
                 if (item.url && !item.preview) {
                     item.preview = item.url;
                     console.log(`✅ Preview restaurado para: ${item.name}`);
+                } else if (item.url && item.preview && item.url !== item.preview) {
+                    // Se tem URL permanente DIFERENTE do preview, atualizar
+                    console.log(`🔄 Atualizando preview de ${item.name}:`);
+                    console.log(`   Antigo: ${item.preview.substring(0, 80)}...`);
+                    console.log(`   Novo: ${item.url.substring(0, 80)}...`);
+                    item.preview = item.url;
                 }
             });
             
@@ -1004,6 +1033,11 @@ const MediaSystem = {
                     pdfs: results.pdfs ? `${results.pdfs.split(',').length} URL(s)` : 'Nenhum'
                 });
                 
+                // ✅ 5. SINCRONIZAR PREVIEWS IMEDIATAMENTE (ADICIONADO)
+                setTimeout(() => {
+                    this.forceReloadPreviews();
+                }, 500);
+                
                 return results;
                 
             } catch (error) {
@@ -1219,7 +1253,7 @@ const MediaSystem = {
             
             // Processar exclusões de PDFs
             const pdfsToDelete = this.state.existingPdfs
-                .filter(item => item.markedForletion && item.url)
+                .filter(item => item.markedForDeletion && item.url)
                 .map(item => item.url);
             
             // TODO: Implementar exclusão do Supabase Storage
@@ -1532,7 +1566,8 @@ const MediaSystem = {
         };
         
         console.log('💡 Execute window.testMediaUpload() para testar o upload');
+        console.log('💡 Execute MediaSystem.forceReloadPreviews() para corrigir previews');
         
     }, 1000);
 
-    console.log('✅ media-unified.js carregado com correção definitiva');
+    console.log('✅ media-unified.js carregado com correção definitiva de preview');
