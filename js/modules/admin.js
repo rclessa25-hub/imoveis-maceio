@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN COM VALIDAÇÃO DE IDs PARA SUPABASE
-console.log('🔧 admin.js com validação de IDs carregado');
+// js/modules/admin.js - SISTEMA ADMIN COM CORREÇÃO DE PERSISTÊNCIA DE PDFs
+console.log('🔧 admin.js com correção de persistência de PDFs carregado');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -10,7 +10,7 @@ const ADMIN_CONFIG = {
     buttonClass: "admin-toggle"
 };
 
-const DEBUG = false;
+const DEBUG = true; // Ativado para debug
 const log = DEBUG ? console.log : () => {};
 
 // Estado global
@@ -19,10 +19,9 @@ let autoSaveTimeout = null;
 let pendingAutoSave = false;
 
 /* ==========================================================
-   HELPER FUNCTIONS (Redução de 200+ linhas)
+   HELPER FUNCTIONS
    ========================================================== */
 const Helpers = {
-    // Formatação unificada
     format: {
         price: (value) => window.SharedCore?.PriceFormatter?.formatForInput?.(value) || value,
         features: (value) => {
@@ -36,7 +35,6 @@ const Helpers = {
         }
     },
     
-    // UI Helpers
     updateUI: {
         formTitle: (text) => {
             const el = document.getElementById('formTitle');
@@ -60,7 +58,6 @@ const Helpers = {
         }
     },
     
-    // Configuração de uploads (redução de 80+ linhas)
     setupUpload: (inputId, areaId, callback, autoSaveType = null) => {
         const input = document.getElementById(inputId);
         const area = document.getElementById(areaId);
@@ -90,7 +87,6 @@ const Helpers = {
         return true;
     },
     
-    // Notificações (redução de 30+ linhas)
     showNotification: (message, type = 'success', duration = 3000) => {
         const existing = document.querySelectorAll('.auto-save-notification');
         existing.forEach(n => n.remove());
@@ -117,12 +113,50 @@ const Helpers = {
 };
 
 /* ==========================================================
-   SISTEMA DE PDFs COM VALIDAÇÃO DE IDs PARA SUPABASE
+   SISTEMA DE PDFs COM CORREÇÃO DE PERSISTÊNCIA
    ========================================================== */
 window.adminPdfHandler = {
     clear: function() {
         console.log('[adminPdfHandler] Limpando PDFs');
         return window.MediaSystem?.clearAllPdfs?.() || window.PdfSystem?.clearAllPdfs?.();
+    },
+    
+    clearNonUploaded: function() {
+        console.log('[adminPdfHandler] Limpando apenas PDFs NÃO enviados');
+        
+        if (window.MediaSystem?.state?.pdfs) {
+            const uploadedPdfs = window.MediaSystem.state.pdfs.filter(pdf => pdf.uploaded);
+            window.MediaSystem.state.pdfs = uploadedPdfs;
+            
+            console.log(`💾 Mantidos ${uploadedPdfs.length} PDF(s) já enviado(s)`);
+            
+            if (window.MediaSystem.updateUI) {
+                window.MediaSystem.updateUI();
+            }
+        }
+        
+        return true;
+    },
+    
+    hasPersistedPdfs: function() {
+        if (!window.editingPropertyId) return false;
+        
+        if (window.MediaSystem?.state?.pdfs) {
+            const uploadedPdfs = window.MediaSystem.state.pdfs.filter(pdf => pdf.uploaded);
+            return uploadedPdfs.length > 0;
+        }
+        
+        return false;
+    },
+    
+    resetStateSoft: function(preserveUploadedPdfs = true) {
+        console.log('[adminPdfHandler] Reset suave do estado');
+        
+        if (window.MediaSystem && window.MediaSystem.resetStateSoft) {
+            return window.MediaSystem.resetStateSoft(preserveUploadedPdfs);
+        }
+        
+        return false;
     },
     
     load: function(property) {
@@ -131,7 +165,6 @@ window.adminPdfHandler = {
                window.PdfSystem?.loadExistingPdfsForEdit?.(property);
     },
     
-    // ✅ FUNÇÃO CRÍTICA: Processa e SALVA PDFs definitivamente no Supabase
     process: async function(id, title) {
         console.group('[adminPdfHandler] PROCESSANDO PDFs DEFINITIVAMENTE');
         console.log('📋 Parâmetros:', { 
@@ -149,36 +182,40 @@ window.adminPdfHandler = {
         try {
             let pdfUrls = '';
             
-            // Estratégia 1: Usar MediaSystem (preferencial)
             if (window.MediaSystem?.processAndSavePdfs) {
                 console.log('🔍 Usando MediaSystem para processar PDFs...');
                 pdfUrls = await window.MediaSystem.processAndSavePdfs(id, title);
                 console.log('📄 URLs do MediaSystem:', pdfUrls ? pdfUrls.split(',').length + ' PDF(s)' : 'Nenhum');
             }
-            // Estratégia 2: Usar PdfSystem (alternativo)
             else if (window.PdfSystem?.processAndSavePdfs) {
                 console.log('🔍 Usando PdfSystem para processar PDFs...');
                 pdfUrls = await window.PdfSystem.processAndSavePdfs(id, title);
                 console.log('📄 URLs do PdfSystem:', pdfUrls ? pdfUrls.split(',').length + ' PDF(s)' : 'Nenhum');
             }
-            // Estratégia 3: Processar manualmente
             else {
                 console.log('⚠️ Sistemas de PDF não disponíveis, tentando processamento manual...');
                 pdfUrls = await this.processPdfsManually(id, title);
             }
             
-            // ✅ GARANTIR PERSISTÊNCIA IMEDIATA NO SUPABASE (COM VALIDAÇÃO DE ID)
             if (pdfUrls?.trim()) {
-                // ✅ VALIDAR ID ANTES DE PERSISTIR
                 const validId = this.validateIdForSupabase(id);
                 
                 if (validId) {
                     const persistSuccess = await this.persistPdfsToSupabase(validId, pdfUrls);
                     if (persistSuccess) {
                         console.log('✅ PDFs persistidos com SUCESSO no Supabase!');
+                        
+                        // 🔄 CRÍTICO: Marcar PDFs como já enviados no estado local
+                        if (window.MediaSystem?.state?.pdfs) {
+                            window.MediaSystem.state.pdfs.forEach(pdf => {
+                                if (pdfUrls.includes(pdf.url)) {
+                                    pdf.uploaded = true;
+                                    console.log(`🏷️ Marcado PDF como enviado: ${pdf.name}`);
+                                }
+                            });
+                        }
                     } else {
                         console.error('❌ Falha ao persistir PDFs no Supabase');
-                        // Mesmo se falhar, retorna as URLs para salvamento local
                     }
                 } else {
                     console.warn('⚠️ ID inválido para Supabase, salvando apenas localmente');
@@ -197,7 +234,6 @@ window.adminPdfHandler = {
         }
     },
     
-    // ✅ MÉTODO NOVO: Persistir PDFs diretamente no Supabase (COM VALIDAÇÃO DE ID)
     persistPdfsToSupabase: async function(propertyId, pdfUrls) {
         console.log('[adminPdfHandler] Persistindo PDFs no Supabase:', {
             propertyId,
@@ -215,7 +251,6 @@ window.adminPdfHandler = {
             return false;
         }
         
-        // ✅ CRÍTICO: Garantir que o ID é numérico para Supabase
         if (typeof propertyId !== 'number' || isNaN(propertyId)) {
             console.error('❌ ID deve ser numérico para Supabase:', propertyId);
             return false;
@@ -255,8 +290,6 @@ window.adminPdfHandler = {
                     idUsado: propertyId
                 });
                 
-                // ✅ ESTRATÉGIA ALTERNATIVA: Verificar se o imóvel existe
-                console.log('🔍 Verificando se o imóvel existe no Supabase...');
                 const checkResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}&select=id`, {
                     headers: {
                         'apikey': window.SUPABASE_KEY,
@@ -284,7 +317,6 @@ window.adminPdfHandler = {
         }
     },
     
-    // ✅ FUNÇÃO AUXILIAR: Validar e converter ID para Supabase
     validateIdForSupabase: function(propertyId) {
         console.log('[adminPdfHandler] Validando ID para Supabase:', {
             original: propertyId,
@@ -296,15 +328,12 @@ window.adminPdfHandler = {
             return null;
         }
         
-        // Se já for número e válido, retornar como está
         if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) {
             console.log(`✅ ID já é numérico válido: ${propertyId}`);
             return propertyId;
         }
         
-        // Se for string, tentar extrair número
         if (typeof propertyId === 'string') {
-            // Remover prefixos comuns de teste
             const cleanId = propertyId
                 .replace('test_id_', '')
                 .replace('temp_', '')
@@ -318,7 +347,6 @@ window.adminPdfHandler = {
             }
         }
         
-        // Tentar converter direto
         const directConvert = parseInt(propertyId);
         if (!isNaN(directConvert) && directConvert > 0) {
             console.log(`✅ ID convertido diretamente: ${directConvert}`);
@@ -329,11 +357,9 @@ window.adminPdfHandler = {
         return null;
     },
     
-    // ✅ MÉTODO NOVO: Processamento manual de fallback
     processPdfsManually: async function(propertyId, title) {
         console.log('[adminPdfHandler] Processamento manual de PDFs');
         
-        // Tentar obter PDFs do estado atual
         if (window.MediaSystem?.state?.pdfs) {
             const pdfs = MediaSystem.state.pdfs || [];
             const uploadedPdfs = pdfs.filter(pdf => pdf.url && pdf.uploaded);
@@ -355,59 +381,8 @@ window.adminPdfHandler = {
     }
 };
 
-// ==========================================================
-// FUNÇÕES DE COMPATIBILIDADE COM VALIDAÇÃO DE IDs
-// ==========================================================
-window.processAndSavePdfs = async function(propertyId, propertyTitle) {
-    console.group('[COMPATIBILIDADE] processAndSavePdfs -> delegando para adminPdfHandler');
-    console.log('📋 Parâmetros:', { 
-        propertyId, 
-        tipoId: typeof propertyId,
-        propertyTitle 
-    });
-    
-    try {
-        const result = await window.adminPdfHandler.process(propertyId, propertyTitle);
-        console.log('✅ Resultado:', result ? result.split(',').length + ' PDF(s)' : 'Nenhum');
-        console.groupEnd();
-        return result;
-    } catch (error) {
-        console.error('❌ Erro:', error);
-        console.groupEnd();
-        return '';
-    }
-};
-
-window.clearAllPdfs = function() {
-    console.log('[COMPATIBILIDADE] clearAllPdfs -> delegando para adminPdfHandler');
-    return window.adminPdfHandler.clear();
-};
-
-window.loadExistingPdfsForEdit = function(property) {
-    console.log('[COMPATIBILIDADE] loadExistingPdfsForEdit -> delegando para adminPdfHandler');
-    return window.adminPdfHandler.load(property);
-};
-
-window.getPdfsToSave = async function(propertyId) {
-    console.log('[COMPATIBILIDADE] getPdfsToSave -> delegando para processAndSavePdfs');
-    return await window.processAndSavePdfs(propertyId, 'Imóvel');
-};
-
-window.clearProcessedPdfs = function() {
-    console.log('[COMPATIBILIDADE] clearProcessedPdfs - Limpando apenas PDFs processados');
-    if (MediaSystem?.state?.pdfs) {
-        MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
-        if (MediaSystem.updateUI) MediaSystem.updateUI();
-    }
-    window.adminPdfHandler.clear();
-};
-
-window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
-    return await (MediaSystem?.getMediaUrlsForProperty?.(propertyId, propertyTitle) || '');
-};
-
 /* ==========================================================
-   AUTO-SALVAMENTO OTIMIZADO COM VALIDAÇÃO DE IDs
+   AUTO-SALVAMENTO COM PRESERVAÇÃO DE ESTADO
    ========================================================== */
 window.triggerAutoSave = function(reason = 'media_deletion') {
     if (!window.editingPropertyId) return;
@@ -443,13 +418,12 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                 return acc;
             }, {});
             
-            // Formatação
             propertyData.price = Helpers.format.price(propertyData.price);
             propertyData.features = Helpers.format.features(propertyData.features);
             
             const updateData = { ...propertyData };
             
-            // ✅ PROCESSAR PDFs COM VALIDAÇÃO DE ID
+            // 🔄 CRÍTICO: Processar PDFs mas manter estado
             if (window.adminPdfHandler) {
                 try {
                     const pdfsString = await window.adminPdfHandler.process(
@@ -463,6 +437,9 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                             count: pdfsString.split(',').filter(p => p.trim()).length,
                             propertyTitle: propertyData.title
                         });
+                        
+                        // 🔄 NÃO limpar o estado após auto-salvamento
+                        console.log('💾 Estado preservado após auto-salvamento');
                     } else {
                         console.log('ℹ️ Nenhum PDF novo processado no auto-save');
                     }
@@ -471,13 +448,11 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                 }
             }
             
-            // Processar mídia
             if (window.MediaSystem?.getOrderedMediaUrls) {
                 const mediaUrls = window.MediaSystem.getOrderedMediaUrls().images;
                 if (mediaUrls?.trim()) updateData.images = mediaUrls;
             }
             
-            // ✅ VALIDAR ID ANTES DE ENVIAR
             const validId = window.adminPdfHandler?.validateIdForSupabase?.(window.editingPropertyId);
             console.log('📤 Dados para envio:', {
                 id: window.editingPropertyId,
@@ -486,13 +461,11 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                 campos: Object.keys(updateData)
             });
             
-            // Atualizar array local e banco
             window.updateLocalProperty(window.editingPropertyId, updateData);
             if (typeof window.updateProperty === 'function') {
-                // Usar ID validado se disponível
                 const idToUse = validId || window.editingPropertyId;
                 await window.updateProperty(idToUse, updateData);
-                Helpers.showNotification('✅ Alterações salvas');
+                Helpers.showNotification('✅ Alterações salvas automaticamente');
             }
             
         } catch (error) {
@@ -511,44 +484,79 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
 };
 
 /* ==========================================================
-   FUNÇÃO UNIFICADA DE LIMPEZA (30 linhas vs 70+)
+   FUNÇÃO UNIFICADA DE LIMPEZA COM PRESERVAÇÃO DE PDFs PERSISTIDOS
    ========================================================== */
 window.cleanAdminForm = function(mode = 'reset') {
+    console.log('[cleanAdminForm] Executando limpeza do formulário - Modo:', mode);
+    
     if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
     autoSaveTimeout = null;
     pendingAutoSave = false;
     
-    window.editingPropertyId = null;
+    // 🔄 CRÍTICO: Preservar o ID do imóvel em edição se houver PDFs já persistidos
+    const shouldPreserveEditingId = (mode === 'reset' && window.editingPropertyId && 
+                                     window.adminPdfHandler?.hasPersistedPdfs?.());
     
-    // Resetar formulário
+    if (mode === 'reset' && !shouldPreserveEditingId) {
+        window.editingPropertyId = null;
+    } else if (shouldPreserveEditingId) {
+        console.log('🔄 Preservando editingPropertyId pois há PDFs persistidos:', window.editingPropertyId);
+    }
+    
+    // Resetar formulário (mas manter valores se for apenas limpeza de UI)
     const form = document.getElementById('propertyForm');
-    if (form) {
+    if (form && mode !== 'soft_reset') {
         form.reset();
         document.getElementById('propType').value = 'residencial';
         document.getElementById('propBadge').value = 'Novo';
         document.getElementById('propHasVideo').checked = false;
     }
     
-    // Limpar sistemas
-    if (window.MediaSystem) MediaSystem.resetState();
-    if (window.adminPdfHandler) window.adminPdfHandler.clear();
+    // 🔄 CRÍTICO: NÃO limpar o estado do MediaSystem completamente
+    if (window.MediaSystem) {
+        console.log('[cleanAdminForm] Limpando UI do MediaSystem, mas mantendo estado de PDFs enviados');
+        
+        const existingUploadedPdfs = window.MediaSystem.state?.pdfs?.filter(pdf => pdf.uploaded) || [];
+        console.log(`💾 Preservando ${existingUploadedPdfs.length} PDF(s) já enviado(s)`);
+        
+        if (window.MediaSystem.resetStateSoft) {
+            window.MediaSystem.resetStateSoft(existingUploadedPdfs);
+        } else {
+            window.MediaSystem.state.pdfs = existingUploadedPdfs;
+            if (window.MediaSystem.updateUI) window.MediaSystem.updateUI();
+        }
+    }
+    
+    if (window.adminPdfHandler && mode !== 'soft_reset') {
+        console.log('[cleanAdminForm] Limpando apenas PDFs NÃO enviados do adminPdfHandler');
+        window.adminPdfHandler.clearNonUploaded();
+    }
     
     // Atualizar UI
-    Helpers.updateUI.formTitle('Adicionar Novo Imóvel');
-    Helpers.updateUI.submitButton(false);
-    Helpers.updateUI.cancelButton(false);
+    if (mode === 'reset' || mode === 'soft_reset') {
+        Helpers.updateUI.formTitle('Adicionar Novo Imóvel');
+        Helpers.updateUI.submitButton(false);
+        Helpers.updateUI.cancelButton(false);
+    }
     
-    // Limpar previews
-    ['newPdfsSection','existingPdfsSection','uploadPreview','pdfUploadPreview']
-        .forEach(id => {
+    // Limpar previews (apenas visual)
+    if (mode !== 'soft_reset') {
+        ['uploadPreview', 'pdfUploadPreview'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = '';
         });
+        
+        const existingPdfsSection = document.getElementById('existingPdfsSection');
+        if (existingPdfsSection && existingPdfsSection.innerHTML.trim()) {
+            console.log('💾 Preservando seção de PDFs existentes');
+        }
+    }
     
     if (mode === 'cancel' && window.showNotification) {
         window.showNotification('Edição cancelada', 'info');
     }
     
+    console.log(`✅ cleanAdminForm concluído (Modo: ${mode})`);
     return true;
 };
 
@@ -560,7 +568,146 @@ window.cancelEdit = function() {
 };
 
 /* ==========================================================
-   TOGGLE ADMIN PANEL (15 linhas vs 30+)
+   CONFIGURAÇÃO DO FORMULÁRIO COM PRESERVAÇÃO DE ESTADO
+   ========================================================== */
+window.setupForm = function() {
+    const form = document.getElementById('propertyForm');
+    if (!form) return;
+    
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
+    
+    document.getElementById('propertyForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Aguarde...', { variant: 'processing' });
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn?.innerHTML;
+        
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+        }
+        
+        try {
+            const fields = ['propTitle','propPrice','propLocation','propDescription',
+                          'propFeatures','propType','propBadge','propHasVideo'];
+            
+            const propertyData = fields.reduce((acc, id) => {
+                const el = document.getElementById(id);
+                acc[id.replace('prop', '').toLowerCase()] = 
+                    el?.type === 'checkbox' ? el.checked : el?.value?.trim() || '';
+                return acc;
+            }, {});
+            
+            if (!propertyData.title || !propertyData.price || !propertyData.location) {
+                throw new Error('Preencha Título, Preço e Localização!');
+            }
+            
+            propertyData.price = Helpers.format.price(propertyData.price);
+            propertyData.features = Helpers.format.features(propertyData.features);
+            
+            // 🔄 CRÍTICO: Verificar se é edição após auto-salvamento
+            const isEditAfterAutoSave = window.editingPropertyId && 
+                                       window.adminPdfHandler?.hasPersistedPdfs?.();
+            
+            if (window.editingPropertyId) {
+                const updateData = { ...propertyData };
+                
+                console.log('🔄 Salvamento manual após auto-salvamento:', {
+                    editingId: window.editingPropertyId,
+                    hasPersistedPdfs: isEditAfterAutoSave,
+                    timestamp: new Date().toISOString()
+                });
+                
+                let pdfsProcessed = false;
+                if (window.adminPdfHandler) {
+                    try {
+                        const hasNewPdfs = window.MediaSystem?.state?.pdfs?.some(pdf => !pdf.uploaded);
+                        
+                        if (hasNewPdfs) {
+                            console.log('📤 Processando NOVOS PDFs no salvamento manual');
+                            const pdfsString = await window.adminPdfHandler.process(
+                                window.editingPropertyId, 
+                                propertyData.title
+                            );
+                            if (pdfsString?.trim()) {
+                                updateData.pdfs = pdfsString;
+                                pdfsProcessed = true;
+                            }
+                        } else if (isEditAfterAutoSave) {
+                            console.log('ℹ️ Usando PDFs já persistidos pelo auto-salvamento');
+                            const existingPdfs = window.MediaSystem?.state?.pdfs?.filter(pdf => pdf.uploaded) || [];
+                            if (existingPdfs.length > 0) {
+                                const pdfUrls = existingPdfs.map(pdf => pdf.url).join(',');
+                                updateData.pdfs = pdfUrls;
+                                console.log(`💾 Usando ${existingPdfs.length} PDF(s) já persistido(s)`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Erro ao processar PDFs:', error);
+                    }
+                }
+                
+                if (window.MediaSystem?.getOrderedMediaUrls) {
+                    const mediaUrls = window.MediaSystem.getOrderedMediaUrls().images;
+                    if (mediaUrls?.trim()) updateData.images = mediaUrls;
+                }
+                
+                window.updateLocalProperty(window.editingPropertyId, updateData);
+                
+                if (typeof window.updateProperty === 'function') {
+                    const validId = window.adminPdfHandler?.validateIdForSupabase?.(window.editingPropertyId);
+                    const idToUse = validId || window.editingPropertyId;
+                    
+                    const success = await window.updateProperty(idToUse, updateData);
+                    if (success) {
+                        Helpers.showNotification('✅ Imóvel atualizado!');
+                        
+                        // 🔄 CRÍTICO: Apenas limpeza SUAVE após salvamento bem-sucedido
+                        setTimeout(() => {
+                            window.cleanAdminForm('soft_reset');
+                        }, 1000);
+                    }
+                }
+                
+            } else {
+                if (typeof window.addNewProperty === 'function') {
+                    const newProperty = await window.addNewProperty(propertyData);
+                    if (newProperty) {
+                        window.addToLocalProperties(newProperty);
+                        Helpers.showNotification('✅ Imóvel criado!');
+                        
+                        setTimeout(() => {
+                            window.cleanAdminForm('reset');
+                        }, 1000);
+                    }
+                }
+            }
+            
+        } catch (error) {
+            alert(`❌ Erro: ${error.message}`);
+            console.error('Erro no salvamento:', error);
+        } finally {
+            if (loading) loading.hide();
+            
+            if (submitBtn) {
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText || 
+                        (window.editingPropertyId ? 
+                            '<i class="fas fa-save"></i> Salvar Alterações' : 
+                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site');
+                }, 500);
+            }
+        }
+    });
+};
+
+/* ==========================================================
+   FUNÇÕES RESTANTES
    ========================================================== */
 window.toggleAdminPanel = function() {
     const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
@@ -585,14 +732,10 @@ window.toggleAdminPanel = function() {
     }
 };
 
-/* ==========================================================
-   CONFIGURAÇÃO DE UI (40 linhas vs 80+)
-   ========================================================== */
 window.setupAdminUI = function() {
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
     
-    // Configurar botão admin
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
         adminBtn.removeAttribute('onclick');
@@ -602,7 +745,6 @@ window.setupAdminUI = function() {
         });
     }
     
-    // Configurar botão cancelar
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', (e) => {
@@ -611,7 +753,6 @@ window.setupAdminUI = function() {
         });
     }
     
-    // Adicionar botão sincronização
     if (!document.getElementById('syncButton')) {
         const syncBtn = document.createElement('button');
         syncBtn.id = 'syncButton';
@@ -628,10 +769,8 @@ window.setupAdminUI = function() {
         if (panelTitle) panelTitle.parentNode.insertBefore(syncBtn, panelTitle.nextSibling);
     }
     
-    // Configurar formulário
     if (typeof window.setupForm === 'function') window.setupForm();
     
-    // Adicionar estilos
     const style = document.createElement('style');
     style.textContent = `
         #propertiesContainer.updating .property-card { opacity: 0.7; transition: opacity 0.3s; }
@@ -641,17 +780,12 @@ window.setupAdminUI = function() {
     document.head.appendChild(style);
 };
 
-/* ==========================================================
-   FUNÇÃO editProperty OTIMIZADA (40 linhas vs 80+)
-   ========================================================== */
 window.editProperty = function(id) {
     const property = window.properties?.find(p => p.id === id);
     if (!property) return alert('❌ Imóvel não encontrado!');
     
-    // Resetar sistemas
     if (window.MediaSystem) MediaSystem.resetState();
     
-    // Preencher formulário
     const fields = {
         propTitle: property.title || '',
         propPrice: Helpers.format.price(property.price) || '',
@@ -669,18 +803,15 @@ window.editProperty = function(id) {
         if (el) el.type === 'checkbox' ? el.checked = value : el.value = value;
     });
     
-    // Atualizar UI
     Helpers.updateUI.formTitle(`Editando: ${property.title}`);
     Helpers.updateUI.submitButton(true);
     Helpers.updateUI.cancelButton(true);
     
     window.editingPropertyId = property.id;
     
-    // Carregar mídia e PDFs
     if (window.MediaSystem) MediaSystem.loadExisting(property);
     if (window.adminPdfHandler) window.adminPdfHandler.load(property);
     
-    // Abrir painel e scroll
     setTimeout(() => {
         const panel = document.getElementById('adminPanel');
         if (panel) panel.style.display = 'block';
@@ -690,113 +821,6 @@ window.editProperty = function(id) {
     return true;
 };
 
-/* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO (60 linhas vs 120+)
-   ========================================================== */
-window.setupForm = function() {
-    const form = document.getElementById('propertyForm');
-    if (!form) return;
-    
-    // Clonar para remover listeners antigos
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
-    
-    if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
-    
-    document.getElementById('propertyForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Aguarde...', { variant: 'processing' });
-        const submitBtn = this.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
-        }
-        
-        try {
-            // Coletar dados
-            const fields = ['propTitle','propPrice','propLocation','propDescription',
-                          'propFeatures','propType','propBadge','propHasVideo'];
-            
-            const propertyData = fields.reduce((acc, id) => {
-                const el = document.getElementById(id);
-                acc[id.replace('prop', '').toLowerCase()] = 
-                    el?.type === 'checkbox' ? el.checked : el?.value?.trim() || '';
-                return acc;
-            }, {});
-            
-            // Validação
-            if (!propertyData.title || !propertyData.price || !propertyData.location) {
-                throw new Error('Preencha Título, Preço e Localização!');
-            }
-            
-            // Formatação
-            propertyData.price = Helpers.format.price(propertyData.price);
-            propertyData.features = Helpers.format.features(propertyData.features);
-            
-            if (window.editingPropertyId) {
-                const updateData = { ...propertyData };
-                
-                // Processar PDFs COM VALIDAÇÃO DE ID
-                if (window.adminPdfHandler) {
-                    const pdfsString = await window.adminPdfHandler.process(
-                        window.editingPropertyId, 
-                        propertyData.title
-                    );
-                    if (pdfsString?.trim()) updateData.pdfs = pdfsString;
-                }
-                
-                // Processar mídia
-                if (window.MediaSystem?.getOrderedMediaUrls) {
-                    const mediaUrls = window.MediaSystem.getOrderedMediaUrls().images;
-                    if (mediaUrls?.trim()) updateData.images = mediaUrls;
-                }
-                
-                // Atualizar
-                window.updateLocalProperty(window.editingPropertyId, updateData);
-                
-                if (typeof window.updateProperty === 'function') {
-                    // Validar ID antes de enviar
-                    const validId = window.adminPdfHandler?.validateIdForSupabase?.(window.editingPropertyId);
-                    const idToUse = validId || window.editingPropertyId;
-                    
-                    const success = await window.updateProperty(idToUse, updateData);
-                    if (success) {
-                        Helpers.showNotification('✅ Imóvel atualizado!');
-                    }
-                }
-                
-            } else {
-                if (typeof window.addNewProperty === 'function') {
-                    const newProperty = await window.addNewProperty(propertyData);
-                    if (newProperty) {
-                        window.addToLocalProperties(newProperty);
-                        Helpers.showNotification('✅ Imóvel criado!');
-                    }
-                }
-            }
-            
-        } catch (error) {
-            alert(`❌ Erro: ${error.message}`);
-        } finally {
-            if (loading) loading.hide();
-            window.cleanAdminForm('reset');
-            
-            if (submitBtn) {
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = window.editingPropertyId ? 
-                        '<i class="fas fa-save"></i> Salvar Alterações' : 
-                        '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-                }, 500);
-            }
-        }
-    });
-};
-
-/* ==========================================================
-   FUNÇÕES RESTANTES (RESUMIDAS)
-   ========================================================== */
 window.loadPropertyList = function() {
     const container = document.getElementById('propertyList');
     const countElement = document.getElementById('propertyCount');
@@ -831,7 +855,6 @@ window.updateLocalProperty = function(propertyId, updatedData) {
     const index = window.properties.findIndex(p => p.id === propertyId);
     if (index === -1) return false;
     
-    // Normalizar dados
     if (updatedData.has_video !== undefined) updatedData.has_video = Boolean(updatedData.has_video);
     if (Array.isArray(updatedData.features)) updatedData.features = JSON.stringify(updatedData.features);
     
@@ -842,7 +865,6 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         updated_at: new Date().toISOString()
     };
     
-    // Atualizar UI
     setTimeout(() => {
         if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
         if (typeof window.renderProperties === 'function') {
@@ -876,22 +898,9 @@ window.addToLocalProperties = function(newProperty) {
     return propertyWithId;
 };
 
-// Configuração de uploads simplificada
-setTimeout(() => {
-    Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
-        files => window.MediaSystem?.addPdfs?.(files), 'pdf_addition');
-    
-    Helpers.setupUpload('fileInput', 'uploadArea', 
-        files => {
-            window.MediaSystem?.addFiles?.(files);
-            setTimeout(() => window.forceMediaPreviewUpdate?.(), 300);
-        }, 'media_addition');
-}, 1000);
-
 /* ==========================================================
-   BOTÃO DE VERIFICAÇÃO DE PDFs (SEGURO E SIMPLES)
+   BOTÃO DE VERIFICAÇÃO DE PDFs
    ========================================================== */
-// ✅ BOTÃO DE TESTE SEGURO - SEM MODIFICAR ESTRUTURA
 setTimeout(() => {
     const adminPanel = document.getElementById('adminPanel');
     if (adminPanel && !document.getElementById('simplePdfTestBtn')) {
@@ -925,198 +934,17 @@ setTimeout(() => {
     }
 }, 3000);
 
-/* ==========================================================
-   FUNÇÃO DE TESTE SEGURO PARA SUPABASE
-   ========================================================== */
-window.testSupabaseConnectionSafe = async function() {
-    console.group('🧪 TESTE DE CONEXÃO SEGURA COM SUPABASE');
-    
-    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-        console.error('❌ Credenciais Supabase não configuradas');
-        alert('❌ Configure SUPABASE_URL e SUPABASE_KEY primeiro!');
-        console.groupEnd();
-        return;
-    }
-    
-    console.log('🔍 Verificando conexão...');
-    
-    try {
-        // Testar conexão básica
-        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`
-            }
-        });
-        
-        if (response.ok) {
-            console.log('✅ Conexão com Supabase: OK');
-            
-            // Verificar IDs existentes
-            const idsResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id,title&order=id.desc&limit=5`, {
-                headers: {
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
-                }
-            });
-            
-            if (idsResponse.ok) {
-                const properties = await idsResponse.json();
-                console.log('📋 IDs disponíveis no Supabase:', properties);
-                
-                if (properties.length > 0) {
-                    alert(`✅ Conexão com Supabase estabelecida!\n\nIDs disponíveis:\n${properties.map(p => `• ID ${p.id}: ${p.title || 'Sem título'}`).join('\n')}`);
-                } else {
-                    alert('✅ Conexão com Supabase estabelecida!\n\nTabela "properties" existe, mas está vazia.');
-                }
-            }
-        } else {
-            console.error('❌ Erro na conexão:', response.status, response.statusText);
-            const errorText = await response.text();
-            console.error('Detalhes do erro:', errorText);
-            alert(`❌ Erro na conexão: ${response.status} ${response.statusText}\n\n${errorText.substring(0, 200)}...`);
-        }
-    } catch (error) {
-        console.error('❌ Erro de conexão:', error);
-        alert(`❌ Erro: ${error.message}`);
-    }
-    
-    console.groupEnd();
-};
-
-/* ==========================================================
-   FUNÇÃO DE TESTE PARA DIAGNÓSTICO DE PDFs (ATUALIZADA)
-   ========================================================== */
-window.testPdfPersistence = async function() {
-    console.group('🧪 TESTE DE PERSISTÊNCIA DE PDFs (COM VALIDAÇÃO DE ID)');
-    
-    if (!window.editingPropertyId) {
-        console.error('❌ Nenhum imóvel em edição');
-        alert('❌ Nenhum imóvel em edição. Edite um imóvel primeiro.');
-        console.groupEnd();
-        return;
-    }
-    
-    const propertyId = window.editingPropertyId;
-    const property = window.properties.find(p => p.id === propertyId);
-    
-    if (!property) {
-        console.error('❌ Imóvel não encontrado');
-        alert('❌ Imóvel não encontrado');
-        console.groupEnd();
-        return;
-    }
-    
-    console.log('🔍 Imóvel em teste:', {
-        id: property.id,
-        tipoId: typeof property.id,
-        title: property.title,
-        pdfsAtuais: property.pdfs || 'Nenhum',
-        pdfsCount: property.pdfs ? property.pdfs.split(',').filter(p => p.trim()).length : 0
-    });
-    
-    // ✅ VALIDAR ID ANTES DE TESTAR
-    let validId = null;
-    if (window.adminPdfHandler && window.adminPdfHandler.validateIdForSupabase) {
-        validId = window.adminPdfHandler.validateIdForSupabase(propertyId);
-        console.log('✅ ID validado para Supabase:', validId);
-        
-        if (!validId) {
-            console.error('❌ ID inválido para testes com Supabase');
-            alert('⚠️ ID do imóvel não é compatível com Supabase.\n\nUse um ID numérico para testes.');
-            console.groupEnd();
-            return;
-        }
-    }
-    
-    // 1. Testar adminPdfHandler
-    console.log('\n1. Testando adminPdfHandler.process()...');
-    if (window.adminPdfHandler && window.adminPdfHandler.process) {
-        try {
-            const pdfUrls = await window.adminPdfHandler.process(propertyId, property.title);
-            console.log('✅ adminPdfHandler.process() retornou:', {
-                pdfs: pdfUrls || 'Nenhum',
-                count: pdfUrls ? pdfUrls.split(',').filter(p => p.trim()).length : 0
-            });
-        } catch (error) {
-            console.error('❌ Erro no adminPdfHandler.process():', error);
-        }
-    } else {
-        console.error('❌ adminPdfHandler não disponível');
-    }
-    
-    // 2. Verificar estado atual no Supabase
-    console.log('\n2. Verificando estado no Supabase...');
-    if (window.updateProperty && window.updateProperty.verifyPdfs) {
-        if (validId) {
-            const supabaseState = await window.updateProperty.verifyPdfs(validId);
-            console.log('📊 Estado no Supabase:', supabaseState);
-        } else {
-            console.log('⚠️ ID inválido para verificação no Supabase');
-        }
-    }
-    
-    // 3. Testar persistência direta
-    console.log('\n3. Testando persistência direta...');
-    if (window.adminPdfHandler && window.adminPdfHandler.persistPdfsToSupabase && validId) {
-        const testPdfs = 'https://exemplo.com/test1.pdf,https://exemplo.com/test2.pdf';
-        const result = await window.adminPdfHandler.persistPdfsToSupabase(validId, testPdfs);
-        console.log('📤 Resultado da persistência direta:', result ? '✅ Sucesso' : '❌ Falha');
-    }
-    
-    console.log('\n🎯 TESTE CONCLUÍDO');
-    console.groupEnd();
-    
-    alert('🧪 Teste de persistência de PDFs concluído!\n\nVerifique o console (F12) para resultados detalhados.');
-};
-
-// Adicionar botões de teste ao painel admin
+// Configuração de uploads
 setTimeout(() => {
-    const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel) {
-        // Botão Testar PDFs
-        if (!document.getElementById('testPdfButton')) {
-            const testBtn = document.createElement('button');
-            testBtn.id = 'testPdfButton';
-            testBtn.innerHTML = '<i class="fas fa-vial"></i> Testar PDFs';
-            testBtn.onclick = window.testPdfPersistence;
-            testBtn.style.cssText = `
-                background: #9b59b6; color: white; border: none;
-                padding: 0.8rem 1.5rem; border-radius: 5px; cursor: pointer;
-                margin: 0.5rem; display: inline-flex; align-items: center;
-                gap: 0.5rem; font-weight: 600;
-            `;
-            testBtn.title = 'Testar persistência de PDFs no Supabase';
-            
-            const panelActions = adminPanel.querySelector('.panel-actions') || 
-                               adminPanel.querySelector('div:first-child');
-            if (panelActions) {
-                panelActions.appendChild(testBtn);
-            }
-        }
-        
-        // Botão Testar Supabase
-        if (!document.getElementById('testSupabaseButton')) {
-            const supabaseBtn = document.createElement('button');
-            supabaseBtn.id = 'testSupabaseButton';
-            supabaseBtn.innerHTML = '<i class="fas fa-database"></i> Testar Supabase';
-            supabaseBtn.onclick = window.testSupabaseConnectionSafe;
-            supabaseBtn.style.cssText = `
-                background: #3498db; color: white; border: none;
-                padding: 0.8rem 1.5rem; border-radius: 5px; cursor: pointer;
-                margin: 0.5rem; display: inline-flex; align-items: center;
-                gap: 0.5rem; font-weight: 600;
-            `;
-            supabaseBtn.title = 'Testar conexão segura com Supabase';
-            
-            const panelActions = adminPanel.querySelector('.panel-actions') || 
-                               adminPanel.querySelector('div:first-child');
-            if (panelActions) {
-                panelActions.appendChild(supabaseBtn);
-            }
-        }
-    }
-}, 2500);
+    Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
+        files => window.MediaSystem?.addPdfs?.(files), 'pdf_addition');
+    
+    Helpers.setupUpload('fileInput', 'uploadArea', 
+        files => {
+            window.MediaSystem?.addFiles?.(files);
+            setTimeout(() => window.forceMediaPreviewUpdate?.(), 300);
+        }, 'media_addition');
+}, 1000);
 
 // Inicialização
 if (document.readyState === 'loading') {
@@ -1127,4 +955,4 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - SISTEMA COM VALIDAÇÃO DE IDs PARA SUPABASE IMPLEMENTADO');
+console.log('✅ admin.js - SISTEMA COM CORREÇÃO DE PERSISTÊNCIA DE PDFs IMPLEMENTADO');
