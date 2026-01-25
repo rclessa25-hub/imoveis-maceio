@@ -11,7 +11,6 @@ const ADMIN_CONFIG = {
 };
 
 const DEBUG = false;
-const log = DEBUG ? console.log : () => {};
 
 // Estado global
 window.editingPropertyId = null;
@@ -59,10 +58,7 @@ const Helpers = {
             }
         },
         
-        // ✅ NOVO: Resetar todos os campos do formulário
         resetFormFields: function() {
-            console.log('🧹 Resetando todos os campos do formulário');
-            
             const fields = [
                 'propTitle', 'propPrice', 'propLocation', 'propDescription',
                 'propFeatures', 'propType', 'propBadge'
@@ -81,11 +77,8 @@ const Helpers = {
                 }
             });
             
-            // Checkbox específico
             const hasVideoCheckbox = document.getElementById('propHasVideo');
             if (hasVideoCheckbox) hasVideoCheckbox.checked = false;
-            
-            console.log('✅ Campos do formulário resetados');
         }
     },
     
@@ -149,25 +142,19 @@ const Helpers = {
 window.resetAdminFormCompletely = function(showNotification = true) {
     console.group('🧹 RESET COMPLETO DO FORMULÁRIO');
     
-    // 1. Limpar estado global
     window.editingPropertyId = null;
     autoSaveTimeout = null;
     pendingAutoSave = false;
     
-    // 2. Limpar todos os campos do formulário
     Helpers.updateUI.resetFormFields();
     
-    // 3. Resetar MediaSystem COMPLETAMENTE
     if (window.MediaSystem) {
-        console.log('🧹 Resetando MediaSystem completamente');
-        
         if (typeof window.MediaSystem.resetState === 'function') {
             window.MediaSystem.resetState();
         } else if (window.MediaSystem.state) {
             window.MediaSystem.state = { files: [], pdfs: [], deleted: [] };
         }
         
-        // Limpar previews visualmente
         ['uploadPreview', 'pdfUploadPreview', 'newPdfsSection', 'existingPdfsSection'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = '';
@@ -178,23 +165,18 @@ window.resetAdminFormCompletely = function(showNotification = true) {
         }
     }
     
-    // 4. Limpar adminPdfHandler
     if (window.adminPdfHandler) {
         window.adminPdfHandler.clear();
     }
     
-    // 5. Atualizar UI para modo "novo imóvel"
     Helpers.updateUI.formTitle('Adicionar Novo Imóvel');
     Helpers.updateUI.submitButton(false);
     Helpers.updateUI.cancelButton(false);
     
-    // 6. Scroll para topo do formulário
     setTimeout(() => {
         const form = document.getElementById('propertyForm');
         if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
-    
-    console.log('✅ Formulário resetado completamente para novo imóvel');
     
     if (showNotification) {
         Helpers.showNotification('✅ Formulário limpo para novo imóvel', 'info');
@@ -221,7 +203,6 @@ window.adminPdfHandler = {
     
     process: async function(id, title) {
         console.group('[adminPdfHandler] PROCESSANDO PDFs DEFINITIVAMENTE');
-        console.log('📋 Parâmetros:', { id, tipoId: typeof id, title });
         
         if (!id) {
             console.error('❌ ID do imóvel não fornecido!');
@@ -233,14 +214,10 @@ window.adminPdfHandler = {
             let pdfUrls = '';
             
             if (window.MediaSystem?.processAndSavePdfs) {
-                console.log('🔍 Usando MediaSystem para processar PDFs...');
                 pdfUrls = await window.MediaSystem.processAndSavePdfs(id, title);
-                console.log('📄 URLs do MediaSystem:', pdfUrls ? pdfUrls.split(',').length + ' PDF(s)' : 'Nenhum');
             }
             else if (window.PdfSystem?.processAndSavePdfs) {
-                console.log('🔍 Usando PdfSystem para processar PDFs...');
                 pdfUrls = await window.PdfSystem.processAndSavePdfs(id, title);
-                console.log('📄 URLs do PdfSystem:', pdfUrls ? pdfUrls.split(',').length + ' PDF(s)' : 'Nenhum');
             }
             
             if (pdfUrls?.trim()) {
@@ -249,13 +226,10 @@ window.adminPdfHandler = {
                 if (validId) {
                     const persistSuccess = await this.persistPdfsToSupabase(validId, pdfUrls);
                     if (persistSuccess) {
-                        console.log('✅ PDFs persistidos com SUCESSO no Supabase!');
-                        
                         if (window.MediaSystem?.state?.pdfs) {
                             window.MediaSystem.state.pdfs.forEach(pdf => {
                                 if (pdfUrls.includes(pdf.url)) {
                                     pdf.uploaded = true;
-                                    console.log(`🏷️ Marcado PDF como enviado: ${pdf.name}`);
                                 }
                             });
                         }
@@ -274,11 +248,7 @@ window.adminPdfHandler = {
     },
     
     persistPdfsToSupabase: async function(propertyId, pdfUrls) {
-        console.log('[adminPdfHandler] Persistindo PDFs no Supabase:', {
-            propertyId,
-            propertyIdType: typeof propertyId,
-            pdfCount: pdfUrls.split(',').filter(p => p.trim()).length
-        });
+        console.log('[adminPdfHandler] Persistindo PDFs no Supabase');
         
         if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
             console.error('❌ Credenciais Supabase não configuradas');
@@ -304,12 +274,6 @@ window.adminPdfHandler = {
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('✅ PDFs atualizados no Supabase:', {
-                    success: true,
-                    pdfsNaResposta: result[0]?.pdfs,
-                    propertyId: propertyId,
-                    rowsAfetadas: result.length
-                });
                 return true;
             } else {
                 const errorText = await response.text();
@@ -328,15 +292,9 @@ window.adminPdfHandler = {
     },
     
     validateIdForSupabase: function(propertyId) {
-        console.log('[adminPdfHandler] Validando ID para Supabase:', {
-            original: propertyId,
-            type: typeof propertyId
-        });
-        
         if (!propertyId) return null;
         
         if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) {
-            console.log(`✅ ID já é numérico válido: ${propertyId}`);
             return propertyId;
         }
         
@@ -345,14 +303,12 @@ window.adminPdfHandler = {
             const numericId = parseInt(cleanId);
             
             if (!isNaN(numericId) && numericId > 0) {
-                console.log(`✅ ID convertido: "${propertyId}" -> ${numericId}`);
                 return numericId;
             }
         }
         
         const directConvert = parseInt(propertyId);
         if (!isNaN(directConvert) && directConvert > 0) {
-            console.log(`✅ ID convertido diretamente: ${directConvert}`);
             return directConvert;
         }
         
@@ -397,16 +353,14 @@ window.toggleAdminPanel = function() {
 };
 
 /* ==========================================================
-   FUNÇÃO EDIT PROPERTY - CORRIGIDA (SUBSTITUÍDA)
+   FUNÇÃO EDIT PROPERTY - CORRIGIDA
    ========================================================== */
 window.editProperty = function(id) {
     const property = window.properties?.find(p => p.id === id);
     if (!property) return alert('❌ Imóvel não encontrado!');
 
-    // 1. Limpar completamente usando a função existente
     window.resetAdminFormCompletely(false);
 
-    // 2. Preencher campos do formulário
     const fields = {
         propTitle: property.title || '',
         propPrice: Helpers.format.price(property.price) || '',
@@ -424,11 +378,9 @@ window.editProperty = function(id) {
         if (el) el.type === 'checkbox' ? el.checked = value : el.value = value;
     });
 
-    // 3. Atualizar UI
     Helpers.updateUI.formTitle(`Editando: ${property.title}`);
     Helpers.updateUI.submitButton(true);
     
-    // ✅ CORREÇÃO CRÍTICA: Garantir que o botão Cancelar fique visível
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.style.display = 'inline-block';
@@ -439,11 +391,9 @@ window.editProperty = function(id) {
     Helpers.updateUI.cancelButton(true);
     window.editingPropertyId = property.id;
 
-    // 4. Carregar mídia e PDFs
     if (window.MediaSystem) MediaSystem.loadExisting(property);
     if (window.adminPdfHandler) window.adminPdfHandler.load(property);
 
-    // 5. Abrir painel e scroll suave
     setTimeout(() => {
         const panel = document.getElementById('adminPanel');
         if (panel) {
@@ -456,13 +406,12 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO - CORRIGIDA
+   CONFIGURAÇÃO DO FORMULÁRIO
    ========================================================== */
 window.setupForm = function() {
     const form = document.getElementById('propertyForm');
     if (!form) return;
     
-    // Clonar para remover listeners antigos
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     
@@ -481,7 +430,6 @@ window.setupForm = function() {
         }
         
         try {
-            // Coletar dados
             const fields = ['propTitle','propPrice','propLocation','propDescription',
                           'propFeatures','propType','propBadge','propHasVideo'];
             
@@ -492,28 +440,23 @@ window.setupForm = function() {
                 return acc;
             }, {});
             
-            // Validação
             if (!propertyData.title || !propertyData.price || !propertyData.location) {
                 throw new Error('Preencha Título, Preço e Localização!');
             }
             
-            // Formatação
             propertyData.price = Helpers.format.price(propertyData.price);
             propertyData.features = Helpers.format.features(propertyData.features);
             
             if (window.editingPropertyId) {
-                // 🔄 MODO EDIÇÃO
                 console.log(`✏️ Salvando edição do imóvel ${window.editingPropertyId}`);
                 
                 const updateData = { ...propertyData };
                 
-                // Processar PDFs
                 if (window.adminPdfHandler) {
                     try {
                         const hasNewPdfs = window.MediaSystem?.state?.pdfs?.some(pdf => !pdf.uploaded);
                         
                         if (hasNewPdfs) {
-                            console.log('📤 Processando PDFs para edição');
                             const pdfsString = await window.adminPdfHandler.process(
                                 window.editingPropertyId, 
                                 propertyData.title
@@ -522,12 +465,10 @@ window.setupForm = function() {
                                 updateData.pdfs = pdfsString;
                             }
                         } else {
-                            // Usar PDFs já existentes
                             const existingPdfs = window.MediaSystem?.state?.pdfs?.filter(pdf => pdf.uploaded) || [];
                             if (existingPdfs.length > 0) {
                                 const pdfUrls = existingPdfs.map(pdf => pdf.url).join(',');
                                 updateData.pdfs = pdfUrls;
-                                console.log(`💾 Usando ${existingPdfs.length} PDF(s) existente(s)`);
                             }
                         }
                     } catch (error) {
@@ -535,16 +476,13 @@ window.setupForm = function() {
                     }
                 }
                 
-                // Processar imagens
                 if (window.MediaSystem?.getOrderedMediaUrls) {
                     const mediaUrls = window.MediaSystem.getOrderedMediaUrls().images;
                     if (mediaUrls?.trim()) updateData.images = mediaUrls;
                 }
                 
-                // Atualizar localmente
                 window.updateLocalProperty(window.editingPropertyId, updateData);
                 
-                // Atualizar no Supabase
                 if (typeof window.updateProperty === 'function') {
                     const validId = window.adminPdfHandler?.validateIdForSupabase?.(window.editingPropertyId);
                     const idToUse = validId || window.editingPropertyId;
@@ -553,16 +491,13 @@ window.setupForm = function() {
                     if (success) {
                         Helpers.showNotification('✅ Imóvel atualizado com sucesso!');
                         
-                        // ✅ CRÍTICO: APÓS SALVAR EDIÇÃO, LIMPAR PARA NOVO IMÓVEL
                         setTimeout(() => {
-                            console.log('🔄 Finalizada edição - Resetando para novo imóvel');
                             window.resetAdminFormCompletely(true);
                         }, 800);
                     }
                 }
                 
             } else {
-                // ➕ MODO NOVO IMÓVEL
                 console.log('➕ Criando novo imóvel');
                 
                 if (typeof window.addNewProperty === 'function') {
@@ -571,9 +506,7 @@ window.setupForm = function() {
                         window.addToLocalProperties(newProperty);
                         Helpers.showNotification('✅ Imóvel criado com sucesso!');
                         
-                        // ✅ CRÍTICO: APÓS CRIAR NOVO, LIMPAR FORMULÁRIO
                         setTimeout(() => {
-                            console.log('🔄 Imóvel criado - Resetando formulário');
                             window.resetAdminFormCompletely(true);
                         }, 800);
                     }
@@ -600,34 +533,26 @@ window.setupForm = function() {
 };
 
 /* ==========================================================
-   SETUP ADMIN UI - OTIMIZADA (SUBSTITUÍDA)
+   SETUP ADMIN UI - OTIMIZADA
    ========================================================== */
 window.setupAdminUI = function() {
-    console.log('🔧 Configurando UI do admin...');
-    
-    // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
     
-    // 2. Botão toggle - SINGLE EVENT HANDLER
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
-        // Remover qualquer handler antigo
         const newBtn = adminBtn.cloneNode(true);
         adminBtn.parentNode.replaceChild(newBtn, adminBtn);
         
-        // Adicionar handler único e limpo
         document.querySelector('.admin-toggle').addEventListener('click', (e) => {
             e.preventDefault();
             window.toggleAdminPanel();
         });
     }
     
-    // 3. Botão Cancelar - SINGLE CLEAN HANDLER
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
-        // ✅ CORREÇÃO: Remover handlers conflitantes e manter apenas um
-        cancelBtn.onclick = null; // Remove inline handler
+        cancelBtn.onclick = null;
         cancelBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -638,16 +563,13 @@ window.setupAdminUI = function() {
         });
     }
     
-    // 4. Configurar formulário (se existir)
     if (typeof window.setupForm === 'function') {
         setTimeout(window.setupForm, 100);
     }
-    
-    console.log('✅ UI do admin configurada');
 };
 
 /* ==========================================================
-   FUNÇÕES RESTANTES (mantidas iguais)
+   FUNÇÕES RESTANTES
    ========================================================== */
 window.loadPropertyList = function() {
     const container = document.getElementById('propertyList');
@@ -726,7 +648,6 @@ window.addToLocalProperties = function(newProperty) {
     return propertyWithId;
 };
 
-// Configuração de uploads
 setTimeout(() => {
     Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
         files => window.MediaSystem?.addPdfs?.(files), 'pdf_addition');
@@ -738,9 +659,6 @@ setTimeout(() => {
         }, 'media_addition');
 }, 1000);
 
-/* ==========================================================
-   FUNÇÃO DE AUTO-SALVAMENTO (simplificada)
-   ========================================================== */
 window.triggerAutoSave = function(reason = 'media_deletion') {
     if (!window.editingPropertyId) return;
     
@@ -749,24 +667,13 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
     autoSaveTimeout = setTimeout(async () => {
         if (!pendingAutoSave) return;
         
-        console.log('🔍 Auto-salvamento:', {
-            editingId: window.editingPropertyId,
-            reason: reason
-        });
-        
         try {
-            // Coletar dados básicos (sem processar PDFs para não interferir)
             const fields = ['propTitle','propPrice','propLocation','propDescription'];
             const propertyData = fields.reduce((acc, id) => {
                 const el = document.getElementById(id);
                 acc[id.replace('prop', '').toLowerCase()] = el?.value?.trim() || '';
                 return acc;
             }, {});
-            
-            if (propertyData.title && propertyData.price && propertyData.location) {
-                console.log('✅ Dados válidos para auto-salvamento');
-                // Aqui poderia salvar mudanças menores automaticamente
-            }
             
         } catch (error) {
             console.error('Auto-salvamento falhou:', error);
@@ -778,7 +685,6 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
     pendingAutoSave = true;
 };
 
-// Inicialização
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(window.setupAdminUI, 500);
@@ -786,5 +692,3 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(window.setupAdminUI, 300);
 }
-
-console.log('✅ admin.js - SISTEMA COMPLETO E CORRIGIDO IMPLEMENTADO');
