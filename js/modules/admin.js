@@ -739,11 +739,38 @@ window.setupForm = function() {
                 
                 // Processar PDFs COM VALIDAÇÃO DE ID
                 if (window.adminPdfHandler) {
-                    const pdfsString = await window.adminPdfHandler.process(
-                        window.editingPropertyId, 
-                        propertyData.title
-                    );
-                    if (pdfsString?.trim()) updateData.pdfs = pdfsString;
+                    try {
+                        const pdfsString = await window.adminPdfHandler.process(
+                            window.editingPropertyId, 
+                            propertyData.title
+                        );
+                        
+                        if (pdfsString?.trim()) {
+                            updateData.pdfs = pdfsString;
+                            console.log('✅ PDFs processados no formulário:', {
+                                count: pdfsString.split(',').filter(p => p.trim()).length,
+                                propertyTitle: propertyData.title
+                            });
+                            
+                            // ✅✅✅ TENTATIVA DE PERSISTÊNCIA IMEDIATA APÓS PROCESSAMENTO
+                            if (window.adminPdfHandler.persistPdfsToSupabase) {
+                                const validId = window.adminPdfHandler.validateIdForSupabase?.(window.editingPropertyId);
+                                if (validId) {
+                                    console.log('🔄 Tentando persistência imediata de PDFs...');
+                                    const persistSuccess = await window.adminPdfHandler.persistPdfsToSupabase(validId, pdfsString);
+                                    if (persistSuccess) {
+                                        console.log('✅✅✅ PERSISTÊNCIA IMEDIATA BEM-SUCEDIDA!');
+                                    } else {
+                                        console.warn('⚠️ Persistência imediata falhou, mas URLs estão disponíveis');
+                                    }
+                                }
+                            }
+                        } else {
+                            console.log('ℹ️ Nenhum PDF novo processado no formulário');
+                        }
+                    } catch (error) {
+                        console.error('❌ Erro ao processar PDFs no formulário:', error);
+                    }
                 }
                 
                 // Processar mídia
@@ -1032,6 +1059,108 @@ window.testPdfPersistence = async function() {
     
     alert('🧪 Teste de persistência de PDFs concluído!\n\nVerifique o console (F12) para resultados detalhados.');
 };
+
+/* ==========================================================
+   BOTÃO DE TESTE DE PERSISTÊNCIA APRIMORADO
+   ========================================================== */
+setTimeout(() => {
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel && !document.getElementById('testPdfPersistenceBtn')) {
+        const testBtn = document.createElement('button');
+        testBtn.id = 'testPdfPersistenceBtn';
+        testBtn.innerHTML = '<i class="fas fa-save"></i> Testar Persistência PDF';
+        testBtn.onclick = async function() {
+            if (!window.editingPropertyId) {
+                alert('❌ Nenhum imóvel em edição. Edite um imóvel primeiro.');
+                return;
+            }
+            
+            const property = window.properties.find(p => p.id === window.editingPropertyId);
+            if (!property) {
+                alert('❌ Imóvel não encontrado localmente');
+                return;
+            }
+            
+            const testPdfs = 'https://exemplo.com/test1.pdf,https://exemplo.com/test2.pdf';
+            const loading = window.LoadingManager?.show?.(
+                'Testando persistência...', 
+                'Verificando conexão com Supabase'
+            );
+            
+            try {
+                // 1. Testar validação de ID
+                const validId = window.adminPdfHandler?.validateIdForSupabase?.(window.editingPropertyId);
+                if (!validId) {
+                    throw new Error(`ID ${window.editingPropertyId} inválido para Supabase`);
+                }
+                
+                console.group('🧪 TESTE DE PERSISTÊNCIA DE PDFs');
+                console.log('📋 Dados do teste:', {
+                    idOriginal: window.editingPropertyId,
+                    idValidado: validId,
+                    tipoId: typeof validId,
+                    propertyTitle: property.title
+                });
+                
+                // 2. Testar persistência direta
+                let result = false;
+                if (window.adminPdfHandler?.persistPdfsToSupabase) {
+                    result = await window.adminPdfHandler.persistPdfsToSupabase(validId, testPdfs);
+                } else if (window.updateProperty?.forcePdfUpdate) {
+                    result = await window.updateProperty.forcePdfUpdate(validId, testPdfs);
+                }
+                
+                // 3. Verificar estado
+                let supabaseState = null;
+                if (window.updateProperty?.verifyPdfs) {
+                    supabaseState = await window.updateProperty.verifyPdfs(validId);
+                }
+                
+                if (result) {
+                    loading?.setVariant?.('success');
+                    loading?.updateMessage?.('✅ Persistência testada com sucesso!');
+                    
+                    console.log('✅ Teste bem-sucedido!');
+                    if (supabaseState) {
+                        console.log('📊 Estado no Supabase:', supabaseState);
+                    }
+                    
+                    alert('✅ Teste de persistência concluído!\n\nVerifique console (F12) para detalhes.');
+                } else {
+                    loading?.setVariant?.('error');
+                    loading?.updateMessage?.('❌ Falha no teste de persistência');
+                    
+                    console.error('❌ Teste falhou');
+                    alert('❌ Teste de persistência falhou.\n\nVerifique console (F12) para detalhes.');
+                }
+                
+                console.groupEnd();
+                
+            } catch (error) {
+                loading?.setVariant?.('error');
+                loading?.updateMessage?.(`Erro: ${error.message}`);
+                console.error('❌ Erro no teste:', error);
+                alert(`❌ Erro no teste: ${error.message}`);
+            } finally {
+                setTimeout(() => loading?.hide?.(), 2000);
+            }
+        };
+        
+        testBtn.style.cssText = `
+            background: #9b59b6; color: white; border: none;
+            padding: 0.8rem 1.5rem; border-radius: 5px; cursor: pointer;
+            margin: 0.5rem; display: inline-flex; align-items: center;
+            gap: 0.5rem; font-weight: 600;
+        `;
+        testBtn.title = 'Testar persistência definitiva de PDFs no Supabase';
+        
+        const panelActions = adminPanel.querySelector('.panel-actions') || 
+                           adminPanel.querySelector('div:first-child');
+        if (panelActions) {
+            panelActions.appendChild(testBtn);
+        }
+    }
+}, 3000);
 
 // Adicionar botões de teste ao painel admin
 setTimeout(() => {
