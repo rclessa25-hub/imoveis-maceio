@@ -142,7 +142,7 @@ async function waitForAllPropertyImages() {
         
         if (loadedCount >= totalImages) {
             clearTimeout(safetyTimeout);
-            console.log(`⚡ ${totalImages} imagens já estavam carregadas`);
+            console.log(`⚡ ${totalImages} imagens já estavam carregadas');
             resolve(loadedCount);
         }
     });
@@ -686,6 +686,12 @@ window.updateProperty = async function(id, propertyData) {
             images: propertyData.images || window.properties[index].images || '',
             pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
         };
+
+        // ✅✅✅ GARANTIR QUE PDFs ORIGINAIS SEJAM PRESERVADOS
+        if (propertyData.pdfs && !updateData.pdfs) {
+            updateData.pdfs = propertyData.pdfs;
+            console.log('✅ PDFs incluídos no updateData:', updateData.pdfs.split(',').filter(p => p.trim()).length);
+        }
 
         console.log('📦 Dados preparados para atualização:', {
             pdfsInUpdateData: !!updateData.pdfs,
