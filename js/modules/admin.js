@@ -484,7 +484,7 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
 };
 
 /* ==========================================================
-   FUNÇÃO UNIFICADA DE LIMPEZA COM PRESERVAÇÃO DE PDFs PERSISTIDOS
+   FUNÇÃO UNIFICADA DE LIMPEZA COM BLOQUEIO DE RESET DUPLO
    ========================================================== */
 window.cleanAdminForm = function(mode = 'reset') {
     console.log('[cleanAdminForm] Executando limpeza do formulário - Modo:', mode);
@@ -493,7 +493,11 @@ window.cleanAdminForm = function(mode = 'reset') {
     autoSaveTimeout = null;
     pendingAutoSave = false;
     
-    // 🔄 CRÍTICO: Preservar o ID do imóvel em edição se houver PDFs já persistidos
+    // 🔴 CRÍTICO: Flag global para prevenir reset duplo do MediaSystem
+    window._preventMediaSystemReset = true;
+    setTimeout(() => window._preventMediaSystemReset = false, 1000);
+    
+    // 🔄 Preservar o ID do imóvel em edição se houver PDFs já persistidos
     const shouldPreserveEditingId = (mode === 'reset' && window.editingPropertyId && 
                                      window.adminPdfHandler?.hasPersistedPdfs?.());
     
@@ -503,7 +507,7 @@ window.cleanAdminForm = function(mode = 'reset') {
         console.log('🔄 Preservando editingPropertyId pois há PDFs persistidos:', window.editingPropertyId);
     }
     
-    // Resetar formulário (mas manter valores se for apenas limpeza de UI)
+    // 🔴 CRÍTICO: NÃO resetar formulário durante soft_reset
     const form = document.getElementById('propertyForm');
     if (form && mode !== 'soft_reset') {
         form.reset();
@@ -512,19 +516,29 @@ window.cleanAdminForm = function(mode = 'reset') {
         document.getElementById('propHasVideo').checked = false;
     }
     
-    // 🔄 CRÍTICO: NÃO limpar o estado do MediaSystem completamente
-    if (window.MediaSystem) {
-        console.log('[cleanAdminForm] Limpando UI do MediaSystem, mas mantendo estado de PDFs enviados');
+    // 🔴 CRÍTICO: Gerenciamento DIRETO do estado do MediaSystem
+    if (window.MediaSystem && mode === 'soft_reset') {
+        console.log('[cleanAdminForm] SOFT RESET - Apenas atualizando UI do MediaSystem');
         
-        const existingUploadedPdfs = window.MediaSystem.state?.pdfs?.filter(pdf => pdf.uploaded) || [];
-        console.log(`💾 Preservando ${existingUploadedPdfs.length} PDF(s) já enviado(s)`);
+        // Preservar TODOS os PDFs existentes
+        const existingPdfs = window.MediaSystem.state?.pdfs || [];
+        const existingFiles = window.MediaSystem.state?.files || [];
         
-        if (window.MediaSystem.resetStateSoft) {
-            window.MediaSystem.resetStateSoft(existingUploadedPdfs);
-        } else {
-            window.MediaSystem.state.pdfs = existingUploadedPdfs;
-            if (window.MediaSystem.updateUI) window.MediaSystem.updateUI();
+        console.log(`💾 Preservando ${existingPdfs.length} PDF(s) e ${existingFiles.length} arquivo(s)`);
+        
+        // Apenas atualizar a UI para refletir o estado atual
+        if (window.MediaSystem.updateUI) {
+            window.MediaSystem.updateUI();
         }
+        
+        // 🔴 CRÍTICO: Marcar todos os PDFs existentes como "uploaded"
+        existingPdfs.forEach(pdf => {
+            pdf.uploaded = true;
+        });
+        
+    } else if (window.MediaSystem && mode === 'reset') {
+        console.log('[cleanAdminForm] HARD RESET - Limpando completamente o MediaSystem');
+        window.MediaSystem.resetState();
     }
     
     if (window.adminPdfHandler && mode !== 'soft_reset') {
@@ -539,17 +553,12 @@ window.cleanAdminForm = function(mode = 'reset') {
         Helpers.updateUI.cancelButton(false);
     }
     
-    // Limpar previews (apenas visual)
+    // 🔴 CRÍTICO: NÃO limpar previews durante soft_reset
     if (mode !== 'soft_reset') {
         ['uploadPreview', 'pdfUploadPreview'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = '';
         });
-        
-        const existingPdfsSection = document.getElementById('existingPdfsSection');
-        if (existingPdfsSection && existingPdfsSection.innerHTML.trim()) {
-            console.log('💾 Preservando seção de PDFs existentes');
-        }
     }
     
     if (mode === 'cancel' && window.showNotification) {
@@ -559,7 +568,6 @@ window.cleanAdminForm = function(mode = 'reset') {
     console.log(`✅ cleanAdminForm concluído (Modo: ${mode})`);
     return true;
 };
-
 window.cancelEdit = function() {
     if (window.editingPropertyId && !confirm('Cancelar edição? Alterações serão perdidas.')) {
         return false;
