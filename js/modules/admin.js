@@ -10,7 +10,7 @@ const ADMIN_CONFIG = {
     buttonClass: "admin-toggle"
 };
 
-const DEBUG = true;
+const DEBUG = false;
 const log = DEBUG ? console.log : () => {};
 
 // Estado global
@@ -52,8 +52,10 @@ const Helpers = {
         cancelButton: (show = true) => {
             const btn = document.getElementById('cancelEditBtn');
             if (btn) {
-                btn.style.display = show ? 'block' : 'none';
+                btn.style.display = show ? 'inline-block' : 'none';
                 btn.disabled = !show;
+                btn.style.opacity = show ? '1' : '0';
+                btn.style.pointerEvents = show ? 'auto' : 'none';
             }
         },
         
@@ -377,7 +379,6 @@ window.toggleAdminPanel = function() {
             const isVisible = panel.style.display === 'block';
             
             if (!isVisible) {
-                console.log('🆕 Admin aberto - Resetando formulário...');
                 window.resetAdminFormCompletely(false);
             }
             
@@ -396,16 +397,16 @@ window.toggleAdminPanel = function() {
 };
 
 /* ==========================================================
-   FUNÇÃO EDIT PROPERTY - CORRIGIDA
+   FUNÇÃO EDIT PROPERTY - CORRIGIDA (SUBSTITUÍDA)
    ========================================================== */
 window.editProperty = function(id) {
     const property = window.properties?.find(p => p.id === id);
     if (!property) return alert('❌ Imóvel não encontrado!');
-    
-    // Primeiro limpar completamente
+
+    // 1. Limpar completamente usando a função existente
     window.resetAdminFormCompletely(false);
-    
-    // Agora preencher com dados do imóvel
+
+    // 2. Preencher campos do formulário
     const fields = {
         propTitle: property.title || '',
         propPrice: Helpers.format.price(property.price) || '',
@@ -417,30 +418,40 @@ window.editProperty = function(id) {
         propBadge: property.badge || 'Novo',
         propHasVideo: property.has_video === true || property.has_video === 'true'
     };
-    
+
     Object.entries(fields).forEach(([id, value]) => {
         const el = document.getElementById(id);
         if (el) el.type === 'checkbox' ? el.checked = value : el.value = value;
     });
-    
-    // Atualizar UI para modo edição
+
+    // 3. Atualizar UI
     Helpers.updateUI.formTitle(`Editando: ${property.title}`);
     Helpers.updateUI.submitButton(true);
+    
+    // ✅ CORREÇÃO CRÍTICA: Garantir que o botão Cancelar fique visível
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'inline-block';
+        cancelBtn.style.opacity = '1';
+        cancelBtn.style.pointerEvents = 'auto';
+    }
+    
     Helpers.updateUI.cancelButton(true);
-    
     window.editingPropertyId = property.id;
-    
-    // Carregar mídia e PDFs
+
+    // 4. Carregar mídia e PDFs
     if (window.MediaSystem) MediaSystem.loadExisting(property);
     if (window.adminPdfHandler) window.adminPdfHandler.load(property);
-    
-    // Abrir painel
+
+    // 5. Abrir painel e scroll suave
     setTimeout(() => {
         const panel = document.getElementById('adminPanel');
-        if (panel) panel.style.display = 'block';
-        document.getElementById('propertyForm')?.scrollIntoView({ behavior: 'smooth' });
+        if (panel) {
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }, 100);
-    
+
     return true;
 };
 
@@ -589,67 +600,50 @@ window.setupForm = function() {
 };
 
 /* ==========================================================
-   SETUP ADMIN UI
+   SETUP ADMIN UI - OTIMIZADA (SUBSTITUÍDA)
    ========================================================== */
 window.setupAdminUI = function() {
+    console.log('🔧 Configurando UI do admin...');
+    
+    // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
     
+    // 2. Botão toggle - SINGLE EVENT HANDLER
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
-        adminBtn.removeAttribute('onclick');
-        adminBtn.addEventListener('click', (e) => {
+        // Remover qualquer handler antigo
+        const newBtn = adminBtn.cloneNode(true);
+        adminBtn.parentNode.replaceChild(newBtn, adminBtn);
+        
+        // Adicionar handler único e limpo
+        document.querySelector('.admin-toggle').addEventListener('click', (e) => {
             e.preventDefault();
             window.toggleAdminPanel();
         });
     }
     
+    // 3. Botão Cancelar - SINGLE CLEAN HANDLER
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
+        // ✅ CORREÇÃO: Remover handlers conflitantes e manter apenas um
+        cancelBtn.onclick = null; // Remove inline handler
         cancelBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            if (confirm('Cancelar edição? Todos os dados não salvos serão perdidos.')) {
+            e.stopPropagation();
+            
+            if (confirm('Cancelar edição? Os dados não salvos serão perdidos.')) {
                 window.resetAdminFormCompletely(true);
             }
         });
     }
     
-    // Adicionar botão de limpeza manual
-    setTimeout(() => {
-        const adminPanel = document.getElementById('adminPanel');
-        if (adminPanel && !document.getElementById('manualResetBtn')) {
-            const resetBtn = document.createElement('button');
-            resetBtn.id = 'manualResetBtn';
-            resetBtn.innerHTML = '<i class="fas fa-broom"></i> Limpar Tudo';
-            resetBtn.onclick = function(e) {
-                e.preventDefault();
-                if (confirm('Limpar completamente o formulário?\n\nTodos os dados não salvos serão perdidos.')) {
-                    window.resetAdminFormCompletely(true);
-                }
-            };
-            
-            resetBtn.style.cssText = `
-                background: #95a5a6; color: white; border: none;
-                padding: 0.6rem 1rem; border-radius: 5px; cursor: pointer;
-                margin: 0.5rem; font-size: 0.9rem; display: inline-flex;
-                align-items: center; gap: 0.5rem;
-            `;
-            
-            const panelActions = adminPanel.querySelector('div:first-child');
-            if (panelActions) panelActions.appendChild(resetBtn);
-        }
-    }, 1000);
+    // 4. Configurar formulário (se existir)
+    if (typeof window.setupForm === 'function') {
+        setTimeout(window.setupForm, 100);
+    }
     
-    if (typeof window.setupForm === 'function') window.setupForm();
-    
-    const style = document.createElement('style');
-    style.textContent = `
-        #propertiesContainer.updating .property-card { opacity: 0.7; transition: opacity 0.3s; }
-        .auto-save-notification { animation: slideInRight 0.3s ease; }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        #manualResetBtn:hover { background: #7f8c8d !important; }
-    `;
-    document.head.appendChild(style);
+    console.log('✅ UI do admin configurada');
 };
 
 /* ==========================================================
