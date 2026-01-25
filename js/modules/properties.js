@@ -142,7 +142,7 @@ async function waitForAllPropertyImages() {
         
         if (loadedCount >= totalImages) {
             clearTimeout(safetyTimeout);
-            console.log(`⚡ ${totalImages} imagens já estavam carregadas');
+            console.log(`⚡ ${totalImages} imagens já estavam carregadas`);
             resolve(loadedCount);
         }
     });
@@ -614,6 +614,15 @@ window.updateProperty = async function(id, propertyData) {
         timestamp: new Date().toISOString()
     });
 
+    // ✅ LOG CRÍTICO PARA DEBUG DE PDFs
+    console.log('🔍 DEBUG updateProperty - Estado dos PDFs:', {
+        id: id,
+        pdfsNoPropertyData: propertyData.pdfs,
+        pdfsNoPropertyDataCount: propertyData.pdfs ? propertyData.pdfs.split(',').filter(p => p.trim()).length : 0,
+        pdfsNoUpdateData: propertyData.pdfs || '',
+        pdfsNoUpdateDataCount: (propertyData.pdfs || '').split(',').filter(p => p.trim()).length
+    });
+
     // ✅ VALIDAR ID
     if (!id || id === 'null' || id === 'undefined') {
         console.error('❌ ID inválido fornecido:', id);
@@ -672,7 +681,7 @@ window.updateProperty = async function(id, propertyData) {
             propertyData.price = formattedPrice;
         }
 
-        // ✅ DADOS PARA ATUALIZAÇÃO
+        // ✅ DADOS PARA ATUALIZAÇÃO (COM CORREÇÃO CRÍTICA PARA PDFs)
         const updateData = {
             title: propertyData.title || window.properties[index].title,
             price: propertyData.price || window.properties[index].price,
@@ -684,18 +693,14 @@ window.updateProperty = async function(id, propertyData) {
             badge: propertyData.badge || window.properties[index].badge || 'Novo',
             rural: propertyData.type === 'rural' || window.properties[index].rural || false,
             images: propertyData.images || window.properties[index].images || '',
-            pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
+            // ⭐⭐ CORREÇÃO CRÍTICA: GARANTIR QUE PDFs DO propertyData SEJAM USADOS
+            pdfs: propertyData.pdfs || propertyData.pdfs || window.properties[index].pdfs || ''
         };
 
-        // ✅✅✅ GARANTIR QUE PDFs ORIGINAIS SEJAM PRESERVADOS
-        if (propertyData.pdfs && !updateData.pdfs) {
-            updateData.pdfs = propertyData.pdfs;
-            console.log('✅ PDFs incluídos no updateData:', updateData.pdfs.split(',').filter(p => p.trim()).length);
-        }
-
-        console.log('📦 Dados preparados para atualização:', {
-            pdfsInUpdateData: !!updateData.pdfs,
-            pdfsCount: updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0
+        console.log('📦 updateData COM PDFs:', {
+            temPdfsNoPropertyData: !!propertyData.pdfs,
+            temPdfsNoUpdateData: !!updateData.pdfs,
+            pdfCount: updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0
         });
 
         // ✅ ESTRATÉGIA DE PERSISTÊNCIA ROBUSTA PARA SUPABASE
@@ -1077,6 +1082,40 @@ window.syncWithSupabase = async function() {
         return { success: true, count: 0, message: 'Já sincronizado' };
     } catch (error) {
         return { success: false, error: error.message };
+    }
+};
+
+// ========== ✅ FUNÇÃO SIMPLES PARA VERIFICAR PERSISTÊNCIA DE PDFs ==========
+window.checkPdfPersistence = async function(propertyId) {
+    console.log('🔍 Verificando persistência de PDFs para imóvel:', propertyId);
+    
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.error('❌ Credenciais Supabase não configuradas');
+        return null;
+    }
+    
+    try {
+        const response = await fetch(
+            `${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}&select=id,title,pdfs`, 
+            {
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                }
+            }
+        );
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('📊 Estado atual no Supabase:', data[0]);
+            return data[0];
+        } else {
+            console.error('❌ Erro ao verificar:', response.status);
+            return null;
+        }
+    } catch (error) {
+        console.error('❌ Erro de conexão:', error);
+        return null;
     }
 };
 
