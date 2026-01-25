@@ -23,12 +23,6 @@
     z-index: 1000;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     font-size: 1.2rem;
-    transition: all 0.3s ease;
-}
-
-.admin-toggle:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
 .property-item {
@@ -40,42 +34,6 @@
     justify-content: space-between;
     align-items: center;
     border-left: 4px solid var(--primary);
-    transition: all 0.3s ease;
-}
-
-.property-item:hover {
-    background: #e8e8e8;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.btn-edit, .btn-delete {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-}
-
-.btn-edit {
-    background: var(--accent);
-    color: white;
-}
-
-.btn-edit:hover {
-    background: #2980b9;
-    transform: translateY(-2px);
-}
-
-.btn-delete {
-    background: #e74c3c;
-    color: white;
-}
-
-.btn-delete:hover {
-    background: #c0392b;
-    transform: translateY(-2px);
 }
 
 /* ÍCONE DO PDF */
@@ -145,12 +103,6 @@
     background: white;
     border-radius: 5px;
     border: 1px solid #ddd;
-    transition: all 0.3s ease;
-}
-
-.pdf-file-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .pdf-password-input {
@@ -160,22 +112,18 @@
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.pdf-password-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(26, 82, 118, 0.1);
 }
 
 /* ========== ESTILOS PARA OS NOVOS BOTÕES "X" DE PDF ========== */
+
+/* Container para posicionamento relativo */
 .pdf-preview-container {
     position: relative;
     display: inline-block;
     margin: 5px;
 }
 
+/* Botão "X" de exclusão de PDF (GERAL) - AJUSTADO PARA FICAR COLADO */
 .delete-pdf-btn {
     position: absolute;
     top: -5px;
@@ -201,14 +149,17 @@
     opacity: 0.95;
 }
 
+/* Botão "X" específico para NOVOS PDFs (azul) */
 #newPdfsSection .delete-pdf-btn {
     background: #3498db;
 }
 
+/* Botão "X" específico para PDFs EXISTENTES (vermelho) */
 #existingPdfsSection .delete-pdf-btn {
     background: #e74c3c;
 }
 
+/* Efeitos hover */
 .delete-pdf-btn:hover {
     transform: scale(1.3);
     opacity: 1;
@@ -223,12 +174,14 @@
     background: #c0392b;
 }
 
+/* Container do PDF item */
 .pdf-item-new, .pdf-item-existing {
     transition: all 0.3s ease;
     position: relative;
     z-index: 10;
 }
 
+/* Efeito ao passar mouse sobre o item PDF */
 .pdf-preview-container:hover .pdf-item-new {
     box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
     transform: translateY(-2px);
@@ -357,7 +310,6 @@
     width: 100%;
     font-size: 1rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    transition: all 0.3s ease;
 }
 
 #propertyForm input:focus,
@@ -379,20 +331,12 @@
     font-weight: 600;
     transition: all 0.3s ease;
     width: 100%;
-    margin-top: 1rem;
 }
 
 #propertyForm button[type="submit"]:hover {
     background: #219653;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(33, 150, 83, 0.3);
-}
-
-#propertyForm button[type="submit"]:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
 }
 
 #cancelEditBtn {
@@ -404,167 +348,56 @@
     cursor: pointer;
     font-size: 1rem;
     transition: all 0.3s ease;
-    width: 100%;
-    margin-top: 0.5rem;
-    font-weight: 500;
-    text-align: center;
-    display: inline-block;
-    visibility: visible;
-    opacity: 1;
-    position: relative;
-    z-index: 1000;
-    pointer-events: auto;
 }
 
 #cancelEditBtn:hover {
     background: #7f8c8d;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
-}
-
-#cancelEditBtn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(149, 165, 166, 0.3);
-}
-
-#cancelEditBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-    transform: none !important;
-    box-shadow: none !important;
 }
 
 /* ========== CORREÇÃO DEFINITIVA DO BOTÃO "CANCELAR EDIÇÃO" ========== */
+/* ADICIONADO POR RECOMENDAÇÃO DE MELHORIA - ETAPA 16.1 */
 #cancelEditBtn {
-    /* Garantir visibilidade */
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    
-    /* Garantir clicabilidade */
     cursor: pointer !important;
     pointer-events: auto !important;
-    
-    /* Reset de estilos conflitantes */
-    all: unset;
-    background: #95a5a6 !important;
-    color: white !important;
-    padding: 1rem 2rem !important;
-    border: none !important;
-    border-radius: 5px !important;
-    font-size: 1rem !important;
-    font-family: inherit !important;
-    text-align: center !important;
-    text-decoration: none !important;
-    font-weight: 500 !important;
-    
-    /* Layout */
-    box-sizing: border-box !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    
-    /* Posicionamento */
-    position: relative !important;
-    z-index: 1001 !important;
-    width: 100% !important;
-    margin: 0.5rem 0 !important;
-    
-    /* Transições */
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    opacity: 1 !important;
+    transition: all 0.3s ease !important;
 }
 
-/* Estados hover e active melhorados */
-#cancelEditBtn:hover:not(:disabled) {
+#cancelEditBtn:hover {
     background: #7f8c8d !important;
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 16px rgba(149, 165, 166, 0.4) !important;
+    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3) !important;
 }
 
-#cancelEditBtn:active:not(:disabled) {
-    transform: translateY(0) !important;
-    box-shadow: 0 3px 8px rgba(149, 165, 166, 0.3) !important;
-    transition: all 0.1s ease !important;
-}
-
-/* Estado desabilitado */
 #cancelEditBtn:disabled {
     opacity: 0.5 !important;
     cursor: not-allowed !important;
     pointer-events: none !important;
-    transform: none !important;
-    box-shadow: none !important;
-    background: #95a5a6 !important;
 }
 
-/* Estado quando visível na edição */
-#cancelEditBtn[style*="display: inline-block"] {
-    display: inline-block !important;
-    animation: fadeInButton 0.3s ease forwards !important;
-}
-
-@keyframes fadeInButton {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Animações de feedback */
-@keyframes pulseCancel {
-    0% { 
-        transform: scale(1); 
-        box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
-    }
-    50% { 
-        transform: scale(0.98); 
-        box-shadow: 0 0 0 8px rgba(149, 165, 166, 0.2);
-    }
-    100% { 
-        transform: scale(1); 
-        box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
-    }
-}
-
-#cancelEditBtn.cancelling {
-    animation: pulseCancel 0.5s ease !important;
-}
-
-/* Garantir que o botão esteja sempre acima de outros elementos */
-#propertyForm {
-    position: relative;
-}
-
+/* ========== GARANTIR VISIBILIDADE E CLICABILIDADE DO BOTÃO CANCELAR ========== */
+/* 🔧 ADICIONADO POR CORREÇÃO DO BOTÃO CANCELAR */
 #cancelEditBtn {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     position: relative !important;
-    z-index: 1001 !important;
+    z-index: 1000 !important;
 }
 
-/* Remover qualquer overlay que possa estar bloqueando */
-#adminPanel * {
-    position: static !important;
-}
-
-/* Garantir que o botão esteja no fluxo do documento */
-#cancelEditBtn {
-    display: inline-block !important;
-    float: none !important;
-    clear: both !important;
-}
-
-/* Garantir que textos e ícones dentro do botão sejam visíveis */
 #cancelEditBtn * {
     pointer-events: none !important;
-    color: inherit !important;
 }
 
-#cancelEditBtn i {
-    margin-right: 8px;
+/* Feedback visual para estado de cancelamento */
+#cancelEditBtn.cancelling {
+    animation: pulseCancel 0.5s ease;
+}
+
+@keyframes pulseCancel {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); box-shadow: 0 0 0 5px rgba(149, 165, 166, 0.3); }
+    100% { transform: scale(1); }
 }
 
 /* Área de upload */
@@ -584,7 +417,6 @@
 #pdfUploadArea:hover {
     border-color: var(--primary);
     background: #f0f8ff;
-    transform: translateY(-2px);
 }
 
 #uploadPreview,
@@ -597,7 +429,7 @@
 }
 
 /* Botões do admin */
-.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close):not(#cancelEditBtn):not(button[type="submit"]) {
+.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close) {
     background: var(--accent);
     color: white;
     border: none;
@@ -611,10 +443,9 @@
     transition: all 0.3s ease;
 }
 
-.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close):not(#cancelEditBtn):not(button[type="submit"]):hover {
+.admin-panel button:not(.delete-image-btn):not(.pdf-access):not(.gallery-modal-btn):not(.gallery-modal-close):hover {
     background: #2980b9;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(41, 128, 185, 0.3);
 }
 
 .admin-panel button[style*="background: #e74c3c"] {
@@ -625,16 +456,11 @@
     background: #c0392b !important;
 }
 
-/* ========== ESTILOS RESPONSIVOS ========== */
+/* ========== ESTILOS RESPONSIVOS PARA PDFs EM MOBILE ========== */
 
 /* Modal de PDF - Responsivo */
 .pdf-modal {
     animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Container interno - Mobile First */
@@ -741,9 +567,9 @@
 }
 
 /* Animações */
-@keyframes slideInRight {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Scroll suave no modal */
@@ -897,7 +723,7 @@
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
 }
 
-/* ========== RESPONSIVIDADE COMPLETA ========== */
+/* Responsividade para mobile */
 @media (max-width: 768px) {
     .admin-panel {
         padding: 1rem;
@@ -945,158 +771,4 @@
         height: 16px !important;
         font-size: 0.5rem !important;
     }
-    
-    /* Ajustes específicos para botões em mobile */
-    #propertyForm button[type="submit"],
-    #cancelEditBtn {
-        padding: 1.2rem 1.5rem !important;
-        font-size: 1.1rem !important;
-        min-height: 56px !important;
-    }
-    
-    #cancelEditBtn {
-        margin: 10px 0 !important;
-    }
-    
-    /* Garantir que botões sejam sempre clicáveis em mobile */
-    button, 
-    .btn-edit, 
-    .btn-delete,
-    #cancelEditBtn {
-        min-height: 44px !important;
-        min-width: 44px !important;
-    }
-}
-
-/* Ajustes para telas muito pequenas */
-@media (max-width: 360px) {
-    .admin-panel {
-        padding: 0.75rem;
-        margin: 0.5rem;
-    }
-    
-    #propertyForm button[type="submit"],
-    #cancelEditBtn {
-        padding: 1rem !important;
-        font-size: 1rem !important;
-    }
-    
-    .property-item {
-        padding: 0.75rem;
-    }
-}
-
-/* Ajustes para tablets */
-@media (min-width: 769px) and (max-width: 1024px) {
-    .admin-panel {
-        max-width: 90%;
-        padding: 1.5rem;
-    }
-    
-    #propertyForm {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-    }
-    
-    #propertyForm > div:has(#cancelEditBtn),
-    #propertyForm > div:has(button[type="submit"]) {
-        grid-column: 1 / -1;
-    }
-}
-
-/* ========== ESTILOS DE NOTIFICAÇÃO ========== */
-.auto-save-notification {
-    animation: slideInRight 0.3s ease !important;
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    background: var(--success) !important;
-    color: white !important;
-    padding: 12px 18px !important;
-    border-radius: 8px !important;
-    z-index: 10000 !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 10px !important;
-}
-
-.auto-save-notification.error {
-    background: #e74c3c !important;
-}
-
-/* ========== ESTILOS DE CARREGAMENTO ========== */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.2rem;
-}
-
-/* ========== GARANTIR QUE FORMULÁRIO SEJA SEMPRE ACESSÍVEL ========== */
-#propertyForm {
-    pointer-events: auto !important;
-    position: relative;
-}
-
-#propertyForm *:not(#cancelEditBtn) {
-    pointer-events: auto !important;
-}
-
-/* Garantir que botão cancelar não seja afetado por outros estilos */
-#cancelEditBtn {
-    /* Override de qualquer estilo que possa estar bloqueando */
-    user-select: auto !important;
-    -webkit-user-select: auto !important;
-    -moz-user-select: auto !important;
-    -ms-user-select: auto !important;
-    
-    /* Garantir que eventos de toque funcionem */
-    touch-action: manipulation !important;
-    -webkit-tap-highlight-color: transparent !important;
-}
-
-/* Remover qualquer outline indesejado, mas manter acessibilidade */
-#cancelEditBtn:focus-visible {
-    outline: 2px solid var(--primary) !important;
-    outline-offset: 2px !important;
-}
-
-/* Garantir contraste adequado */
-#cancelEditBtn {
-    color: white !important;
-    text-shadow: 0 1px 1px rgba(0,0,0,0.2) !important;
-}
-
-/* Estado de carregamento do botão */
-#cancelEditBtn.loading {
-    position: relative;
-    color: transparent !important;
-}
-
-#cancelEditBtn.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
 }
