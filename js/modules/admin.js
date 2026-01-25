@@ -1,5 +1,5 @@
-// js/modules/admin.js - SISTEMA ADMIN COM PERSISTÊNCIA DE PDFs GARANTIDA (CORRIGIDO)
-console.log('🔧 admin.js com persistência de PDFs carregado (SEM updated_at)');
+// js/modules/admin.js - SISTEMA ADMIN COM VALIDAÇÃO DE IDs PARA SUPABASE
+console.log('🔧 admin.js com validação de IDs carregado');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -117,7 +117,7 @@ const Helpers = {
 };
 
 /* ==========================================================
-   SISTEMA DE PDFs COM PERSISTÊNCIA GARANTIDA NO SUPABASE (CORRIGIDO)
+   SISTEMA DE PDFs COM VALIDAÇÃO DE IDs PARA SUPABASE
    ========================================================== */
 window.adminPdfHandler = {
     clear: function() {
@@ -131,10 +131,14 @@ window.adminPdfHandler = {
                window.PdfSystem?.loadExistingPdfsForEdit?.(property);
     },
     
-    // ✅ FUNÇÃO CRÍTICA: Processa e SALVA PDFs definitivamente no Supabase (CORRIGIDA)
+    // ✅ FUNÇÃO CRÍTICA: Processa e SALVA PDFs definitivamente no Supabase
     process: async function(id, title) {
         console.group('[adminPdfHandler] PROCESSANDO PDFs DEFINITIVAMENTE');
-        console.log('📋 Parâmetros:', { id, title });
+        console.log('📋 Parâmetros:', { 
+            id, 
+            tipoId: typeof id,
+            title 
+        });
         
         if (!id) {
             console.error('❌ ID do imóvel não fornecido!');
@@ -163,14 +167,21 @@ window.adminPdfHandler = {
                 pdfUrls = await this.processPdfsManually(id, title);
             }
             
-            // ✅ GARANTIR PERSISTÊNCIA IMEDIATA NO SUPABASE (SEM updated_at)
+            // ✅ GARANTIR PERSISTÊNCIA IMEDIATA NO SUPABASE (COM VALIDAÇÃO DE ID)
             if (pdfUrls?.trim()) {
-                const persistSuccess = await this.persistPdfsToSupabase(id, pdfUrls);
-                if (persistSuccess) {
-                    console.log('✅ PDFs persistidos com SUCESSO no Supabase!');
+                // ✅ VALIDAR ID ANTES DE PERSISTIR
+                const validId = this.validateIdForSupabase(id);
+                
+                if (validId) {
+                    const persistSuccess = await this.persistPdfsToSupabase(validId, pdfUrls);
+                    if (persistSuccess) {
+                        console.log('✅ PDFs persistidos com SUCESSO no Supabase!');
+                    } else {
+                        console.error('❌ Falha ao persistir PDFs no Supabase');
+                        // Mesmo se falhar, retorna as URLs para salvamento local
+                    }
                 } else {
-                    console.error('❌ Falha ao persistir PDFs no Supabase');
-                    // Mesmo se falhar, retorna as URLs para salvamento local
+                    console.warn('⚠️ ID inválido para Supabase, salvando apenas localmente');
                 }
             } else {
                 console.log('ℹ️ Nenhum PDF para processar');
@@ -186,10 +197,11 @@ window.adminPdfHandler = {
         }
     },
     
-    // ✅ MÉTODO NOVO: Persistir PDFs diretamente no Supabase (CORRIGIDO - SEM updated_at)
+    // ✅ MÉTODO NOVO: Persistir PDFs diretamente no Supabase (COM VALIDAÇÃO DE ID)
     persistPdfsToSupabase: async function(propertyId, pdfUrls) {
         console.log('[adminPdfHandler] Persistindo PDFs no Supabase:', {
             propertyId,
+            propertyIdType: typeof propertyId,
             pdfCount: pdfUrls.split(',').filter(p => p.trim()).length
         });
         
@@ -203,8 +215,15 @@ window.adminPdfHandler = {
             return false;
         }
         
+        // ✅ CRÍTICO: Garantir que o ID é numérico para Supabase
+        if (typeof propertyId !== 'number' || isNaN(propertyId)) {
+            console.error('❌ ID deve ser numérico para Supabase:', propertyId);
+            return false;
+        }
+        
         try {
-            // ✅ CORREÇÃO CRÍTICA: Atualizar APENAS o campo pdfs (SEM updated_at)
+            console.log(`🌐 Enviando para Supabase com ID: ${propertyId} (${typeof propertyId})`);
+            
             const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
                 method: 'PATCH',
                 headers: {
@@ -215,7 +234,6 @@ window.adminPdfHandler = {
                 },
                 body: JSON.stringify({ 
                     pdfs: pdfUrls
-                    // ❌ REMOVIDO: updated_at: new Date().toISOString() - NÃO EXISTE NA TABELA
                 })
             });
             
@@ -224,35 +242,37 @@ window.adminPdfHandler = {
                 console.log('✅ PDFs atualizados no Supabase:', {
                     success: true,
                     pdfsNaResposta: result[0]?.pdfs,
-                    propertyId
+                    propertyId: propertyId,
+                    rowsAfetadas: result.length
                 });
                 return true;
             } else {
                 const errorText = await response.text();
                 console.error('❌ Erro ao atualizar PDFs no Supabase:', {
                     status: response.status,
-                    error: errorText
+                    statusText: response.statusText,
+                    error: errorText,
+                    idUsado: propertyId
                 });
                 
-                // ✅ TENTAR ESTRATÉGIA ALTERNATIVA: Atualizar apenas se ID for numérico
-                if (propertyId && !isNaN(propertyId)) {
-                    console.log('🔄 Tentando com ID numérico:', propertyId);
-                    const numericResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${Number(propertyId)}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': window.SUPABASE_KEY,
-                            'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                            'Prefer': 'return=representation'
-                        },
-                        body: JSON.stringify({ 
-                            pdfs: pdfUrls
-                        })
+                // ✅ ESTRATÉGIA ALTERNATIVA: Verificar se o imóvel existe
+                console.log('🔍 Verificando se o imóvel existe no Supabase...');
+                const checkResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}&select=id`, {
+                    headers: {
+                        'apikey': window.SUPABASE_KEY,
+                        'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                    }
+                });
+                
+                if (checkResponse.ok) {
+                    const checkData = await checkResponse.json();
+                    console.log('📊 Verificação de existência:', {
+                        existe: checkData.length > 0,
+                        dados: checkData
                     });
                     
-                    if (numericResponse.ok) {
-                        console.log('✅ PDFs atualizados com ID numérico');
-                        return true;
+                    if (checkData.length === 0) {
+                        console.warn(`⚠️ Imóvel ID ${propertyId} não existe no Supabase`);
                     }
                 }
                 
@@ -262,6 +282,51 @@ window.adminPdfHandler = {
             console.error('❌ Erro de conexão ao persistir PDFs:', error);
             return false;
         }
+    },
+    
+    // ✅ FUNÇÃO AUXILIAR: Validar e converter ID para Supabase
+    validateIdForSupabase: function(propertyId) {
+        console.log('[adminPdfHandler] Validando ID para Supabase:', {
+            original: propertyId,
+            type: typeof propertyId
+        });
+        
+        if (!propertyId) {
+            console.error('❌ ID não fornecido');
+            return null;
+        }
+        
+        // Se já for número e válido, retornar como está
+        if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) {
+            console.log(`✅ ID já é numérico válido: ${propertyId}`);
+            return propertyId;
+        }
+        
+        // Se for string, tentar extrair número
+        if (typeof propertyId === 'string') {
+            // Remover prefixos comuns de teste
+            const cleanId = propertyId
+                .replace('test_id_', '')
+                .replace('temp_', '')
+                .replace(/[^0-9]/g, '');
+            
+            const numericId = parseInt(cleanId);
+            
+            if (!isNaN(numericId) && numericId > 0) {
+                console.log(`✅ ID convertido: "${propertyId}" -> ${numericId}`);
+                return numericId;
+            }
+        }
+        
+        // Tentar converter direto
+        const directConvert = parseInt(propertyId);
+        if (!isNaN(directConvert) && directConvert > 0) {
+            console.log(`✅ ID convertido diretamente: ${directConvert}`);
+            return directConvert;
+        }
+        
+        console.error('❌ Não foi possível converter ID para formato Supabase:', propertyId);
+        return null;
     },
     
     // ✅ MÉTODO NOVO: Processamento manual de fallback
@@ -291,11 +356,15 @@ window.adminPdfHandler = {
 };
 
 // ==========================================================
-// FUNÇÕES DE COMPATIBILIDADE COM GARANTIA DE PERSISTÊNCIA
+// FUNÇÕES DE COMPATIBILIDADE COM VALIDAÇÃO DE IDs
 // ==========================================================
 window.processAndSavePdfs = async function(propertyId, propertyTitle) {
     console.group('[COMPATIBILIDADE] processAndSavePdfs -> delegando para adminPdfHandler');
-    console.log('📋 Parâmetros:', { propertyId, propertyTitle });
+    console.log('📋 Parâmetros:', { 
+        propertyId, 
+        tipoId: typeof propertyId,
+        propertyTitle 
+    });
     
     try {
         const result = await window.adminPdfHandler.process(propertyId, propertyTitle);
@@ -338,7 +407,7 @@ window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
 };
 
 /* ==========================================================
-   AUTO-SALVAMENTO OTIMIZADO COM PERSISTÊNCIA DE PDFs
+   AUTO-SALVAMENTO OTIMIZADO COM VALIDAÇÃO DE IDs
    ========================================================== */
 window.triggerAutoSave = function(reason = 'media_deletion') {
     if (!window.editingPropertyId) return;
@@ -357,10 +426,9 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
         }
         
         try {
-            // ✅ ADICIONADO: LOG DE DIAGNÓSTICO
-            console.log('🔍 DEBUG triggerAutoSave - Estado dos PDFs:', {
-                temAdminPdfHandler: !!window.adminPdfHandler,
+            console.log('🔍 DEBUG triggerAutoSave:', {
                 editingId: window.editingPropertyId,
+                tipoId: typeof window.editingPropertyId,
                 reason: reason,
                 timestamp: new Date().toISOString()
             });
@@ -381,7 +449,7 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
             
             const updateData = { ...propertyData };
             
-            // ✅ PROCESSAR PDFs COM PERSISTÊNCIA GARANTIDA
+            // ✅ PROCESSAR PDFs COM VALIDAÇÃO DE ID
             if (window.adminPdfHandler) {
                 try {
                     const pdfsString = await window.adminPdfHandler.process(
@@ -390,13 +458,10 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                     );
                     
                     if (pdfsString?.trim()) {
-                        updateData.pdfs = pdfsString; // ✅ CRÍTICO: Atribuir ao updateData
-                        // ✅ LOG DE DIAGNÓSTICO
+                        updateData.pdfs = pdfsString;
                         console.log('✅ PDFs processados no auto-save:', {
                             count: pdfsString.split(',').filter(p => p.trim()).length,
-                            string: pdfsString.substring(0, 100) + '...',
-                            propertyTitle: propertyData.title,
-                            updateDataHasPdfs: !!updateData.pdfs
+                            propertyTitle: propertyData.title
                         });
                     } else {
                         console.log('ℹ️ Nenhum PDF novo processado no auto-save');
@@ -412,18 +477,21 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
                 if (mediaUrls?.trim()) updateData.images = mediaUrls;
             }
             
-            // ✅ LOG FINAL DOS DADOS QUE SERÃO ENVIADOS
-            console.log('📤 Dados completos para envio no auto-save:', {
+            // ✅ VALIDAR ID ANTES DE ENVIAR
+            const validId = window.adminPdfHandler?.validateIdForSupabase?.(window.editingPropertyId);
+            console.log('📤 Dados para envio:', {
+                id: window.editingPropertyId,
+                idValidoParaSupabase: validId,
                 temPdfs: !!updateData.pdfs,
-                temImages: !!updateData.images,
-                campos: Object.keys(updateData),
-                id: window.editingPropertyId
+                campos: Object.keys(updateData)
             });
             
             // Atualizar array local e banco
             window.updateLocalProperty(window.editingPropertyId, updateData);
             if (typeof window.updateProperty === 'function') {
-                await window.updateProperty(window.editingPropertyId, updateData);
+                // Usar ID validado se disponível
+                const idToUse = validId || window.editingPropertyId;
+                await window.updateProperty(idToUse, updateData);
                 Helpers.showNotification('✅ Alterações salvas');
             }
             
@@ -669,7 +737,7 @@ window.setupForm = function() {
             if (window.editingPropertyId) {
                 const updateData = { ...propertyData };
                 
-                // Processar PDFs COM PERSISTÊNCIA GARANTIDA
+                // Processar PDFs COM VALIDAÇÃO DE ID
                 if (window.adminPdfHandler) {
                     const pdfsString = await window.adminPdfHandler.process(
                         window.editingPropertyId, 
@@ -688,7 +756,11 @@ window.setupForm = function() {
                 window.updateLocalProperty(window.editingPropertyId, updateData);
                 
                 if (typeof window.updateProperty === 'function') {
-                    const success = await window.updateProperty(window.editingPropertyId, updateData);
+                    // Validar ID antes de enviar
+                    const validId = window.adminPdfHandler?.validateIdForSupabase?.(window.editingPropertyId);
+                    const idToUse = validId || window.editingPropertyId;
+                    
+                    const success = await window.updateProperty(idToUse, updateData);
                     if (success) {
                         Helpers.showNotification('✅ Imóvel atualizado!');
                     }
@@ -767,7 +839,7 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         ...window.properties[index],
         ...updatedData,
         id: propertyId,
-        updated_at: new Date().toISOString() // ✅ Mantido apenas localmente
+        updated_at: new Date().toISOString()
     };
     
     // Atualizar UI
@@ -817,10 +889,69 @@ setTimeout(() => {
 }, 1000);
 
 /* ==========================================================
-   FUNÇÃO DE TESTE PARA DIAGNÓSTICO DE PDFs
+   FUNÇÃO DE TESTE SEGURO PARA SUPABASE
+   ========================================================== */
+window.testSupabaseConnectionSafe = async function() {
+    console.group('🧪 TESTE DE CONEXÃO SEGURA COM SUPABASE');
+    
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+        console.error('❌ Credenciais Supabase não configuradas');
+        alert('❌ Configure SUPABASE_URL e SUPABASE_KEY primeiro!');
+        console.groupEnd();
+        return;
+    }
+    
+    console.log('🔍 Verificando conexão...');
+    
+    try {
+        // Testar conexão básica
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            }
+        });
+        
+        if (response.ok) {
+            console.log('✅ Conexão com Supabase: OK');
+            
+            // Verificar IDs existentes
+            const idsResponse = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=id,title&order=id.desc&limit=5`, {
+                headers: {
+                    'apikey': window.SUPABASE_KEY,
+                    'Authorization': `Bearer ${window.SUPABASE_KEY}`
+                }
+            });
+            
+            if (idsResponse.ok) {
+                const properties = await idsResponse.json();
+                console.log('📋 IDs disponíveis no Supabase:', properties);
+                
+                if (properties.length > 0) {
+                    alert(`✅ Conexão com Supabase estabelecida!\n\nIDs disponíveis:\n${properties.map(p => `• ID ${p.id}: ${p.title || 'Sem título'}`).join('\n')}`);
+                } else {
+                    alert('✅ Conexão com Supabase estabelecida!\n\nTabela "properties" existe, mas está vazia.');
+                }
+            }
+        } else {
+            console.error('❌ Erro na conexão:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('Detalhes do erro:', errorText);
+            alert(`❌ Erro na conexão: ${response.status} ${response.statusText}\n\n${errorText.substring(0, 200)}...`);
+        }
+    } catch (error) {
+        console.error('❌ Erro de conexão:', error);
+        alert(`❌ Erro: ${error.message}`);
+    }
+    
+    console.groupEnd();
+};
+
+/* ==========================================================
+   FUNÇÃO DE TESTE PARA DIAGNÓSTICO DE PDFs (ATUALIZADA)
    ========================================================== */
 window.testPdfPersistence = async function() {
-    console.group('🧪 TESTE DE PERSISTÊNCIA DE PDFs (SEM updated_at)');
+    console.group('🧪 TESTE DE PERSISTÊNCIA DE PDFs (COM VALIDAÇÃO DE ID)');
     
     if (!window.editingPropertyId) {
         console.error('❌ Nenhum imóvel em edição');
@@ -841,10 +972,25 @@ window.testPdfPersistence = async function() {
     
     console.log('🔍 Imóvel em teste:', {
         id: property.id,
+        tipoId: typeof property.id,
         title: property.title,
         pdfsAtuais: property.pdfs || 'Nenhum',
         pdfsCount: property.pdfs ? property.pdfs.split(',').filter(p => p.trim()).length : 0
     });
+    
+    // ✅ VALIDAR ID ANTES DE TESTAR
+    let validId = null;
+    if (window.adminPdfHandler && window.adminPdfHandler.validateIdForSupabase) {
+        validId = window.adminPdfHandler.validateIdForSupabase(propertyId);
+        console.log('✅ ID validado para Supabase:', validId);
+        
+        if (!validId) {
+            console.error('❌ ID inválido para testes com Supabase');
+            alert('⚠️ ID do imóvel não é compatível com Supabase.\n\nUse um ID numérico para testes.');
+            console.groupEnd();
+            return;
+        }
+    }
     
     // 1. Testar adminPdfHandler
     console.log('\n1. Testando adminPdfHandler.process()...');
@@ -865,28 +1011,20 @@ window.testPdfPersistence = async function() {
     // 2. Verificar estado atual no Supabase
     console.log('\n2. Verificando estado no Supabase...');
     if (window.updateProperty && window.updateProperty.verifyPdfs) {
-        const supabaseState = await window.updateProperty.verifyPdfs(propertyId);
-        console.log('📊 Estado no Supabase:', supabaseState);
+        if (validId) {
+            const supabaseState = await window.updateProperty.verifyPdfs(validId);
+            console.log('📊 Estado no Supabase:', supabaseState);
+        } else {
+            console.log('⚠️ ID inválido para verificação no Supabase');
+        }
     }
     
     // 3. Testar persistência direta
     console.log('\n3. Testando persistência direta...');
-    if (window.adminPdfHandler && window.adminPdfHandler.persistPdfsToSupabase) {
-        const testPdfs = 'https://test.com/pdf1.pdf,https://test.com/pdf2.pdf';
-        const result = await window.adminPdfHandler.persistPdfsToSupabase(propertyId, testPdfs);
+    if (window.adminPdfHandler && window.adminPdfHandler.persistPdfsToSupabase && validId) {
+        const testPdfs = 'https://exemplo.com/test1.pdf,https://exemplo.com/test2.pdf';
+        const result = await window.adminPdfHandler.persistPdfsToSupabase(validId, testPdfs);
         console.log('📤 Resultado da persistência direta:', result ? '✅ Sucesso' : '❌ Falha');
-    }
-    
-    // 4. Forçar atualização completa
-    console.log('\n4. Forçando atualização completa...');
-    const updateData = {
-        title: property.title,
-        pdfs: property.pdfs || ''
-    };
-    
-    if (window.updateProperty) {
-        const result = await window.updateProperty(propertyId, updateData);
-        console.log('📤 Resultado da atualização completa:', result ? '✅ Sucesso' : '❌ Falha');
     }
     
     console.log('\n🎯 TESTE CONCLUÍDO');
@@ -895,29 +1033,53 @@ window.testPdfPersistence = async function() {
     alert('🧪 Teste de persistência de PDFs concluído!\n\nVerifique o console (F12) para resultados detalhados.');
 };
 
-// Adicionar botão de teste ao painel admin
+// Adicionar botões de teste ao painel admin
 setTimeout(() => {
     const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel && !document.getElementById('testPdfButton')) {
-        const testBtn = document.createElement('button');
-        testBtn.id = 'testPdfButton';
-        testBtn.innerHTML = '<i class="fas fa-vial"></i> Testar PDFs';
-        testBtn.onclick = window.testPdfPersistence;
-        testBtn.style.cssText = `
-            background: #9b59b6; color: white; border: none;
-            padding: 0.8rem 1.5rem; border-radius: 5px; cursor: pointer;
-            margin: 0.5rem; display: inline-flex; align-items: center;
-            gap: 0.5rem; font-weight: 600;
-        `;
-        testBtn.title = 'Testar persistência de PDFs no Supabase';
+    if (adminPanel) {
+        // Botão Testar PDFs
+        if (!document.getElementById('testPdfButton')) {
+            const testBtn = document.createElement('button');
+            testBtn.id = 'testPdfButton';
+            testBtn.innerHTML = '<i class="fas fa-vial"></i> Testar PDFs';
+            testBtn.onclick = window.testPdfPersistence;
+            testBtn.style.cssText = `
+                background: #9b59b6; color: white; border: none;
+                padding: 0.8rem 1.5rem; border-radius: 5px; cursor: pointer;
+                margin: 0.5rem; display: inline-flex; align-items: center;
+                gap: 0.5rem; font-weight: 600;
+            `;
+            testBtn.title = 'Testar persistência de PDFs no Supabase';
+            
+            const panelActions = adminPanel.querySelector('.panel-actions') || 
+                               adminPanel.querySelector('div:first-child');
+            if (panelActions) {
+                panelActions.appendChild(testBtn);
+            }
+        }
         
-        const panelActions = adminPanel.querySelector('.panel-actions') || 
-                           adminPanel.querySelector('div:first-child');
-        if (panelActions) {
-            panelActions.appendChild(testBtn);
+        // Botão Testar Supabase
+        if (!document.getElementById('testSupabaseButton')) {
+            const supabaseBtn = document.createElement('button');
+            supabaseBtn.id = 'testSupabaseButton';
+            supabaseBtn.innerHTML = '<i class="fas fa-database"></i> Testar Supabase';
+            supabaseBtn.onclick = window.testSupabaseConnectionSafe;
+            supabaseBtn.style.cssText = `
+                background: #3498db; color: white; border: none;
+                padding: 0.8rem 1.5rem; border-radius: 5px; cursor: pointer;
+                margin: 0.5rem; display: inline-flex; align-items: center;
+                gap: 0.5rem; font-weight: 600;
+            `;
+            supabaseBtn.title = 'Testar conexão segura com Supabase';
+            
+            const panelActions = adminPanel.querySelector('.panel-actions') || 
+                               adminPanel.querySelector('div:first-child');
+            if (panelActions) {
+                panelActions.appendChild(supabaseBtn);
+            }
         }
     }
-}, 2000);
+}, 2500);
 
 // Inicialização
 if (document.readyState === 'loading') {
@@ -928,4 +1090,4 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - SISTEMA DE PERSISTÊNCIA DE PDFs IMPLEMENTADO (SEM updated_at)');
+console.log('✅ admin.js - SISTEMA COM VALIDAÇÃO DE IDs PARA SUPABASE IMPLEMENTADO');
