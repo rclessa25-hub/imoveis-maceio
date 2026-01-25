@@ -1,7 +1,7 @@
-// js/modules/media/media-unified.js - VERSÃO COMPLETA E DEFINITIVA
-console.log('🔄 media-unified.js - VERSÃO COMPLETA COM UUID .JPEG AUTOMÁTICO');
+// js/modules/media/media-unified.js - VERSÃO COMPLETA DEFINITIVA
+console.log('🔄 media-unified.js - VERSÃO COMPLETA DEFINITIVA');
 
-// ========== USAR window.SUPABASE_CONSTANTS DE SharedCore.js ==========
+// ========== SUPABASE CONSTANTS ==========
 if (typeof window.SUPABASE_CONSTANTS === 'undefined') {
     window.SUPABASE_CONSTANTS = {
         URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
@@ -9,23 +9,7 @@ if (typeof window.SUPABASE_CONSTANTS === 'undefined') {
         ADMIN_PASSWORD: "wl654",
         PDF_PASSWORD: "doc123"
     };
-    console.log('✅ SUPABASE_CONSTANTS definido em media-unified.js');
 }
-
-if (typeof window.SUPABASE_URL === 'undefined' || window.SUPABASE_URL === 'undefined') {
-    window.SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
-    console.log('✅ SUPABASE_URL definida:', window.SUPABASE_URL.substring(0, 50) + '...');
-}
-
-if (typeof window.SUPABASE_KEY === 'undefined' || !window.SUPABASE_KEY) {
-    window.SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
-    console.log('✅ SUPABASE_KEY definida');
-}
-
-/**
- * SISTEMA UNIFICADO DE MÍDIA - VERSÃO COMPLETA DEFINITIVA
- * Com extensão .jpeg automática para UUIDs
- */
 
 const MediaSystem = {
     // ========== CONFIGURAÇÃO ==========
@@ -48,7 +32,7 @@ const MediaSystem = {
         }
     },
 
-    // ========== ESTADO GLOBAL ==========
+    // ========== ESTADO ==========
     state: {
         files: [],
         existing: [],
@@ -72,94 +56,47 @@ const MediaSystem = {
         return this;
     },
 
-    // ========== SUA IDEIA BRILHANTE: FUNÇÃO PARA ADICIONAR .JPEG A UAIDs ==========
+    // ========== FUNÇÃO PARA NORMALIZAR NOMES DE ARQUIVO ==========
     normalizeFileName: function(fileName) {
         if (!fileName) return 'imagem.jpeg';
         
-        // Verificar se é UUID (ex: bb4a9dfb-d254-4528-a11a-52100214d509)
+        // Verificar se é UUID
         const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         
         if (uuidPattern.test(fileName)) {
-            // ✅ ADICIONAR .jpeg AUTOMATICAMENTE
+            // Adicionar .jpeg para display
             return fileName + '.jpeg';
         }
         
-        // Se já tem extensão, manter
-        if (fileName.includes('.')) {
-            return fileName;
-        }
-        
-        // Se não tem extensão e não é UUID, adicionar .jpeg
-        return fileName + '.jpeg';
+        return fileName;
     },
 
-    // ========== FUNÇÃO SIMPLIFICADA DE DETECÇÃO ==========
-    detectFileType: function(item) {
-        // 1. Se tem arquivo físico, usar tipo MIME
-        if (item.file && item.file.type) {
-            if (item.file.type.includes('image')) return 'image';
-            if (item.file.type.includes('video')) return 'video';
-            if (item.file.type.includes('pdf')) return 'pdf';
-        }
-        
-        // 2. Se tem tipo no item
-        if (item.type && item.type !== 'file') {
-            if (item.type.includes('image')) return 'image';
-            if (item.type.includes('video')) return 'video';
-            if (item.type.includes('pdf')) return 'pdf';
-        }
-        
-        // 3. Verificar por extensão no nome (já normalizado)
-        if (item.name) {
-            const name = item.name.toLowerCase();
-            if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || 
-                name.endsWith('.gif') || name.endsWith('.webp') || name.endsWith('.bmp')) return 'image';
-            if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.avi')) return 'video';
-            if (name.endsWith('.pdf')) return 'pdf';
-        }
-        
-        // 4. Por padrão, assumir que é imagem
-        return 'image';
-    },
-
-    // ========== FUNÇÃO getMediaPreviewHTML COMPLETA ==========
+    // ========== FUNÇÃO PRINCIPAL DE PREVIEW ==========
     getMediaPreviewHTML: function(item) {
+        console.log(`🔍 Gerando preview para: ${item.name || item.id}`);
+        
+        // Nome para display
+        const displayName = this.normalizeFileName(item.name);
+        const shortName = displayName.length > 20 ? displayName.substring(0, 17) + '...' : displayName;
+        
+        // Detectar tipo
         const fileType = this.detectFileType(item);
         
-        // ✅ Usar nome normalizado (com .jpeg se for UUID)
-        const normalizedName = this.normalizeFileName(item.name);
-        const shortName = normalizedName.length > 20 ? normalizedName.substring(0, 17) + '...' : normalizedName;
+        // URL para tentar carregar
+        const url = item.url || item.preview || '';
         
-        // Obter URL para preview
-        const mediaUrl = item.url || item.preview;
+        console.log(`📊 ${displayName} → ${fileType}, URL: ${url.substring(0, 80)}...`);
         
-        console.log(`🔍 Preview para: ${item.name} → ${normalizedName} (${fileType})`);
-        
-        // Gerar HTML baseado no tipo
-        switch(fileType) {
-            case 'image':
-                return this.generateImagePreview(mediaUrl, shortName, normalizedName);
-            case 'video':
-                return this.generateVideoPreview(shortName);
-            case 'pdf':
-                return this.generatePdfPreview(shortName);
-            default:
-                return this.generateFallbackPreview(shortName);
-        }
-    },
-
-    // ========== GERADORES DE PREVIEW ==========
-    generateImagePreview: function(mediaUrl, shortName, fullName) {
-        if (mediaUrl && (mediaUrl.startsWith('http') || mediaUrl.startsWith('blob:'))) {
-            // Tentar mostrar imagem real
+        // Se for imagem e tem URL válida, tentar mostrar
+        if (fileType === 'image' && url && (url.startsWith('http') || url.startsWith('blob:'))) {
             return `
                 <div style="width:100%;height:70px;position:relative;background:#2c3e50;">
-                    <img src="${mediaUrl}" 
-                         alt="${fullName}"
+                    <img src="${url}" 
+                         alt="${displayName}"
                          style="width:100%;height:100%;object-fit:cover;"
-                         onload="console.log('✅ Imagem carregada: ${fullName.replace(/'/g, "\\'")}')"
+                         onload="console.log('✅ Imagem carregada: ${displayName.replace(/'/g, "\\'")}')"
                          onerror="
-                            console.log('❌ Falha no carregamento: ${fullName.replace(/'/g, "\\'")}');
+                            console.log('❌ Falha no carregamento: ${displayName.replace(/'/g, "\\'")}');
                             this.style.display='none';
                             this.nextElementSibling.style.display='flex';
                          ">
@@ -169,119 +106,107 @@ const MediaSystem = {
                     </div>
                 </div>
             `;
-        } else {
-            // Mostrar ícone de imagem
-            return `
-                <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
-                    <i class="fas fa-image" style="font-size:1.5rem;margin-bottom:5px;"></i>
-                    <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
-                </div>
-            `;
+        }
+        
+        // Mostrar ícone baseado no tipo
+        switch(fileType) {
+            case 'image':
+                return `
+                    <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                        <i class="fas fa-image" style="font-size:1.5rem;margin-bottom:5px;"></i>
+                        <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
+                    </div>
+                `;
+            case 'video':
+                return `
+                    <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                        <i class="fas fa-video" style="font-size:1.8rem;margin-bottom:5px;"></i>
+                        <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
+                    </div>
+                `;
+            case 'pdf':
+                return `
+                    <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                        <i class="fas fa-file-pdf" style="font-size:1.8rem;margin-bottom:5px;"></i>
+                        <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
+                    </div>
+                `;
+            default:
+                return `
+                    <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
+                        <i class="fas fa-file" style="font-size:1.5rem;margin-bottom:5px;"></i>
+                        <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
+                    </div>
+                `;
         }
     },
 
-    generateVideoPreview: function(shortName) {
-        return `
-            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
-                <i class="fas fa-video" style="font-size:1.8rem;margin-bottom:5px;"></i>
-                <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
-            </div>
-        `;
-    },
-
-    generatePdfPreview: function(shortName) {
-        return `
-            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
-                <i class="fas fa-file-pdf" style="font-size:1.8rem;margin-bottom:5px;"></i>
-                <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
-            </div>
-        `;
-    },
-
-    generateFallbackPreview: function(shortName) {
-        return `
-            <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;border:1px dashed #7f8c8d;">
-                <i class="fas fa-file" style="font-size:1.5rem;margin-bottom:5px;"></i>
-                <div style="font-size:0.65rem;text-align:center;">${shortName}</div>
-            </div>
-        `;
-    },
-
-    // ========== CARREGAR ARQUIVOS EXISTENTES (COMPLETO) ==========
-    loadExisting: function(property) {
-        if (!property) return this;
-        
-        console.log(`📥 Carregando mídia existente para imóvel ${property.id}`);
-        this.state.currentPropertyId = property.id;
-        
-        // Resetar arrays
-        this.state.existing = [];
-        this.state.existingPdfs = [];
-        
-        // Carregar imagens/vídeos
-        if (property.images && property.images !== 'EMPTY') {
-            const urls = property.images.split(',')
-                .map(url => url.trim())
-                .filter(url => url && url !== 'EMPTY');
-            
-            console.log(`📸 ${urls.length} URL(s) de mídia encontrada(s)`);
-            
-            this.state.existing = urls.map((url, index) => {
-                // Normalizar URL se necessário
-                let finalUrl = url;
-                if (!this.isValidUrl(url)) {
-                    const reconstructed = this.reconstructSupabaseUrl(url);
-                    if (reconstructed) {
-                        finalUrl = reconstructed;
-                        console.log(`🔧 URL reconstruída: ${reconstructed.substring(0, 80)}...`);
-                    }
-                }
-                
-                // Extrair nome do arquivo e normalizar
-                const fileName = this.extractFileName(url);
-                const normalizedName = this.normalizeFileName(fileName);
-                
-                const item = {
-                    url: finalUrl,
-                    preview: finalUrl,
-                    id: `existing_${property.id}_${index}`,
-                    name: normalizedName, // ✅ Nome já com .jpeg se for UUID
-                    originalName: fileName,
-                    type: this.getFileTypeFromUrl(finalUrl),
-                    isExisting: true,
-                    markedForDeletion: false,
-                    isVisible: true
-                };
-                
-                console.log(`   📄 Item ${index + 1}: ${normalizedName} (original: ${fileName})`);
-                return item;
-            });
+    // ========== DETECÇÃO DE TIPO ==========
+    detectFileType: function(item) {
+        // 1. Tipo MIME do arquivo
+        if (item.file && item.file.type) {
+            if (item.file.type.includes('image')) return 'image';
+            if (item.file.type.includes('video')) return 'video';
+            if (item.file.type.includes('pdf')) return 'pdf';
         }
         
-        // Carregar PDFs
-        if (property.pdfs && property.pdfs !== 'EMPTY') {
-            const pdfUrls = property.pdfs.split(',')
-                .map(url => url.trim())
-                .filter(url => url && url !== 'EMPTY');
-            
-            this.state.existingPdfs = pdfUrls.map((url, index) => {
-                const fileName = this.extractFileName(url);
-                return {
-                    url: url,
-                    id: `existing_pdf_${property.id}_${index}`,
-                    name: fileName,
-                    isExisting: true,
-                    markedForDeletion: false,
-                    type: 'application/pdf'
-                };
-            });
+        // 2. Tipo no item
+        if (item.type && item.type !== 'file') {
+            if (item.type.includes('image')) return 'image';
+            if (item.type.includes('video')) return 'video';
+            if (item.type.includes('pdf')) return 'pdf';
         }
         
-        this.updateUI();
-        return this;
+        // 3. Verificar nome
+        if (item.name) {
+            const name = item.name.toLowerCase();
+            if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || 
+                name.endsWith('.gif') || name.endsWith('.webp') || name.endsWith('.bmp')) return 'image';
+            if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.avi')) return 'video';
+            if (name.endsWith('.pdf')) return 'pdf';
+            
+            // Se for UUID, assumir que é imagem
+            const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+            if (uuidPattern.test(item.name)) return 'image';
+        }
+        
+        // 4. Por padrão, imagem
+        return 'image';
     },
 
-    // ========== ADICIONAR NOVOS ARQUIVOS (COMPLETO) ==========
+    // ========== VALIDAÇÃO DE ARQUIVOS ==========
+    validateFile: function(file) {
+        const isImage = this.config.allowedTypes.images.includes(file.type);
+        const isVideo = this.config.allowedTypes.videos.includes(file.type);
+        
+        if (!isImage && !isVideo) {
+            alert(`❌ "${file.name}" - Tipo não suportado!`);
+            return false;
+        }
+        
+        if (file.size > this.config.limits.maxSize) {
+            alert(`❌ "${file.name}" - Arquivo muito grande! Máximo: 5MB`);
+            return false;
+        }
+        
+        return true;
+    },
+
+    validatePdf: function(file) {
+        if (!this.config.allowedTypes.pdfs.includes(file.type)) {
+            alert(`❌ "${file.name}" - Não é um PDF válido!`);
+            return false;
+        }
+        
+        if (file.size > this.config.limits.maxPdfSize) {
+            alert(`❌ "${file.name}" - PDF muito grande! Máximo: 10MB`);
+            return false;
+        }
+        
+        return true;
+    },
+
+    // ========== ADICIONAR ARQUIVOS ==========
     addFiles: function(fileList) {
         if (!fileList || fileList.length === 0) return 0;
         
@@ -298,7 +223,6 @@ const MediaSystem = {
                 file: file,
                 id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 name: file.name,
-                size: file.size,
                 type: file.type,
                 preview: URL.createObjectURL(file),
                 isImage: isImage,
@@ -317,7 +241,7 @@ const MediaSystem = {
         return addedCount;
     },
 
-    // ========== ADICIONAR PDFs (COMPLETO) ==========
+    // ========== ADICIONAR PDFs ==========
     addPdfs: function(fileList) {
         if (!fileList || fileList.length === 0) return 0;
         
@@ -343,7 +267,73 @@ const MediaSystem = {
         return addedCount;
     },
 
-    // ========== REMOVER ARQUIVO (COMPLETO) ==========
+    // ========== CARREGAR ARQUIVOS EXISTENTES ==========
+    loadExisting: function(property) {
+        if (!property) return this;
+        
+        console.log(`📥 Carregando mídia para imóvel ${property.id}`);
+        this.state.currentPropertyId = property.id;
+        
+        // Limpar arrays
+        this.state.existing = [];
+        this.state.existingPdfs = [];
+        
+        // Carregar imagens/vídeos
+        if (property.images && property.images !== 'EMPTY') {
+            const urls = property.images.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            
+            console.log(`📸 ${urls.length} URL(s) encontrada(s)`);
+            
+            this.state.existing = urls.map((url, index) => {
+                let finalUrl = url;
+                
+                // Reconstruir URL do Supabase se necessário
+                if (url && !url.startsWith('http') && !url.startsWith('blob:')) {
+                    const reconstructed = this.reconstructSupabaseUrl(url);
+                    if (reconstructed) {
+                        finalUrl = reconstructed;
+                        console.log(`🔧 URL reconstruída: ${reconstructed.substring(0, 80)}...`);
+                    }
+                }
+                
+                const fileName = this.extractFileName(url);
+                
+                return {
+                    url: finalUrl,
+                    preview: finalUrl,
+                    id: `existing_${property.id}_${index}`,
+                    name: fileName,
+                    type: this.getFileTypeFromUrl(finalUrl),
+                    isExisting: true,
+                    markedForDeletion: false,
+                    isVisible: true
+                };
+            });
+        }
+        
+        // Carregar PDFs
+        if (property.pdfs && property.pdfs !== 'EMPTY') {
+            const pdfUrls = property.pdfs.split(',')
+                .map(url => url.trim())
+                .filter(url => url && url !== 'EMPTY');
+            
+            this.state.existingPdfs = pdfUrls.map((url, index) => ({
+                url: url,
+                id: `existing_pdf_${property.id}_${index}`,
+                name: this.extractFileName(url),
+                isExisting: true,
+                markedForletion: false,
+                type: 'application/pdf'
+            }));
+        }
+        
+        this.updateUI();
+        return this;
+    },
+
+    // ========== REMOVER ARQUIVO ==========
     removeFile: function(fileId) {
         const allArrays = [
             { name: 'files', array: this.state.files },
@@ -376,16 +366,15 @@ const MediaSystem = {
         return false;
     },
 
-    // ========== UPLOAD PARA SUPABASE (COMPLETO) ==========
+    // ========== UPLOAD PARA SUPABASE ==========
     async uploadAll(propertyId, propertyTitle) {
         if (this.state.isUploading) {
             console.warn('⚠️ Upload já em andamento');
             return { images: '', pdfs: '' };
         }
-    
+        
         this.state.isUploading = true;
-        console.group('🚀 UPLOAD COMPLETO');
-        console.log(`📌 Property ID: ${propertyId}, Title: ${propertyTitle}`);
+        console.group('🚀 Upload completo para Supabase');
         
         try {
             const results = { images: '', pdfs: '' };
@@ -394,56 +383,61 @@ const MediaSystem = {
             await this.processDeletions();
             
             // Upload de novos arquivos de mídia
-            const newFiles = this.state.files.filter(item => item.isNew && item.file && !item.uploaded);
+            const newFiles = this.state.files.filter(item => item.isNew && item.file);
             if (newFiles.length > 0) {
                 console.log(`📸 ${newFiles.length} arquivo(s) de mídia para upload`);
                 
-                const fileObjects = newFiles.map(f => f.file);
-                const imageUrls = await this.uploadFiles(fileObjects, propertyId, 'images');
+                const uploadedUrls = await this.uploadFilesToSupabase(
+                    newFiles.map(f => f.file),
+                    propertyId,
+                    'media'
+                );
                 
-                if (imageUrls.length > 0) {
-                    newFiles.forEach((file, index) => {
-                        if (imageUrls[index]) {
-                            if (file.preview && file.preview.startsWith('blob:')) {
-                                URL.revokeObjectURL(file.preview);
+                if (uploadedUrls.length > 0) {
+                    // Atualizar itens com URLs permanentes
+                    newFiles.forEach((fileItem, index) => {
+                        if (uploadedUrls[index]) {
+                            // Liberar blob URL
+                            if (fileItem.preview && fileItem.preview.startsWith('blob:')) {
+                                URL.revokeObjectURL(fileItem.preview);
                             }
                             
-                            file.url = imageUrls[index];
-                            file.preview = imageUrls[index];
-                            file.uploaded = true;
-                            file.isNew = false;
-                            
-                            console.log(`✅ "${file.name}" → URL permanente`);
+                            fileItem.url = uploadedUrls[index];
+                            fileItem.preview = uploadedUrls[index];
+                            fileItem.uploaded = true;
+                            fileItem.isNew = false;
                         }
                     });
                     
-                    results.images = imageUrls.join(',');
+                    results.images = uploadedUrls.join(',');
                 }
             }
             
             // Upload de novos PDFs
-            const newPdfs = this.state.pdfs.filter(pdf => pdf.isNew && pdf.file && !pdf.uploaded);
+            const newPdfs = this.state.pdfs.filter(pdf => pdf.isNew && pdf.file);
             if (newPdfs.length > 0) {
                 console.log(`📄 ${newPdfs.length} PDF(s) para upload`);
                 
-                const pdfObjects = newPdfs.map(p => p.file);
-                const pdfUrls = await this.uploadFiles(pdfObjects, propertyId, 'pdfs');
+                const uploadedPdfUrls = await this.uploadFilesToSupabase(
+                    newPdfs.map(p => p.file),
+                    propertyId,
+                    'pdf'
+                );
                 
-                if (pdfUrls.length > 0) {
-                    newPdfs.forEach((pdf, index) => {
-                        if (pdfUrls[index]) {
-                            pdf.url = pdfUrls[index];
-                            pdf.uploaded = true;
-                            pdf.isNew = false;
-                            console.log(`✅ PDF "${pdf.name}" → URL permanente`);
+                if (uploadedPdfUrls.length > 0) {
+                    newPdfs.forEach((pdfItem, index) => {
+                        if (uploadedPdfUrls[index]) {
+                            pdfItem.url = uploadedPdfUrls[index];
+                            pdfItem.uploaded = true;
+                            pdfItem.isNew = false;
                         }
                     });
                     
-                    results.pdfs = pdfUrls.join(',');
+                    results.pdfs = uploadedPdfUrls.join(',');
                 }
             }
             
-            // Adicionar arquivos existentes não marcados para exclusão
+            // Adicionar arquivos existentes
             const existingUrls = this.state.existing
                 .filter(item => !item.markedForDeletion && item.url)
                 .map(item => item.url);
@@ -469,11 +463,7 @@ const MediaSystem = {
                 }
             }
             
-            console.log('✅ Upload completo:', {
-                images: results.images ? `${results.images.split(',').length} URL(s)` : 'Nenhuma',
-                pdfs: results.pdfs ? `${results.pdfs.split(',').length} URL(s)` : 'Nenhum'
-            });
-            
+            console.log(`✅ Upload completo: ${existingUrls.length + (results.images ? results.images.split(',').length : 0)} imagens, ${existingPdfUrls.length + (results.pdfs ? results.pdfs.split(',').length : 0)} PDFs`);
             return results;
             
         } catch (error) {
@@ -485,7 +475,7 @@ const MediaSystem = {
         }
     },
 
-    async uploadFiles(files, propertyId, type = 'images') {
+    async uploadFilesToSupabase(files, propertyId, type = 'media') {
         if (!files || files.length === 0) return [];
         
         const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
@@ -493,18 +483,18 @@ const MediaSystem = {
         const bucket = this.config.buckets[this.config.currentSystem];
         const uploadedUrls = [];
         
-        console.log(`📤 Upload de ${files.length} arquivo(s) para bucket: ${bucket}`);
-        
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             
             try {
                 console.log(`⬆️ Upload ${i+1}/${files.length}: ${file.name}`);
                 
+                // Gerar nome único para o arquivo
                 const fileName = this.generateFileName(file, propertyId, type);
                 const filePath = `${bucket}/${fileName}`;
                 const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${filePath}`;
                 
+                // Fazer upload
                 const response = await fetch(uploadUrl, {
                     method: 'POST',
                     headers: {
@@ -528,18 +518,17 @@ const MediaSystem = {
             }
         }
         
-        console.log(`🎯 Resultado: ${uploadedUrls.length}/${files.length} sucesso(s)`);
         return uploadedUrls;
     },
 
-    // ========== DRAG & DROP PARA REORDENAÇÃO ==========
+    // ========== DRAG & DROP COMPLETO ==========
     setupDragAndDrop: function() {
         console.log('🎯 Configurando sistema de drag & drop...');
         
         setTimeout(() => {
             this.setupContainerDragEvents('uploadPreview');
             this.setupContainerDragEvents('pdfUploadPreview');
-        }, 800);
+        }, 500);
     },
 
     setupContainerDragEvents: function(containerId) {
@@ -573,18 +562,23 @@ const MediaSystem = {
             if (draggedId === targetId) return;
             
             this.reorderItems(draggedId, targetId);
-            document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+            
+            document.querySelectorAll('.dragging').forEach(el => {
+                el.classList.remove('dragging');
+            });
         });
         
         container.addEventListener('dragend', () => {
-            document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+            document.querySelectorAll('.dragging').forEach(el => {
+                el.classList.remove('dragging');
+            });
         });
     },
 
     reorderItems: function(draggedId, targetId) {
         console.log(`🔀 Reordenando: ${draggedId} → ${targetId}`);
         
-        // Encontrar o array correto
+        // Encontrar array correto
         let sourceArray = null;
         let arrayName = '';
         
@@ -614,7 +608,7 @@ const MediaSystem = {
             const [draggedItem] = newArray.splice(draggedIndex, 1);
             newArray.splice(targetIndex, 0, draggedItem);
             
-            // Atualizar o array correto
+            // Atualizar array correto
             if (arrayName === 'files') this.state.files = newArray;
             else if (arrayName === 'existing') this.state.existing = newArray;
             else if (arrayName === 'pdfs') this.state.pdfs = newArray;
@@ -624,7 +618,7 @@ const MediaSystem = {
         this.updateUI();
     },
 
-    // ========== UI UPDATES COMPLETO ==========
+    // ========== UI COMPLETA ==========
     updateUI: function() {
         if (this._updateTimeout) clearTimeout(this._updateTimeout);
         
@@ -658,6 +652,7 @@ const MediaSystem = {
             const isExisting = item.isExisting;
             const borderColor = isMarked ? '#e74c3c' : (isExisting ? '#27ae60' : '#3498db');
             const bgColor = isMarked ? '#ffebee' : (isExisting ? '#e8f8ef' : '#e8f4fc');
+            const displayName = this.normalizeFileName(item.name);
             
             html += `
             <div class="media-preview-item draggable-item" 
@@ -674,16 +669,16 @@ const MediaSystem = {
                 <!-- Nome -->
                 <div style="padding:5px;font-size:0.7rem;text-align:center;height:40px;overflow:hidden;display:flex;align-items:center;justify-content:center;">
                     <span style="display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        ${item.name}
+                        ${displayName}
                     </span>
                 </div>
                 
-                <!-- ÍCONE DE ARRASTAR (canto superior esquerdo) -->
+                <!-- Ícone de arrastar -->
                 <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.7);color:white;width:22px;height:22px;border-radius:0 0 8px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:10;">
-                    ⤮
+                    <i class="fas fa-arrows-alt"></i>
                 </div>
                 
-                <!-- NÚMERO DA ORDEM (canto inferior direito) -->
+                <!-- Número da ordem -->
                 <div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.8);color:white;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;z-index:5;">
                     ${index + 1}
                 </div>
@@ -739,7 +734,7 @@ const MediaSystem = {
                      style="position:relative;cursor:grab;">
                     <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:0.5rem;width:90px;height:90px;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;position:relative;">
                         <div style="position:absolute;top:0;left:0;background:rgba(0,0,0,0.6);color:white;width:20px;height:20px;border-radius:0 0 6px 0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:5;">
-                            ⤮
+                            <i class="fas fa-arrows-alt"></i>
                         </div>
                         
                         <div style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.8);color:white;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:bold;z-index:5;">
@@ -764,8 +759,6 @@ const MediaSystem = {
 
     // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
     getOrderedMediaUrls: function() {
-        console.log('📋 Obtendo URLs ordenadas...');
-        
         const orderedMedia = [...this.state.existing, ...this.state.files]
             .filter(item => !item.markedForDeletion)
             .map(item => item.url || item.preview);
@@ -836,49 +829,20 @@ const MediaSystem = {
     },
 
     ensurePermanentUrls: function() {
-        console.log('🔍 Verificando URLs permanentes...');
+        console.log('🔍 Garantindo URLs permanentes...');
+        
         [...this.state.existing, ...this.state.files].forEach(item => {
             if (item.url && item.url.startsWith('http') && item.preview && item.preview.startsWith('blob:')) {
                 URL.revokeObjectURL(item.preview);
                 item.preview = item.url;
-                console.log(`🔄 Preview atualizado para URL permanente: ${item.name}`);
+                console.log(`🔄 Preview atualizado: ${item.name}`);
             }
         });
+        
         return this;
     },
 
-    // ========== VALIDAÇÃO ==========
-    validateFile: function(file) {
-        const isImage = this.config.allowedTypes.images.includes(file.type);
-        const isVideo = this.config.allowedTypes.videos.includes(file.type);
-        
-        if (!isImage && !isVideo) {
-            alert(`❌ "${file.name}" - Tipo não suportado!`);
-            return false;
-        }
-        
-        if (file.size > this.config.limits.maxSize) {
-            alert(`❌ "${file.name}" - Arquivo muito grande! Máximo: 5MB`);
-            return false;
-        }
-        
-        return true;
-    },
-
-    validatePdf: function(file) {
-        if (!this.config.allowedTypes.pdfs.includes(file.type)) {
-            alert(`❌ "${file.name}" - Não é um PDF válido!`);
-            return false;
-        }
-        
-        if (file.size > this.config.limits.maxPdfSize) {
-            alert(`❌ "${file.name}" - PDF muito grande! Máximo: 10MB`);
-            return false;
-        }
-        
-        return true;
-    },
-
+    // ========== PROCESSAR EXCLUSÕES ==========
     async processDeletions() {
         const imagesToDelete = this.state.existing
             .filter(item => item.markedForDeletion && item.url)
@@ -890,11 +854,12 @@ const MediaSystem = {
         
         console.log(`🗑️ ${imagesToDelete.length} imagem(ns) e ${pdfsToDelete.length} PDF(s) marcados para exclusão`);
         
-        this.state.existing = this.state.existing.filter(item => !item.markedForletion);
+        // Remover dos arrays
+        this.state.existing = this.state.existing.filter(item => !item.markedForDeletion);
         this.state.existingPdfs = this.state.existingPdfs.filter(item => !item.markedForDeletion);
     },
 
-    // ========== UTILIDADES ==========
+    // ========== SETUP EVENT LISTENERS ==========
     setupEventListeners: function() {
         console.log('🔧 Configurando event listeners...');
         
@@ -946,10 +911,26 @@ const MediaSystem = {
         }
     },
 
-    isValidUrl: function(url) {
-        if (!url || typeof url !== 'string') return false;
-        return url.startsWith('http://') || url.startsWith('https://') || 
-               url.startsWith('blob:') || url.startsWith('data:');
+    // ========== UTILIDADES ==========
+    extractFileName: function(url) {
+        if (!url) return 'imagem.jpeg';
+        
+        try {
+            if (url.includes('/')) {
+                const parts = url.split('/');
+                let fileName = parts[parts.length - 1] || 'imagem.jpeg';
+                
+                try { 
+                    fileName = decodeURIComponent(fileName); 
+                } catch (e) {}
+                
+                fileName = fileName.split('?')[0];
+                return fileName;
+            }
+            return url;
+        } catch {
+            return 'imagem.jpeg';
+        }
     },
 
     reconstructSupabaseUrl: function(filename) {
@@ -964,36 +945,11 @@ const MediaSystem = {
             try {
                 return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${filename}`;
             } catch (error) {
-                console.error(`❌ Erro ao reconstruir URL:`, error);
                 return null;
             }
         }
         
         return null;
-    },
-
-    extractFileName: function(url) {
-        if (!url) return 'imagem.jpeg';
-        
-        try {
-            if (url.includes('/')) {
-                const parts = url.split('/');
-                let fileName = parts[parts.length - 1] || 'imagem.jpeg';
-                
-                try { 
-                    fileName = decodeURIComponent(fileName); 
-                } catch (e) {}
-                
-                fileName = fileName.split('?')[0];
-                
-                // ✅ Normalizar: se for UUID sem extensão, será tratado posteriormente
-                return fileName;
-            }
-            return url;
-        } catch (error) {
-            console.error('❌ Erro ao extrair nome do arquivo:', error);
-            return 'imagem.jpeg';
-        }
     },
 
     getFileTypeFromUrl: function(url) {
@@ -1015,7 +971,7 @@ const MediaSystem = {
                 return 'application/pdf';
             }
             
-            return 'image/jpeg'; // ✅ Padrão: imagem
+            return 'image/jpeg';
         } catch (error) {
             return 'image/jpeg';
         }
@@ -1025,12 +981,12 @@ const MediaSystem = {
         const timestamp = Date.now();
         const random = Math.random().toString(36).substring(2, 10);
         const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 40);
-        const prefix = type === 'pdfs' ? 'pdf' : 'media';
+        const prefix = type === 'pdf' ? 'pdf' : 'media';
         return `${prefix}_${propertyId}_${timestamp}_${random}_${safeName}`;
     },
 
     resetState: function() {
-        console.log('🧹 Resetando estado do sistema de mídia');
+        console.log('🧹 Resetando estado');
         
         // Liberar URLs blob
         [...this.state.files, ...this.state.pdfs].forEach(item => {
@@ -1057,20 +1013,23 @@ window.MediaSystem = MediaSystem;
 // ========== INICIALIZAÇÃO ==========
 setTimeout(() => {
     window.MediaSystem.init('vendas');
-    console.log('✅ Sistema de mídia COMPLETO pronto com extensão .jpeg automática');
+    console.log('✅ Sistema de mídia COMPLETO pronto');
     
+    // Função de debug
     window.debugMediaSystem = function() {
-        console.group('🐛 DIAGNÓSTICO');
+        console.group('🐛 DIAGNÓSTICO DO SISTEMA');
         console.log('📊 Estado:', {
-            existing: MediaSystem.state.existing.length,
             files: MediaSystem.state.files.length,
-            pdfs: MediaSystem.state.pdfs.length
+            existing: MediaSystem.state.existing.length,
+            pdfs: MediaSystem.state.pdfs.length,
+            existingPdfs: MediaSystem.state.existingPdfs.length
         });
         
+        console.log('📁 Arquivos existentes:');
         MediaSystem.state.existing.forEach((item, i) => {
-            console.log(`   Existente ${i+1}: ${item.name}`, {
-                original: item.originalName,
-                normalized: item.name
+            console.log(`   ${i+1}. ${item.name}`, {
+                url: item.url ? item.url.substring(0, 80) + '...' : 'sem URL',
+                markedForDeletion: item.markedForDeletion
             });
         });
         
