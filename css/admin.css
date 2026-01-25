@@ -115,15 +115,12 @@
 }
 
 /* ========== ESTILOS PARA OS NOVOS BOTÕES "X" DE PDF ========== */
-
-/* Container para posicionamento relativo */
 .pdf-preview-container {
     position: relative;
     display: inline-block;
     margin: 5px;
 }
 
-/* Botão "X" de exclusão de PDF (GERAL) - AJUSTADO PARA FICAR COLADO */
 .delete-pdf-btn {
     position: absolute;
     top: -5px;
@@ -149,17 +146,14 @@
     opacity: 0.95;
 }
 
-/* Botão "X" específico para NOVOS PDFs (azul) */
 #newPdfsSection .delete-pdf-btn {
     background: #3498db;
 }
 
-/* Botão "X" específico para PDFs EXISTENTES (vermelho) */
 #existingPdfsSection .delete-pdf-btn {
     background: #e74c3c;
 }
 
-/* Efeitos hover */
 .delete-pdf-btn:hover {
     transform: scale(1.3);
     opacity: 1;
@@ -174,14 +168,12 @@
     background: #c0392b;
 }
 
-/* Container do PDF item */
 .pdf-item-new, .pdf-item-existing {
     transition: all 0.3s ease;
     position: relative;
     z-index: 10;
 }
 
-/* Efeito ao passar mouse sobre o item PDF */
 .pdf-preview-container:hover .pdf-item-new {
     box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
     transform: translateY(-2px);
@@ -354,13 +346,13 @@
     background: #7f8c8d;
 }
 
-/* ========== GARANTIR QUE BOTÃO CANCELAR SEJA SEMPRE CLICÁVEL ========== */
-/* ADICIONADO POR RECOMENDAÇÃO DE MELHORIA - ETAPA 16.1 */
+/* ========== GARANTIR VISIBILIDADE DO BOTÃO CANCELAR ========== */
 #cancelEditBtn {
     cursor: pointer !important;
     pointer-events: auto !important;
     opacity: 1 !important;
     transition: all 0.3s ease !important;
+    display: inline-block !important;
 }
 
 #cancelEditBtn:hover {
@@ -375,8 +367,6 @@
     pointer-events: none !important;
 }
 
-/* ========== CORREÇÃO DEFINITIVA DO BOTÃO "CANCELAR EDIÇÃO" ========== */
-/* GARANTIR QUE NENHUM ELEMENTO PAI ESTEJA BLOQUEANDO CLIQUES */
 #cancelEditBtn {
     position: relative !important;
     z-index: 1000 !important;
@@ -386,7 +376,6 @@
     pointer-events: auto !important;
 }
 
-/* Feedback visual para estado de cancelamento */
 #cancelEditBtn.cancelling {
     animation: pulseCancel 0.5s ease;
 }
@@ -454,44 +443,11 @@
 }
 
 /* ========== ESTILOS RESPONSIVOS PARA PDFs EM MOBILE ========== */
-
-/* Modal de PDF - Responsivo */
 .pdf-modal {
     animation: fadeIn 0.3s ease;
 }
 
-/* Container interno - Mobile First */
-.pdf-modal > div {
-    transition: all 0.3s ease;
-}
-
-/* Itens da lista - Responsivos */
-.pdf-list-item {
-    word-break: break-word;
-    hyphens: auto;
-}
-
-/* Nome do arquivo com ellipsis */
-.pdf-list-item strong {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* Botões responsivos */
-.view-pdf-btn {
-    transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.view-pdf-btn:active {
-    transform: scale(0.95);
-}
-
-/* Media Queries para diferentes tamanhos de tela */
 @media (max-width: 480px) {
-    /* Smartphones muito pequenos */
     .pdf-modal > div {
         padding: 1rem !important;
         margin: 10px !important;
@@ -519,7 +475,6 @@
 }
 
 @media (max-width: 768px) and (min-width: 481px) {
-    /* Tablets pequenos e smartphones grandes */
     .pdf-modal > div {
         padding: 1.5rem !important;
         max-width: 90% !important;
@@ -535,7 +490,6 @@
 }
 
 @media (max-width: 1024px) {
-    /* Tablets e telas menores */
     .pdf-modal {
         padding: 15px !important;
     }
@@ -545,11 +499,9 @@
     }
 }
 
-/* Melhorias de acessibilidade em mobile */
 @media (hover: none) and (pointer: coarse) {
-    /* Para dispositivos touch */
     .view-pdf-btn {
-        min-height: 44px; /* Tamanho mínimo para toque */
+        min-height: 44px;
         min-width: 44px;
     }
     
@@ -563,16 +515,14 @@
     }
 }
 
-/* Animações */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Scroll suave no modal */
 .pdf-modal > div {
     scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+    -webkit-overflow-scrolling: touch;
 }
 
 /* ========== MODAL DE SELEÇÃO DE PDFs ========== */
@@ -585,7 +535,6 @@
     transform: translateY(-1px);
 }
 
-/* Animações para o modal de seleção */
 @keyframes slideIn {
     from {
         opacity: 0;
@@ -601,7 +550,6 @@
     animation: slideIn 0.3s ease;
 }
 
-/* Responsividade para a lista de PDFs */
 @media (max-width: 768px) {
     .pdf-list-item {
         flex-direction: column;
@@ -620,7 +568,6 @@
 }
 
 /* ========== DRAG & DROP REORDER - ESTILOS APRIMORADOS ========== */
-/* Melhorar visualização durante drag */
 .dragging {
     opacity: 0.5 !important;
     transform: rotate(5deg) scale(0.95) !important;
@@ -643,7 +590,6 @@
     z-index: 1001;
 }
 
-/* Feedback visual para área de drop */
 .drop-target {
     border: 3px dashed var(--accent) !important;
     background: rgba(52, 152, 219, 0.15) !important;
@@ -662,21 +608,18 @@
     z-index: 10;
 }
 
-/* Container ativo durante drag */
 .drag-active {
     background: rgba(52, 152, 219, 0.05) !important;
     border: 2px dashed var(--accent) !important;
     min-height: 120px !important;
 }
 
-/* Melhorar visualização das miniaturas */
 .media-preview-item:hover, .pdf-preview-container:hover {
     transform: translateY(-3px) scale(1.03) !important;
     box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
     transition: all 0.3s ease !important;
 }
 
-/* Indicador de ordem mais visível */
 .order-indicator {
     position: absolute !important;
     top: 25px !important;
@@ -696,7 +639,6 @@
     border: 1px solid white !important;
 }
 
-/* Tooltip para mostrar nome completo */
 .media-preview-item:hover::after,
 .pdf-preview-container:hover::after {
     content: attr(title);
@@ -714,13 +656,11 @@
     pointer-events: none;
 }
 
-/* Melhor contraste para ícones */
 .fa-arrows-alt {
     color: white !important;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
 }
 
-/* Responsividade para mobile */
 @media (max-width: 768px) {
     .admin-panel {
         padding: 1rem;
@@ -768,27 +708,4 @@
         height: 16px !important;
         font-size: 0.5rem !important;
     }
-}
-
-/* ========== GARANTIR VISIBILIDADE DO BOTÃO CANCELAR ========== */
-/* 🔧 ADICIONADO POR RECOMENDAÇÃO DE MELHORIA - CORREÇÃO DO BOTÃO CANCELAR */
-
-#cancelEditBtn {
-    cursor: pointer !important;
-    pointer-events: auto !important;
-    opacity: 1 !important;
-    transition: all 0.3s ease !important;
-    display: inline-block !important; /* ✅ NOVO: Garante display correto */
-}
-
-#cancelEditBtn:hover {
-    background: #7f8c8d !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3) !important;
-}
-
-#cancelEditBtn:disabled {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-    pointer-events: none !important;
 }
