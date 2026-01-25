@@ -10,8 +10,6 @@ const ADMIN_CONFIG = {
     buttonClass: "admin-toggle"
 };
 
-const DEBUG = false;
-
 // Estado global
 window.editingPropertyId = null;
 let autoSaveTimeout = null;
@@ -51,34 +49,20 @@ const Helpers = {
         cancelButton: (show = true) => {
             const btn = document.getElementById('cancelEditBtn');
             if (btn) {
-                btn.style.display = show ? 'inline-block' : 'none';
-                btn.disabled = !show;
-                btn.style.opacity = show ? '1' : '0';
-                btn.style.pointerEvents = show ? 'auto' : 'none';
-            }
-        },
-        
-        resetFormFields: function() {
-            const fields = [
-                'propTitle', 'propPrice', 'propLocation', 'propDescription',
-                'propFeatures', 'propType', 'propBadge'
-            ];
-            
-            fields.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    if (el.type === 'select-one') {
-                        el.value = el.id === 'propType' ? 'residencial' : 'Novo';
-                    } else if (el.type === 'checkbox') {
-                        el.checked = false;
-                    } else {
-                        el.value = '';
-                    }
+                if (show) {
+                    btn.style.display = 'inline-block';
+                    btn.style.opacity = '1';
+                    btn.style.visibility = 'visible';
+                    btn.style.pointerEvents = 'auto';
+                    btn.disabled = false;
+                } else {
+                    btn.style.display = 'none';
+                    btn.style.opacity = '0';
+                    btn.style.visibility = 'hidden';
+                    btn.style.pointerEvents = 'none';
+                    btn.disabled = true;
                 }
-            });
-            
-            const hasVideoCheckbox = document.getElementById('propHasVideo');
-            if (hasVideoCheckbox) hasVideoCheckbox.checked = false;
+            }
         }
     },
     
@@ -137,192 +121,94 @@ const Helpers = {
 };
 
 /* ==========================================================
-   FUNÇÃO PARA LIMPAR COMPLETAMENTE O FORMULÁRIO
+   FUNÇÃO PARA LIMPAR COMPLETAMENTE O FORMULÁRIO - CORRIGIDA
    ========================================================== */
 window.resetAdminFormCompletely = function(showNotification = true) {
-    console.group('🧹 RESET COMPLETO DO FORMULÁRIO');
+    console.log('🧹 RESET COMPLETO DO FORMULÁRIO - INICIANDO');
     
+    // 1. Limpar estado global
     window.editingPropertyId = null;
-    autoSaveTimeout = null;
-    pendingAutoSave = false;
     
-    Helpers.updateUI.resetFormFields();
+    // 2. Resetar campos do formulário
+    const fields = [
+        'propTitle', 'propPrice', 'propLocation', 'propDescription',
+        'propFeatures', 'propType', 'propBadge', 'propHasVideo'
+    ];
     
-    if (window.MediaSystem) {
-        if (typeof window.MediaSystem.resetState === 'function') {
-            window.MediaSystem.resetState();
-        } else if (window.MediaSystem.state) {
-            window.MediaSystem.state = { files: [], pdfs: [], deleted: [] };
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (el.type === 'select-one') {
+                el.value = el.id === 'propType' ? 'residencial' : 'Novo';
+            } else if (el.type === 'checkbox') {
+                el.checked = false;
+            } else {
+                el.value = '';
+            }
         }
-        
-        ['uploadPreview', 'pdfUploadPreview', 'newPdfsSection', 'existingPdfsSection'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = '';
-        });
-        
-        if (window.MediaSystem.updateUI) {
-            window.MediaSystem.updateUI();
+    });
+    
+    // 3. Resetar MediaSystem se existir
+    if (window.MediaSystem) {
+        try {
+            if (typeof window.MediaSystem.resetState === 'function') {
+                window.MediaSystem.resetState();
+            }
+            
+            // Limpar previews visualmente
+            ['uploadPreview', 'pdfUploadPreview', 'newPdfsSection', 'existingPdfsSection'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '';
+            });
+        } catch (error) {
+            console.error('Erro ao resetar MediaSystem:', error);
         }
     }
     
-    if (window.adminPdfHandler) {
+    // 4. Limpar adminPdfHandler
+    if (window.adminPdfHandler && typeof window.adminPdfHandler.clear === 'function') {
         window.adminPdfHandler.clear();
     }
     
+    // 5. Atualizar UI
     Helpers.updateUI.formTitle('Adicionar Novo Imóvel');
     Helpers.updateUI.submitButton(false);
     Helpers.updateUI.cancelButton(false);
     
+    // 6. Scroll para topo
     setTimeout(() => {
         const form = document.getElementById('propertyForm');
         if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
     
+    // 7. Notificação
     if (showNotification) {
         Helpers.showNotification('✅ Formulário limpo para novo imóvel', 'info');
     }
     
-    console.groupEnd();
+    console.log('✅ RESET COMPLETO DO FORMULÁRIO - FINALIZADO');
     return true;
 };
 
 /* ==========================================================
-   SISTEMA DE PDFs (mantido igual)
+   FUNÇÃO DE CANCELAMENTO - NOVA E SIMPLIFICADA
    ========================================================== */
-window.adminPdfHandler = {
-    clear: function() {
-        console.log('[adminPdfHandler] Limpando PDFs');
-        return window.MediaSystem?.clearAllPdfs?.() || window.PdfSystem?.clearAllPdfs?.();
-    },
-    
-    load: function(property) {
-        console.log('[adminPdfHandler] Carregando PDFs existentes para edição:', property?.id);
-        return window.MediaSystem?.loadExistingPdfsForEdit?.(property) || 
-               window.PdfSystem?.loadExistingPdfsForEdit?.(property);
-    },
-    
-    process: async function(id, title) {
-        console.group('[adminPdfHandler] PROCESSANDO PDFs DEFINITIVAMENTE');
-        
-        if (!id) {
-            console.error('❌ ID do imóvel não fornecido!');
-            console.groupEnd();
-            return '';
+window.cancelEdit = function() {
+    if (window.editingPropertyId) {
+        if (confirm('❓ Cancelar edição?\n\nTodos os dados não salvos serão perdidos.')) {
+            console.log('❌ Cancelando edição do imóvel:', window.editingPropertyId);
+            window.resetAdminFormCompletely(true);
+            return true;
         }
-        
-        try {
-            let pdfUrls = '';
-            
-            if (window.MediaSystem?.processAndSavePdfs) {
-                pdfUrls = await window.MediaSystem.processAndSavePdfs(id, title);
-            }
-            else if (window.PdfSystem?.processAndSavePdfs) {
-                pdfUrls = await window.PdfSystem.processAndSavePdfs(id, title);
-            }
-            
-            if (pdfUrls?.trim()) {
-                const validId = this.validateIdForSupabase(id);
-                
-                if (validId) {
-                    const persistSuccess = await this.persistPdfsToSupabase(validId, pdfUrls);
-                    if (persistSuccess) {
-                        if (window.MediaSystem?.state?.pdfs) {
-                            window.MediaSystem.state.pdfs.forEach(pdf => {
-                                if (pdfUrls.includes(pdf.url)) {
-                                    pdf.uploaded = true;
-                                }
-                            });
-                        }
-                    }
-                }
-            }
-            
-            console.groupEnd();
-            return pdfUrls || '';
-            
-        } catch (error) {
-            console.error('❌ ERRO CRÍTICO em adminPdfHandler.process:', error);
-            console.groupEnd();
-            return '';
-        }
-    },
-    
-    persistPdfsToSupabase: async function(propertyId, pdfUrls) {
-        console.log('[adminPdfHandler] Persistindo PDFs no Supabase');
-        
-        if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-            console.error('❌ Credenciais Supabase não configuradas');
-            return false;
-        }
-        
-        if (!propertyId || !pdfUrls?.trim()) {
-            console.error('❌ Dados inválidos para persistência');
-            return false;
-        }
-        
-        try {
-            const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${propertyId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': window.SUPABASE_KEY,
-                    'Authorization': `Bearer ${window.SUPABASE_KEY}`,
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify({ pdfs: pdfUrls })
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                return true;
-            } else {
-                const errorText = await response.text();
-                console.error('❌ Erro ao atualizar PDFs no Supabase:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    error: errorText,
-                    idUsado: propertyId
-                });
-                return false;
-            }
-        } catch (error) {
-            console.error('❌ Erro de conexão ao persistir PDFs:', error);
-            return false;
-        }
-    },
-    
-    validateIdForSupabase: function(propertyId) {
-        if (!propertyId) return null;
-        
-        if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) {
-            return propertyId;
-        }
-        
-        if (typeof propertyId === 'string') {
-            const cleanId = propertyId.replace('test_id_', '').replace('temp_', '').replace(/[^0-9]/g, '');
-            const numericId = parseInt(cleanId);
-            
-            if (!isNaN(numericId) && numericId > 0) {
-                return numericId;
-            }
-        }
-        
-        const directConvert = parseInt(propertyId);
-        if (!isNaN(directConvert) && directConvert > 0) {
-            return directConvert;
-        }
-        
-        console.error('❌ Não foi possível converter ID para formato Supabase:', propertyId);
-        return null;
-    },
-    
-    isAvailable: function() {
-        return !!(window.MediaSystem || window.PdfSystem);
+    } else {
+        console.log('ℹ️ Nenhuma edição em andamento para cancelar');
+        window.resetAdminFormCompletely(false);
     }
+    return false;
 };
 
 /* ==========================================================
-   TOGGLE ADMIN PANEL - SEMPRE LIMPO
+   TOGGLE ADMIN PANEL
    ========================================================== */
 window.toggleAdminPanel = function() {
     const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
@@ -353,55 +239,70 @@ window.toggleAdminPanel = function() {
 };
 
 /* ==========================================================
-   FUNÇÃO EDIT PROPERTY - CORRIGIDA
+   FUNÇÃO EDIT PROPERTY - CORRIGIDA E SIMPLIFICADA
    ========================================================== */
 window.editProperty = function(id) {
-    const property = window.properties?.find(p => p.id === id);
-    if (!property) return alert('❌ Imóvel não encontrado!');
-
-    window.resetAdminFormCompletely(false);
-
-    const fields = {
-        propTitle: property.title || '',
-        propPrice: Helpers.format.price(property.price) || '',
-        propLocation: property.location || '',
-        propDescription: property.description || '',
-        propFeatures: Array.isArray(property.features) ? 
-                     property.features.join(', ') : (property.features || ''),
-        propType: property.type || 'residencial',
-        propBadge: property.badge || 'Novo',
-        propHasVideo: property.has_video === true || property.has_video === 'true'
-    };
-
-    Object.entries(fields).forEach(([id, value]) => {
-        const el = document.getElementById(id);
-        if (el) el.type === 'checkbox' ? el.checked = value : el.value = value;
-    });
-
-    Helpers.updateUI.formTitle(`Editando: ${property.title}`);
-    Helpers.updateUI.submitButton(true);
+    console.log('✏️ Iniciando edição do imóvel ID:', id);
     
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.style.display = 'inline-block';
-        cancelBtn.style.opacity = '1';
-        cancelBtn.style.pointerEvents = 'auto';
+    const property = window.properties?.find(p => p.id === id);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        return false;
     }
     
+    // Resetar formulário primeiro
+    window.resetAdminFormCompletely(false);
+    
+    // Preencher campos
+    const fieldMappings = {
+        'propTitle': property.title || '',
+        'propPrice': Helpers.format.price(property.price) || '',
+        'propLocation': property.location || '',
+        'propDescription': property.description || '',
+        'propFeatures': Array.isArray(property.features) ? property.features.join(', ') : (property.features || ''),
+        'propType': property.type || 'residencial',
+        'propBadge': property.badge || 'Novo',
+        'propHasVideo': property.has_video === true || property.has_video === 'true'
+    };
+    
+    Object.entries(fieldMappings).forEach(([fieldId, value]) => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = Boolean(value);
+            } else {
+                element.value = value;
+            }
+        }
+    });
+    
+    // Atualizar UI
+    Helpers.updateUI.formTitle(`Editando: ${property.title}`);
+    Helpers.updateUI.submitButton(true);
     Helpers.updateUI.cancelButton(true);
+    
+    // Definir ID em edição
     window.editingPropertyId = property.id;
-
-    if (window.MediaSystem) MediaSystem.loadExisting(property);
-    if (window.adminPdfHandler) window.adminPdfHandler.load(property);
-
+    
+    // Carregar mídia e PDFs
+    if (window.MediaSystem && typeof window.MediaSystem.loadExisting === 'function') {
+        window.MediaSystem.loadExisting(property);
+    }
+    
+    if (window.adminPdfHandler && typeof window.adminPdfHandler.load === 'function') {
+        window.adminPdfHandler.load(property);
+    }
+    
+    // Abrir painel
     setTimeout(() => {
         const panel = document.getElementById('adminPanel');
         if (panel) {
             panel.style.display = 'block';
             panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-    }, 100);
-
+    }, 150);
+    
+    console.log('✅ Modo edição ativado para imóvel ID:', property.id);
     return true;
 };
 
@@ -410,8 +311,12 @@ window.editProperty = function(id) {
    ========================================================== */
 window.setupForm = function() {
     const form = document.getElementById('propertyForm');
-    if (!form) return;
+    if (!form) {
+        console.warn('⚠️ Formulário não encontrado');
+        return;
+    }
     
+    // Clonar para remover listeners antigos
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     
@@ -533,43 +438,114 @@ window.setupForm = function() {
 };
 
 /* ==========================================================
-   SETUP ADMIN UI - OTIMIZADA
+   SETUP ADMIN UI - CORRIGIDA E SIMPLIFICADA
    ========================================================== */
 window.setupAdminUI = function() {
-    const panel = document.getElementById('adminPanel');
-    if (panel) panel.style.display = 'none';
+    console.log('🔧 Configurando UI do admin...');
     
+    // 1. Painel oculto por padrão
+    const panel = document.getElementById('adminPanel');
+    if (panel) {
+        panel.style.display = 'none';
+    }
+    
+    // 2. Botão toggle admin
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
-        const newBtn = adminBtn.cloneNode(true);
-        adminBtn.parentNode.replaceChild(newBtn, adminBtn);
+        // Remover qualquer handler antigo
+        adminBtn.onclick = null;
         
-        document.querySelector('.admin-toggle').addEventListener('click', (e) => {
+        // Adicionar novo handler limpo
+        adminBtn.addEventListener('click', function(e) {
             e.preventDefault();
             window.toggleAdminPanel();
-        });
+        }, { once: false });
     }
     
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) {
-        cancelBtn.onclick = null;
-        cancelBtn.addEventListener('click', (e) => {
+    // 3. ✅ CONFIGURAÇÃO CRÍTICA DO BOTÃO CANCELAR
+    const setupCancelButton = function() {
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (!cancelBtn) {
+            console.warn('⚠️ Botão Cancelar não encontrado');
+            return;
+        }
+        
+        console.log('🔧 Configurando botão Cancelar...');
+        
+        // Remover TODOS os event listeners antigos
+        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        const freshCancelBtn = document.getElementById('cancelEditBtn');
+        
+        // Adicionar handler SIMPLES E DIRETO
+        freshCancelBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            console.log('🔄 Botão Cancelar clicado!');
             
-            if (confirm('Cancelar edição? Os dados não salvos serão perdidos.')) {
-                window.resetAdminFormCompletely(true);
-            }
-        });
-    }
+            // Usar a função global de cancelamento
+            window.cancelEdit();
+        }, { once: false });
+        
+        // Garantir que o botão seja visível e clicável
+        freshCancelBtn.style.display = 'none';
+        freshCancelBtn.style.opacity = '1';
+        freshCancelBtn.style.visibility = 'visible';
+        freshCancelBtn.style.pointerEvents = 'auto';
+        freshCancelBtn.style.cursor = 'pointer';
+        freshCancelBtn.disabled = false;
+        
+        console.log('✅ Botão Cancelar configurado');
+    };
     
+    // Executar a configuração
+    setupCancelButton();
+    
+    // 4. Configurar formulário
     if (typeof window.setupForm === 'function') {
         setTimeout(window.setupForm, 100);
     }
+    
+    // 5. Adicionar estilos dinâmicos
+    const style = document.createElement('style');
+    style.textContent = `
+        #cancelEditBtn {
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: inline-block !important;
+            z-index: 1000 !important;
+            position: relative !important;
+        }
+        
+        #cancelEditBtn:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
+        
+        #cancelEditBtn:hover {
+            background: #7f8c8d !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3) !important;
+        }
+        
+        .auto-save-notification {
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    console.log('✅ UI do admin configurada');
 };
 
 /* ==========================================================
-   FUNÇÕES RESTANTES
+   FUNÇÕES AUXILIARES
    ========================================================== */
 window.loadPropertyList = function() {
     const container = document.getElementById('propertyList');
@@ -648,6 +624,7 @@ window.addToLocalProperties = function(newProperty) {
     return propertyWithId;
 };
 
+// Configuração de uploads
 setTimeout(() => {
     Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
         files => window.MediaSystem?.addPdfs?.(files), 'pdf_addition');
@@ -685,6 +662,7 @@ window.triggerAutoSave = function(reason = 'media_deletion') {
     pendingAutoSave = true;
 };
 
+// Inicialização
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(window.setupAdminUI, 500);
@@ -692,3 +670,5 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(window.setupAdminUI, 300);
 }
+
+console.log('✅ admin.js - SISTEMA COMPLETO E CORRIGIDO IMPLEMENTADO');
