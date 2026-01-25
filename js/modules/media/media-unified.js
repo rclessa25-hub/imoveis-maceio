@@ -1,5 +1,5 @@
-// js/modules/media/media-unified.js - VERSÃO FINAL FUNCIONAL
-console.log('🔄 media-unified.js - VERSÃO FINAL FUNCIONAL');
+// js/modules/media/media-unified.js - VERSÃO DEFINITIVA COM UPLOAD FUNCIONAL
+console.log('🔄 media-unified.js - VERSÃO DEFINITIVA COM UPLOAD FUNCIONAL');
 
 // ========== SUPABASE CONSTANTS ==========
 if (typeof window.SUPABASE_CONSTANTS === 'undefined') {
@@ -34,16 +34,12 @@ const MediaSystem = {
 
     // ========== ESTADO ==========
     state: {
-        files: [],           // Arquivos NOVOS (ainda não enviados)
-        existing: [],        // Arquivos EXISTENTES (já no Supabase)
+        files: [],           // Arquivos NOVOS (não enviados)
+        existing: [],        // Arquivos EXISTENTES (já no banco)
         pdfs: [],            // PDFs NOVOS
         existingPdfs: [],    // PDFs EXISTENTES
         isUploading: false,
-        currentPropertyId: null,
-        uploadedUrls: {      // Cache de URLs já enviadas nesta sessão
-            images: [],
-            pdfs: []
-        }
+        currentPropertyId: null
     },
 
     // ========== INICIALIZAÇÃO ==========
@@ -60,7 +56,7 @@ const MediaSystem = {
         return this;
     },
 
-    // ========== CARREGAR ARQUIVOS EXISTENTES - VERSÃO SIMPLIFICADA ==========
+    // ========== FUNÇÃO CRÍTICA: CARREGAR ARQUIVOS EXISTENTES ==========
     loadExisting: function(property) {
         if (!property) return this;
         
@@ -80,7 +76,7 @@ const MediaSystem = {
             console.log(`📸 ${imageUrls.length} URL(s) de imagem válida(s)`);
             
             this.state.existing = imageUrls.map((url, index) => {
-                // Normalizar URL - garantir que seja URL completa do Supabase
+                // Garantir que seja URL completa do Supabase
                 let finalUrl = url;
                 if (!url.startsWith('http')) {
                     finalUrl = this.reconstructSupabaseUrl(url) || url;
@@ -128,7 +124,7 @@ const MediaSystem = {
         const filesArray = Array.from(fileList);
         let addedCount = 0;
         
-        // Verificar limites
+        // Verificar limite máximo
         const totalAfterAdd = this.state.files.length + this.state.existing.length + filesArray.length;
         if (totalAfterAdd > this.config.limits.maxFiles) {
             alert(`❌ Limite máximo de ${this.config.limits.maxFiles} arquivos atingido!`);
@@ -149,24 +145,24 @@ const MediaSystem = {
                 return;
             }
             
-            // Criar BLOB URL para preview
+            // Criar BLOB URL temporária para preview
             const blobUrl = URL.createObjectURL(file);
             
             const newItem = {
-                file: file,                    // Objeto File original
+                file: file,
                 id: `new_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 name: file.name,
                 type: file.type,
-                preview: blobUrl,              // BLOB URL temporária para preview
+                preview: blobUrl,
                 isImage: isImage,
                 isVideo: isVideo,
-                isNew: true,                   // Marcar como NOVO (não enviado)
-                uploaded: false,               // Ainda não foi enviado ao Supabase
-                uploadedUrl: null,             // URL após upload bem-sucedido
-                blobUrl: blobUrl               // Guardar para limpeza
+                isNew: true,
+                uploaded: false,
+                uploadedUrl: null,
+                blobUrl: blobUrl
             };
             
-            console.log(`📁 Adicionado NOVO arquivo: "${file.name}" (${(file.size/1024).toFixed(1)}KB)`);
+            console.log(`📁 Adicionado NOVO arquivo: "${file.name}" (${Math.round(file.size/1024)}KB)`);
             this.state.files.push(newItem);
             addedCount++;
         });
@@ -181,7 +177,7 @@ const MediaSystem = {
         const displayName = item.name || 'Arquivo';
         const shortName = displayName.length > 20 ? displayName.substring(0, 17) + '...' : displayName;
         
-        // Se for arquivo NOVO não enviado (tem BLOB URL)
+        // 1. Se for arquivo NOVO não enviado (tem BLOB URL)
         if (item.isNew && !item.uploaded && item.preview && item.preview.startsWith('blob:')) {
             return `
                 <div style="width:100%;height:70px;position:relative;background:#2c3e50;">
@@ -202,8 +198,8 @@ const MediaSystem = {
             `;
         }
         
-        // Se for arquivo EXISTENTE ou NOVO já enviado (tem URL permanente)
-        if ((item.url || item.uploadedUrl) && !item.url?.startsWith('blob:')) {
+        // 2. Se for arquivo já enviado ou existente (tem URL permanente)
+        if ((item.url || item.uploadedUrl) && !(item.url || '').startsWith('blob:')) {
             const imageUrl = item.uploadedUrl || item.url;
             
             return `
@@ -226,7 +222,7 @@ const MediaSystem = {
             `;
         }
         
-        // Fallback: mostrar ícone
+        // 3. Fallback: mostrar ícone
         return `
             <div style="width:100%;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c3e50;color:#ecf0f1;">
                 <i class="fas fa-image" style="font-size:1.5rem;margin-bottom:5px;"></i>
@@ -235,19 +231,27 @@ const MediaSystem = {
         `;
     },
 
-    // ========== UPLOAD COMPLETO - VERSÃO OTIMIZADA ==========
+    // ========== FUNÇÃO CRÍTICA: UPLOAD COMPLETO PARA SUPABASE ==========
     async uploadAll(propertyId, propertyTitle) {
         if (this.state.isUploading) {
             console.warn('⚠️ Upload já em andamento');
-            return { success: false, images: '', pdfs: '' };
+            return { success: false, images: '', pdfs: '', error: 'Upload em andamento' };
         }
         
         this.state.isUploading = true;
-        console.group('🚀 INICIANDO UPLOAD COMPLETO');
-        console.log(`📌 Property: ${propertyId} - ${propertyTitle}`);
-        console.log(`📊 Arquivos para processar: ${this.state.files.length} novo(s), ${this.state.existing.length} existente(s)`);
+        console.group('🚀 EXECUTANDO UPLOAD COMPLETO PARA SUPABASE');
+        console.log(`📌 Property ID: ${propertyId}`);
+        console.log(`🏷️ Title: ${propertyTitle}`);
         
         try {
+            const results = { 
+                success: false, 
+                images: '', 
+                pdfs: '', 
+                uploadedCount: 0,
+                error: null 
+            };
+            
             // 1. Processar exclusões primeiro
             await this.processDeletions();
             
@@ -256,7 +260,7 @@ const MediaSystem = {
             const uploadedImageUrls = [];
             
             if (newFiles.length > 0) {
-                console.log(`📤 Enviando ${newFiles.length} NOVO(S) arquivo(s) para o Supabase...`);
+                console.log(`📤 Enviando ${newFiles.length} NOVO(S) arquivo(s) de mídia...`);
                 
                 for (let i = 0; i < newFiles.length; i++) {
                     const fileItem = newFiles[i];
@@ -265,8 +269,8 @@ const MediaSystem = {
                     try {
                         console.log(`⬆️ [${i+1}/${newFiles.length}] Enviando: "${file.name}"`);
                         
-                        // Upload para Supabase
-                        const uploadedUrl = await this.uploadSingleFile(file, propertyId, 'image');
+                        // Fazer upload para Supabase
+                        const uploadedUrl = await this.uploadSingleFile(file, propertyId, 'media');
                         
                         if (uploadedUrl) {
                             // Atualizar o item com a URL permanente
@@ -277,7 +281,7 @@ const MediaSystem = {
                             // Liberar BLOB URL temporária
                             if (fileItem.preview && fileItem.preview.startsWith('blob:')) {
                                 URL.revokeObjectURL(fileItem.preview);
-                                fileItem.preview = uploadedUrl; // Usar URL permanente
+                                fileItem.preview = uploadedUrl; // Substituir por URL permanente
                             }
                             
                             uploadedImageUrls.push(uploadedUrl);
@@ -291,7 +295,7 @@ const MediaSystem = {
                     }
                 }
             } else {
-                console.log('📭 Nenhum novo arquivo para enviar');
+                console.log('📭 Nenhum novo arquivo de mídia para enviar');
             }
             
             // 3. Upload de NOVOS PDFs
@@ -299,7 +303,7 @@ const MediaSystem = {
             const uploadedPdfUrls = [];
             
             if (newPdfs.length > 0) {
-                console.log(`📤 Enviando ${newPdfs.length} NOVO(S) PDF(s) para o Supabase...`);
+                console.log(`📤 Enviando ${newPdfs.length} NOVO(S) PDF(s)...`);
                 
                 for (let i = 0; i < newPdfs.length; i++) {
                     const pdfItem = newPdfs[i];
@@ -322,51 +326,49 @@ const MediaSystem = {
                         console.error(`❌ Erro ao enviar PDF "${file.name}":`, error);
                     }
                 }
+            } else {
+                console.log('📭 Nenhum novo PDF para enviar');
             }
             
-            // 4. Coletar todas as URLs (novas + existentes não excluídas)
-            const allImageUrls = [
-                ...uploadedImageUrls,
-                ...this.state.existing
-                    .filter(item => !item.markedForDeletion && item.url)
-                    .map(item => item.url)
-            ];
+            // 4. Coletar URLs de arquivos existentes (não marcados para exclusão)
+            const existingImageUrls = this.state.existing
+                .filter(item => !item.markedForDeletion && item.url)
+                .map(item => item.url);
             
-            const allPdfUrls = [
-                ...uploadedPdfUrls,
-                ...this.state.existingPdfs
-                    .filter(item => !item.markedForDeletion && item.url)
-                    .map(item => item.url)
-            ];
+            const existingPdfUrls = this.state.existingPdfs
+                .filter(item => !item.markedForDeletion && item.url)
+                .map(item => item.url);
             
-            // 5. Preparar resultado
-            const result = {
-                success: true,
-                images: allImageUrls.join(','),
-                pdfs: allPdfUrls.join(','),
-                uploadedCount: uploadedImageUrls.length + uploadedPdfUrls.length
-            };
+            console.log(`📁 ${existingImageUrls.length} arquivo(s) existente(s) mantido(s)`);
+            console.log(`📄 ${existingPdfUrls.length} PDF(s) existente(s) mantido(s)`);
+            
+            // 5. Combinar tudo: URLs novas + existentes
+            const allImageUrls = [...uploadedImageUrls, ...existingImageUrls];
+            const allPdfUrls = [...uploadedPdfUrls, ...existingPdfUrls];
+            
+            // 6. Preparar resultado final
+            results.success = true;
+            results.images = allImageUrls.join(',');
+            results.pdfs = allPdfUrls.join(',');
+            results.uploadedCount = uploadedImageUrls.length + uploadedPdfUrls.length;
             
             console.log(`✅ UPLOAD CONCLUÍDO COM SUCESSO!`);
             console.log(`📊 Resultado: ${allImageUrls.length} imagem(ns), ${allPdfUrls.length} PDF(s)`);
-            console.log(`📤 ${result.uploadedCount} novo(s) arquivo(s) enviado(s)`);
+            console.log(`📤 ${results.uploadedCount} novo(s) arquivo(s) enviado(s) com sucesso`);
             
-            // 6. Atualizar cache de URLs enviadas
-            this.state.uploadedUrls.images = [...this.state.uploadedUrls.images, ...uploadedImageUrls];
-            this.state.uploadedUrls.pdfs = [...this.state.uploadedUrls.pdfs, ...uploadedPdfUrls];
-            
-            // 7. Atualizar UI para mostrar URLs permanentes
+            // 7. Atualizar UI para mostrar status atualizado
             this.updateUI();
             
-            return result;
+            return results;
             
         } catch (error) {
             console.error('❌ ERRO NO UPLOAD:', error);
-            return {
-                success: false,
-                images: '',
-                pdfs: '',
-                error: error.message
+            return { 
+                success: false, 
+                images: '', 
+                pdfs: '', 
+                uploadedCount: 0,
+                error: error.message 
             };
             
         } finally {
@@ -375,15 +377,15 @@ const MediaSystem = {
         }
     },
 
-    // ========== UPLOAD DE ARQUIVO ÚNICO ==========
-    async uploadSingleFile(file, propertyId, type = 'image') {
+    // ========== UPLOAD DE ARQUIVO ÚNICO PARA SUPABASE ==========
+    async uploadSingleFile(file, propertyId, type = 'media') {
         return new Promise(async (resolve, reject) => {
             try {
                 const SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
                 const SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
                 const bucket = this.config.buckets[this.config.currentSystem];
                 
-                // Gerar nome único para o arquivo
+                // Gerar nome único para evitar conflitos
                 const timestamp = Date.now();
                 const random = Math.random().toString(36).substring(2, 10);
                 const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 50);
@@ -393,13 +395,16 @@ const MediaSystem = {
                 
                 const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${filePath}`;
                 
-                console.log(`📁 Upload para: ${filePath}`);
+                console.log(`📁 Fazendo upload para Supabase: ${filePath}`);
                 
-                // Configurar timeout
+                // Configurar timeout (30 segundos)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+                const timeoutId = setTimeout(() => {
+                    controller.abort();
+                    reject(new Error('Timeout: Upload excedeu 30 segundos'));
+                }, 30000);
                 
-                // Fazer upload
+                // Fazer upload para Supabase
                 const response = await fetch(uploadUrl, {
                     method: 'POST',
                     headers: {
@@ -413,21 +418,59 @@ const MediaSystem = {
                 
                 clearTimeout(timeoutId);
                 
+                console.log(`📡 Resposta do Supabase: ${response.status} ${response.statusText}`);
+                
                 if (response.ok) {
                     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${filePath}`;
-                    console.log(`✅ Upload bem-sucedido: ${publicUrl.substring(0, 100)}...`);
+                    console.log(`✅ Upload bem-sucedido! URL: ${publicUrl.substring(0, 100)}...`);
                     resolve(publicUrl);
                 } else {
                     const errorText = await response.text();
-                    console.error(`❌ Upload falhou: ${response.status}`, errorText);
-                    reject(new Error(`Upload falhou: ${response.status}`));
+                    console.error(`❌ Supabase respondeu com erro ${response.status}:`, errorText);
+                    reject(new Error(`Supabase: ${response.status} - ${errorText.substring(0, 200)}`));
                 }
                 
             } catch (error) {
-                console.error(`❌ Erro no upload:`, error);
+                console.error(`❌ Erro no upload de arquivo:`, error);
                 reject(error);
             }
         });
+    },
+
+    // ========== FUNÇÃO SIMPLIFICADA PARA ADMIN.JS ==========
+    getOrderedMediaUrls: function() {
+        console.log('📋 Obtendo URLs ordenadas para salvar...');
+        
+        // Combinar todos os arquivos visíveis
+        const allMedia = [
+            ...this.state.existing.filter(item => !item.markedForDeletion),
+            ...this.state.files
+        ];
+        
+        const allPdfs = [
+            ...this.state.existingPdfs.filter(item => !item.markedForDeletion),
+            ...this.state.pdfs
+        ];
+        
+        // Extrair URLs (priorizando uploadedUrl para arquivos novos)
+        const imageUrls = allMedia.map(item => {
+            if (item.uploadedUrl) return item.uploadedUrl; // URL após upload
+            if (item.url && !item.url.startsWith('blob:')) return item.url; // URL existente
+            return null;
+        }).filter(url => url !== null);
+        
+        const pdfUrls = allPdfs.map(item => {
+            if (item.uploadedUrl) return item.uploadedUrl;
+            if (item.url && !item.url.startsWith('blob:')) return item.url;
+            return null;
+        }).filter(url => url !== null);
+        
+        console.log(`📊 URLs disponíveis: ${imageUrls.length} imagem(ns), ${pdfUrls.length} PDF(s)`);
+        
+        return {
+            images: imageUrls.join(','),
+            pdfs: pdfUrls.join(',')
+        };
     },
 
     // ========== ADICIONAR PDFs ==========
@@ -437,7 +480,7 @@ const MediaSystem = {
         const filesArray = Array.from(fileList);
         let addedCount = 0;
         
-        // Verificar limites
+        // Verificar limite de PDFs
         const totalAfterAdd = this.state.pdfs.length + this.state.existingPdfs.length + filesArray.length;
         if (totalAfterAdd > this.config.limits.maxPdfs) {
             alert(`❌ Limite máximo de ${this.config.limits.maxPdfs} PDFs atingido!`);
@@ -459,7 +502,6 @@ const MediaSystem = {
                 file: file,
                 id: `pdf_${Date.now()}_${Math.random()}`,
                 name: file.name,
-                size: file.size,
                 isNew: true,
                 uploaded: false,
                 uploadedUrl: null
@@ -518,10 +560,9 @@ const MediaSystem = {
         if (imagesToDelete.length > 0 || pdfsToDelete.length > 0) {
             console.log(`🗑️ Processando exclusões: ${imagesToDelete.length} imagem(ns), ${pdfsToDelete.length} PDF(s)`);
             
+            // Por enquanto, apenas removemos do array local
             // TODO: Implementar exclusão real do Supabase Storage
-            // Por enquanto, apenas removemos do array
             
-            // Remover dos arrays
             this.state.existing = this.state.existing.filter(item => !item.markedForDeletion);
             this.state.existingPdfs = this.state.existingPdfs.filter(item => !item.markedForDeletion);
         }
@@ -835,42 +876,7 @@ const MediaSystem = {
         this.updateUI();
     },
 
-    // ========== FUNÇÕES DE COMPATIBILIDADE ==========
-    getOrderedMediaUrls: function() {
-        console.log('📋 Obtendo URLs ordenadas para salvar...');
-        
-        // Primeiro combinar tudo na ordem correta
-        const allMedia = [
-            ...this.state.existing.filter(item => !item.markedForDeletion),
-            ...this.state.files
-        ];
-        
-        const allPdfs = [
-            ...this.state.existingPdfs.filter(item => !item.markedForDeletion),
-            ...this.state.pdfs
-        ];
-        
-        // Extrair URLs (priorizando uploadedUrl para novos arquivos)
-        const imageUrls = allMedia.map(item => {
-            if (item.uploadedUrl) return item.uploadedUrl;
-            if (item.url && !item.url.startsWith('blob:')) return item.url;
-            return null;
-        }).filter(url => url !== null);
-        
-        const pdfUrls = allPdfs.map(item => {
-            if (item.uploadedUrl) return item.uploadedUrl;
-            if (item.url && !item.url.startsWith('blob:')) return item.url;
-            return null;
-        }).filter(url => url !== null);
-        
-        console.log(`📊 URLs para salvar: ${imageUrls.length} imagem(ns), ${pdfUrls.length} PDF(s)`);
-        
-        return {
-            images: imageUrls.join(','),
-            pdfs: pdfUrls.join(',')
-        };
-    },
-
+    // ========== FUNÇÕES DE COMPATIBILIDADE COM ADMIN.JS ==========
     processAndSavePdfs: async function(propertyId, propertyTitle) {
         console.group(`📄 Processando e salvando PDFs para ${propertyId}`);
         const result = await this.uploadAll(propertyId, propertyTitle);
@@ -878,6 +884,20 @@ const MediaSystem = {
         return result.pdfs;
     },
 
+    getMediaUrlsForProperty: async function(propertyId, propertyTitle) {
+        console.group(`🖼️ Obtendo URLs de mídia para ${propertyId}`);
+        const result = await this.uploadAll(propertyId, propertyTitle);
+        console.groupEnd();
+        return result.images;
+    },
+
+    getPdfsToSave: async function(propertyId) {
+        console.log(`💾 Obtendo PDFs para salvar para ${propertyId}`);
+        const result = await this.uploadAll(propertyId, 'Imóvel');
+        return result.pdfs;
+    },
+
+    // ========== FUNÇÕES DE RESET E LIMPEZA ==========
     clearAllPdfs: function() {
         console.log('🧹 Limpando apenas PDFs');
         
@@ -892,6 +912,11 @@ const MediaSystem = {
         this.state.existingPdfs = [];
         this.updateUI();
         return this;
+    },
+
+    clearAllMedia: function() {
+        console.log('🧹 LIMPEZA COMPLETA DE MÍDIA E PDFs');
+        return this.resetState();
     },
 
     loadExistingPdfsForEdit: function(property) {
@@ -918,27 +943,9 @@ const MediaSystem = {
         return this;
     },
 
-    getPdfsToSave: async function(propertyId) {
-        console.log(`💾 Obtendo PDFs para salvar para ${propertyId}`);
-        const result = await this.uploadAll(propertyId, 'Imóvel');
-        return result.pdfs;
-    },
-
-    getMediaUrlsForProperty: async function(propertyId, propertyTitle) {
-        console.log(`🖼️ Obtendo URLs de mídia para ${propertyId}`);
-        const result = await this.uploadAll(propertyId, propertyTitle);
-        return result.images;
-    },
-
-    clearAllMedia: function() {
-        console.log('🧹 LIMPEZA COMPLETA DE MÍDIA E PDFs');
-        return this.resetState();
-    },
-
     ensurePermanentUrls: function() {
         console.log('🔍 Garantindo URLs permanentes...');
         
-        // Para arquivos novos já enviados, garantir que usam URL permanente
         this.state.files.forEach(item => {
             if (item.uploaded && item.uploadedUrl && item.preview && item.preview.startsWith('blob:')) {
                 URL.revokeObjectURL(item.preview);
@@ -954,7 +961,7 @@ const MediaSystem = {
     setupEventListeners: function() {
         console.log('🔧 Configurando event listeners...');
         
-        // Upload de mídia
+        // Upload de mídia (fotos/vídeos)
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         
@@ -985,8 +992,7 @@ const MediaSystem = {
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
                     this.addFiles(e.target.files);
-                    // Resetar input para permitir selecionar o mesmo arquivo novamente
-                    e.target.value = '';
+                    e.target.value = ''; // Resetar input
                 }
             });
         }
@@ -1001,7 +1007,7 @@ const MediaSystem = {
             pdfFileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
                     this.addPdfs(e.target.files);
-                    e.target.value = '';
+                    e.target.value = ''; // Resetar input
                 }
             });
         }
@@ -1081,7 +1087,7 @@ const MediaSystem = {
     resetState: function() {
         console.log('🧹 Resetando estado do sistema de mídia');
         
-        // Liberar todas as BLOB URLs
+        // Liberar todas as BLOB URLs para evitar memory leaks
         const cleanupBlobUrls = (items) => {
             items.forEach(item => {
                 if (item.preview && item.preview.startsWith('blob:')) {
@@ -1101,7 +1107,6 @@ const MediaSystem = {
         this.state.existing = [];
         this.state.pdfs = [];
         this.state.existingPdfs = [];
-        this.state.uploadedUrls = { images: [], pdfs: [] };
         
         // Resetar flags
         this.state.isUploading = false;
@@ -1110,9 +1115,9 @@ const MediaSystem = {
         return this;
     },
 
-    // ========== FUNÇÃO PARA DEBUG ==========
+    // ========== FUNÇÃO DE DIAGNÓSTICO (DEBUG) ==========
     debugState: function() {
-        console.group('🐛 DEBUG - ESTADO DO SISTEMA DE MÍDIA');
+        console.group('🐛 DEBUG - ESTADO DO MEDIA SYSTEM');
         console.log('📊 Estado atual:');
         console.log('- Arquivos novos:', this.state.files.length);
         console.log('- Arquivos existentes:', this.state.existing.length);
@@ -1143,19 +1148,56 @@ const MediaSystem = {
     }
 };
 
-// ========== EXPORTAR ==========
+// ========== EXPORTAR PARA WINDOW ==========
 window.MediaSystem = MediaSystem;
 
-// ========== INICIALIZAÇÃO ==========
+// ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 setTimeout(() => {
     window.MediaSystem.init('vendas');
-    console.log('✅ Sistema de mídia FUNCIONAL pronto');
+    console.log('✅ Sistema de mídia DEFINITIVO pronto para upload');
     
     // Adicionar função de debug global
-    window.debugMedia = function() {
+    window.debugMediaSystem = function() {
         MediaSystem.debugState();
+    };
+    
+    // Adicionar função de teste de upload
+    window.testMediaUpload = async function() {
+        console.group('🧪 TESTE DE UPLOAD RÁPIDO');
+        
+        try {
+            // Criar arquivo de teste
+            const testBlob = new Blob(['test content'], { type: 'image/jpeg' });
+            const testFile = new File([testBlob], 'test_image.jpg', { type: 'image/jpeg' });
+            
+            console.log('📁 Arquivo de teste criado');
+            
+            // Adicionar ao sistema
+            MediaSystem.addFiles([testFile]);
+            
+            // Aguardar um pouco
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Testar upload
+            const testId = 'test_' + Date.now();
+            const result = await MediaSystem.uploadAll(testId, 'Teste de Upload');
+            
+            if (result.success) {
+                console.log('✅ TESTE DE UPLOAD BEM-SUCEDIDO!');
+                console.log('📊 URLs geradas:', result.images);
+                alert('✅ Upload funcionou! Verifique console para detalhes.');
+            } else {
+                console.error('❌ TESTE DE UPLOAD FALHOU!');
+                alert('❌ Upload falhou. Verifique console.');
+            }
+        } catch (error) {
+            console.error('❌ Erro no teste:', error);
+            alert(`❌ Erro: ${error.message}`);
+        }
+        
+        console.groupEnd();
     };
     
 }, 1000);
 
-console.log('✅ media-unified.js FUNCIONAL carregado');
+console.log('✅ media-unified.js DEFINITIVO COM UPLOAD FUNCIONAL carregado');
