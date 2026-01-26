@@ -1,5 +1,5 @@
-// js/modules/properties.js - VERSÃO FINAL COMPLETA COM AJUSTE DO INDICADOR DE VÍDEO
-console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - INDICADOR DE VÍDEO AJUSTADO');
+// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA
+console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -12,7 +12,7 @@ window.ensureSupabaseCredentials = function() {
         console.warn('⚠️ SUPABASE_CONSTANTS não definido, configurando...');
         window.SUPABASE_CONSTANTS = {
             URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
-            KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+            KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBetG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
             ADMIN_PASSWORD: "wl654",
             PDF_PASSWORD: "doc123"
         };
@@ -150,8 +150,14 @@ class PropertyTemplateEngine {
         // Formatar features para exibição
         const displayFeatures = window.formatFeaturesForDisplay(property.features);
         
-        // Formatador de preço seguro
+        // Formatação de preço usando SharedCore
         const formatPrice = (price) => {
+            // Usar SharedCore se disponível, fallback para formato básico
+            if (window.SharedCore?.PriceFormatter?.formatForCard) {
+                return window.SharedCore.PriceFormatter.formatForCard(price);
+            }
+            
+            // Fallback básico
             if (!price) return 'R$ 0,00';
             if (typeof price === 'string' && price.includes('R$')) return price;
             return `R$ ${price.toString().replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
@@ -308,9 +314,11 @@ class PropertyTemplateEngine {
             if (propertyData.price !== undefined) {
                 const priceElement = card.querySelector('[data-price-field]');
                 if (priceElement) {
-                    const formattedPrice = propertyData.price.includes('R$') 
-                        ? propertyData.price 
-                        : `R$ ${propertyData.price.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
+                    const formattedPrice = window.SharedCore?.PriceFormatter?.formatForCard 
+                        ? window.SharedCore.PriceFormatter.formatForCard(propertyData.price)
+                        : (propertyData.price.includes('R$') 
+                            ? propertyData.price 
+                            : `R$ ${propertyData.price.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`);
                     priceElement.textContent = formattedPrice;
                 }
             }
@@ -790,7 +798,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL (COM FORMATAÇÃO UNIFICADA) ==========
 window.addNewProperty = async function(propertyData) {
     console.group('➕ ADICIONANDO NOVO IMÓVEL');
     console.log('📋 Dados recebidos:', propertyData);
@@ -802,26 +810,19 @@ window.addNewProperty = async function(propertyData) {
     }
 
     try {
-        // Formatar preço
+        // Formatar preço usando SharedCore unificado
         if (propertyData.price) {
-            let formattedPrice = propertyData.price;
-            
+            // Usar SharedCore se disponível
             if (window.SharedCore?.PriceFormatter?.formatForInput) {
-                try {
-                    const sharedCoreFormatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
-                    if (sharedCoreFormatted) {
-                        formattedPrice = sharedCoreFormatted;
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Erro no SharedCore PriceFormatter:', e);
+                propertyData.price = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
+            } else {
+                // Fallback básico
+                let formattedPrice = propertyData.price;
+                if (!formattedPrice.startsWith('R$')) {
+                    formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
                 }
+                propertyData.price = formattedPrice;
             }
-            
-            if (!formattedPrice.startsWith('R$')) {
-                formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-            }
-            
-            propertyData.price = formattedPrice;
         }
 
         // CORREÇÃO: Processar features corretamente
@@ -1033,9 +1034,9 @@ window.validateIdForSupabase = function(propertyId) {
     return null;
 };
 
-// ========== 9. ATUALIZAR IMÓVEL - VERSÃO COMPLETA COM ATUALIZAÇÃO IMEDIATA DE TODOS OS CAMPOS ==========
+// ========== 9. ATUALIZAR IMÓVEL - VERSÃO COMPLETA COM FORMATAÇÃO UNIFICADA ==========
 window.updateProperty = async function(id, propertyData) {
-    console.group('📤 updateProperty CHAMADO - COM ATUALIZAÇÃO IMEDIATA DE TODOS OS CAMPOS');
+    console.group('📤 updateProperty CHAMADO - COM FORMATAÇÃO UNIFICADA');
     console.log('📋 Dados recebidos:', {
         id: id,
         tipoId: typeof id,
@@ -1074,26 +1075,19 @@ window.updateProperty = async function(id, propertyData) {
     }
 
     try {
-        // ✅ FORMATAR PREÇO
+        // ✅ FORMATAR PREÇO (USANDO SHAREDCORE UNIFICADO)
         if (propertyData.price) {
-            let formattedPrice = propertyData.price;
-            
+            // Usar SharedCore se disponível
             if (window.SharedCore?.PriceFormatter?.formatForInput) {
-                try {
-                    const sharedCoreFormatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
-                    if (sharedCoreFormatted) {
-                        formattedPrice = sharedCoreFormatted;
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Erro no SharedCore PriceFormatter:', e);
+                propertyData.price = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
+            } else {
+                // Fallback básico
+                let formattedPrice = propertyData.price;
+                if (!formattedPrice.startsWith('R$')) {
+                    formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
                 }
+                propertyData.price = formattedPrice;
             }
-            
-            if (!formattedPrice.startsWith('R$')) {
-                formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-            }
-            
-            propertyData.price = formattedPrice;
         }
 
         // ✅ CORREÇÕES CRÍTICAS: Vídeo e Features
@@ -1254,9 +1248,9 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// ========== 10. FUNÇÃO CRÍTICA: Atualizar propriedade localmente COM ATUALIZAÇÃO IMEDIATA DE TODOS OS CAMPOS ==========
+// ========== 10. FUNÇÃO CRÍTICA: Atualizar propriedade localmente ==========
 window.updateLocalProperty = function(propertyId, updatedData) {
-    console.group(`💾 updateLocalProperty COM ATUALIZAÇÃO IMEDIATA: ${propertyId}`);
+    console.group(`💾 updateLocalProperty: ${propertyId}`);
     
     if (!window.properties || !Array.isArray(window.properties)) {
         console.error('❌ window.properties não é um array válido');
@@ -1404,7 +1398,7 @@ window.deleteProperty = async function(id) {
         return false;
     }
 
-    if (!confirm(`⚠️ TEM CERTEZA que deseja excluir o imóvel?\n\n"${property.title}"\n\nEsta ação NÃO pode ser desfeita.`)) {
+    if (!confirm(`⚠️ TEM CERTEZA que deseja excluir o imóvel?\n\n"${property.title}"\n\nEsta ação NÃO pode não ser desfeita.`)) {
         console.log('❌ Exclusão cancelada pelo usuário');
         return false;
     }
@@ -1776,7 +1770,7 @@ if (!document.querySelector('#video-update-styles')) {
 }
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js VERSÃO FINAL COMPLETA COM INDICADOR DE VÍDEO AJUSTADO');
+console.log('✅ properties.js VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA');
 
 function runLowPriority(task) {
     if ('requestIdleCallback' in window) {
@@ -1827,9 +1821,9 @@ if (document.readyState === 'loading') {
 window.getInitialProperties = getInitialProperties;
 
 console.log('🎯 TODOS OS PROBLEMAS RESOLVIDOS!');
+console.log('✅ Formatação de preço unificada no SharedCore');
 console.log('✅ Indicador de vídeo ajustado para posição inferior (35px do topo)');
 console.log('✅ Contador de imagens mantido no topo (10px do topo)');
-console.log('✅ Z-index ajustado: contador(10) > indicador(9) > PDF(8)');
 console.log('💡 Execute window.testIndicatorPosition() para verificar a posição');
 console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
 console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
