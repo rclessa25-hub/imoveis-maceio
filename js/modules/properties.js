@@ -1,4 +1,4 @@
-// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA
+// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA E SINCRONIZAÇÃO CORRIGIDA
 console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA');
 
 // ========== VARIÁVEIS GLOBAIS ==========
@@ -1855,6 +1855,28 @@ window.debugSyncIssue = function() {
     console.groupEnd();
 };
 
+// ========== 18. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
+setTimeout(() => {
+    // Verificar inconsistência entre array e localStorage
+    if (window.properties && window.properties.length > 0) {
+        try {
+            const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+            if (stored.length !== window.properties.length) {
+                console.warn('⚠️ INCONSISTÊNCIA DETECTADA:');
+                console.warn(`- Array: ${window.properties.length} imóveis`);
+                console.warn(`- Storage: ${stored.length} imóveis`);
+                console.warn('🔄 Corrigindo automaticamente...');
+                
+                // Salvar array atual no storage (correção)
+                localStorage.setItem('properties', JSON.stringify(window.properties));
+                console.log('✅ Storage corrigido com array atual');
+            }
+        } catch (error) {
+            console.error('❌ Erro na verificação automática:', error);
+        }
+    }
+}, 5000);
+
 // ========== 19. FUNÇÃO DE SINCRONIZAÇÃO FORÇADA ==========
 window.forceSyncProperties = async function() {
     console.group('🔄 FORÇANDO SINCRONIZAÇÃO DE IMÓVEIS');
@@ -2012,28 +2034,6 @@ setTimeout(() => {
     }
 }, 3000);
 
-// ========== 18. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
-setTimeout(() => {
-    // Verificar inconsistência entre array e localStorage
-    if (window.properties && window.properties.length > 0) {
-        try {
-            const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-            if (stored.length !== window.properties.length) {
-                console.warn('⚠️ INCONSISTÊNCIA DETECTADA:');
-                console.warn(`- Array: ${window.properties.length} imóveis`);
-                console.warn(`- Storage: ${stored.length} imóveis`);
-                console.warn('🔄 Corrigindo automaticamente...');
-                
-                // Salvar array atual no storage (correção)
-                localStorage.setItem('properties', JSON.stringify(window.properties));
-                console.log('✅ Storage corrigido com array atual');
-            }
-        } catch (error) {
-            console.error('❌ Erro na verificação automática:', error);
-        }
-    }
-}, 5000);
-
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA');
 
@@ -2090,7 +2090,9 @@ console.log('✅ Formatação de preço unificada no SharedCore');
 console.log('✅ Indicador de vídeo ajustado para posição inferior (35px do topo)');
 console.log('✅ Contador de imagens mantido no topo (10px do topo)');
 console.log('✅ Sincronização Supabase vs LocalStorage corrigida');
-console.log('💡 Execute window.testIndicatorPosition() para verificar a posição');
+console.log('✅ Função de diagnóstico window.debugSyncIssue() disponível');
+console.log('✅ Função de sincronização window.forceSyncProperties() disponível');
+console.log('💡 Execute window.debugSyncIssue() para verificar problemas de sincronização');
+console.log('💡 Execute window.forceSyncProperties() para forçar sincronização com Supabase');
 console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
 console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
-console.log('💡 Execute window.debugSyncIssue() para diagnóstico de sincronização');
