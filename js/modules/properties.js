@@ -225,7 +225,7 @@ class PropertyTemplateEngine {
                 ${hasVideo ? `
                     <div class="video-indicator" style="
                         position: absolute;
-                        top: 65px;  <!-- ALTERADO: estava 10px, agora 35px -->
+                        top: 85px;  <!-- ALTERADO: estava 10px, agora 85px -->
                         right: 10px;
                         background: rgba(0, 0, 0, 0.8);
                         color: white;
