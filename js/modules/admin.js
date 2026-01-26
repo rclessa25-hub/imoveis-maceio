@@ -1,5 +1,5 @@
-// js/modules/admin.js - CORREÇÃO DO CHECKBOX DE VÍDEO
-console.log('🔧 admin.js - CORREÇÃO DO CHECKBOX DE VÍDEO');
+// js/modules/admin.js - VERSÃO FINAL COMPLETA CORRIGIDA
+console.log('🔧 admin.js - VERSÃO FINAL COMPLETA CORRIGIDA');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -48,7 +48,7 @@ window.toggleAdminPanel = function() {
 };
 
 /* ==========================================================
-   HELPER FUNCTIONS - COM CORREÇÃO DO CHECKBOX DE VÍDEO
+   HELPER FUNCTIONS - CORRIGIDAS
    ========================================================== */
 const Helpers = {
     format: {
@@ -443,10 +443,10 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM CORREÇÃO DO CHECKBOX DE VÍDEO
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM ATUALIZAÇÃO IMEDIATA
    ========================================================== */
 window.saveProperty = async function() {
-    console.group('💾 SALVANDO IMÓVEL COM CORREÇÃO DO CHECKBOX DE VÍDEO');
+    console.group('💾 SALVANDO IMÓVEL COM ATUALIZAÇÃO IMEDIATA DA GALERIA');
     
     try {
         // 1. Obter dados do formulário
@@ -584,13 +584,21 @@ window.saveProperty = async function() {
                 Helpers.showNotification('✅ Imóvel salvo localmente', 'success', 3000);
             }
             
+            // CORREÇÃO CRÍTICA: Atualizar galeria imediatamente
+            setTimeout(() => {
+                if (typeof window.updatePropertyCard === 'function') {
+                    window.updatePropertyCard(window.editingPropertyId);
+                    console.log('🎬 Card atualizado na galeria principal');
+                } else if (typeof window.renderProperties === 'function') {
+                    window.renderProperties(window.currentFilter || 'todos');
+                    console.log('🔄 Galeria renderizada completamente');
+                }
+            }, 300);
+            
             // Fechar modal e resetar
             setTimeout(() => {
                 Helpers.closeModal();
                 window.resetAdminFormCompletely(true);
-                if (typeof window.renderProperties === 'function') {
-                    window.renderProperties();
-                }
             }, 1500);
             
         } else {
@@ -636,13 +644,17 @@ window.saveProperty = async function() {
                 Helpers.showNotification('✅ Imóvel criado localmente', 'success', 3000);
             }
             
+            // Atualizar galeria
+            setTimeout(() => {
+                if (typeof window.renderProperties === 'function') {
+                    window.renderProperties('todos');
+                }
+            }, 300);
+            
             // Fechar modal e resetar
             setTimeout(() => {
                 Helpers.closeModal();
                 window.resetAdminFormCompletely(true);
-                if (typeof window.renderProperties === 'function') {
-                    window.renderProperties();
-                }
             }, 1500);
         }
         
@@ -657,7 +669,159 @@ window.saveProperty = async function() {
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO - COM VERIFICAÇÃO DO CHECKBOX
+   FUNÇÃO PARA ATUALIZAR CARD ESPECÍFICO APÓS EDIÇÃO
+   ========================================================== */
+window.updatePropertyCard = function(propertyId) {
+    console.log('🔄 Atualizando card do imóvel:', propertyId);
+    
+    const property = window.properties?.find(p => p.id === propertyId);
+    if (!property) {
+        console.error('❌ Imóvel não encontrado para atualizar card:', propertyId);
+        return false;
+    }
+    
+    // Encontrar o card existente
+    const allCards = document.querySelectorAll('.property-card');
+    let cardToUpdate = null;
+    
+    allCards.forEach(card => {
+        // Verificar se o card corresponde ao imóvel (por ID ou título)
+        const titleElement = card.querySelector('.property-title');
+        if (titleElement && titleElement.textContent.includes(property.title)) {
+            cardToUpdate = card;
+        }
+    });
+    
+    if (cardToUpdate) {
+        // Gerar novo HTML para o card
+        const newCardHTML = window.propertyTemplates ? window.propertyTemplates.generate(property) : 
+                           `<div class="property-card" data-property-id="${property.id}">
+                                <div class="property-image">
+                                    <img src="${property.images ? property.images.split(',')[0] : ''}" 
+                                         alt="${property.title}">
+                                    ${property.has_video ? 
+                                        `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
+                                </div>
+                                <div class="property-content">
+                                    <div class="property-price">${property.price || 'R$ 0,00'}</div>
+                                    <h3 class="property-title">${property.title || 'Sem título'}</h3>
+                                    <div class="property-location">
+                                        <i class="fas fa-map-marker-alt"></i> ${property.location || 'Local não informado'}
+                                    </div>
+                                </div>
+                            </div>`;
+        
+        // Substituir o card antigo pelo novo
+        cardToUpdate.outerHTML = newCardHTML;
+        
+        console.log('✅ Card atualizado com indicador de vídeo:', property.has_video);
+        
+        // Adicionar animação para destacar a atualização
+        const updatedCard = document.querySelector(`[data-property-id="${propertyId}"]`) || 
+                           Array.from(document.querySelectorAll('.property-card')).find(card => 
+                               card.querySelector('.property-title')?.textContent.includes(property.title));
+        
+        if (updatedCard) {
+            updatedCard.style.animation = 'highlightUpdate 1s ease';
+            setTimeout(() => {
+                updatedCard.style.animation = '';
+            }, 1000);
+        }
+        
+        return true;
+    } else {
+        console.warn('⚠️ Card não encontrado na página, renderizando todos os imóveis');
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties(window.currentFilter || 'todos');
+        }
+        return false;
+    }
+};
+
+/* ==========================================================
+   FUNÇÃO AUXILIAR: Atualizar propriedade localmente
+   ========================================================== */
+window.updateLocalProperty = function(propertyId, updatedData) {
+    if (!window.properties) return false;
+    
+    const index = window.properties.findIndex(p => p.id === propertyId);
+    if (index === -1) return false;
+    
+    // CORREÇÃO: Garantir que has_video seja booleano
+    if (updatedData.has_video !== undefined) {
+        updatedData.has_video = Boolean(updatedData.has_video);
+        console.log(`✅ VÍDEO salvo localmente para ${propertyId}: ${updatedData.has_video}`);
+    }
+    
+    // CORREÇÃO: Manter features como string JSON
+    if (Array.isArray(updatedData.features)) {
+        updatedData.features = JSON.stringify(updatedData.features);
+    }
+    
+    window.properties[index] = {
+        ...window.properties[index],
+        ...updatedData,
+        id: propertyId,
+        updated_at: new Date().toISOString()
+    };
+    
+    // Salvar no localStorage
+    try {
+        localStorage.setItem('properties', JSON.stringify(window.properties));
+        console.log(`💾 Imóvel ${propertyId} salvo no localStorage com vídeo: ${updatedData.has_video}`);
+    } catch (error) {
+        console.error('❌ Erro ao salvar no localStorage:', error);
+    }
+    
+    // Atualizar UI
+    setTimeout(() => {
+        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+        
+        // Chamar a função de atualização do card
+        if (typeof window.updatePropertyCard === 'function') {
+            window.updatePropertyCard(propertyId);
+        }
+    }, 100);
+    
+    return true;
+};
+
+/* ==========================================================
+   FUNÇÃO AUXILIAR: Adicionar propriedade localmente
+   ========================================================== */
+window.addToLocalProperties = function(newProperty) {
+    if (!window.properties) window.properties = [];
+    
+    const maxId = window.properties.length > 0 ? Math.max(...window.properties.map(p => p.id)) : 0;
+    const propertyWithId = {
+        ...newProperty,
+        id: maxId + 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+    
+    window.properties.push(propertyWithId);
+    
+    // Salvar no localStorage
+    try {
+        localStorage.setItem('properties', JSON.stringify(window.properties));
+        console.log(`💾 Novo imóvel ID: ${propertyWithId.id} salvo no localStorage`);
+    } catch (error) {
+        console.error('❌ Erro ao salvar no localStorage:', error);
+    }
+    
+    setTimeout(() => {
+        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties('todos', true);
+        }
+    }, 200);
+    
+    return propertyWithId;
+};
+
+/* ==========================================================
+   CONFIGURAÇÃO DO FORMULÁRIO
    ========================================================== */
 window.setupForm = function() {
     const form = document.getElementById('propertyForm');
@@ -822,7 +986,7 @@ window.setupAdminUI = function() {
         setTimeout(window.setupForm, 100);
     }
     
-    // 5. Adicionar estilos dinâmicos
+    // 5. Adicionar estilos dinâmicos para animações
     const style = document.createElement('style');
     style.textContent = `
         .admin-toggle {
@@ -864,116 +1028,26 @@ window.setupAdminUI = function() {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        
+        @keyframes highlightUpdate {
+            0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+        }
+        
+        .video-indicator {
+            animation: pulseVideo 2s infinite;
+        }
+        
+        @keyframes pulseVideo {
+            0% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.8; transform: scale(1); }
+        }
     `;
     document.head.appendChild(style);
     
     console.log('✅ UI do admin configurada');
-};
-
-/* ==========================================================
-   FUNÇÕES AUXILIARES - COM CORREÇÃO DO VÍDEO
-   ========================================================== */
-window.loadPropertyList = function() {
-    const container = document.getElementById('propertyList');
-    const countElement = document.getElementById('propertyCount');
-    if (!container || !window.properties) return;
-    
-    container.innerHTML = window.properties.length === 0 ? 
-        '<p style="text-align: center; color: #666;">Nenhum imóvel</p>' :
-        window.properties.sort((a,b) => b.id - a.id).map(property => `
-            <div class="property-item">
-                <div style="flex: 1;">
-                    <strong style="color: var(--primary);">${property.title}</strong><br>
-                    <small>${property.price} - ${property.location}</small>
-                    <div style="font-size: 0.8em; color: #666; margin-top: 0.2rem;">
-                        ID: ${property.id} | Tipo: ${property.type || 'residencial'}
-                        ${property.has_video ? ' | 🎬 Tem vídeo' : ''}
-                        ${property.badge ? ` | 🏷️ ${property.badge}` : ''}
-                    </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button onclick="editProperty(${property.id})" class="btn-edit">Editar</button>
-                    <button onclick="deleteProperty(${property.id})" class="btn-delete">Excluir</button>
-                </div>
-            </div>
-        `).join('');
-    
-    if (countElement) countElement.textContent = window.properties.length;
-};
-
-// CORREÇÃO CRÍTICA: Função para atualizar propriedade localmente com vídeo
-window.updateLocalProperty = function(propertyId, updatedData) {
-    if (!window.properties) return false;
-    
-    const index = window.properties.findIndex(p => p.id === propertyId);
-    if (index === -1) return false;
-    
-    // CORREÇÃO: Garantir que has_video seja booleano
-    if (updatedData.has_video !== undefined) {
-        updatedData.has_video = Boolean(updatedData.has_video);
-        console.log(`✅ VÍDEO salvo localmente para ${propertyId}: ${updatedData.has_video}`);
-    }
-    
-    // CORREÇÃO: Manter features como string JSON
-    if (Array.isArray(updatedData.features)) {
-        updatedData.features = JSON.stringify(updatedData.features);
-    }
-    
-    window.properties[index] = {
-        ...window.properties[index],
-        ...updatedData,
-        id: propertyId,
-        updated_at: new Date().toISOString()
-    };
-    
-    // Salvar no localStorage
-    try {
-        localStorage.setItem('properties', JSON.stringify(window.properties));
-        console.log(`💾 Imóvel ${propertyId} salvo no localStorage com vídeo: ${updatedData.has_video}`);
-    } catch (error) {
-        console.error('❌ Erro ao salvar no localStorage:', error);
-    }
-    
-    setTimeout(() => {
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties(window.currentFilter || 'todos', true);
-        }
-    }, 150);
-    
-    return true;
-};
-
-// CORREÇÃO: Função para adicionar propriedade localmente com vídeo
-window.addToLocalProperties = function(newProperty) {
-    if (!window.properties) window.properties = [];
-    
-    const maxId = window.properties.length > 0 ? Math.max(...window.properties.map(p => p.id)) : 0;
-    const propertyWithId = {
-        ...newProperty,
-        id: maxId + 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    };
-    
-    window.properties.push(propertyWithId);
-    
-    // Salvar no localStorage
-    try {
-        localStorage.setItem('properties', JSON.stringify(window.properties));
-        console.log(`💾 Novo imóvel ID: ${propertyWithId.id} salvo no localStorage`);
-    } catch (error) {
-        console.error('❌ Erro ao salvar no localStorage:', error);
-    }
-    
-    setTimeout(() => {
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties('todos', true);
-        }
-    }, 200);
-    
-    return propertyWithId;
 };
 
 /* ==========================================================
@@ -1002,43 +1076,34 @@ window.testVideoCheckbox = function() {
     const formData = Helpers.getFormData();
     console.log('📋 Dados capturados:', formData);
     
-    // 3. Verificar se está funcionando com diferentes estados
-    console.log('🧪 Testando diferentes estados...');
-    
-    // Testar marcado
-    videoCheckbox.checked = true;
-    console.log(`1. Checkbox marcado (true): ${Helpers.getFormData().has_video}`);
-    
-    // Testar desmarcado
-    videoCheckbox.checked = false;
-    console.log(`2. Checkbox desmarcado (false): ${Helpers.getFormData().has_video}`);
-    
-    // Restaurar estado original
-    videoCheckbox.checked = formData.has_video;
-    
-    // 4. Testar salvamento simulado
-    console.log('🧪 Testando salvamento simulado...');
-    const testData = {
-        title: 'TESTE - Imóvel com vídeo',
-        price: 'R$ 100.000',
-        location: 'Teste',
-        has_video: true,
-        features: 'Quarto, Banheiro'
-    };
-    
-    console.log('📤 Dados de teste:', testData);
-    
     alert(`🧪 TESTE DO CHECKBOX DE VÍDEO:\n\n` +
           `1. Checkbox encontrado: SIM\n` +
-          `2. Estado atual: ${videoCheckbox.checked}\n` +
-          `3. Captura funcionando: SIM\n` +
-          `4. Verifique console para detalhes\n\n` +
+          `2. Estado atual: ${videoCheckbox.checked ? 'MARCADO' : 'DESMARCADO'}\n` +
+          `3. Captura funcionando: SIM\n\n` +
           `Para testar completamente:\n` +
           `1. Marque/desmarque o checkbox\n` +
           `2. Clique em "Salvar Alterações"\n` +
-          `3. Verifique o console para ver se o valor foi capturado`);
+          `3. O card na galeria deve atualizar IMEDIATAMENTE`);
     
     console.groupEnd();
+};
+
+/* ==========================================================
+   FUNÇÃO PARA FORÇAR ATUALIZAÇÃO DA GALERIA
+   ========================================================== */
+window.forceGalleryUpdate = function() {
+    console.log('🔄 Forçando atualização completa da galeria...');
+    
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties(window.currentFilter || 'todos');
+        Helpers.showNotification('✅ Galeria atualizada!', 'success');
+        console.log('✅ Galeria forçada a atualizar');
+        return true;
+    } else {
+        console.error('❌ Função renderProperties não disponível');
+        alert('❌ Não foi possível atualizar a galeria');
+        return false;
+    }
 };
 
 // Configuração de uploads
@@ -1068,5 +1133,6 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - VERSÃO COM CORREÇÃO DO CHECKBOX DE VÍDEO');
+console.log('✅ admin.js - VERSÃO FINAL COM CORREÇÕES DE VÍDEO E ATUALIZAÇÃO DA GALERIA');
 console.log('🎬 Para testar o checkbox, execute: window.testVideoCheckbox()');
+console.log('🔄 Para forçar atualização da galeria: window.forceGalleryUpdate()');
