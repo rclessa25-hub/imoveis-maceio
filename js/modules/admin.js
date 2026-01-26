@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO FINAL COMPLETA CORRIGIDA
-console.log('🔧 admin.js - VERSÃO FINAL COMPLETA CORRIGIDA');
+// js/modules/admin.js - VERSÃO FINAL COMPLETA CORRIGIDA COM FORMATAÇÃO UNIFICADA
+console.log('🔧 admin.js - VERSÃO FINAL COMPLETA CORRIGIDA COM FORMATAÇÃO UNIFICADA');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -16,43 +16,18 @@ let autoSaveTimeout = null;
 let pendingAutoSave = false;
 
 /* ==========================================================
-   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL
-   ========================================================== */
-window.toggleAdminPanel = function() {
-    console.log('🔧 toggleAdminPanel chamada');
-    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
-    if (password === null) return;
-    if (password === "") return alert('⚠️ Campo vazio!');
-    
-    if (password === ADMIN_CONFIG.password) {
-        const panel = document.getElementById(ADMIN_CONFIG.panelId);
-        if (panel) {
-            const isVisible = panel.style.display === 'block';
-            
-            if (!isVisible) {
-                window.resetAdminFormCompletely(false);
-            }
-            
-            panel.style.display = isVisible ? 'none' : 'block';
-            
-            if (!isVisible) {
-                setTimeout(() => {
-                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-                }, 300);
-            }
-        }
-    } else {
-        alert('❌ Senha incorreta!');
-    }
-};
-
-/* ==========================================================
-   HELPER FUNCTIONS - CORRIGIDAS
+   HELPER FUNCTIONS - CORRIGIDAS COM FORMATAÇÃO UNIFICADA
    ========================================================== */
 const Helpers = {
     format: {
-        price: (value) => window.SharedCore?.PriceFormatter?.formatForInput?.(value) || value,
+        price: (value) => {
+            // Delegar para SharedCore se disponível
+            if (window.SharedCore?.PriceFormatter?.formatForAdmin) {
+                return window.SharedCore.PriceFormatter.formatForAdmin(value);
+            }
+            // Fallback mínimo
+            return value && value.toString ? value.toString() : '';
+        },
         features: (value) => {
             console.log('🔍 Formatando features:', { input: value, type: typeof value });
             
@@ -271,6 +246,38 @@ const Helpers = {
 };
 
 /* ==========================================================
+   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL
+   ========================================================== */
+window.toggleAdminPanel = function() {
+    console.log('🔧 toggleAdminPanel chamada');
+    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
+    if (password === null) return;
+    if (password === "") return alert('⚠️ Campo vazio!');
+    
+    if (password === ADMIN_CONFIG.password) {
+        const panel = document.getElementById(ADMIN_CONFIG.panelId);
+        if (panel) {
+            const isVisible = panel.style.display === 'block';
+            
+            if (!isVisible) {
+                window.resetAdminFormCompletely(false);
+            }
+            
+            panel.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                setTimeout(() => {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+                }, 300);
+            }
+        }
+    } else {
+        alert('❌ Senha incorreta!');
+    }
+};
+
+/* ==========================================================
    FUNÇÃO PARA LIMPAR COMPLETAMENTE O FORMULÁRIO
    ========================================================== */
 window.resetAdminFormCompletely = function(showNotification = true) {
@@ -443,10 +450,10 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM ATUALIZAÇÃO IMEDIATA
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM FORMATAÇÃO UNIFICADA
    ========================================================== */
 window.saveProperty = async function() {
-    console.group('💾 SALVANDO IMÓVEL COM ATUALIZAÇÃO IMEDIATA DA GALERIA');
+    console.group('💾 SALVANDO IMÓVEL COM FORMATAÇÃO UNIFICADA');
     
     try {
         // 1. Obter dados do formulário
@@ -466,7 +473,7 @@ window.saveProperty = async function() {
             throw new Error('Preencha Título, Preço e Localização!');
         }
         
-        // Formatar dados
+        // Formatar dados (usando SharedCore unificado)
         propertyData.price = Helpers.format.price(propertyData.price);
         
         // CORREÇÃO: Converter features para JSON
@@ -1133,6 +1140,6 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - VERSÃO FINAL COM CORREÇÕES DE VÍDEO E ATUALIZAÇÃO DA GALERIA');
+console.log('✅ admin.js - VERSÃO FINAL COM FORMATAÇÃO UNIFICADA');
 console.log('🎬 Para testar o checkbox, execute: window.testVideoCheckbox()');
 console.log('🔄 Para forçar atualização da galeria: window.forceGalleryUpdate()');
