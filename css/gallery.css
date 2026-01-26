@@ -72,7 +72,7 @@
 /* ========== CORREÇÃO: INDICADOR DE VÍDEO REBAIXADO ========== */
 .video-indicator {
     position: absolute !important;
-    top: 65px !important; /* REBAIXADO: estava 10px, agora 100px */
+    top: 35px !important; /* REBAIXADO: estava 10px, agora 100px */
     right: 10px !important;
     background: rgba(0, 0, 0, 0.7) !important;
     color: white !important;
@@ -264,7 +264,7 @@
     
     /* CORREÇÃO PARA DESKTOP */
     .video-indicator {
-        top: 65px !important; /* REBAIXADO também para desktop */
+        top: 35px !important; /* REBAIXADO também para desktop */
         right: 15px !important;
     }
 
