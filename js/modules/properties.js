@@ -1,5 +1,5 @@
-// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA (PADRÃO ORIGINAL)
-console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA (PADRÃO ORIGINAL)');
+// js/modules/properties.js - VERSÃO FINAL COM PADRÃO IDÊNTICO PARA TODAS AS QUANTIDADES DE FOTOS
+console.log('🏠 properties.js - VERSÃO FINAL - PADRÃO IDÊNTICO PARA 1+ FOTOS');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -18,122 +18,72 @@ window.ensureSupabaseCredentials = function() {
         };
     }
     
-    // Garantir que as constantes globais também existam
     if (!window.SUPABASE_URL) window.SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
     if (!window.SUPABASE_KEY) window.SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
-    
-    console.log('✅ Credenciais Supabase garantidas:', {
-        hasURL: !!window.SUPABASE_URL,
-        hasKEY: !!window.SUPABASE_KEY
-    });
     
     return !!window.SUPABASE_URL && !!window.SUPABASE_KEY;
 };
 
-// ========== FUNÇÕES DE FORMATAÇÃO PARA VÍDEO E FEATURES ==========
+// ========== FUNÇÕES DE FORMATAÇÃO ==========
 window.formatFeaturesForDisplay = function(features) {
-    console.log('🔍 Formatando features para exibição:', { input: features, type: typeof features });
-    
     if (!features) return '';
-    
     try {
-        // Se for array, transformar em string separada por vírgula
         if (Array.isArray(features)) {
             return features.filter(f => f && f.trim()).join(', ');
         }
-        
-        // Se for string JSON (com colchetes), extrair array
-        if (typeof features === 'string' && features.trim().startsWith('[') && features.trim().endsWith(']')) {
+        if (typeof features === 'string' && features.trim().startsWith('[')) {
             try {
                 const parsed = JSON.parse(features);
                 if (Array.isArray(parsed)) {
                     return parsed.filter(f => f && f.trim()).join(', ');
                 }
             } catch (e) {
-                console.warn('⚠️ Erro ao parsear JSON de features:', e);
-                // Se falhar o parse, tentar limpar
                 return features.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
             }
         }
-        
-        // Se já for string com colchetes, remover
         let cleaned = features.toString();
-        cleaned = cleaned.replace(/[\[\]"]/g, ''); // Remover colchetes e aspas
-        cleaned = cleaned.replace(/\s*,\s*/g, ', '); // Normalizar espaços
-        
+        cleaned = cleaned.replace(/[\[\]"]/g, '');
+        cleaned = cleaned.replace(/\s*,\s*/g, ', ');
         return cleaned;
     } catch (error) {
-        console.error('❌ Erro ao formatar features:', error);
         return '';
     }
 };
 
 window.parseFeaturesForStorage = function(value) {
-    console.log('🔍 Parseando features para armazenamento:', { input: value });
-    
     if (!value) return '[]';
-    
     try {
-        // Se já é array, converter para JSON
         if (Array.isArray(value)) {
             return JSON.stringify(value.filter(f => f && f.trim()));
         }
-        
-        // Se é string JSON, manter
-        if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
+        if (typeof value === 'string' && value.trim().startsWith('[')) {
             try {
-                JSON.parse(value); // Validar
+                JSON.parse(value);
                 return value;
-            } catch (e) {
-                // Se inválido, processar como string normal
-            }
+            } catch (e) {}
         }
-        
-        // Se é string normal, converter para array
         const featuresArray = value.split(',')
             .map(f => f.trim())
             .filter(f => f && f !== '');
-        
         return JSON.stringify(featuresArray);
     } catch (error) {
-        console.error('❌ Erro ao parsear features:', error);
         return '[]';
     }
 };
 
 window.ensureBooleanVideo = function(videoValue) {
-    console.log('🔍 Convertendo vídeo para booleano:', { input: videoValue, type: typeof videoValue });
-    
-    if (videoValue === undefined || videoValue === null) {
-        return false;
-    }
-    
-    // Se já é booleano
-    if (typeof videoValue === 'boolean') {
-        return videoValue;
-    }
-    
-    // Se é string 'true' ou 'false'
+    if (videoValue === undefined || videoValue === null) return false;
+    if (typeof videoValue === 'boolean') return videoValue;
     if (typeof videoValue === 'string') {
         const lower = videoValue.toLowerCase().trim();
-        if (lower === 'true' || lower === '1' || lower === 'sim' || lower === 'yes') {
-            return true;
-        }
-        if (lower === 'false' || lower === '0' || lower === 'não' || lower === 'no') {
-            return false;
-        }
+        if (lower === 'true' || lower === '1' || lower === 'sim' || lower === 'yes') return true;
+        if (lower === 'false' || lower === '0' || lower === 'não' || lower === 'no') return false;
     }
-    
-    // Se é número
-    if (typeof videoValue === 'number') {
-        return videoValue === 1;
-    }
-    
-    // Converter para booleano
+    if (typeof videoValue === 'number') return videoValue === 1;
     return Boolean(videoValue);
 };
 
-// ========== TEMPLATE ENGINE COM CACHE AVANÇADO E GALERIA ==========
+// ========== TEMPLATE ENGINE COM PADRÃO IDÊNTICO ==========
 class PropertyTemplateEngine {
     constructor() {
         this.cache = new Map();
@@ -142,22 +92,16 @@ class PropertyTemplateEngine {
 
     generate(property) {
         const cacheKey = `prop_${property.id}_${property.images?.length || 0}_${property.has_video}`;
-        // Remover do cache para forçar atualização
         if (this.cache.has(cacheKey)) {
             this.cache.delete(cacheKey);
         }
 
-        // Formatar features para exibição
         const displayFeatures = window.formatFeaturesForDisplay(property.features);
         
-        // Formatação de preço usando SharedCore
         const formatPrice = (price) => {
-            // Usar SharedCore se disponível, fallback para formato básico
             if (window.SharedCore?.PriceFormatter?.formatForCard) {
                 return window.SharedCore.PriceFormatter.formatForCard(price);
             }
-            
-            // Fallback básico
             if (!price) return 'R$ 0,00';
             if (typeof price === 'string' && price.includes('R$')) return price;
             return `R$ ${price.toString().replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
@@ -196,30 +140,17 @@ class PropertyTemplateEngine {
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
         const imageCount = imageUrls.length;
         const firstImageUrl = imageCount > 0 ? imageUrls[0] : this.imageFallback;
-        const hasGallery = imageCount > 1; // ✅ PADRÃO ORIGINAL: Galeria só com 2+ fotos
         const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
-
-        // CORREÇÃO CRÍTICA: Verificar vídeo corretamente
         const hasVideo = window.ensureBooleanVideo(property.has_video);
         
-        console.log('🎬 Renderizando card com vídeo (PADRÃO ORIGINAL):', {
+        console.log('🎬 Renderizando card (PADRÃO IDÊNTICO):', {
             id: property.id,
-            title: property.title,
-            has_video: property.has_video,
-            hasVideo_boolean: hasVideo,
             imageCount: imageCount,
-            hasGallery: hasGallery // ✅ Só true quando 2+ fotos
+            hasVideo: hasVideo,
+            hasPdfs: hasPdfs
         });
         
-        if (hasGallery && typeof window.createPropertyGallery === 'function') {
-            try {
-                return window.createPropertyGallery(property);
-            } catch (e) {
-                console.warn('❌ Erro na galeria, usando fallback:', e);
-            }
-        }
-
-        // ✅ PADRÃO ORIGINAL: Diferenciação clara entre 1 foto vs 2+ fotos
+        // ✅ PADRÃO IDÊNTICO PARA TODAS AS QUANTIDADES DE FOTOS
         return `
             <div class="property-image ${property.rural ? 'rural-image' : ''}" 
                  style="position: relative; height: 250px;">
@@ -229,11 +160,28 @@ class PropertyTemplateEngine {
                      onerror="this.src='${this.imageFallback}'">
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 
-                <!-- ✅ PADRÃO ORIGINAL: Posição do vídeo depende se tem galeria -->
+                <!-- ✅ CONTADOR SEMPRE VISÍVEL (mesmo para 1 foto) -->
+                <div class="image-count" style="
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    background: rgba(0, 0, 0, 0.9);
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 4px;
+                    font-size: 13px;
+                    font-weight: bold;
+                    z-index: 10;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+                ">
+                    <i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}
+                </div>
+                
+                <!-- ✅ VÍDEO SEMPRE EM 35px (abaixo do contador) -->
                 ${hasVideo ? `
                     <div class="video-indicator" style="
                         position: absolute;
-                        top: ${hasGallery ? '85px' : '10px'};  <!-- ✅ Galeria: 85px | 1 foto: 10px -->
+                        top: 45px;  <!-- 10px do contador + 35px = 45px -->
                         right: 10px;
                         background: rgba(0, 0, 0, 0.8);
                         color: white;
@@ -243,7 +191,7 @@ class PropertyTemplateEngine {
                         display: flex;
                         align-items: center;
                         gap: 6px;
-                        z-index: ${hasGallery ? '9' : '10'};  <!-- ✅ Z-index ajustado -->
+                        z-index: 9;
                         animation: pulseVideo 2s infinite;
                         box-shadow: 0 3px 10px rgba(0,0,0,0.4);
                         border: 1px solid rgba(255,255,255,0.3);
@@ -254,25 +202,6 @@ class PropertyTemplateEngine {
                     ">
                         <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
                         <span>TEM VÍDEO</span>
-                    </div>
-                ` : ''}
-                
-                <!-- ✅ PADRÃO ORIGINAL: Contador SÓ quando tem 2+ fotos -->
-                ${hasGallery ? `
-                    <div class="image-count" style="
-                        position: absolute;
-                        top: 10px;
-                        right: 10px;
-                        background: rgba(0, 0, 0, 0.9);
-                        color: white;
-                        padding: 5px 10px;
-                        border-radius: 4px;
-                        font-size: 13px;
-                        font-weight: bold;
-                        z-index: 10;
-                        box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-                    ">
-                        <i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}
                     </div>
                 ` : ''}
                 
@@ -302,18 +231,14 @@ class PropertyTemplateEngine {
         `;
     }
     
-    // NOVA FUNÇÃO: Atualizar conteúdo do card sem substituir completamente
     updateCardContent(propertyId, propertyData) {
         console.log(`🔍 Atualizando conteúdo do card ${propertyId}`, propertyData);
         
         const card = document.querySelector(`.property-card[data-property-id="${propertyId}"]`);
-        if (!card) {
-            console.warn(`⚠️ Card ${propertyId} não encontrado para atualização parcial`);
-            return false;
-        }
+        if (!card) return false;
         
         try {
-            // Atualizar preço se fornecido
+            // Atualizar preço
             if (propertyData.price !== undefined) {
                 const priceElement = card.querySelector('[data-price-field]');
                 if (priceElement) {
@@ -326,17 +251,16 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar título se fornecido
+            // Atualizar título
             if (propertyData.title !== undefined) {
                 const titleElement = card.querySelector('[data-title-field]');
                 if (titleElement) {
                     titleElement.textContent = propertyData.title;
                 }
-                // Atualizar também o atributo data
                 card.setAttribute('data-property-title', propertyData.title);
             }
             
-            // Atualizar localização se fornecido
+            // Atualizar localização
             if (propertyData.location !== undefined) {
                 const locationElement = card.querySelector('[data-location-field]');
                 if (locationElement) {
@@ -344,7 +268,7 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar descrição se fornecido
+            // Atualizar descrição
             if (propertyData.description !== undefined) {
                 const descriptionElement = card.querySelector('[data-description-field]');
                 if (descriptionElement) {
@@ -352,11 +276,10 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar features se fornecido
+            // Atualizar features
             if (propertyData.features !== undefined) {
                 const featuresElement = card.querySelector('[data-features-field]');
                 const displayFeatures = window.formatFeaturesForDisplay(propertyData.features);
-                
                 if (featuresElement) {
                     if (displayFeatures) {
                         featuresElement.innerHTML = displayFeatures.split(',').map(f => `
@@ -368,130 +291,87 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // ✅ PADRÃO ORIGINAL: Atualizar indicador de vídeo considerando galeria
-            if (propertyData.has_video !== undefined || propertyData.images !== undefined) {
-                const videoIndicator = card.querySelector('.video-indicator');
-                const imageCountElement = card.querySelector('.image-count');
-                const hasVideo = window.ensureBooleanVideo(propertyData.has_video);
-                
-                // Calcular se tem galeria (2+ fotos)
-                const imageUrls = propertyData.images && propertyData.images !== 'EMPTY' 
-                    ? propertyData.images.split(',').filter(url => url.trim() !== '') 
-                    : [];
-                const imageCount = imageUrls.length;
-                const hasGallery = imageCount > 1;
-                
-                console.log('🎬 Atualizando vídeo (PADRÃO ORIGINAL):', {
-                    propertyId,
-                    hasVideo,
-                    imageCount,
-                    hasGallery,
-                    videoTop: hasGallery ? '85px' : '10px'
-                });
-                
-                if (hasVideo && !videoIndicator) {
-                    // Adicionar indicador de vídeo
-                    const imageSection = card.querySelector('.property-image');
-                    if (imageSection) {
-                        imageSection.innerHTML += `
-                            <div class="video-indicator" style="
-                                position: absolute;
-                                top: ${hasGallery ? '85px' : '10px'};
-                                right: 10px;
-                                background: rgba(0, 0, 0, 0.8);
-                                color: white;
-                                padding: 6px 12px;
-                                border-radius: 6px;
-                                font-size: 12px;
-                                display: flex;
-                                align-items: center;
-                                gap: 6px;
-                                z-index: ${hasGallery ? '9' : '10'};
-                                animation: pulseVideo 2s infinite;
-                                box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-                                border: 1px solid rgba(255,255,255,0.3);
-                                backdrop-filter: blur(5px);
-                                font-weight: 600;
-                                text-transform: uppercase;
-                                letter-spacing: 0.5px;
-                            ">
-                                <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
-                                <span>TEM VÍDEO</span>
-                            </div>
-                        `;
-                    }
-                } else if (!hasVideo && videoIndicator) {
-                    // Remover indicador de vídeo
-                    videoIndicator.remove();
-                } else if (hasVideo && videoIndicator) {
-                    // Atualizar posição se necessário
-                    videoIndicator.style.top = hasGallery ? '85px' : '10px';
-                    videoIndicator.style.zIndex = hasGallery ? '9' : '10';
-                }
-            }
-            
-            // ✅ PADRÃO ORIGINAL: Atualizar contador SÓ quando tem 2+ fotos
+            // ✅ ATUALIZAR CONTADOR (SEMPRE VISÍVEL)
             if (propertyData.images !== undefined) {
                 const imageCountElement = card.querySelector('.image-count');
                 const imageUrls = propertyData.images && propertyData.images !== 'EMPTY' 
                     ? propertyData.images.split(',').filter(url => url.trim() !== '') 
                     : [];
                 const imageCount = imageUrls.length;
-                const hasGallery = imageCount > 1;
                 
-                if (hasGallery && !imageCountElement) {
-                    // Adicionar contador (tem 2+ fotos)
+                if (imageCountElement) {
+                    imageCountElement.innerHTML = `<i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}`;
+                } else {
+                    // Adicionar contador se não existir
                     const imageSection = card.querySelector('.property-image');
                     if (imageSection) {
-                        imageSection.innerHTML += `
-                            <div class="image-count" style="
-                                position: absolute;
-                                top: 10px;
-                                right: 10px;
-                                background: rgba(0, 0, 0, 0.9);
-                                color: white;
-                                padding: 5px 10px;
-                                border-radius: 4px;
-                                font-size: 13px;
-                                font-weight: bold;
-                                z-index: 10;
-                                box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-                            ">
-                                <i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}
-                            </div>
+                        const countDiv = document.createElement('div');
+                        countDiv.className = 'image-count';
+                        countDiv.style.cssText = `
+                            position: absolute;
+                            top: 10px;
+                            right: 10px;
+                            background: rgba(0, 0, 0, 0.9);
+                            color: white;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            font-size: 13px;
+                            font-weight: bold;
+                            z-index: 10;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
                         `;
-                        
-                        // Ajustar vídeo para 85px se existir
-                        const videoIndicator = card.querySelector('.video-indicator');
-                        if (videoIndicator) {
-                            videoIndicator.style.top = '85px';
-                            videoIndicator.style.zIndex = '9';
-                        }
+                        countDiv.innerHTML = `<i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}`;
+                        imageSection.appendChild(countDiv);
                     }
-                } else if (!hasGallery && imageCountElement) {
-                    // Remover contador (agora tem só 1 foto)
-                    imageCountElement.remove();
-                    
-                    // Ajustar vídeo para 10px se existir
-                    const videoIndicator = card.querySelector('.video-indicator');
-                    if (videoIndicator) {
-                        videoIndicator.style.top = '10px';
-                        videoIndicator.style.zIndex = '10';
-                    }
-                } else if (hasGallery && imageCountElement) {
-                    // Atualizar número do contador
-                    imageCountElement.innerHTML = `<i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}`;
                 }
             }
             
-            // ✅ Atualizar botão PDF
+            // ✅ ATUALIZAR VÍDEO (SEMPRE EM 45px)
+            if (propertyData.has_video !== undefined) {
+                const videoIndicator = card.querySelector('.video-indicator');
+                const hasVideo = window.ensureBooleanVideo(propertyData.has_video);
+                
+                if (hasVideo && !videoIndicator) {
+                    const imageSection = card.querySelector('.property-image');
+                    if (imageSection) {
+                        const videoDiv = document.createElement('div');
+                        videoDiv.className = 'video-indicator';
+                        videoDiv.style.cssText = `
+                            position: absolute;
+                            top: 45px;
+                            right: 10px;
+                            background: rgba(0, 0, 0, 0.8);
+                            color: white;
+                            padding: 6px 12px;
+                            border-radius: 6px;
+                            font-size: 12px;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            z-index: 9;
+                            animation: pulseVideo 2s infinite;
+                            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+                            border: 1px solid rgba(255,255,255,0.3);
+                            backdrop-filter: blur(5px);
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        `;
+                        videoDiv.innerHTML = '<i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i><span>TEM VÍDEO</span>';
+                        imageSection.appendChild(videoDiv);
+                    }
+                } else if (!hasVideo && videoIndicator) {
+                    videoIndicator.remove();
+                }
+            }
+            
+            // ✅ ATUALIZAR PDF
             if (propertyData.pdfs !== undefined) {
                 const pdfButton = card.querySelector('.pdf-access');
                 const hasPdfs = propertyData.pdfs && propertyData.pdfs !== 'EMPTY' && propertyData.pdfs.trim() !== '';
                 const imageSection = card.querySelector('.property-image');
                 
                 if (hasPdfs && !pdfButton && imageSection) {
-                    // Adicionar botão PDF
                     const pdfBtn = document.createElement('button');
                     pdfBtn.className = 'pdf-access';
                     pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
@@ -521,18 +401,16 @@ class PropertyTemplateEngine {
                     `;
                     imageSection.appendChild(pdfBtn);
                 } else if (!hasPdfs && pdfButton) {
-                    // Remover botão PDF
                     pdfButton.remove();
                 }
             }
             
-            // Adicionar efeito visual de atualização
             card.style.animation = 'highlightUpdate 1s ease';
             setTimeout(() => {
                 card.style.animation = '';
             }, 1000);
             
-            console.log(`✅ Conteúdo do card ${propertyId} atualizado com sucesso (PADRÃO ORIGINAL)`);
+            console.log(`✅ Conteúdo do card ${propertyId} atualizado com sucesso`);
             return true;
             
         } catch (error) {
@@ -546,7 +424,7 @@ class PropertyTemplateEngine {
 window.propertyTemplates = new PropertyTemplateEngine();
 
 /* ==========================================================
-   FUNÇÃO PARA ATUALIZAR CARD ESPECÍFICO APÓS EDIÇÃO - VERSÃO MELHORADA
+   FUNÇÃO PARA ATUALIZAR CARD ESPECÍFICO APÓS EDIÇÃO
    ========================================================== */
 window.updatePropertyCard = function(propertyId, updatedData = null) {
     console.log('🔄 Atualizando card do imóvel:', propertyId, updatedData ? 'com dados específicos' : '');
@@ -557,16 +435,13 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
         return false;
     }
     
-    // Se dados atualizados foram fornecidos, usar eles
     const propertyToRender = updatedData ? { ...property, ...updatedData } : property;
     
-    // Tentar atualização parcial primeiro
     if (updatedData && window.propertyTemplates.updateCardContent) {
         const partialSuccess = window.propertyTemplates.updateCardContent(propertyId, propertyToRender);
         if (partialSuccess) {
             console.log(`✅ Atualização parcial bem-sucedida para ${propertyId}`);
             
-            // Atualizar também no array global
             const index = window.properties.findIndex(p => p.id === propertyId);
             if (index !== -1) {
                 window.properties[index] = { ...window.properties[index], ...updatedData };
@@ -576,10 +451,8 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
         }
     }
     
-    // Se falhar a atualização parcial, fazer substituição completa
     console.log(`🔄 Realizando substituição completa do card ${propertyId}`);
     
-    // Encontrar o card existente
     const allCards = document.querySelectorAll('.property-card');
     let cardToUpdate = null;
     
@@ -591,27 +464,21 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
     });
     
     if (cardToUpdate) {
-        // Gerar novo HTML para o card
         const newCardHTML = window.propertyTemplates.generate(propertyToRender);
-        
-        // Substituir o card antigo pelo novo
         cardToUpdate.outerHTML = newCardHTML;
         
         console.log('✅ Card completamente substituído com todos os campos atualizados:', {
             título: propertyToRender.title,
             preço: propertyToRender.price,
             localização: propertyToRender.location,
-            vídeo: propertyToRender.has_video,
-            imageCount: propertyToRender.images ? propertyToRender.images.split(',').filter(p => p.trim()).length : 0
+            vídeo: propertyToRender.has_video
         });
         
-        // Atualizar também no array global
         const index = window.properties.findIndex(p => p.id === propertyId);
         if (index !== -1) {
             window.properties[index] = propertyToRender;
         }
         
-        // Adicionar animação para destacar a atualização
         setTimeout(() => {
             const updatedCard = document.querySelector(`[data-property-id="${propertyId}"]`);
             if (updatedCard) {
@@ -654,17 +521,14 @@ async function waitForAllPropertyImages() {
         propertyImages.forEach(img => {
             if (img.complete && img.naturalWidth > 0) {
                 loadedCount++;
-                console.log(`✅ Imagem já carregada: ${img.src.substring(0, 50)}...`);
             } else {
                 img.onload = () => {
                     loadedCount++;
-                    console.log(`✅ Imagem carregada: ${img.src.substring(0, 50)}...`);
                     checkCompletion();
                 };
                 
                 img.onerror = () => {
                     loadedCount++;
-                    console.warn(`⚠️ Falha na imagem: ${img.src.substring(0, 50)}...`);
                     checkCompletion();
                 };
             }
@@ -700,7 +564,6 @@ window.loadPropertiesData = async function () {
     );
     
     try {
-        // Garantir credenciais Supabase
         window.ensureSupabaseCredentials();
         
         const loadStrategies = [
@@ -723,19 +586,17 @@ window.loadPropertiesData = async function () {
             try {
                 propertiesData = await strategy();
                 if (propertiesData && propertiesData.length > 0) break;
-            } catch (e) { /* Silenciosamente tenta próxima estratégia */ }
+            } catch (e) { }
         }
 
         window.properties = propertiesData || getInitialProperties();
         
-        // Processar dados para garantir formato correto
         window.properties = window.properties.map(prop => ({
             ...prop,
             has_video: window.ensureBooleanVideo(prop.has_video),
             features: window.parseFeaturesForStorage(prop.features)
         }));
         
-        // Salvar no localStorage sempre
         window.savePropertiesToStorage();
 
         loading?.setVariant?.('success');
@@ -815,7 +676,7 @@ function getInitialProperties() {
     ];
 }
 
-// ========== 3. RENDERIZAÇÃO OTIMIZADA COM ATUALIZAÇÃO DE VÍDEO ==========
+// ========== 3. RENDERIZAÇÃO OTIMIZADA ==========
 window.renderProperties = function(filter = 'todos', forceClearCache = false) {
     console.log(`🎨 Renderizando propriedades (filtro: ${filter})${forceClearCache ? ' - CACHE LIMPO' : ''}`);
     
@@ -848,7 +709,6 @@ window.renderProperties = function(filter = 'todos', forceClearCache = false) {
 
     console.log(`✅ ${filtered.length} imóveis renderizados (filtro: ${filter})`);
     
-    // Atualizar contador
     const countElement = document.getElementById('propertyCount');
     if (countElement) {
         countElement.textContent = `${filtered.length} imóveis`;
@@ -891,12 +751,10 @@ window.updateLocalStorage = function() {
 window.setupFilters = function() {
     console.log('🎛️ Configurando filtros (compatibilidade)...');
     
-    // Delegar para FilterManager se disponível
     if (window.FilterManager && typeof window.FilterManager.setupWithFallback === 'function') {
         return window.FilterManager.setupWithFallback();
     }
     
-    // Fallback extremo
     console.error('❌ Sistema de filtros não disponível!');
     return false;
 };
@@ -914,7 +772,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL (COM FORMATAÇÃO UNIFICADA) ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL ==========
 window.addNewProperty = async function(propertyData) {
     console.group('➕ ADICIONANDO NOVO IMÓVEL');
     console.log('📋 Dados recebidos:', propertyData);
@@ -926,13 +784,10 @@ window.addNewProperty = async function(propertyData) {
     }
 
     try {
-        // Formatar preço usando SharedCore unificado
         if (propertyData.price) {
-            // Usar SharedCore se disponível
             if (window.SharedCore?.PriceFormatter?.formatForInput) {
                 propertyData.price = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
             } else {
-                // Fallback básico
                 let formattedPrice = propertyData.price;
                 if (!formattedPrice.startsWith('R$')) {
                     formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
@@ -941,7 +796,6 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
-        // CORREÇÃO: Processar features corretamente
         if (propertyData.features) {
             propertyData.features = window.parseFeaturesForStorage(propertyData.features);
             console.log('✅ Features processadas:', propertyData.features);
@@ -949,11 +803,9 @@ window.addNewProperty = async function(propertyData) {
             propertyData.features = '[]';
         }
 
-        // CORREÇÃO: Garantir que has_video seja booleano
         propertyData.has_video = window.ensureBooleanVideo(propertyData.has_video);
         console.log('✅ Vídeo processado:', propertyData.has_video);
 
-        // Processar mídia
         let mediaResult = { images: '', pdfs: '' };
         let hasMedia = false;
 
@@ -977,7 +829,6 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
-        // Salvar no Supabase se configurado
         let supabaseSuccess = false;
         let supabaseId = null;
 
@@ -1008,7 +859,6 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
-        // Criar objeto local
         const newId = supabaseSuccess && supabaseId
             ? supabaseId
             : (window.properties.length > 0
@@ -1033,11 +883,9 @@ window.addNewProperty = async function(propertyData) {
             savedToSupabase: supabaseSuccess
         };
 
-        // Salvar localmente (SEMPRE)
         window.properties.unshift(newProperty);
         window.savePropertiesToStorage();
 
-        // ATUALIZAÇÃO CRÍTICA: Renderizar imediatamente
         if (typeof window.renderProperties === 'function') {
             window.renderProperties('todos');
         }
@@ -1046,7 +894,6 @@ window.addNewProperty = async function(propertyData) {
             setTimeout(() => window.loadPropertyList(), 300);
         }
 
-        // Feedback ao usuário
         const imageCount = newProperty.images
             ? newProperty.images.split(',').filter(u => u.trim() && u !== 'EMPTY').length
             : 0;
@@ -1077,14 +924,12 @@ window.addNewProperty = async function(propertyData) {
 
         alert(message);
 
-        // Limpar sistema de mídia
         setTimeout(() => {
             if (typeof MediaSystem !== 'undefined') {
                 MediaSystem.resetState();
             }
         }, 300);
 
-        // Invalidar cache
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
         }
@@ -1117,15 +962,12 @@ window.validateIdForSupabase = function(propertyId) {
         return null;
     }
     
-    // Se já for número e válido, retornar como está
     if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) {
         console.log(`✅ ID já é numérico válido: ${propertyId}`);
         return propertyId;
     }
     
-    // Se for string, tentar extrair número
     if (typeof propertyId === 'string') {
-        // Remover prefixos comuns de teste
         const cleanId = propertyId
             .replace('test_id_', '')
             .replace('temp_', '')
@@ -1139,7 +981,6 @@ window.validateIdForSupabase = function(propertyId) {
         }
     }
     
-    // Tentar converter direto
     const directConvert = parseInt(propertyId);
     if (!isNaN(directConvert) && directConvert > 0) {
         console.log(`✅ ID convertido diretamente: ${directConvert}`);
@@ -1150,9 +991,9 @@ window.validateIdForSupabase = function(propertyId) {
     return null;
 };
 
-// ========== 9. ATUALIZAR IMÓVEL - VERSÃO COMPLETA COM FORMATAÇÃO UNIFICADA ==========
+// ========== 9. ATUALIZAR IMÓVEL - VERSÃO COMPLETA ==========
 window.updateProperty = async function(id, propertyData) {
-    console.group('📤 updateProperty CHAMADO - COM FORMATAÇÃO UNIFICADA');
+    console.group('📤 updateProperty CHAMADO');
     console.log('📋 Dados recebidos:', {
         id: id,
         tipoId: typeof id,
@@ -1166,7 +1007,6 @@ window.updateProperty = async function(id, propertyData) {
         timestamp: new Date().toISOString()
     });
 
-    // ✅ VALIDAR ID
     if (!id || id === 'null' || id === 'undefined') {
         console.error('❌ ID inválido fornecido:', id);
         if (window.editingPropertyId) {
@@ -1181,7 +1021,6 @@ window.updateProperty = async function(id, propertyData) {
 
     console.log(`🔍 ID para atualização: ${id} (${typeof id})`);
 
-    // ✅ BUSCAR IMÓVEL
     const index = window.properties.findIndex(p => p.id == id || p.id === id);
     if (index === -1) {
         console.error('❌ Imóvel não encontrado! IDs disponíveis:', window.properties.map(p => p.id));
@@ -1191,13 +1030,10 @@ window.updateProperty = async function(id, propertyData) {
     }
 
     try {
-        // ✅ FORMATAR PREÇO (USANDO SHAREDCORE UNIFICADO)
         if (propertyData.price) {
-            // Usar SharedCore se disponível
             if (window.SharedCore?.PriceFormatter?.formatForInput) {
                 propertyData.price = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
             } else {
-                // Fallback básico
                 let formattedPrice = propertyData.price;
                 if (!formattedPrice.startsWith('R$')) {
                     formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
@@ -1206,7 +1042,6 @@ window.updateProperty = async function(id, propertyData) {
             }
         }
 
-        // ✅ CORREÇÕES CRÍTICAS: Vídeo e Features
         const processedData = {
             ...propertyData,
             has_video: window.ensureBooleanVideo(propertyData.has_video)
@@ -1221,7 +1056,6 @@ window.updateProperty = async function(id, propertyData) {
             features_original: propertyData.features ? propertyData.features.substring(0, 50) + '...' : 'vazio'
         });
 
-        // ✅ DADOS PARA ATUALIZAÇÃO (COM CORREÇÕES)
         const updateData = {
             title: processedData.title || window.properties[index].title,
             price: processedData.price || window.properties[index].price,
@@ -1229,7 +1063,6 @@ window.updateProperty = async function(id, propertyData) {
             description: processedData.description || window.properties[index].description || '',
             features: processedData.features || window.properties[index].features || '[]',
             type: processedData.type || window.properties[index].type || 'residencial',
-            // ✅ CORREÇÃO CRÍTICA: Garantir vídeo booleano
             has_video: processedData.has_video,
             badge: processedData.badge || window.properties[index].badge || 'Novo',
             rural: processedData.type === 'rural' || window.properties[index].rural || false,
@@ -1247,24 +1080,20 @@ window.updateProperty = async function(id, propertyData) {
             imageCount: updateData.images ? updateData.images.split(',').filter(p => p.trim()).length : 0
         });
 
-        // ✅ ATUALIZAR LOCALMENTE (SEMPRE) - USANDO FUNÇÃO CORRIGIDA
         const localSuccess = window.updateLocalProperty(id, updateData);
         
         if (!localSuccess) {
             throw new Error('Falha ao atualizar localmente');
         }
 
-        // ✅ ESTRATÉGIA DE PERSISTÊNCIA PARA SUPABASE
         let supabaseSuccess = false;
         let supabaseError = null;
         let supabaseResponse = null;
         
-        // Verificar se Supabase está configurado
         const hasSupabase = window.ensureSupabaseCredentials();
         
         if (hasSupabase) {
             try {
-                // Validar ID para Supabase
                 const validId = this.validateIdForSupabase?.(id) || id;
                 
                 console.log('🌐 Iniciando persistência no Supabase...', {
@@ -1275,7 +1104,6 @@ window.updateProperty = async function(id, propertyData) {
                     has_video: updateData.has_video
                 });
                 
-                // Tentar atualização completa
                 const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${validId}`, {
                     method: 'PATCH',
                     headers: {
@@ -1315,16 +1143,11 @@ window.updateProperty = async function(id, propertyData) {
             console.warn('⚠️ Credenciais Supabase não configuradas');
         }
 
-        // ✅ ATUALIZAR INTERFACE (independente do Supabase)
-        // Já foi feito pela função updateLocalProperty
-
-        // ✅ INVALIDAR CACHE
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
             console.log('🗑️ Cache invalidado após atualizar imóvel');
         }
 
-        // ✅ FEEDBACK AO USUÁRIO
         const imagesCount = updateData.images ? updateData.images.split(',').filter(p => p.trim()).length : 0;
         
         if (supabaseSuccess) {
@@ -1379,29 +1202,25 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         return false;
     }
     
-    // CORREÇÃO: Garantir que has_video seja booleano
     if (updatedData.has_video !== undefined) {
         updatedData.has_video = window.ensureBooleanVideo(updatedData.has_video);
         console.log(`✅ VÍDEO salvo localmente para ${propertyId}: ${updatedData.has_video}`);
     }
     
-    // CORREÇÃO: Processar features
     if (updatedData.features !== undefined) {
         updatedData.features = window.parseFeaturesForStorage(updatedData.features);
         console.log(`✅ FEATURES salvas localmente para ${propertyId}`);
     }
     
-    // Preservar dados importantes
     const existingProperty = window.properties[index];
     
     window.properties[index] = {
         ...existingProperty,
         ...updatedData,
-        id: propertyId, // Garantir que o ID não mude
+        id: propertyId,
         updated_at: new Date().toISOString()
     };
     
-    // SALVAR NO localStorage (CRÍTICO PARA PERSISTÊNCIA)
     try {
         localStorage.setItem('properties', JSON.stringify(window.properties));
         console.log(`💾 Imóvel ${propertyId} salvo PERMANENTEMENTE no localStorage`);
@@ -1421,19 +1240,15 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         imagensDepois: updatedData.images ? updatedData.images.split(',').length : 0
     });
     
-    // ✅ ATUALIZAÇÃO IMEDIATA DA INTERFACE - CORREÇÃO CRÍTICA
     setTimeout(() => {
-        // Atualizar lista do admin
         if (typeof window.loadPropertyList === 'function') {
             window.loadPropertyList();
         }
         
-        // ATUALIZAR CARD NA GALERIA IMEDIATAMENTE - PASSANDO OS DADOS ATUALIZADOS
         if (typeof window.updatePropertyCard === 'function') {
             console.log(`🎬 Atualizando card ${propertyId} na galeria principal com dados atualizados...`);
             window.updatePropertyCard(propertyId, updatedData);
         } else {
-            // Fallback: renderizar todos os imóveis com cache limpo
             if (typeof window.renderProperties === 'function') {
                 window.renderProperties(window.currentFilter || 'todos', true);
             }
@@ -1450,7 +1265,6 @@ window.addToLocalProperties = function(newProperty) {
     
     if (!window.properties) window.properties = [];
     
-    // Gerar novo ID se não tiver
     let propertyWithId = newProperty;
     if (!propertyWithId.id) {
         const maxId = window.properties.length > 0 ? 
@@ -1458,7 +1272,6 @@ window.addToLocalProperties = function(newProperty) {
         propertyWithId.id = maxId + 1;
     }
     
-    // Garantir timestamps
     if (!propertyWithId.created_at) {
         propertyWithId.created_at = new Date().toISOString();
     }
@@ -1466,13 +1279,11 @@ window.addToLocalProperties = function(newProperty) {
         propertyWithId.updated_at = new Date().toISOString();
     }
     
-    // Garantir formato correto
     propertyWithId.has_video = window.ensureBooleanVideo(propertyWithId.has_video);
     propertyWithId.features = window.parseFeaturesForStorage(propertyWithId.features);
     
     window.properties.push(propertyWithId);
     
-    // SALVAR NO localStorage (CRÍTICO PARA PERSISTÊNCIA)
     try {
         localStorage.setItem('properties', JSON.stringify(window.properties));
         console.log(`💾 Novo imóvel ID: ${propertyWithId.id} salvo PERMANENTEMENTE no localStorage`);
@@ -1490,7 +1301,6 @@ window.addToLocalProperties = function(newProperty) {
         features: propertyWithId.features
     });
     
-    // Atualizar UI
     setTimeout(() => {
         if (typeof window.loadPropertyList === 'function') {
             window.loadPropertyList();
@@ -1524,7 +1334,6 @@ window.deleteProperty = async function(id) {
     let supabaseSuccess = false;
     let supabaseError = null;
 
-    // ✅ PRIMEIRO: Tentar excluir do Supabase se configurado
     if (window.ensureSupabaseCredentials()) {
         const validId = window.validateIdForSupabase?.(id) || id;
         
@@ -1552,11 +1361,9 @@ window.deleteProperty = async function(id) {
         }
     }
 
-    // ✅ Excluir localmente (SEMPRE)
     const originalLength = window.properties.length;
     window.properties = window.properties.filter(p => p.id !== id);
     
-    // SALVAR NO localStorage (CRÍTICO PARA PERSISTÊNCIA)
     try {
         localStorage.setItem('properties', JSON.stringify(window.properties));
         console.log(`💾 Imóvel ${id} removido PERMANENTEMENTE do localStorage`);
@@ -1564,12 +1371,10 @@ window.deleteProperty = async function(id) {
         console.error('❌ Erro ao salvar no localStorage:', error);
     }
 
-    // ✅ Atualizar interface
     if (typeof window.renderProperties === 'function') {
         window.renderProperties('todos', true);
     }
 
-    // ✅ Atualizar lista do admin
     if (typeof window.loadPropertyList === 'function') {
         setTimeout(() => {
             window.loadPropertyList();
@@ -1577,7 +1382,6 @@ window.deleteProperty = async function(id) {
         }, 300);
     }
 
-    // ✅ Feedback ao usuário
     if (supabaseSuccess) {
         alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
         console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
@@ -1658,7 +1462,6 @@ window.loadPropertyList = function() {
             if (stored) {
                 try {
                     window.properties = JSON.parse(stored);
-                    // Processar dados para garantir formato correto
                     window.properties = window.properties.map(prop => ({
                         ...prop,
                         has_video: window.ensureBooleanVideo(prop.has_video),
@@ -1683,163 +1486,7 @@ window.loadPropertyList = function() {
     }, 3000);
 })();
 
-// ========== 15. FUNÇÕES DE TESTE PARA VÍDEO E ATUALIZAÇÃO ==========
-window.testFullUpdate = function() {
-    console.group('🧪 TESTE DE ATUALIZAÇÃO COMPLETA DA GALERIA');
-    
-    if (!window.properties || window.properties.length === 0) {
-        alert('❌ Nenhum imóvel disponível para teste');
-        return;
-    }
-    
-    const testProperty = window.properties[0];
-    const hasVideoBefore = testProperty.has_video;
-    const titleBefore = testProperty.title;
-    const priceBefore = testProperty.price;
-    const locationBefore = testProperty.location;
-    
-    console.log('📊 Estado antes:', {
-        id: testProperty.id,
-        title: titleBefore,
-        price: priceBefore,
-        location: locationBefore,
-        has_video: hasVideoBefore
-    });
-    
-    // Alterar dados para teste
-    testProperty.has_video = !hasVideoBefore;
-    testProperty.title = `${titleBefore} [TESTE ATUALIZADO]`;
-    testProperty.price = `R$ ${Math.floor(Math.random() * 1000000).toLocaleString()}`;
-    testProperty.location = `${locationBefore} [LOCAL ATUALIZADO]`;
-    
-    // Atualizar no array
-    const index = window.properties.findIndex(p => p.id === testProperty.id);
-    if (index !== -1) {
-        window.properties[index] = testProperty;
-        
-        // Salvar no localStorage
-        window.savePropertiesToStorage();
-        
-        // Atualizar interface usando a função melhorada
-        if (typeof window.updatePropertyCard === 'function') {
-            window.updatePropertyCard(testProperty.id, {
-                title: testProperty.title,
-                price: testProperty.price,
-                location: testProperty.location,
-                has_video: testProperty.has_video
-            });
-        }
-        
-        console.log('📊 Estado depois:', {
-            title: testProperty.title,
-            price: testProperty.price,
-            location: testProperty.location,
-            has_video: testProperty.has_video,
-            atualizado: true
-        });
-        
-        alert(`🧪 TESTE DE ATUALIZAÇÃO COMPLETA:\n\n` +
-              `Imóvel: ${testProperty.title}\n` +
-              `Preço: ${testProperty.price}\n` +
-              `Local: ${testProperty.location}\n` +
-              `Vídeo: ${testProperty.has_video ? 'SIM' : 'NÃO'}\n\n` +
-              `Todos os campos devem atualizar IMEDIATAMENTE na galeria.`);
-        
-        // Restaurar estado original após 10 segundos
-        setTimeout(() => {
-            if (window.properties[index]) {
-                window.properties[index].title = titleBefore;
-                window.properties[index].price = priceBefore;
-                window.properties[index].location = locationBefore;
-                window.properties[index].has_video = hasVideoBefore;
-                
-                window.savePropertiesToStorage();
-                
-                if (typeof window.updatePropertyCard === 'function') {
-                    window.updatePropertyCard(testProperty.id, {
-                        title: titleBefore,
-                        price: priceBefore,
-                        location: locationBefore,
-                        has_video: hasVideoBefore
-                    });
-                }
-                console.log('✅ Estado original restaurado');
-            }
-        }, 10000);
-    }
-    
-    console.groupEnd();
-};
-
-window.forceFullGalleryUpdate = function() {
-    console.log('🔄 Forçando atualização completa da galeria...');
-    if (typeof window.renderProperties === 'function') {
-        window.renderProperties(window.currentFilter || 'todos', true);
-        alert('✅ Galeria atualizada com cache limpo! Todos os campos devem estar atualizados.');
-    } else {
-        alert('❌ Função renderProperties não disponível');
-    }
-};
-
-window.testIndicatorPosition = function() {
-    console.group('🧪 TESTE DA POSIÇÃO DO INDICADOR DE VÍDEO');
-    
-    if (!window.properties || window.properties.length === 0) {
-        alert('❌ Nenhum imóvel disponível para teste');
-        return;
-    }
-    
-    const testProperty = window.properties[0];
-    
-    // Verificar se o imóvel tem vídeo
-    if (!testProperty.has_video) {
-        alert('⚠️ Este imóvel não tem vídeo habilitado.\n\nAtive o vídeo primeiro para testar a posição.');
-        return;
-    }
-    
-    // Encontrar o card
-    const card = document.querySelector(`[data-property-id="${testProperty.id}"]`);
-    if (!card) {
-        alert('❌ Card não encontrado na página');
-        return;
-    }
-    
-    // Verificar elementos
-    const videoIndicator = card.querySelector('.video-indicator');
-    const imageCount = card.querySelector('.image-count');
-    
-    console.log('🔍 Elementos encontrados:', {
-        temVideoIndicator: !!videoIndicator,
-        temImageCount: !!imageCount,
-        posicaoVideoIndicator: videoIndicator ? videoIndicator.style.top : 'não encontrado',
-        posicaoImageCount: imageCount ? imageCount.style.top : 'não encontrado'
-    });
-    
-    if (videoIndicator) {
-        // Destacar visualmente
-        videoIndicator.style.border = '2px solid #FFD700';
-        videoIndicator.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.8)';
-        
-        setTimeout(() => {
-            if (videoIndicator) {
-                videoIndicator.style.border = '';
-                videoIndicator.style.boxShadow = '';
-            }
-        }, 3000);
-    }
-    
-    alert(`🧪 TESTE DA POSIÇÃO DO INDICADOR:\n\n` +
-          `1. Indicador de vídeo encontrado: ${videoIndicator ? 'SIM' : 'NÃO'}\n` +
-          `2. Contador de imagens encontrado: ${imageCount ? 'SIM' : 'NÃO'}\n` +
-          `3. Posição do indicador: ${videoIndicator ? videoIndicator.style.top : 'N/A'}\n\n` +
-          `✅ PADRÃO ORIGINAL:\n` +
-          `• 1 foto: Vídeo no topo (10px)\n` +
-          `• 2+ fotos: Contador no topo (10px), Vídeo em 85px`);
-    
-    console.groupEnd();
-};
-
-// ========== 16. ADICIONAR ESTILOS CSS PARA ANIMAÇÕES ==========
+// ========== 15. ADICIONAR ESTILOS CSS PARA ANIMAÇÕES ==========
 const videoUpdateStyles = `
     @keyframes highlightUpdate {
         0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
@@ -1857,7 +1504,6 @@ const videoUpdateStyles = `
         animation: highlightUpdate 1s ease;
     }
     
-    /* Estilos para os campos atualizáveis */
     [data-title-field], [data-price-field], [data-location-field], 
     [data-description-field], [data-features-field] {
         transition: all 0.3s ease;
@@ -1867,7 +1513,6 @@ const videoUpdateStyles = `
         animation: highlightUpdate 1s ease;
     }
     
-    /* Estilos específicos para os indicadores */
     .video-indicator {
         animation: pulseVideo 2s infinite !important;
         transition: all 0.3s ease !important;
@@ -1879,7 +1524,6 @@ const videoUpdateStyles = `
     }
 `;
 
-// Adicionar estilos dinamicamente
 if (!document.querySelector('#video-update-styles')) {
     const styleEl = document.createElement('style');
     styleEl.id = 'video-update-styles';
@@ -1887,226 +1531,8 @@ if (!document.querySelector('#video-update-styles')) {
     document.head.appendChild(styleEl);
 }
 
-// ========== 17. FUNÇÃO DE DIAGNÓSTICO DE SINCRONIZAÇÃO ==========
-window.debugSyncIssue = function() {
-    console.group('🐛 DIAGNÓSTICO DO BUG DE SINCRONIZAÇÃO');
-    
-    console.log('📊 ESTADO ATUAL:');
-    console.log('- Propriedades no array:', window.properties?.length || 0);
-    console.log('- IDs disponíveis:', window.properties?.map(p => p.id).join(', ') || 'nenhum');
-    
-    // Verificar localStorage
-    try {
-        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-        console.log('- Propriedades no localStorage:', stored.length);
-        console.log('- IDs no storage:', stored.map(p => p.id).join(', '));
-        
-        // Comparar
-        if (window.properties && stored) {
-            const missingInArray = stored.filter(s => 
-                !window.properties.some(p => p.id === s.id)
-            );
-            const missingInStorage = window.properties.filter(p => 
-                !stored.some(s => s.id === p.id)
-            );
-            
-            console.log('🔍 COMPARAÇÃO:');
-            console.log('- Faltam no array:', missingInArray.length);
-            console.log('- Faltam no storage:', missingInStorage.length);
-        }
-    } catch (error) {
-        console.error('❌ Erro ao comparar:', error);
-    }
-    
-    console.log('⚡ SUGESTÕES:');
-    console.log('1. Execute window.forceSyncProperties() para sincronizar com Supabase');
-    console.log('2. Execute window.debugSyncIssue() para diagnóstico');
-    console.log('3. Verifique console por erros de conexão Supabase');
-    
-    console.groupEnd();
-};
-
-// ========== 18. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
-setTimeout(() => {
-    // Verificar inconsistência entre array e localStorage
-    if (window.properties && window.properties.length > 0) {
-        try {
-            const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-            if (stored.length !== window.properties.length) {
-                console.warn('⚠️ INCONSISTÊNCIA DETECTADA:');
-                console.warn(`- Array: ${window.properties.length} imóveis`);
-                console.warn(`- Storage: ${stored.length} imóveis`);
-                console.warn('🔄 Corrigindo automaticamente...');
-                
-                // Salvar array atual no storage (correção)
-                localStorage.setItem('properties', JSON.stringify(window.properties));
-                console.log('✅ Storage corrigido com array atual');
-            }
-        } catch (error) {
-            console.error('❌ Erro na verificação automática:', error);
-        }
-    }
-}, 5000);
-
-// ========== 19. FUNÇÃO DE SINCRONIZAÇÃO FORÇADA ==========
-window.forceSyncProperties = async function() {
-    console.group('🔄 FORÇANDO SINCRONIZAÇÃO DE IMÓVEIS');
-    
-    try {
-        // 1. Verificar credenciais Supabase
-        if (!window.ensureSupabaseCredentials()) {
-            console.error('❌ Credenciais Supabase não configuradas');
-            alert('❌ Credenciais Supabase não configuradas');
-            return false;
-        }
-        
-        // 2. Buscar imóveis do Supabase
-        console.log('🌐 Buscando imóveis do Supabase...');
-        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
-            headers: {
-                'apikey': window.SUPABASE_KEY,
-                'Authorization': `Bearer ${window.SUPABASE_KEY}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Erro ao buscar imóveis: ${response.status}`);
-        }
-        
-        const supabaseProperties = await response.json();
-        console.log(`📡 ${supabaseProperties.length} imóveis encontrados no Supabase`);
-        
-        // 3. Comparar com localStorage
-        const storedProperties = JSON.parse(localStorage.getItem('properties') || '[]');
-        console.log(`💾 ${storedProperties.length} imóveis no localStorage`);
-        
-        // 4. Mesclar dados (dar preferência ao Supabase)
-        const mergedProperties = [...supabaseProperties];
-        
-        // Adicionar imóveis locais que não estão no Supabase
-        storedProperties.forEach(localProp => {
-            const existsInSupabase = supabaseProperties.some(supabaseProp => 
-                supabaseProp.id === localProp.id || 
-                supabaseProp.title === localProp.title
-            );
-            
-            if (!existsInSupabase) {
-                console.log(`➕ Adicionando imóvel local ao merge: ${localProp.title}`);
-                mergedProperties.push({
-                    ...localProp,
-                    syncStatus: 'local_only'
-                });
-            }
-        });
-        
-        // 5. Ordenar por ID (mais recentes primeiro)
-        mergedProperties.sort((a, b) => b.id - a.id);
-        
-        // 6. Atualizar estado global
-        window.properties = mergedProperties.map(prop => ({
-            ...prop,
-            has_video: window.ensureBooleanVideo(prop.has_video),
-            features: window.parseFeaturesForStorage(prop.features)
-        }));
-        
-        // 7. Salvar no localStorage
-        localStorage.setItem('properties', JSON.stringify(window.properties));
-        console.log(`💾 ${window.properties.length} imóveis salvos no localStorage após sincronização`);
-        
-        // 8. Atualizar interface
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties('todos', true);
-        }
-        
-        if (typeof window.loadPropertyList === 'function') {
-            window.loadPropertyList();
-        }
-        
-        // 9. Feedback ao usuário
-        const syncMessage = `✅ Sincronização concluída!\n\n` +
-                          `🌐 Supabase: ${supabaseProperties.length} imóveis\n` +
-                          `💾 Local: ${storedProperties.length} imóveis\n` +
-                          `📊 Total sincronizado: ${window.properties.length} imóveis`;
-        
-        alert(syncMessage);
-        console.log('✅ Sincronização forçada concluída com sucesso');
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro na sincronização:', error);
-        alert(`❌ Erro na sincronização:\n\n${error.message}`);
-        return false;
-        
-    } finally {
-        console.groupEnd();
-    }
-};
-
-// ========== 20. VERIFICAÇÃO DE SINCRONIZAÇÃO AO INICIAR ==========
-setTimeout(() => {
-    console.log('🔍 Verificando sincronização ao iniciar...');
-    
-    // 1. Verificar se há imóveis no localStorage
-    const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-    console.log(`📊 Ao iniciar: ${stored.length} imóveis no localStorage`);
-    
-    // 2. Se tiver imóveis, verificar consistência
-    if (stored.length > 0) {
-        // Verificar se todos os imóveis têm ID numérico válido
-        const invalidProperties = stored.filter(p => {
-            const id = parseInt(p.id);
-            return isNaN(id) || id <= 0 || !Number.isInteger(id);
-        });
-        
-        if (invalidProperties.length > 0) {
-            console.warn(`⚠️ ${invalidProperties.length} imóveis com ID inválido encontrados`);
-            console.log('IDs inválidos:', invalidProperties.map(p => p.id));
-            
-            // Tentar corrigir IDs inválidos
-            const correctedProperties = stored.map((prop, index) => {
-                const id = parseInt(prop.id);
-                if (isNaN(id) || id <= 0 || !Number.isInteger(id)) {
-                    // Gerar novo ID baseado na posição
-                    const newId = stored.length > 0 ? 
-                        Math.max(...stored.map(p => {
-                            const existingId = parseInt(p.id);
-                            return isNaN(existingId) || existingId <= 0 ? 0 : existingId;
-                        })) + index + 1 : 1;
-                    
-                    console.log(`🔄 Corrigindo ID: ${prop.id} -> ${newId} (${prop.title})`);
-                    return { ...prop, id: newId };
-                }
-                return prop;
-            });
-            
-            // Salvar corrigido
-            localStorage.setItem('properties', JSON.stringify(correctedProperties));
-            console.log('✅ IDs corrigidos e salvos no localStorage');
-        }
-    }
-    
-    // 3. Se window.properties estiver vazio mas localStorage tem dados
-    if ((!window.properties || window.properties.length === 0) && stored.length > 0) {
-        console.log('🔄 Carregando imóveis do localStorage para window.properties...');
-        window.properties = stored.map(prop => ({
-            ...prop,
-            has_video: window.ensureBooleanVideo(prop.has_video),
-            features: window.parseFeaturesForStorage(prop.features)
-        }));
-        
-        // Atualizar interface
-        setTimeout(() => {
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties('todos', true);
-            }
-            console.log(`✅ ${window.properties.length} imóveis carregados do localStorage`);
-        }, 500);
-    }
-}, 3000);
-
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA (PADRÃO ORIGINAL)');
+console.log('✅ properties.js VERSÃO FINAL - PADRÃO IDÊNTICO PARA 1+ FOTOS');
 
 function runLowPriority(task) {
     if ('requestIdleCallback' in window) {
@@ -2116,7 +1542,6 @@ function runLowPriority(task) {
     }
 }
 
-// Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🏠 DOM carregado - inicializando properties...');
@@ -2153,14 +1578,10 @@ if (document.readyState === 'loading') {
     });
 }
 
-// Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 PADRÃO ORIGINAL RESTAURADO!');
-console.log('✅ Contador de imagens SÓ aparece quando tem 2+ fotos');
-console.log('✅ Vídeo fica em 85px do topo quando tem galeria (2+ fotos)');
-console.log('✅ Vídeo fica em 10px do topo quando tem 1 foto');
-console.log('✅ Z-index correto: Contador (10) > Vídeo (9) > PDF (8)');
-console.log('💡 Execute window.testIndicatorPosition() para verificar a posição correta');
-console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
-console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
+console.log('🎯 PADRÃO IDÊNTICO IMPLEMENTADO!');
+console.log('✅ Contador SEMPRE visível (mesmo para 1 foto)');
+console.log('✅ Vídeo SEMPRE em 45px (abaixo do contador)');
+console.log('✅ Mesmo z-index e posições para todas as quantidades de fotos');
+console.log('💡 Teste: Adicione um imóvel com 1 foto - o layout será IDÊNTICO ao de 5+ fotos');
