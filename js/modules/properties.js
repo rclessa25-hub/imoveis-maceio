@@ -1,5 +1,5 @@
-// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA E SINCRONIZAÇÃO CORRIGIDA
-console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA');
+// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA E LAYOUT UNIFICADO
+console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA E LAYOUT UNIFICADO');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -133,7 +133,7 @@ window.ensureBooleanVideo = function(videoValue) {
     return Boolean(videoValue);
 };
 
-// ========== TEMPLATE ENGINE COM CACHE AVANÇADO E GALERIA ==========
+// ========== TEMPLATE ENGINE COM CACHE AVANÇADO E LAYOUT UNIFICADO ==========
 class PropertyTemplateEngine {
     constructor() {
         this.cache = new Map();
@@ -196,103 +196,45 @@ class PropertyTemplateEngine {
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
         const imageCount = imageUrls.length;
         const firstImageUrl = imageCount > 0 ? imageUrls[0] : this.imageFallback;
-        const hasGallery = imageCount > 1;
         const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
-
-        // CORREÇÃO CRÍTICA: Verificar vídeo corretamente
         const hasVideo = window.ensureBooleanVideo(property.has_video);
         
-        console.log('🎬 Renderizando card com vídeo:', {
+        console.log('🎬 Renderizando card:', {
             id: property.id,
             title: property.title,
             has_video: property.has_video,
             hasVideo_boolean: hasVideo,
-            imageCount: imageCount
+            imageCount: imageCount,
+            hasPdfs: hasPdfs
         });
         
-        if (hasGallery && typeof window.createPropertyGallery === 'function') {
-            try {
-                return window.createPropertyGallery(property);
-            } catch (e) {
-                console.warn('❌ Erro na galeria, usando fallback:', e);
-            }
-        }
-
+        // ✅ LAYOUT UNIFICADO: SEMPRE usar o mesmo layout independente do número de imagens
         return `
             <div class="property-image ${property.rural ? 'rural-image' : ''}" 
-                 style="position: relative; height: 250px;">
+                 style="position: relative; height: 250px; overflow: hidden;">
                 <img src="${firstImageUrl}" 
                      style="width: 100%; height: 100%; object-fit: cover;"
                      alt="${property.title}"
                      onerror="this.src='${this.imageFallback}'">
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 
-                <!-- CORREÇÃO: Indicador de vídeo AJUSTADO (posição mais baixa) -->
+                <!-- ✅ INDICADOR DE VÍDEO SEMPRE NO MESMO LUGAR (topo direito) -->
                 ${hasVideo ? `
-                    <div class="video-indicator" style="
-                        position: absolute;
-                        top: 85px;  <!-- ALTERADO: estava 10px, agora 85px -->
-                        right: 10px;
-                        background: rgba(0, 0, 0, 0.8);
-                        color: white;
-                        padding: 6px 12px;
-                        border-radius: 6px;
-                        font-size: 12px;
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        z-index: 9;  <!-- z-index reduzido para ficar atrás da contagem -->
-                        animation: pulseVideo 2s infinite;
-                        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-                        border: 1px solid rgba(255,255,255,0.3);
-                        backdrop-filter: blur(5px);
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    ">
-                        <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
+                    <div class="video-indicator">
+                        <i class="fas fa-video"></i>
                         <span>TEM VÍDEO</span>
                     </div>
                 ` : ''}
                 
-                ${hasGallery ? `
-                    <div class="image-count" style="
-                        position: absolute;
-                        top: 10px;  <!-- Mantido no topo -->
-                        right: 10px;
-                        background: rgba(0, 0, 0, 0.9);
-                        color: white;
-                        padding: 5px 10px;
-                        border-radius: 4px;
-                        font-size: 13px;
-                        font-weight: bold;
-                        z-index: 10;  <!-- z-index maior que o do vídeo -->
-                        box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-                    ">
-                        <i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}
-                    </div>
-                ` : ''}
+                <!-- ✅ CONTADOR DE IMAGENS SEMPRE VISÍVEL (mesmo para 1 imagem) -->
+                <div class="image-count" style="top: ${hasVideo ? '45px' : '10px'}">
+                    <i class="fas fa-images"></i>${imageCount}
+                </div>
                 
+                <!-- ✅ BOTÃO PDF SEMPRE NO MESMO LUGAR (canto inferior direito) -->
                 ${hasPdfs ? `
-                    <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})" style="
-                        position: absolute;
-                        bottom: 10px;
-                        right: 10px;
-                        background: rgba(220, 53, 69, 0.9);
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        cursor: pointer;
-                        z-index: 8;
-                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-                        transition: all 0.3s ease;
-                    ">
-                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                    <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})">
+                        <i class="fas fa-file-pdf"></i>
                     </button>
                 ` : ''}
             </div>
@@ -365,49 +307,71 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar indicador de vídeo (AJUSTADO)
+            // ✅ CORREÇÃO: Atualizar indicador de vídeo (SEMPRE na mesma posição)
             if (propertyData.has_video !== undefined) {
                 const videoIndicator = card.querySelector('.video-indicator');
+                const imageCountElement = card.querySelector('.image-count');
                 const hasVideo = window.ensureBooleanVideo(propertyData.has_video);
                 
                 if (hasVideo && !videoIndicator) {
-                    // Adicionar indicador de vídeo (posição ajustada)
+                    // Adicionar indicador de vídeo (SEMPRE no topo)
                     const imageSection = card.querySelector('.property-image');
                     if (imageSection) {
-                        // Verificar se já tem contador de imagens
-                        const imageCount = imageSection.querySelector('.image-count');
-                        const topPosition = imageCount ? '35px' : '10px';
+                        const videoDiv = document.createElement('div');
+                        videoDiv.className = 'video-indicator';
+                        videoDiv.innerHTML = '<i class="fas fa-video"></i><span>TEM VÍDEO</span>';
+                        imageSection.appendChild(videoDiv);
                         
-                        imageSection.innerHTML += `
-                            <div class="video-indicator" style="
-                                position: absolute;
-                                top: ${topPosition};
-                                right: 10px;
-                                background: rgba(0, 0, 0, 0.8);
-                                color: white;
-                                padding: 6px 12px;
-                                border-radius: 6px;
-                                font-size: 12px;
-                                display: flex;
-                                align-items: center;
-                                gap: 6px;
-                                z-index: 9;
-                                animation: pulseVideo 2s infinite;
-                                box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-                                border: 1px solid rgba(255,255,255,0.3);
-                                backdrop-filter: blur(5px);
-                                font-weight: 600;
-                                text-transform: uppercase;
-                                letter-spacing: 0.5px;
-                            ">
-                                <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
-                                <span>TEM VÍDEO</span>
-                            </div>
-                        `;
+                        // Se tiver contador de imagens, ajustar sua posição
+                        if (imageCountElement) {
+                            imageCountElement.style.top = '45px';
+                        }
                     }
                 } else if (!hasVideo && videoIndicator) {
                     // Remover indicador de vídeo
                     videoIndicator.remove();
+                    
+                    // Ajustar contador de imagens de volta ao topo
+                    if (imageCountElement) {
+                        imageCountElement.style.top = '10px';
+                    }
+                }
+            }
+            
+            // ✅ CORREÇÃO: Atualizar contador de imagens SEMPRE
+            if (propertyData.images !== undefined) {
+                const imageCountElement = card.querySelector('.image-count');
+                if (imageCountElement) {
+                    const imageUrls = propertyData.images && propertyData.images !== 'EMPTY' 
+                        ? propertyData.images.split(',').filter(url => url.trim() !== '') 
+                        : [];
+                    const imageCount = imageUrls.length;
+                    
+                    imageCountElement.innerHTML = `<i class="fas fa-images"></i>${imageCount}`;
+                }
+            }
+            
+            // ✅ CORREÇÃO: Atualizar botão PDF SEMPRE
+            if (propertyData.pdfs !== undefined) {
+                const pdfButton = card.querySelector('.pdf-access');
+                const hasPdfs = propertyData.pdfs && propertyData.pdfs !== 'EMPTY' && propertyData.pdfs.trim() !== '';
+                const imageSection = card.querySelector('.property-image');
+                
+                if (hasPdfs && !pdfButton && imageSection) {
+                    // Adicionar botão PDF
+                    const pdfBtn = document.createElement('button');
+                    pdfBtn.className = 'pdf-access';
+                    pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
+                    pdfBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+                            window.PdfSystem.showModal(propertyId);
+                        }
+                    };
+                    imageSection.appendChild(pdfBtn);
+                } else if (!hasPdfs && pdfButton) {
+                    // Remover botão PDF
+                    pdfButton.remove();
                 }
             }
             
@@ -699,7 +663,7 @@ function getInitialProperties() {
     ];
 }
 
-// ========== 3. RENDERIZAÇÃO OTIMIZADA COM ATUALIZAÇÃO DE VÍDEO ==========
+// ========== 3. RENDERIZAÇÃO OTIMIZADA COM LAYOUT UNIFICADO ==========
 window.renderProperties = function(filter = 'todos', forceClearCache = false) {
     console.log(`🎨 Renderizando propriedades (filtro: ${filter})${forceClearCache ? ' - CACHE LIMPO' : ''}`);
     
@@ -1768,8 +1732,8 @@ window.testIndicatorPosition = function() {
     console.groupEnd();
 };
 
-// ========== 16. ADICIONAR ESTILOS CSS PARA ANIMAÇÕES ==========
-const videoUpdateStyles = `
+// ========== 16. ADICIONAR ESTILOS CSS PARA LAYOUT UNIFICADO ==========
+const unifiedLayoutStyles = `
     @keyframes highlightUpdate {
         0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
         50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
@@ -1796,24 +1760,162 @@ const videoUpdateStyles = `
         animation: highlightUpdate 1s ease;
     }
     
-    /* Estilos específicos para os indicadores */
+    /* ✅ ESTILOS UNIFICADOS PARA INDICADORES (MESMO PADRÃO SEMPRE) */
     .video-indicator {
         animation: pulseVideo 2s infinite !important;
         transition: all 0.3s ease !important;
+        position: absolute !important;
+        top: 10px !important;
+        right: 10px !important;
+        background: rgba(0, 0, 0, 0.8) !important;
+        color: white !important;
+        padding: 6px 12px !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        z-index: 10 !important;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4) !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        backdrop-filter: blur(5px) !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+    
+    .video-indicator i {
+        color: #FFD700 !important;
+        font-size: 14px !important;
     }
     
     .image-count {
-        z-index: 10 !important;
+        position: absolute !important;
+        right: 10px !important;
+        background: rgba(0, 0, 0, 0.9) !important;
+        color: white !important;
+        padding: 5px 10px !important;
+        border-radius: 4px !important;
+        font-size: 13px !important;
         font-weight: bold !important;
+        z-index: 9 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    
+    .image-count i {
+        margin-right: 5px !important;
+    }
+    
+    /* ✅ Contador SEMPRE visível (mesmo para 1 imagem) */
+    .property-image .image-count {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* ✅ Ajuste de posição quando tem vídeo */
+    .property-image .video-indicator ~ .image-count {
+        top: 45px !important;
+    }
+    
+    .property-image:not(:has(.video-indicator)) .image-count {
+        top: 10px !important;
+    }
+    
+    /* ✅ Botão PDF sempre no mesmo lugar */
+    .pdf-access {
+        position: absolute !important;
+        bottom: 10px !important;
+        right: 10px !important;
+        background: rgba(220, 53, 69, 0.9) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        z-index: 8 !important;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .pdf-access:hover {
+        background: rgba(220, 53, 69, 1) !important;
+        transform: scale(1.1) !important;
+    }
+    
+    .pdf-access i {
+        font-size: 18px !important;
+    }
+    
+    /* ✅ Propriedades da imagem (consistente) */
+    .property-image {
+        position: relative !important;
+        height: 250px !important;
+        overflow: hidden !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    
+    .property-image img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        transition: transform 0.3s ease !important;
+    }
+    
+    .property-image:hover img {
+        transform: scale(1.05) !important;
+    }
+    
+    /* ✅ Badge do imóvel */
+    .property-badge {
+        position: absolute !important;
+        top: 10px !important;
+        left: 10px !important;
+        background: var(--accent) !important;
+        color: white !important;
+        padding: 4px 10px !important;
+        border-radius: 4px !important;
+        font-size: 12px !important;
+        font-weight: bold !important;
+        z-index: 8 !important;
+    }
+    
+    .rural-badge {
+        background: #27ae60 !important;
+    }
+    
+    /* ✅ Tags de features */
+    .feature-tag {
+        display: inline-block !important;
+        background: #f8f9fa !important;
+        color: #333 !important;
+        padding: 4px 10px !important;
+        border-radius: 20px !important;
+        font-size: 12px !important;
+        margin: 2px !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    
+    .rural-tag {
+        background: #d4edda !important;
+        color: #155724 !important;
+        border-color: #c3e6cb !important;
     }
 `;
 
 // Adicionar estilos dinamicamente
-if (!document.querySelector('#video-update-styles')) {
+if (!document.querySelector('#unified-layout-styles')) {
     const styleEl = document.createElement('style');
-    styleEl.id = 'video-update-styles';
-    styleEl.textContent = videoUpdateStyles;
+    styleEl.id = 'unified-layout-styles';
+    styleEl.textContent = unifiedLayoutStyles;
     document.head.appendChild(styleEl);
+    console.log('✅ Estilos unificados adicionados ao documento');
 }
 
 // ========== 17. FUNÇÃO DE DIAGNÓSTICO DE SINCRONIZAÇÃO ==========
@@ -2035,7 +2137,7 @@ setTimeout(() => {
 }, 3000);
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA');
+console.log('✅ properties.js VERSÃO FINAL COMPLETA COM LAYOUT UNIFICADO');
 
 function runLowPriority(task) {
     if ('requestIdleCallback' in window) {
@@ -2085,14 +2187,11 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 TODOS OS PROBLEMAS RESOLVIDOS!');
-console.log('✅ Formatação de preço unificada no SharedCore');
-console.log('✅ Indicador de vídeo ajustado para posição inferior (35px do topo)');
-console.log('✅ Contador de imagens mantido no topo (10px do topo)');
-console.log('✅ Sincronização Supabase vs LocalStorage corrigida');
-console.log('✅ Função de diagnóstico window.debugSyncIssue() disponível');
-console.log('✅ Função de sincronização window.forceSyncProperties() disponível');
-console.log('💡 Execute window.debugSyncIssue() para verificar problemas de sincronização');
-console.log('💡 Execute window.forceSyncProperties() para forçar sincronização com Supabase');
-console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
-console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
+console.log('🎯 LAYOUT UNIFICADO IMPLEMENTADO!');
+console.log('✅ Contador de imagens SEMPRE visível (mesmo para 1 imagem)');
+console.log('✅ Indicador de vídeo SEMPRE na mesma posição (topo direito)');
+console.log('✅ Botão PDF SEMPRE no mesmo lugar (canto inferior direito)');
+console.log('✅ Mesmo estilo CSS para todas as situações');
+console.log('💡 Para testar: Adicione um imóvel com apenas 1 foto - o design será igual ao de múltiplas fotos');
+console.log('💡 Execute window.testFullUpdate() para testar atualização completa da galeria');
+console.log('💡 Execute window.testIndicatorPosition() para verificar posicionamento dos indicadores');
