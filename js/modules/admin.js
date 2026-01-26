@@ -1121,6 +1121,67 @@ window.forceMediaPreviewUpdate = function() {
     }
 };
 
+/* ==========================================================
+   ADICIONAR BOTÃO DE DIAGNÓSTICO AO PAINEL ADMIN
+   ========================================================== */
+function addDiagnosticButton() {
+    setTimeout(() => {
+        const adminPanel = document.getElementById('adminPanel');
+        if (!adminPanel) return;
+        
+        // Verificar se o botão já existe
+        if (document.getElementById('diagnosticButton')) return;
+        
+        const diagnosticButton = document.createElement('button');
+        diagnosticButton.id = 'diagnosticButton';
+        diagnosticButton.innerHTML = '<i class="fas fa-bug"></i> Diagnosticar Sincronização';
+        diagnosticButton.style.cssText = `
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        `;
+        
+        diagnosticButton.onmouseover = () => {
+            diagnosticButton.style.background = '#8e44ad';
+            diagnosticButton.style.transform = 'translateY(-2px)';
+        };
+        
+        diagnosticButton.onmouseout = () => {
+            diagnosticButton.style.background = '#9b59b6';
+            diagnosticButton.style.transform = 'translateY(0)';
+        };
+        
+        diagnosticButton.onclick = () => {
+            if (typeof window.debugSyncIssue === 'function') {
+                window.debugSyncIssue();
+                alert('🔍 Diagnóstico executado!\n\nVerifique o console (F12) para detalhes.');
+            } else {
+                alert('❌ Função de diagnóstico não disponível');
+            }
+        };
+        
+        // Adicionar botão após o formulário
+        const form = document.getElementById('propertyForm');
+        if (form) {
+            form.parentNode.insertBefore(diagnosticButton, form.nextSibling);
+        }
+        
+        console.log('✅ Botão de diagnóstico adicionado ao painel admin');
+    }, 2000);
+}
+
+// Executar após carregar o admin
+setTimeout(addDiagnosticButton, 3000);
+
 // Inicialização
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -1133,3 +1194,4 @@ if (document.readyState === 'loading') {
 console.log('✅ admin.js - VERSÃO FINAL COM FORMATAÇÃO UNIFICADA');
 console.log('🎬 Para testar o checkbox, execute: window.testVideoCheckbox()');
 console.log('🔄 Para forçar atualização da galeria: window.forceGalleryUpdate()');
+console.log('🔍 Para diagnosticar sincronização: Clique no botão "Diagnosticar Sincronização" no painel admin');
