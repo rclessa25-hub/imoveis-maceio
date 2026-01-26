@@ -173,6 +173,65 @@ const FilterManager = (function() {
             state.containers.clear();
             state.callbacks.clear();
             console.log('🧹 FilterManager destruído');
+        },
+
+        /**
+         * Configura filtros com fallback automático
+         */
+        setupWithFallback() {
+            console.log('🎛️ Configurando filtros com fallback...');
+            
+            // Usar sistema unificado se disponível
+            if (this.init) {
+                this.init((filterValue) => {
+                    window.currentFilter = filterValue;
+                    if (typeof window.renderProperties === 'function') {
+                        window.renderProperties(filterValue);
+                    }
+                });
+                console.log('✅ Filtros configurados via FilterManager');
+                return true;
+            }
+            
+            // Fallback manual
+            return this.setupManualFallback();
+        },
+
+        /**
+         * Fallback manual para compatibilidade
+         */
+        setupManualFallback() {
+            console.warn('⚠️ Usando fallback manual de filtros...');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            
+            if (!filterButtons || filterButtons.length === 0) {
+                console.error('❌ Botões de filtro não encontrados!');
+                return false;
+            }
+            
+            filterButtons.forEach(button => {
+                // Clonar para remover listeners antigos
+                const newBtn = button.cloneNode(true);
+                button.parentNode.replaceChild(newBtn, button);
+                
+                newBtn.addEventListener('click', function() {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const filterText = this.textContent.trim();
+                    const filterValue = filterText === 'Todos' ? 'todos' : filterText;
+                    
+                    window.currentFilter = filterValue;
+                    if (window.renderProperties) window.renderProperties(filterValue);
+                });
+            });
+            
+            const todosBtn = Array.from(filterButtons).find(btn => 
+                btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
+            );
+            if (todosBtn) todosBtn.classList.add('active');
+            
+            return true;
         }
     };
 })();
@@ -185,12 +244,16 @@ setTimeout(() => {
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
         // Inicializar apenas se existirem filtros na página
         if (document.querySelector('.filter-options')) {
-            FilterManager.init((filterValue) => {
-                // Callback padrão: renderizar propriedades
-                if (window.renderProperties && typeof window.renderProperties === 'function') {
-                    window.renderProperties(filterValue);
-                }
-            });
+            if (FilterManager.setupWithFallback) {
+                FilterManager.setupWithFallback();
+            } else {
+                // Fallback para versão antiga
+                FilterManager.init((filterValue) => {
+                    if (window.renderProperties && typeof window.renderProperties === 'function') {
+                        window.renderProperties(filterValue);
+                    }
+                });
+            }
         }
     }
 }, 500);
