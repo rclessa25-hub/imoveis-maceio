@@ -155,7 +155,10 @@ const Helpers = {
             if (e.target.files.length) {
                 callback(e.target.files);
                 e.target.value = '';
-                if (autoSaveType) window.triggerAutoSave(autoSaveType);
+                // CORREÇÃO: Removida chamada à função não existente
+                if (autoSaveType) {
+                    console.log(`📁 Upload detectado para ${autoSaveType}`);
+                }
             }
         });
         
@@ -628,32 +631,15 @@ window.saveProperty = async function() {
                 updated_at: new Date().toISOString()
             };
             
-            // Adicionar localmente usando a função corrigida
-            window.addToLocalProperties(newProperty);
+            // CORREÇÃO CRÍTICA: Usar a função corrigida de properties.js
+            const addedProperty = window.addNewProperty(newProperty);
             
-            // Tentar salvar no Supabase
-            const hasSupabase = window.SUPABASE_CONSTANTS && 
-                              window.SUPABASE_CONSTANTS.URL && 
-                              window.SUPABASE_CONSTANTS.KEY;
-            
-            if (hasSupabase && typeof window.savePropertyToDatabase === 'function') {
-                try {
-                    const saveResult = await window.savePropertyToDatabase(newProperty);
-                    
-                    if (saveResult && saveResult.id) {
-                        Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
-                        console.log(`✅ Novo imóvel ID: ${saveResult.id}`);
-                    } else {
-                        Helpers.showNotification('⚠️ Imóvel criado apenas localmente', 'info', 3000);
-                        console.log('⚠️ Imóvel criado apenas localmente (Supabase falhou)');
-                    }
-                } catch (supabaseError) {
-                    console.error('❌ Erro ao criar no Supabase:', supabaseError);
-                    Helpers.showNotification('✅ Imóvel criado localmente (Supabase offline)', 'info', 3000);
-                }
-            } else {
-                Helpers.showNotification('✅ Imóvel criado localmente', 'success', 3000);
+            if (!addedProperty) {
+                throw new Error('Falha ao adicionar imóvel localmente');
             }
+            
+            // Tentar salvar no Supabase (já foi tentado em addNewProperty)
+            Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
             
             // Atualizar galeria
             setTimeout(() => {
@@ -921,7 +907,7 @@ window.setupAdminUI = function() {
     
     // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
-    if (panel) {
+        if (panel) {
         panel.style.display = 'none';
     }
     
