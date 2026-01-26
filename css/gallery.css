@@ -73,7 +73,7 @@
 /* O indicador "TEM VÍDEO" foi movido para 45px do topo (era 10px) */
 .video-indicator {
     position: absolute;
-    top: 45px; /* ÚNICA ALTERAÇÃO: estava 10px, agora 45px */
+    top: 65px; /* ÚNICA ALTERAÇÃO: estava 10px, agora 45px */
     right: 10px;
     background: rgba(0, 0, 0, 0.7);
     color: white;
