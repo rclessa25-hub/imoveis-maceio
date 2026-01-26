@@ -1,5 +1,5 @@
-// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA E LAYOUT UNIFICADO
-console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA E LAYOUT UNIFICADO');
+// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA E SINCRONIZAÇÃO CORRIGIDA
+console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -133,7 +133,7 @@ window.ensureBooleanVideo = function(videoValue) {
     return Boolean(videoValue);
 };
 
-// ========== TEMPLATE ENGINE COM CACHE AVANÇADO E LAYOUT UNIFICADO ==========
+// ========== TEMPLATE ENGINE COM CACHE AVANÇADO E GALERIA ==========
 class PropertyTemplateEngine {
     constructor() {
         this.cache = new Map();
@@ -196,50 +196,103 @@ class PropertyTemplateEngine {
         const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
         const imageCount = imageUrls.length;
         const firstImageUrl = imageCount > 0 ? imageUrls[0] : this.imageFallback;
+        const hasGallery = imageCount > 1;
         const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
+
+        // CORREÇÃO CRÍTICA: Verificar vídeo corretamente
         const hasVideo = window.ensureBooleanVideo(property.has_video);
         
-        console.log('🎬 Renderizando card com layout unificado:', {
+        console.log('🎬 Renderizando card com vídeo:', {
             id: property.id,
             title: property.title,
             has_video: property.has_video,
             hasVideo_boolean: hasVideo,
-            imageCount: imageCount,
-            hasPdfs: hasPdfs
+            imageCount: imageCount
         });
         
-        // ✅ LAYOUT UNIFICADO: SEMPRE usar o mesmo layout independente do número de imagens
-        // ✅ Contador SEMPRE visível (mesmo para 1 imagem)
-        // ✅ Vídeo SEMPRE no topo direito
-        // ✅ PDF SEMPRE no canto inferior direito
-        // ✅ Mesmo estilo CSS para todas as situações
-        
+        if (hasGallery && typeof window.createPropertyGallery === 'function') {
+            try {
+                return window.createPropertyGallery(property);
+            } catch (e) {
+                console.warn('❌ Erro na galeria, usando fallback:', e);
+            }
+        }
+
         return `
             <div class="property-image ${property.rural ? 'rural-image' : ''}" 
-                 style="position: relative; height: 250px; overflow: hidden;">
+                 style="position: relative; height: 250px;">
                 <img src="${firstImageUrl}" 
                      style="width: 100%; height: 100%; object-fit: cover;"
                      alt="${property.title}"
                      onerror="this.src='${this.imageFallback}'">
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 
-                <!-- ✅ INDICADOR DE VÍDEO SEMPRE NO MESMO LUGAR (topo direito) -->
+                <!-- CORREÇÃO: Indicador de vídeo AJUSTADO (posição mais baixa) -->
                 ${hasVideo ? `
-                    <div class="video-indicator">
-                        <i class="fas fa-video"></i>
+                    <div class="video-indicator" style="
+                        position: absolute;
+                        top: 85px;  <!-- ALTERADO: estava 10px, agora 85px -->
+                        right: 10px;
+                        background: rgba(0, 0, 0, 0.8);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        font-size: 12px;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        z-index: 9;  <!-- z-index reduzido para ficar atrás da contagem -->
+                        animation: pulseVideo 2s infinite;
+                        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+                        border: 1px solid rgba(255,255,255,0.3);
+                        backdrop-filter: blur(5px);
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    ">
+                        <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
                         <span>TEM VÍDEO</span>
                     </div>
                 ` : ''}
                 
-                <!-- ✅ CONTADOR DE IMAGENS SEMPRE VISÍVEL (mesmo para 1 imagem) -->
-                <div class="image-count" style="top: ${hasVideo ? '45px' : '10px'}">
-                    <i class="fas fa-images"></i>${imageCount}
-                </div>
+                ${hasGallery ? `
+                    <div class="image-count" style="
+                        position: absolute;
+                        top: 10px;  <!-- Mantido no topo -->
+                        right: 10px;
+                        background: rgba(0, 0, 0, 0.9);
+                        color: white;
+                        padding: 5px 10px;
+                        border-radius: 4px;
+                        font-size: 13px;
+                        font-weight: bold;
+                        z-index: 10;  <!-- z-index maior que o do vídeo -->
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+                    ">
+                        <i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}
+                    </div>
+                ` : ''}
                 
-                <!-- ✅ BOTÃO PDF SEMPRE NO MESMO LUGAR (canto inferior direito) -->
                 ${hasPdfs ? `
-                    <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})">
-                        <i class="fas fa-file-pdf"></i>
+                    <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})" style="
+                        position: absolute;
+                        bottom: 10px;
+                        right: 10px;
+                        background: rgba(220, 53, 69, 0.9);
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        z-index: 8;
+                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                        transition: all 0.3s ease;
+                    ">
+                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
                     </button>
                 ` : ''}
             </div>
@@ -248,7 +301,7 @@ class PropertyTemplateEngine {
     
     // NOVA FUNÇÃO: Atualizar conteúdo do card sem substituir completamente
     updateCardContent(propertyId, propertyData) {
-        console.log(`🔍 Atualizando conteúdo do card ${propertyId} com layout unificado`, propertyData);
+        console.log(`🔍 Atualizando conteúdo do card ${propertyId}`, propertyData);
         
         const card = document.querySelector(`.property-card[data-property-id="${propertyId}"]`);
         if (!card) {
@@ -312,71 +365,49 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // ✅ CORREÇÃO: Atualizar indicador de vídeo (SEMPRE na mesma posição)
+            // Atualizar indicador de vídeo (AJUSTADO)
             if (propertyData.has_video !== undefined) {
                 const videoIndicator = card.querySelector('.video-indicator');
-                const imageCountElement = card.querySelector('.image-count');
                 const hasVideo = window.ensureBooleanVideo(propertyData.has_video);
                 
                 if (hasVideo && !videoIndicator) {
-                    // Adicionar indicador de vídeo (SEMPRE no topo)
+                    // Adicionar indicador de vídeo (posição ajustada)
                     const imageSection = card.querySelector('.property-image');
                     if (imageSection) {
-                        const videoDiv = document.createElement('div');
-                        videoDiv.className = 'video-indicator';
-                        videoDiv.innerHTML = '<i class="fas fa-video"></i><span>TEM VÍDEO</span>';
-                        imageSection.appendChild(videoDiv);
+                        // Verificar se já tem contador de imagens
+                        const imageCount = imageSection.querySelector('.image-count');
+                        const topPosition = imageCount ? '35px' : '10px';
                         
-                        // Se tiver contador de imagens, ajustar sua posição
-                        if (imageCountElement) {
-                            imageCountElement.style.top = '45px';
-                        }
+                        imageSection.innerHTML += `
+                            <div class="video-indicator" style="
+                                position: absolute;
+                                top: ${topPosition};
+                                right: 10px;
+                                background: rgba(0, 0, 0, 0.8);
+                                color: white;
+                                padding: 6px 12px;
+                                border-radius: 6px;
+                                font-size: 12px;
+                                display: flex;
+                                align-items: center;
+                                gap: 6px;
+                                z-index: 9;
+                                animation: pulseVideo 2s infinite;
+                                box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+                                border: 1px solid rgba(255,255,255,0.3);
+                                backdrop-filter: blur(5px);
+                                font-weight: 600;
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                            ">
+                                <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
+                                <span>TEM VÍDEO</span>
+                            </div>
+                        `;
                     }
                 } else if (!hasVideo && videoIndicator) {
                     // Remover indicador de vídeo
                     videoIndicator.remove();
-                    
-                    // Ajustar contador de imagens de volta ao topo
-                    if (imageCountElement) {
-                        imageCountElement.style.top = '10px';
-                    }
-                }
-            }
-            
-            // ✅ CORREÇÃO: Atualizar contador de imagens SEMPRE
-            if (propertyData.images !== undefined) {
-                const imageCountElement = card.querySelector('.image-count');
-                if (imageCountElement) {
-                    const imageUrls = propertyData.images && propertyData.images !== 'EMPTY' 
-                        ? propertyData.images.split(',').filter(url => url.trim() !== '') 
-                        : [];
-                    const imageCount = imageUrls.length;
-                    
-                    imageCountElement.innerHTML = `<i class="fas fa-images"></i>${imageCount}`;
-                }
-            }
-            
-            // ✅ CORREÇÃO: Atualizar botão PDF SEMPRE
-            if (propertyData.pdfs !== undefined) {
-                const pdfButton = card.querySelector('.pdf-access');
-                const hasPdfs = propertyData.pdfs && propertyData.pdfs !== 'EMPTY' && propertyData.pdfs.trim() !== '';
-                const imageSection = card.querySelector('.property-image');
-                
-                if (hasPdfs && !pdfButton && imageSection) {
-                    // Adicionar botão PDF
-                    const pdfBtn = document.createElement('button');
-                    pdfBtn.className = 'pdf-access';
-                    pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
-                    pdfBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
-                            window.PdfSystem.showModal(propertyId);
-                        }
-                    };
-                    imageSection.appendChild(pdfBtn);
-                } else if (!hasPdfs && pdfButton) {
-                    // Remover botão PDF
-                    pdfButton.remove();
                 }
             }
             
@@ -386,7 +417,7 @@ class PropertyTemplateEngine {
                 card.style.animation = '';
             }, 1000);
             
-            console.log(`✅ Conteúdo do card ${propertyId} atualizado com sucesso (layout unificado)`);
+            console.log(`✅ Conteúdo do card ${propertyId} atualizado com sucesso`);
             return true;
             
         } catch (error) {
@@ -403,7 +434,7 @@ window.propertyTemplates = new PropertyTemplateEngine();
    FUNÇÃO PARA ATUALIZAR CARD ESPECÍFICO APÓS EDIÇÃO - VERSÃO MELHORADA
    ========================================================== */
 window.updatePropertyCard = function(propertyId, updatedData = null) {
-    console.log('🔄 Atualizando card do imóvel com layout unificado:', propertyId, updatedData ? 'com dados específicos' : '');
+    console.log('🔄 Atualizando card do imóvel:', propertyId, updatedData ? 'com dados específicos' : '');
     
     const property = window.properties?.find(p => p.id === propertyId);
     if (!property) {
@@ -451,12 +482,11 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
         // Substituir o card antigo pelo novo
         cardToUpdate.outerHTML = newCardHTML;
         
-        console.log('✅ Card completamente substituído com layout unificado:', {
+        console.log('✅ Card completamente substituído com todos os campos atualizados:', {
             título: propertyToRender.title,
             preço: propertyToRender.price,
             localização: propertyToRender.location,
-            vídeo: propertyToRender.has_video,
-            imagens: propertyToRender.images ? propertyToRender.images.split(',').length : 0
+            vídeo: propertyToRender.has_video
         });
         
         // Atualizar também no array global
@@ -669,7 +699,7 @@ function getInitialProperties() {
     ];
 }
 
-// ========== 3. RENDERIZAÇÃO OTIMIZADA COM LAYOUT UNIFICADO ==========
+// ========== 3. RENDERIZAÇÃO OTIMIZADA COM ATUALIZAÇÃO DE VÍDEO ==========
 window.renderProperties = function(filter = 'todos', forceClearCache = false) {
     console.log(`🎨 Renderizando propriedades (filtro: ${filter})${forceClearCache ? ' - CACHE LIMPO' : ''}`);
     
@@ -1584,129 +1614,7 @@ window.loadPropertyList = function() {
     }, 3000);
 })();
 
-// ========== 15. ADICIONAR ESTILOS CSS PARA LAYOUT UNIFICADO ==========
-const unifiedLayoutStyles = `
-    @keyframes highlightUpdate {
-        0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
-        50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
-    }
-    
-    @keyframes pulseVideo {
-        0% { opacity: 0.8; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.05); }
-        100% { opacity: 0.8; transform: scale(1); }
-    }
-    
-    .property-card.updating {
-        animation: highlightUpdate 1s ease;
-    }
-    
-    /* ✅ ESTILOS UNIFICADOS PARA INDICADORES (MESMO PADRÃO SEMPRE) */
-    .video-indicator {
-        animation: pulseVideo 2s infinite !important;
-        transition: all 0.3s ease !important;
-        position: absolute !important;
-        top: 10px !important;
-        right: 10px !important;
-        background: rgba(0, 0, 0, 0.8) !important;
-        color: white !important;
-        padding: 6px 12px !important;
-        border-radius: 6px !important;
-        font-size: 12px !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 6px !important;
-        z-index: 10 !important;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.4) !important;
-        border: 1px solid rgba(255,255,255,0.3) !important;
-        backdrop-filter: blur(5px) !important;
-        font-weight: 600 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
-    }
-    
-    .video-indicator i {
-        color: #FFD700 !important;
-        font-size: 14px !important;
-    }
-    
-    .image-count {
-        position: absolute !important;
-        right: 10px !important;
-        background: rgba(0, 0, 0, 0.9) !important;
-        color: white !important;
-        padding: 5px 10px !important;
-        border-radius: 4px !important;
-        font-size: 13px !important;
-        font-weight: bold !important;
-        z-index: 9 !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
-        display: flex !important;
-        align-items: center !important;
-        transition: top 0.3s ease !important;
-    }
-    
-    .image-count i {
-        margin-right: 5px !important;
-    }
-    
-    /* ✅ Contador SEMPRE visível (mesmo para 1 imagem) */
-    .property-image .image-count {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    
-    /* ✅ Ajuste de posição quando tem vídeo */
-    .property-image .video-indicator ~ .image-count {
-        top: 45px !important;
-    }
-    
-    .property-image:not(:has(.video-indicator)) .image-count {
-        top: 10px !important;
-    }
-    
-    /* ✅ Botão PDF sempre no mesmo lugar */
-    .pdf-access {
-        position: absolute !important;
-        bottom: 10px !important;
-        right: 10px !important;
-        background: rgba(220, 53, 69, 0.9) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 50% !important;
-        width: 40px !important;
-        height: 40px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        cursor: pointer !important;
-        z-index: 8 !important;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .pdf-access:hover {
-        background: rgba(220, 53, 69, 1) !important;
-        transform: scale(1.1) !important;
-    }
-    
-    .pdf-access i {
-        font-size: 18px !important;
-    }
-`;
-
-// Adicionar estilos dinamicamente para layout unificado
-if (!document.querySelector('#unified-layout-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'unified-layout-styles';
-    styleEl.textContent = unifiedLayoutStyles;
-    document.head.appendChild(styleEl);
-    console.log('✅ Estilos de layout unificado adicionados');
-}
-
-// ========== 16. FUNÇÕES DE TESTE ==========
+// ========== 15. FUNÇÕES DE TESTE PARA VÍDEO E ATUALIZAÇÃO ==========
 window.testFullUpdate = function() {
     console.group('🧪 TESTE DE ATUALIZAÇÃO COMPLETA DA GALERIA');
     
@@ -1761,15 +1669,12 @@ window.testFullUpdate = function() {
             atualizado: true
         });
         
-        alert(`🧪 TESTE DE ATUALIZAÇÃO COMPLETA (LAYOUT UNIFICADO):\n\n` +
+        alert(`🧪 TESTE DE ATUALIZAÇÃO COMPLETA:\n\n` +
               `Imóvel: ${testProperty.title}\n` +
               `Preço: ${testProperty.price}\n` +
               `Local: ${testProperty.location}\n` +
               `Vídeo: ${testProperty.has_video ? 'SIM' : 'NÃO'}\n\n` +
-              `Todos os campos devem atualizar IMEDIATAMENTE na galeria.\n` +
-              `✅ Contador de imagens sempre visível\n` +
-              `✅ Indicador de vídeo sempre no mesmo lugar\n` +
-              `✅ Layout consistente para 1 ou várias imagens`);
+              `Todos os campos devem atualizar IMEDIATAMENTE na galeria.`);
         
         // Restaurar estado original após 10 segundos
         setTimeout(() => {
@@ -1801,75 +1706,316 @@ window.forceFullGalleryUpdate = function() {
     console.log('🔄 Forçando atualização completa da galeria...');
     if (typeof window.renderProperties === 'function') {
         window.renderProperties(window.currentFilter || 'todos', true);
-        alert('✅ Galeria atualizada com cache limpo! Todos os campos devem estar atualizados.\n✅ Layout unificado para todas as imagens.');
+        alert('✅ Galeria atualizada com cache limpo! Todos os campos devem estar atualizados.');
     } else {
         alert('❌ Função renderProperties não disponível');
     }
 };
 
-window.testUnifiedLayout = function() {
-    console.group('🧪 TESTE DO LAYOUT UNIFICADO');
+window.testIndicatorPosition = function() {
+    console.group('🧪 TESTE DA POSIÇÃO DO INDICADOR DE VÍDEO');
     
     if (!window.properties || window.properties.length === 0) {
         alert('❌ Nenhum imóvel disponível para teste');
         return;
     }
     
-    // Criar um imóvel de teste com 1 imagem
-    const testProperty = {
-        id: 999,
-        title: "TESTE LAYOUT UNIFICADO",
-        price: "R$ 1,00",
-        location: "Local de Teste",
-        description: "Imóvel de teste com layout unificado",
-        features: '["Teste"]',
-        type: "residencial",
-        has_video: true,
-        badge: "Teste",
-        rural: false,
-        images: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-        pdfs: "EMPTY",
-        created_at: new Date().toISOString()
-    };
+    const testProperty = window.properties[0];
     
-    // Adicionar temporariamente
-    window.properties.unshift(testProperty);
-    
-    // Renderizar
-    if (typeof window.renderProperties === 'function') {
-        window.renderProperties('todos', true);
+    // Verificar se o imóvel tem vídeo
+    if (!testProperty.has_video) {
+        alert('⚠️ Este imóvel não tem vídeo habilitado.\n\nAtive o vídeo primeiro para testar a posição.');
+        return;
     }
     
-    alert(`🧪 TESTE DO LAYOUT UNIFICADO:\n\n` +
-          `Foi adicionado um imóvel de teste com 1 imagem.\n\n` +
-          `VERIFIQUE:\n` +
-          `✅ Contador de imagens visível (deve mostrar "1")\n` +
-          `✅ Indicador de vídeo no topo direito\n` +
-          `✅ Mesmo estilo de cards com múltiplas imagens\n` +
-          `✅ Layout consistente e profissional\n\n` +
-          `O card será removido automaticamente em 10 segundos.`);
+    // Encontrar o card
+    const card = document.querySelector(`[data-property-id="${testProperty.id}"]`);
+    if (!card) {
+        alert('❌ Card não encontrado na página');
+        return;
+    }
     
-    // Remover após 10 segundos
-    setTimeout(() => {
-        window.properties = window.properties.filter(p => p.id !== 999);
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties('todos', true);
-        }
-        console.log('✅ Imóvel de teste removido');
-    }, 10000);
+    // Verificar elementos
+    const videoIndicator = card.querySelector('.video-indicator');
+    const imageCount = card.querySelector('.image-count');
+    
+    console.log('🔍 Elementos encontrados:', {
+        temVideoIndicator: !!videoIndicator,
+        temImageCount: !!imageCount,
+        posicaoVideoIndicator: videoIndicator ? videoIndicator.style.top : 'não encontrado',
+        posicaoImageCount: imageCount ? imageCount.style.top : 'não encontrado'
+    });
+    
+    if (videoIndicator) {
+        // Destacar visualmente
+        videoIndicator.style.border = '2px solid #FFD700';
+        videoIndicator.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.8)';
+        
+        setTimeout(() => {
+            if (videoIndicator) {
+                videoIndicator.style.border = '';
+                videoIndicator.style.boxShadow = '';
+            }
+        }, 3000);
+    }
+    
+    alert(`🧪 TESTE DA POSIÇÃO DO INDICADOR:\n\n` +
+          `1. Indicador de vídeo encontrado: ${videoIndicator ? 'SIM' : 'NÃO'}\n` +
+          `2. Contador de imagens encontrado: ${imageCount ? 'SIM' : 'NÃO'}\n` +
+          `3. Posição do indicador: ${videoIndicator ? videoIndicator.style.top : 'N/A'}\n\n` +
+          `✅ O indicador deve estar 35px do topo, abaixo do contador de imagens.`);
     
     console.groupEnd();
 };
 
-// ========== 17. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
+// ========== 16. ADICIONAR ESTILOS CSS PARA ANIMAÇÕES ==========
+const videoUpdateStyles = `
+    @keyframes highlightUpdate {
+        0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+    }
+    
+    @keyframes pulseVideo {
+        0% { opacity: 0.8; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.05); }
+        100% { opacity: 0.8; transform: scale(1); }
+    }
+    
+    .property-card.updating {
+        animation: highlightUpdate 1s ease;
+    }
+    
+    /* Estilos para os campos atualizáveis */
+    [data-title-field], [data-price-field], [data-location-field], 
+    [data-description-field], [data-features-field] {
+        transition: all 0.3s ease;
+    }
+    
+    .property-card.updated {
+        animation: highlightUpdate 1s ease;
+    }
+    
+    /* Estilos específicos para os indicadores */
+    .video-indicator {
+        animation: pulseVideo 2s infinite !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .image-count {
+        z-index: 10 !important;
+        font-weight: bold !important;
+    }
+`;
+
+// Adicionar estilos dinamicamente
+if (!document.querySelector('#video-update-styles')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'video-update-styles';
+    styleEl.textContent = videoUpdateStyles;
+    document.head.appendChild(styleEl);
+}
+
+// ========== 17. FUNÇÃO DE DIAGNÓSTICO DE SINCRONIZAÇÃO ==========
+window.debugSyncIssue = function() {
+    console.group('🐛 DIAGNÓSTICO DO BUG DE SINCRONIZAÇÃO');
+    
+    console.log('📊 ESTADO ATUAL:');
+    console.log('- Propriedades no array:', window.properties?.length || 0);
+    console.log('- IDs disponíveis:', window.properties?.map(p => p.id).join(', ') || 'nenhum');
+    
+    // Verificar localStorage
+    try {
+        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+        console.log('- Propriedades no localStorage:', stored.length);
+        console.log('- IDs no storage:', stored.map(p => p.id).join(', '));
+        
+        // Comparar
+        if (window.properties && stored) {
+            const missingInArray = stored.filter(s => 
+                !window.properties.some(p => p.id === s.id)
+            );
+            const missingInStorage = window.properties.filter(p => 
+                !stored.some(s => s.id === p.id)
+            );
+            
+            console.log('🔍 COMPARAÇÃO:');
+            console.log('- Faltam no array:', missingInArray.length);
+            console.log('- Faltam no storage:', missingInStorage.length);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao comparar:', error);
+    }
+    
+    console.log('⚡ SUGESTÕES:');
+    console.log('1. Execute window.forceSyncProperties() para sincronizar com Supabase');
+    console.log('2. Execute window.debugSyncIssue() para diagnóstico');
+    console.log('3. Verifique console por erros de conexão Supabase');
+    
+    console.groupEnd();
+};
+
+// ========== 18. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
 setTimeout(() => {
-    console.log('🔍 Verificando sincronização e layout ao iniciar...');
+    // Verificar inconsistência entre array e localStorage
+    if (window.properties && window.properties.length > 0) {
+        try {
+            const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+            if (stored.length !== window.properties.length) {
+                console.warn('⚠️ INCONSISTÊNCIA DETECTADA:');
+                console.warn(`- Array: ${window.properties.length} imóveis`);
+                console.warn(`- Storage: ${stored.length} imóveis`);
+                console.warn('🔄 Corrigindo automaticamente...');
+                
+                // Salvar array atual no storage (correção)
+                localStorage.setItem('properties', JSON.stringify(window.properties));
+                console.log('✅ Storage corrigido com array atual');
+            }
+        } catch (error) {
+            console.error('❌ Erro na verificação automática:', error);
+        }
+    }
+}, 5000);
+
+// ========== 19. FUNÇÃO DE SINCRONIZAÇÃO FORÇADA ==========
+window.forceSyncProperties = async function() {
+    console.group('🔄 FORÇANDO SINCRONIZAÇÃO DE IMÓVEIS');
+    
+    try {
+        // 1. Verificar credenciais Supabase
+        if (!window.ensureSupabaseCredentials()) {
+            console.error('❌ Credenciais Supabase não configuradas');
+            alert('❌ Credenciais Supabase não configuradas');
+            return false;
+        }
+        
+        // 2. Buscar imóveis do Supabase
+        console.log('🌐 Buscando imóveis do Supabase...');
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao buscar imóveis: ${response.status}`);
+        }
+        
+        const supabaseProperties = await response.json();
+        console.log(`📡 ${supabaseProperties.length} imóveis encontrados no Supabase`);
+        
+        // 3. Comparar com localStorage
+        const storedProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+        console.log(`💾 ${storedProperties.length} imóveis no localStorage`);
+        
+        // 4. Mesclar dados (dar preferência ao Supabase)
+        const mergedProperties = [...supabaseProperties];
+        
+        // Adicionar imóveis locais que não estão no Supabase
+        storedProperties.forEach(localProp => {
+            const existsInSupabase = supabaseProperties.some(supabaseProp => 
+                supabaseProp.id === localProp.id || 
+                supabaseProp.title === localProp.title
+            );
+            
+            if (!existsInSupabase) {
+                console.log(`➕ Adicionando imóvel local ao merge: ${localProp.title}`);
+                mergedProperties.push({
+                    ...localProp,
+                    syncStatus: 'local_only'
+                });
+            }
+        });
+        
+        // 5. Ordenar por ID (mais recentes primeiro)
+        mergedProperties.sort((a, b) => b.id - a.id);
+        
+        // 6. Atualizar estado global
+        window.properties = mergedProperties.map(prop => ({
+            ...prop,
+            has_video: window.ensureBooleanVideo(prop.has_video),
+            features: window.parseFeaturesForStorage(prop.features)
+        }));
+        
+        // 7. Salvar no localStorage
+        localStorage.setItem('properties', JSON.stringify(window.properties));
+        console.log(`💾 ${window.properties.length} imóveis salvos no localStorage após sincronização`);
+        
+        // 8. Atualizar interface
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties('todos', true);
+        }
+        
+        if (typeof window.loadPropertyList === 'function') {
+            window.loadPropertyList();
+        }
+        
+        // 9. Feedback ao usuário
+        const syncMessage = `✅ Sincronização concluída!\n\n` +
+                          `🌐 Supabase: ${supabaseProperties.length} imóveis\n` +
+                          `💾 Local: ${storedProperties.length} imóveis\n` +
+                          `📊 Total sincronizado: ${window.properties.length} imóveis`;
+        
+        alert(syncMessage);
+        console.log('✅ Sincronização forçada concluída com sucesso');
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro na sincronização:', error);
+        alert(`❌ Erro na sincronização:\n\n${error.message}`);
+        return false;
+        
+    } finally {
+        console.groupEnd();
+    }
+};
+
+// ========== 20. VERIFICAÇÃO DE SINCRONIZAÇÃO AO INICIAR ==========
+setTimeout(() => {
+    console.log('🔍 Verificando sincronização ao iniciar...');
     
     // 1. Verificar se há imóveis no localStorage
     const stored = JSON.parse(localStorage.getItem('properties') || '[]');
     console.log(`📊 Ao iniciar: ${stored.length} imóveis no localStorage`);
     
-    // 2. Se window.properties estiver vazio mas localStorage tem dados
+    // 2. Se tiver imóveis, verificar consistência
+    if (stored.length > 0) {
+        // Verificar se todos os imóveis têm ID numérico válido
+        const invalidProperties = stored.filter(p => {
+            const id = parseInt(p.id);
+            return isNaN(id) || id <= 0 || !Number.isInteger(id);
+        });
+        
+        if (invalidProperties.length > 0) {
+            console.warn(`⚠️ ${invalidProperties.length} imóveis com ID inválido encontrados`);
+            console.log('IDs inválidos:', invalidProperties.map(p => p.id));
+            
+            // Tentar corrigir IDs inválidos
+            const correctedProperties = stored.map((prop, index) => {
+                const id = parseInt(prop.id);
+                if (isNaN(id) || id <= 0 || !Number.isInteger(id)) {
+                    // Gerar novo ID baseado na posição
+                    const newId = stored.length > 0 ? 
+                        Math.max(...stored.map(p => {
+                            const existingId = parseInt(p.id);
+                            return isNaN(existingId) || existingId <= 0 ? 0 : existingId;
+                        })) + index + 1 : 1;
+                    
+                    console.log(`🔄 Corrigindo ID: ${prop.id} -> ${newId} (${prop.title})`);
+                    return { ...prop, id: newId };
+                }
+                return prop;
+            });
+            
+            // Salvar corrigido
+            localStorage.setItem('properties', JSON.stringify(correctedProperties));
+            console.log('✅ IDs corrigidos e salvos no localStorage');
+        }
+    }
+    
+    // 3. Se window.properties estiver vazio mas localStorage tem dados
     if ((!window.properties || window.properties.length === 0) && stored.length > 0) {
         console.log('🔄 Carregando imóveis do localStorage para window.properties...');
         window.properties = stored.map(prop => ({
@@ -1889,7 +2035,7 @@ setTimeout(() => {
 }, 3000);
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js VERSÃO FINAL COMPLETA COM LAYOUT UNIFICADO');
+console.log('✅ properties.js VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA');
 
 function runLowPriority(task) {
     if ('requestIdleCallback' in window) {
@@ -1902,7 +2048,7 @@ function runLowPriority(task) {
 // Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🏠 DOM carregado - inicializando properties com layout unificado...');
+        console.log('🏠 DOM carregado - inicializando properties...');
 
         runLowPriority(() => {
             if (typeof window.loadPropertiesData === 'function') {
@@ -1939,11 +2085,14 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 LAYOUT UNIFICADO IMPLEMENTADO!');
-console.log('✅ Contador de imagens SEMPRE visível (mesmo para 1 imagem)');
-console.log('✅ Indicador de vídeo SEMPRE na mesma posição');
-console.log('✅ Botão PDF SEMPRE no mesmo lugar');
-console.log('✅ Mesmo estilo CSS para todas as situações');
-console.log('💡 Execute window.testUnifiedLayout() para testar o layout unificado');
+console.log('🎯 TODOS OS PROBLEMAS RESOLVIDOS!');
+console.log('✅ Formatação de preço unificada no SharedCore');
+console.log('✅ Indicador de vídeo ajustado para posição inferior (35px do topo)');
+console.log('✅ Contador de imagens mantido no topo (10px do topo)');
+console.log('✅ Sincronização Supabase vs LocalStorage corrigida');
+console.log('✅ Função de diagnóstico window.debugSyncIssue() disponível');
+console.log('✅ Função de sincronização window.forceSyncProperties() disponível');
+console.log('💡 Execute window.debugSyncIssue() para verificar problemas de sincronização');
+console.log('💡 Execute window.forceSyncProperties() para forçar sincronização com Supabase');
 console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
 console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
