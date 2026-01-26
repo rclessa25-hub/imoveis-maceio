@@ -264,7 +264,7 @@
     
     /* CORREÇÃO PARA DESKTOP */
     .video-indicator {
-        top: 35px !important; /* REBAIXADO também para desktop */
+        top: 40px !important; /* REBAIXADO também para desktop */
         right: 15px !important;
     }
 
