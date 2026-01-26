@@ -1,6 +1,7 @@
-/* css/gallery.css - Estilos da galeria de fotos MOBILE FIRST */
+/* css/gallery.css - ESTILOS DA GALERIA OTIMIZADOS COM INDICADOR DE VÍDEO CORRETO */
+/* ATUALIZAÇÃO: Garante que o indicador "TEM VÍDEO" fique abaixo do contador de imagens */
 
-/* ========== GALERIA DE IMÓVEIS - MOBILE FIRST ========== */
+/* ========== GALERIA DE IMÓVEIS - COM POSIÇÕES AJUSTADAS ========== */
 .property-gallery-container {
     position: relative;
     width: 100%;
@@ -20,22 +21,77 @@
     transform: scale(1.02);
 }
 
-/* Controles da galeria MOBILE */
+/* CONTADOR DE IMAGENS - POSIÇÃO FIXA NO TOPO */
+.gallery-indicator-mobile {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    color: white !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: bold !important;
+    z-index: 10 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    min-width: 40px !important;
+    justify-content: center !important;
+}
+
+/* INDICADOR DE VÍDEO - POSIÇÃO AJUSTADA ABAIXO DO CONTADOR */
+.video-indicator {
+    position: absolute !important;
+    top: 45px !important; /* 45px abaixo do topo, para ficar abaixo do contador */
+    right: 10px !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    color: white !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    z-index: 9 !important;
+    animation: pulseVideo 2s infinite !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+    border: 2px solid rgba(255, 215, 0, 0.5) !important;
+    backdrop-filter: blur(6px) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    min-width: 120px !important;
+    justify-content: center !important;
+}
+
+.video-indicator i {
+    color: #FFD700 !important;
+    font-size: 14px !important;
+}
+
+.video-indicator span {
+    font-size: 11px !important;
+}
+
+/* Controles da galeria - posição ajustada */
 .gallery-controls {
     position: absolute;
-    bottom: 10px;
+    bottom: 15px;
     left: 0;
     right: 0;
     display: flex;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     z-index: 5;
     padding: 0 10px;
 }
 
 .gallery-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.5);
     border: 1px solid rgba(0, 0, 0, 0.3);
@@ -49,26 +105,83 @@
     transform: scale(1.2);
 }
 
-/* Indicador de múltiplas fotos (MOBILE) */
-.gallery-indicator-mobile {
+/* Ícone de expansão - posição ajustada */
+.gallery-expand-icon {
     position: absolute;
-    top: 10px;
+    bottom: 45px; /* Movido para cima para não conflitar com controles */
     right: 10px;
     background: rgba(0, 0, 0, 0.7);
     color: white;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    z-index: 5;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 4px;
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    justify-content: center;
+    font-size: 0.9rem;
+    z-index: 5;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-/* Modal da galeria FULLSCREEN - MOBILE FIRST */
+.gallery-expand-icon:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+}
+
+/* Badge do imóvel - posição ajustada */
+.property-badge {
+    position: absolute !important;
+    top: 10px !important;
+    left: 10px !important;
+    background: linear-gradient(135deg, var(--primary), #3498db) !important;
+    color: white !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    z-index: 10 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+}
+
+.rural-badge {
+    background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
+}
+
+/* Botão PDF - posição ajustada */
+.pdf-access {
+    position: absolute !important;
+    bottom: 15px !important;
+    right: 15px !important;
+    background: rgba(220, 53, 69, 0.95) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 45px !important;
+    height: 45px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    z-index: 8 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+    transition: all 0.3s ease !important;
+    font-size: 20px !important;
+    border: 2px solid rgba(255,255,255,0.3) !important;
+}
+
+.pdf-access:hover {
+    background: rgba(200, 35, 51, 0.95) !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5) !important;
+}
+
+/* ========== MODAL DA GALERIA FULLSCREEN ========== */
 .gallery-modal {
     display: none;
     position: fixed;
@@ -115,7 +228,7 @@
     touch-action: manipulation;
 }
 
-/* Controles do modal MOBILE */
+/* Controles do modal */
 .gallery-modal-controls {
     position: absolute;
     bottom: 20px;
@@ -201,56 +314,103 @@
     z-index: 5;
 }
 
-/* Ícone de expansão */
-.gallery-expand-icon {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    z-index: 5;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+/* Animação do indicador de vídeo */
+@keyframes pulseVideo {
+    0% { 
+        opacity: 0.9; 
+        transform: scale(1); 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1.05); 
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
+    }
+    100% { 
+        opacity: 0.9; 
+        transform: scale(1); 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
 }
 
-.gallery-expand-icon:hover {
-    background: rgba(0, 0, 0, 0.9);
-    transform: scale(1.1);
-}
+/* ========== HIERARQUIA DE Z-INDEX DEFINIDA ========== */
+/* 
+   Z-INDEX Hierarchy:
+   10: gallery-indicator-mobile (contador de imagens) - MAIS ALTO
+   9:  video-indicator (indicador de vídeo)
+   8:  pdf-access (botão PDF)
+   5:  gallery-controls, gallery-dot, gallery-expand-icon
+*/
 
+/* ========== RESPONSIVIDADE ========== */
 /* Desktop */
 @media (min-width: 768px) {
+    .property-gallery-container {
+        height: 280px;
+    }
+    
     .gallery-indicator-mobile {
-        top: 15px;
+        top: 15px !important;
+        right: 15px !important;
+        padding: 8px 12px !important;
+        font-size: 14px !important;
+    }
+    
+    .video-indicator {
+        top: 50px !important;
+        right: 15px !important;
+        padding: 10px 16px !important;
+        font-size: 13px !important;
+        min-width: 130px !important;
+    }
+    
+    .video-indicator i {
+        font-size: 15px !important;
+    }
+    
+    .video-indicator span {
+        font-size: 12px !important;
+    }
+    
+    .property-badge {
+        top: 15px !important;
+        left: 15px !important;
+        padding: 8px 14px !important;
+        font-size: 13px !important;
+    }
+    
+    .gallery-expand-icon {
+        bottom: 50px;
         right: 15px;
-        padding: 6px 12px;
-        font-size: 0.8rem;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
     }
-
+    
+    .pdf-access {
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 22px !important;
+    }
+    
     .gallery-controls {
-        bottom: 15px;
-        gap: 10px;
+        bottom: 20px;
+        gap: 12px;
     }
-
+    
     .gallery-dot {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
     }
-
+    
     .gallery-modal-btn {
         width: 50px;
         height: 50px;
         font-size: 1.3rem;
     }
-
+    
     .gallery-modal-close {
         width: 50px;
         height: 50px;
@@ -258,27 +418,154 @@
         top: 30px;
         right: 30px;
     }
-
+    
     .gallery-counter {
         font-size: 1rem;
         padding: 8px 16px;
     }
 }
 
+/* Mobile pequeno */
+@media (max-width: 480px) {
+    .property-gallery-container {
+        height: 220px;
+    }
+    
+    .gallery-indicator-mobile {
+        top: 8px !important;
+        right: 8px !important;
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+        min-width: 35px !important;
+    }
+    
+    .video-indicator {
+        top: 40px !important;
+        right: 8px !important;
+        padding: 6px 10px !important;
+        font-size: 10px !important;
+        min-width: 100px !important;
+    }
+    
+    .video-indicator i {
+        font-size: 12px !important;
+    }
+    
+    .video-indicator span {
+        font-size: 10px !important;
+    }
+    
+    .property-badge {
+        top: 8px !important;
+        left: 8px !important;
+        padding: 5px 10px !important;
+        font-size: 11px !important;
+    }
+    
+    .gallery-expand-icon {
+        bottom: 40px;
+        right: 8px;
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+    
+    .pdf-access {
+        bottom: 10px !important;
+        right: 10px !important;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 18px !important;
+    }
+    
+    .gallery-controls {
+        bottom: 10px;
+        gap: 6px;
+    }
+    
+    .gallery-dot {
+        width: 8px;
+        height: 8px;
+    }
+}
+
 /* Landscape mobile */
 @media (max-height: 500px) and (orientation: landscape) {
+    .property-gallery-container {
+        height: 200px;
+    }
+    
     .gallery-modal-image {
         max-height: 85vh;
     }
-
+    
     .gallery-modal-controls {
         bottom: 10px;
     }
 }
 
-/* Acessibilidade */
+/* ========== ACESSIBILIDADE ========== */
 .gallery-modal-btn:focus,
-.gallery-modal-close:focus {
+.gallery-modal-close:focus,
+.gallery-expand-icon:focus,
+.pdf-access:focus {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+}
+
+/* Prevenir seleção de texto na galeria */
+.gallery-modal-content,
+.gallery-indicator-mobile,
+.video-indicator,
+.property-badge {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* ========== ESTILOS PARA IMAGENS SEM GALERIA ========== */
+/* Para imóveis com apenas 1 imagem, não mostramos controles da galeria */
+.property-image:not(:has(.property-gallery-container)) {
+    position: relative;
+    height: 250px;
+}
+
+.property-image:not(:has(.property-gallery-container)) img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Ajustar posições para imagens não-galeria */
+.property-image:not(:has(.property-gallery-container)) .gallery-indicator-mobile {
+    display: none !important;
+}
+
+.property-image:not(:has(.property-gallery-container)) .gallery-controls {
+    display: none !important;
+}
+
+.property-image:not(:has(.property-gallery-container)) .gallery-expand-icon {
+    display: none !important;
+}
+
+/* ========== CORREÇÃO ESPECÍFICA PARA SOBREPOSIÇÃO ========== */
+/* Garantir que o vídeo-indicator fique SEMPRE abaixo do contador */
+.gallery-indicator-mobile + .video-indicator {
+    top: 45px !important; /* Distância fixa do topo */
+}
+
+/* Se não tiver contador de imagens, o vídeo pode subir */
+.property-image:not(:has(.gallery-indicator-mobile)) .video-indicator {
+    top: 10px !important; /* Volta para o topo se não houver contador */
+}
+
+/* ========== ANIMAÇÕES DE DESTAQUE ========== */
+@keyframes highlightUpdate {
+    0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
+    50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+}
+
+.property-card.updated {
+    animation: highlightUpdate 1s ease;
 }
