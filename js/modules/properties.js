@@ -12,7 +12,7 @@ window.ensureSupabaseCredentials = function() {
         console.warn('⚠️ SUPABASE_CONSTANTS não definido, configurando...');
         window.SUPABASE_CONSTANTS = {
             URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
-            KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBetG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+            KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHpetG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
             ADMIN_PASSWORD: "wl654",
             PDF_PASSWORD: "doc123"
         };
@@ -798,7 +798,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL (COM FORMATAÇÃO UNIFICADA) ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL (COM FORMATAÇÃO UNIFICADA) - CORREÇÃO CRÍTICA ==========
 window.addNewProperty = async function(propertyData) {
     console.group('➕ ADICIONANDO NOVO IMÓVEL');
     console.log('📋 Dados recebidos:', propertyData);
@@ -892,15 +892,24 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
-        // Criar objeto local
-        const newId = supabaseSuccess && supabaseId
-            ? supabaseId
-            : (window.properties.length > 0
-                ? Math.max(...window.properties.map(p => parseInt(p.id) || 0)) + 1
-                : 1);
+        // ✅ CORREÇÃO CRÍTICA: ID ÚNICO E SINCRONIZADO
+        let newId;
+        
+        if (supabaseSuccess && supabaseId) {
+            // 1. Se Supabase retornou ID, usar ESSE ID
+            newId = supabaseId;
+            console.log(`✅ ID sincronizado do Supabase: ${newId}`);
+        } else {
+            // 2. Gerar ID local temporário (será sobrescrito após sync)
+            const maxLocalId = window.properties.length > 0 ? 
+                Math.max(...window.properties.map(p => parseInt(p.id) || 0)) : 0;
+            newId = maxLocalId + 1;
+            console.log(`⚠️ ID local temporário: ${newId} (sem conexão Supabase)`);
+        }
 
+        // Criar objeto com ID CORRETO
         const newProperty = {
-            id: newId,
+            id: newId,  // ✅ ID correto (Supabase ou local)
             title: propertyData.title,
             price: propertyData.price,
             location: propertyData.location,
@@ -914,21 +923,59 @@ window.addNewProperty = async function(propertyData) {
             pdfs: propertyData.pdfs || '',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            savedToSupabase: supabaseSuccess
+            savedToSupabase: supabaseSuccess,
+            // ✅ NOVO: flag de sincronização
+            syncStatus: supabaseSuccess ? 'synced' : 'local_only'
         };
 
-        // Salvar localmente (SEMPRE)
+        // ✅ SALVAR NO ARRAY LOCAL (CRÍTICO)
         window.properties.unshift(newProperty);
-        window.savePropertiesToStorage();
-
-        // ATUALIZAÇÃO CRÍTICA: Renderizar imediatamente
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties('todos');
+        
+        // ✅ FORÇAR SALVAMENTO NO LOCALSTORAGE (CRÍTICO)
+        try {
+            localStorage.setItem('properties', JSON.stringify(window.properties));
+            console.log(`💾 Imóvel ID:${newId} salvo PERMANENTEMENTE no localStorage`);
+        } catch (error) {
+            console.error('❌ Erro ao salvar no localStorage:', error);
+            // Continua mesmo com erro de storage
         }
 
-        if (typeof window.loadPropertyList === 'function') {
-            setTimeout(() => window.loadPropertyList(), 300);
-        }
+        // ✅ ATUALIZAÇÃO IMEDIATA DA INTERFACE (GARANTIDA)
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos', true); // true = limpar cache
+            }
+            
+            if (typeof window.loadPropertyList === 'function') {
+                window.loadPropertyList();
+            }
+            
+            console.log(`🎯 Interface atualizada para imóvel ${newId}`);
+        }, 300);
+
+        // ✅ VERIFICAÇÃO DE INTEGRIDADE (NOVA)
+        setTimeout(() => {
+            console.group('🔍 VERIFICAÇÃO DE SINCRONIZAÇÃO');
+            
+            // Verificar se imóvel está no array
+            const inArray = window.properties.some(p => p.id === newId);
+            console.log(`📋 No array properties: ${inArray ? '✅' : '❌'}`);
+            
+            // Verificar localStorage
+            try {
+                const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+                const inStorage = stored.some(p => p.id === newId);
+                console.log(`💾 No localStorage: ${inStorage ? '✅' : '❌'}`);
+            } catch (e) {
+                console.error('❌ Erro ao verificar localStorage:', e);
+            }
+            
+            // Verificar interface
+            const inUI = !!document.querySelector(`[data-property-id="${newId}"]`);
+            console.log(`🎨 Na interface (card): ${inUI ? '✅' : '❌'}`);
+            
+            console.groupEnd();
+        }, 1000);
 
         // Feedback ao usuário
         const imageCount = newProperty.images
@@ -1769,6 +1816,67 @@ if (!document.querySelector('#video-update-styles')) {
     document.head.appendChild(styleEl);
 }
 
+// ========== 17. FUNÇÃO DE DIAGNÓSTICO DE SINCRONIZAÇÃO ==========
+window.debugSyncIssue = function() {
+    console.group('🐛 DIAGNÓSTICO DO BUG DE SINCRONIZAÇÃO');
+    
+    console.log('📊 ESTADO ATUAL:');
+    console.log('- Propriedades no array:', window.properties?.length || 0);
+    console.log('- IDs disponíveis:', window.properties?.map(p => p.id).join(', ') || 'nenhum');
+    
+    // Verificar localStorage
+    try {
+        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+        console.log('- Propriedades no localStorage:', stored.length);
+        console.log('- IDs no storage:', stored.map(p => p.id).join(', '));
+        
+        // Comparar
+        if (window.properties && stored) {
+            const missingInArray = stored.filter(s => 
+                !window.properties.some(p => p.id === s.id)
+            );
+            const missingInStorage = window.properties.filter(p => 
+                !stored.some(s => s.id === p.id)
+            );
+            
+            console.log('🔍 COMPARAÇÃO:');
+            console.log('- Faltam no array:', missingInArray.length);
+            console.log('- Faltam no storage:', missingInStorage.length);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao comparar:', error);
+    }
+    
+    console.log('⚡ SUGESTÕES:');
+    console.log('1. Execute window.forceSyncProperties() para sincronizar com Supabase');
+    console.log('2. Execute window.debugSyncIssue() para diagnóstico');
+    console.log('3. Verifique console por erros de conexão Supabase');
+    
+    console.groupEnd();
+};
+
+// ========== 18. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
+setTimeout(() => {
+    // Verificar inconsistência entre array e localStorage
+    if (window.properties && window.properties.length > 0) {
+        try {
+            const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+            if (stored.length !== window.properties.length) {
+                console.warn('⚠️ INCONSISTÊNCIA DETECTADA:');
+                console.warn(`- Array: ${window.properties.length} imóveis`);
+                console.warn(`- Storage: ${stored.length} imóveis`);
+                console.warn('🔄 Corrigindo automaticamente...');
+                
+                // Salvar array atual no storage (correção)
+                localStorage.setItem('properties', JSON.stringify(window.properties));
+                console.log('✅ Storage corrigido com array atual');
+            }
+        } catch (error) {
+            console.error('❌ Erro na verificação automática:', error);
+        }
+    }
+}, 5000);
+
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA');
 
@@ -1824,6 +1932,8 @@ console.log('🎯 TODOS OS PROBLEMAS RESOLVIDOS!');
 console.log('✅ Formatação de preço unificada no SharedCore');
 console.log('✅ Indicador de vídeo ajustado para posição inferior (35px do topo)');
 console.log('✅ Contador de imagens mantido no topo (10px do topo)');
+console.log('✅ Sincronização Supabase vs LocalStorage corrigida');
 console.log('💡 Execute window.testIndicatorPosition() para verificar a posição');
 console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
 console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
+console.log('💡 Execute window.debugSyncIssue() para diagnóstico de sincronização');
