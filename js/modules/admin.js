@@ -547,8 +547,18 @@ window.saveProperty = async function() {
         propertyData.images = imageUrls || 'EMPTY';
         propertyData.pdfs = pdfUrls || 'EMPTY';
         
+        // ✅ NOVO: ID consistente
+        if (window.editingPropertyId) {
+            propertyData.id = window.editingPropertyId;
+        } else {
+            // Para novo imóvel, garantir ID consistente
+            const maxId = window.properties?.length > 0 ? 
+                Math.max(...window.properties.map(p => parseInt(p.id) || 0)) : 0;
+            propertyData.id = maxId + 1;
+        }
+        
         console.log('📦 Dados finais para salvar:', {
-            id: window.editingPropertyId || 'Novo',
+            id: propertyData.id,
             title: propertyData.title,
             has_video: propertyData.has_video,
             features: propertyData.features,
@@ -611,20 +621,14 @@ window.saveProperty = async function() {
         } else {
             console.log('🆕 Criando novo imóvel...');
             
-            // Gerar novo ID
-            const maxId = window.properties?.length > 0 ? 
-                Math.max(...window.properties.map(p => p.id)) : 0;
-            const newId = maxId + 1;
-            
             // Criar objeto completo
             const newProperty = {
                 ...propertyData,
-                id: newId,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
             
-            // Adicionar localmente
+            // Adicionar localmente usando a função corrigida
             window.addToLocalProperties(newProperty);
             
             // Tentar salvar no Supabase
