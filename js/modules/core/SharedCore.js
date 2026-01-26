@@ -1,5 +1,5 @@
 // js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS E FORMATAÇÃO CORRIGIDA (CORRIGIDO)
-console.log('🔧 SharedCore.js carregado - COM FORMATAÇÃO DE PREÇO CORRIGIDA');
+console.log('🔧 SharedCore.js carregado - COM FORMATAÇÃO DE PREÇO CORRIGIDA E UNIFICADA');
 
 // ========== CONSTANTES SUPABASE FIXAS (IMPORTANTE!) ==========
 // Verificar se já foi declarado por outro módulo (media-unified.js)
@@ -215,6 +215,42 @@ const SharedCore = (function() {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
+        },
+
+        /**
+         * Formata preço para exibição em cards (compatibilidade com properties.js)
+         * @param {string|number} value - Valor a formatar
+         * @param {boolean} forceFormat - Forçar formatação mesmo se já formatado
+         * @returns {string} Preço pronto para exibição em cards
+         */
+        formatForCard: function(value, forceFormat = false) {
+            if (!value && value !== 0) return 'R$ 0,00';
+            
+            // Se já formatado e não forçando, retornar como está
+            if (!forceFormat && typeof value === 'string' && value.includes('R$')) {
+                return value;
+            }
+            
+            // Extrair números e formatar
+            const numbersOnly = value.toString().replace(/[^0-9,-]/g, '').replace(',', '.');
+            const numericValue = parseFloat(numbersOnly) || 0;
+            
+            // Formatar com decimais
+            return numericValue.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        },
+
+        /**
+         * Formata preço para input (compatibilidade com admin.js)
+         * @param {string|number} value - Valor a formatar
+         * @returns {string} Preço formatado para campo de input
+         */
+        formatForAdmin: function(value) {
+            return this.formatForInput(value);
         },
         
         /**
@@ -629,6 +665,26 @@ const SharedCore = (function() {
 // Exportar para escopo global
 window.SharedCore = SharedCore;
 
+// ========== COMPATIBILIDADE GLOBAL ==========
+(function setupGlobalCompatibility() {
+    console.log('🔗 Configurando compatibilidade global de formatação...');
+    
+    // Expor funções de formatação globalmente (para código legado)
+    if (typeof window.formatPrice === 'undefined') {
+        window.formatPrice = function(value) {
+            return SharedCore.PriceFormatter.formatForCard(value);
+        };
+    }
+    
+    if (typeof window.formatPriceForInput === 'undefined') {
+        window.formatPriceForInput = function(value) {
+            return SharedCore.PriceFormatter.formatForInput(value);
+        };
+    }
+    
+    console.log('✅ Compatibilidade de formatação de preço configurada');
+})();
+
 // ========== INICIALIZAÇÃO E COMPATIBILIDADE ==========
 function initializeGlobalCompatibility() {
     console.log('🔗 Inicializando compatibilidade global...');
@@ -721,6 +777,14 @@ setTimeout(() => {
         if (!exists) allAvailable = false;
     });
     
+    // Verificar novas funções de formatação
+    const newFormatFunctions = ['formatPriceForCard', 'formatPriceForAdmin'];
+    newFormatFunctions.forEach(func => {
+        const available = window.SharedCore?.PriceFormatter?.[func] !== undefined;
+        console.log(`${available ? '✅' : '❌'} PriceFormatter.${func} disponível`);
+        if (!available) allAvailable = false;
+    });
+    
     console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO' : '⚠️ VERIFICAÇÃO REQUERIDA');
     console.groupEnd();
 }, 2000);
@@ -742,4 +806,4 @@ setTimeout(() => {
     console.log('✅ SUPABASE_CONSTANTS definido globalmente');
 })();
 
-console.log(`✅ SharedCore.js pronto - Sistema de formatação de preço corrigido`);
+console.log(`✅ SharedCore.js pronto - Sistema de formatação de preço unificado e corrigido`);
