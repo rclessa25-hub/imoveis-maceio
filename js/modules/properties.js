@@ -1855,6 +1855,163 @@ window.debugSyncIssue = function() {
     console.groupEnd();
 };
 
+// ========== 19. FUNÇÃO DE SINCRONIZAÇÃO FORÇADA ==========
+window.forceSyncProperties = async function() {
+    console.group('🔄 FORÇANDO SINCRONIZAÇÃO DE IMÓVEIS');
+    
+    try {
+        // 1. Verificar credenciais Supabase
+        if (!window.ensureSupabaseCredentials()) {
+            console.error('❌ Credenciais Supabase não configuradas');
+            alert('❌ Credenciais Supabase não configuradas');
+            return false;
+        }
+        
+        // 2. Buscar imóveis do Supabase
+        console.log('🌐 Buscando imóveis do Supabase...');
+        const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?select=*`, {
+            headers: {
+                'apikey': window.SUPABASE_KEY,
+                'Authorization': `Bearer ${window.SUPABASE_KEY}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao buscar imóveis: ${response.status}`);
+        }
+        
+        const supabaseProperties = await response.json();
+        console.log(`📡 ${supabaseProperties.length} imóveis encontrados no Supabase`);
+        
+        // 3. Comparar com localStorage
+        const storedProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+        console.log(`💾 ${storedProperties.length} imóveis no localStorage`);
+        
+        // 4. Mesclar dados (dar preferência ao Supabase)
+        const mergedProperties = [...supabaseProperties];
+        
+        // Adicionar imóveis locais que não estão no Supabase
+        storedProperties.forEach(localProp => {
+            const existsInSupabase = supabaseProperties.some(supabaseProp => 
+                supabaseProp.id === localProp.id || 
+                supabaseProp.title === localProp.title
+            );
+            
+            if (!existsInSupabase) {
+                console.log(`➕ Adicionando imóvel local ao merge: ${localProp.title}`);
+                mergedProperties.push({
+                    ...localProp,
+                    syncStatus: 'local_only'
+                });
+            }
+        });
+        
+        // 5. Ordenar por ID (mais recentes primeiro)
+        mergedProperties.sort((a, b) => b.id - a.id);
+        
+        // 6. Atualizar estado global
+        window.properties = mergedProperties.map(prop => ({
+            ...prop,
+            has_video: window.ensureBooleanVideo(prop.has_video),
+            features: window.parseFeaturesForStorage(prop.features)
+        }));
+        
+        // 7. Salvar no localStorage
+        localStorage.setItem('properties', JSON.stringify(window.properties));
+        console.log(`💾 ${window.properties.length} imóveis salvos no localStorage após sincronização`);
+        
+        // 8. Atualizar interface
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties('todos', true);
+        }
+        
+        if (typeof window.loadPropertyList === 'function') {
+            window.loadPropertyList();
+        }
+        
+        // 9. Feedback ao usuário
+        const syncMessage = `✅ Sincronização concluída!\n\n` +
+                          `🌐 Supabase: ${supabaseProperties.length} imóveis\n` +
+                          `💾 Local: ${storedProperties.length} imóveis\n` +
+                          `📊 Total sincronizado: ${window.properties.length} imóveis`;
+        
+        alert(syncMessage);
+        console.log('✅ Sincronização forçada concluída com sucesso');
+        
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro na sincronização:', error);
+        alert(`❌ Erro na sincronização:\n\n${error.message}`);
+        return false;
+        
+    } finally {
+        console.groupEnd();
+    }
+};
+
+// ========== 20. VERIFICAÇÃO DE SINCRONIZAÇÃO AO INICIAR ==========
+setTimeout(() => {
+    console.log('🔍 Verificando sincronização ao iniciar...');
+    
+    // 1. Verificar se há imóveis no localStorage
+    const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+    console.log(`📊 Ao iniciar: ${stored.length} imóveis no localStorage`);
+    
+    // 2. Se tiver imóveis, verificar consistência
+    if (stored.length > 0) {
+        // Verificar se todos os imóveis têm ID numérico válido
+        const invalidProperties = stored.filter(p => {
+            const id = parseInt(p.id);
+            return isNaN(id) || id <= 0 || !Number.isInteger(id);
+        });
+        
+        if (invalidProperties.length > 0) {
+            console.warn(`⚠️ ${invalidProperties.length} imóveis com ID inválido encontrados`);
+            console.log('IDs inválidos:', invalidProperties.map(p => p.id));
+            
+            // Tentar corrigir IDs inválidos
+            const correctedProperties = stored.map((prop, index) => {
+                const id = parseInt(prop.id);
+                if (isNaN(id) || id <= 0 || !Number.isInteger(id)) {
+                    // Gerar novo ID baseado na posição
+                    const newId = stored.length > 0 ? 
+                        Math.max(...stored.map(p => {
+                            const existingId = parseInt(p.id);
+                            return isNaN(existingId) || existingId <= 0 ? 0 : existingId;
+                        })) + index + 1 : 1;
+                    
+                    console.log(`🔄 Corrigindo ID: ${prop.id} -> ${newId} (${prop.title})`);
+                    return { ...prop, id: newId };
+                }
+                return prop;
+            });
+            
+            // Salvar corrigido
+            localStorage.setItem('properties', JSON.stringify(correctedProperties));
+            console.log('✅ IDs corrigidos e salvos no localStorage');
+        }
+    }
+    
+    // 3. Se window.properties estiver vazio mas localStorage tem dados
+    if ((!window.properties || window.properties.length === 0) && stored.length > 0) {
+        console.log('🔄 Carregando imóveis do localStorage para window.properties...');
+        window.properties = stored.map(prop => ({
+            ...prop,
+            has_video: window.ensureBooleanVideo(prop.has_video),
+            features: window.parseFeaturesForStorage(prop.features)
+        }));
+        
+        // Atualizar interface
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos', true);
+            }
+            console.log(`✅ ${window.properties.length} imóveis carregados do localStorage`);
+        }, 500);
+    }
+}, 3000);
+
 // ========== 18. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
 setTimeout(() => {
     // Verificar inconsistência entre array e localStorage
