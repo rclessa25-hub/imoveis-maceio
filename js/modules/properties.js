@@ -763,46 +763,18 @@ window.updateLocalStorage = function() {
     return window.savePropertiesToStorage();
 };
 
-// ========== 5. CONFIGURAR FILTROS ==========
+// ========== 5. CONFIGURAR FILTROS (VERSÃO COMPATÍVEL) ==========
 window.setupFilters = function() {
-    console.log('🎛️ Configurando filtros via FilterManager...');
+    console.log('🎛️ Configurando filtros (compatibilidade)...');
     
-    if (window.FilterManager && typeof window.FilterManager.init === 'function') {
-        window.FilterManager.init((filterValue) => {
-            window.currentFilter = filterValue;
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties(filterValue);
-            }
-        });
-        console.log('✅ Filtros configurados via FilterManager');
-        return;
+    // Delegar para FilterManager se disponível
+    if (window.FilterManager && typeof window.FilterManager.setupWithFallback === 'function') {
+        return window.FilterManager.setupWithFallback();
     }
     
-    console.warn('⚠️ FilterManager não disponível, usando fallback...');
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    
-    if (!filterButtons || filterButtons.length === 0) {
-        console.error('❌ Botões de filtro não encontrados!');
-        return;
-    }
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            const filterText = this.textContent.trim();
-            const filter = filterText === 'Todos' ? 'todos' : filterText;
-            
-            window.currentFilter = filter;
-            if (window.renderProperties) window.renderProperties(filter);
-        });
-    });
-    
-    const todosBtn = Array.from(filterButtons).find(btn => 
-        btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
-    );
-    if (todosBtn) todosBtn.classList.add('active');
+    // Fallback extremo
+    console.error('❌ Sistema de filtros não disponível!');
+    return false;
 };
 
 // ========== 6. CONTATAR AGENTE ==========
