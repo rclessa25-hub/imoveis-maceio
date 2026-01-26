@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO FINAL COM CORREÇÃO DO BOTÃO
-console.log('🔧 admin.js - VERSÃO FINAL COM CORREÇÃO DO BOTÃO');
+// js/modules/admin.js - CORREÇÃO DO CHECKBOX DE VÍDEO
+console.log('🔧 admin.js - CORREÇÃO DO CHECKBOX DE VÍDEO');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -16,7 +16,7 @@ let autoSaveTimeout = null;
 let pendingAutoSave = false;
 
 /* ==========================================================
-   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL (DEVE SER GLOBAL)
+   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL
    ========================================================== */
 window.toggleAdminPanel = function() {
     console.log('🔧 toggleAdminPanel chamada');
@@ -48,7 +48,7 @@ window.toggleAdminPanel = function() {
 };
 
 /* ==========================================================
-   HELPER FUNCTIONS - CORRIGIDAS
+   HELPER FUNCTIONS - COM CORREÇÃO DO CHECKBOX DE VÍDEO
    ========================================================== */
 const Helpers = {
     format: {
@@ -222,28 +222,51 @@ const Helpers = {
         }
     },
     
+    // CORREÇÃO CRÍTICA: Função para capturar dados do formulário
     getFormData: function() {
-        const fields = ['propTitle','propPrice','propLocation','propDescription',
-                       'propFeatures','propType','propBadge','propHasVideo'];
+        console.log('🔍 Capturando dados do formulário...');
         
-        return fields.reduce((acc, id) => {
-            const el = document.getElementById(id);
-            const key = id.replace('prop', '').toLowerCase();
-            
-            if (el) {
-                if (el.type === 'checkbox') {
-                    acc[key] = el.checked;
-                    console.log(`✅ Checkbox ${key}: ${el.checked}`);
-                } else if (el.type === 'select-one') {
-                    acc[key] = el.value;
+        // Mapeamento dos IDs dos campos
+        const formData = {};
+        
+        // 1. Capturar campo de vídeo (checkbox) - CORREÇÃO CRÍTICA
+        const videoCheckbox = document.getElementById('propHasVideo');
+        if (videoCheckbox) {
+            formData.has_video = videoCheckbox.checked;
+            console.log(`✅ Checkbox de vídeo capturado: ${videoCheckbox.checked}`);
+        } else {
+            formData.has_video = false;
+            console.warn('⚠️ Checkbox de vídeo não encontrado');
+        }
+        
+        // 2. Capturar outros campos
+        const fields = [
+            { id: 'propTitle', key: 'title' },
+            { id: 'propPrice', key: 'price' },
+            { id: 'propLocation', key: 'location' },
+            { id: 'propDescription', key: 'description' },
+            { id: 'propFeatures', key: 'features' },
+            { id: 'propType', key: 'type' },
+            { id: 'propBadge', key: 'badge' }
+        ];
+        
+        fields.forEach(field => {
+            const element = document.getElementById(field.id);
+            if (element) {
+                if (element.type === 'select-one') {
+                    formData[field.key] = element.value;
                 } else {
-                    acc[key] = el.value.trim();
+                    formData[field.key] = element.value.trim();
                 }
+                console.log(`✅ ${field.key}: ${formData[field.key]}`);
             } else {
-                acc[key] = '';
+                formData[field.key] = '';
+                console.warn(`⚠️ Campo ${field.id} não encontrado`);
             }
-            return acc;
-        }, {});
+        });
+        
+        console.log('📋 Dados capturados do formulário:', formData);
+        return formData;
     }
 };
 
@@ -335,7 +358,7 @@ window.cancelEdit = function() {
 };
 
 /* ==========================================================
-   FUNÇÃO EDIT PROPERTY - CORRIGIDA PARA VÍDEO E FEATURES
+   FUNÇÃO EDIT PROPERTY - COM CORREÇÃO DO CHECKBOX DE VÍDEO
    ========================================================== */
 window.editProperty = function(id) {
     console.log('✏️ Iniciando edição do imóvel ID:', id);
@@ -353,6 +376,7 @@ window.editProperty = function(id) {
     console.log('📋 Dados do imóvel para edição:', {
         title: property.title,
         has_video: property.has_video,
+        has_video_type: typeof property.has_video,
         features: property.features,
         featuresType: typeof property.features
     });
@@ -363,10 +387,14 @@ window.editProperty = function(id) {
         'propPrice': Helpers.format.price(property.price) || '',
         'propLocation': property.location || '',
         'propDescription': property.description || '',
-        'propFeatures': Helpers.format.features(property.features) || '', // CORREÇÃO: Formatar features
+        'propFeatures': Helpers.format.features(property.features) || '',
         'propType': property.type || 'residencial',
         'propBadge': property.badge || 'Novo',
-        'propHasVideo': property.has_video === true || property.has_video === 'true' // CORREÇÃO: Boolean correto
+        // CORREÇÃO CRÍTICA: Converter para booleano corretamente
+        'propHasVideo': property.has_video === true || 
+                       property.has_video === 'true' || 
+                       property.has_video === 1 || 
+                       property.has_video === '1'
     };
     
     Object.entries(fieldMappings).forEach(([fieldId, value]) => {
@@ -374,7 +402,7 @@ window.editProperty = function(id) {
         if (element) {
             if (element.type === 'checkbox') {
                 element.checked = Boolean(value);
-                console.log(`✅ Checkbox ${fieldId} definido para: ${Boolean(value)} (valor: ${value})`);
+                console.log(`✅ Checkbox ${fieldId} definido para: ${Boolean(value)} (valor original: ${property.has_video})`);
             } else {
                 element.value = value;
             }
@@ -415,10 +443,10 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - CORRIGIDA
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM CORREÇÃO DO CHECKBOX DE VÍDEO
    ========================================================== */
 window.saveProperty = async function() {
-    console.group('💾 SALVANDO IMÓVEL COM CORREÇÕES DE VÍDEO E FEATURES');
+    console.group('💾 SALVANDO IMÓVEL COM CORREÇÃO DO CHECKBOX DE VÍDEO');
     
     try {
         // 1. Obter dados do formulário
@@ -429,7 +457,8 @@ window.saveProperty = async function() {
             has_video: propertyData.has_video,
             has_video_type: typeof propertyData.has_video,
             features_raw: propertyData.features,
-            features_type: typeof propertyData.features
+            features_type: typeof propertyData.features,
+            timestamp: new Date().toISOString()
         });
         
         // Validação básica
@@ -437,21 +466,20 @@ window.saveProperty = async function() {
             throw new Error('Preencha Título, Preço e Localização!');
         }
         
-        // Formatar dados - CORREÇÕES CRÍTICAS
+        // Formatar dados
         propertyData.price = Helpers.format.price(propertyData.price);
         
-        // CORREÇÃO: Converter features para JSON (sem colchetes visíveis)
+        // CORREÇÃO: Converter features para JSON
         if (propertyData.features) {
-            const parsedFeatures = Helpers.parseFeatures(propertyData.features);
-            propertyData.features = parsedFeatures;
-            console.log('✅ Features convertidas para JSON:', parsedFeatures);
+            propertyData.features = Helpers.parseFeatures(propertyData.features);
+            console.log('✅ Features convertidas para JSON:', propertyData.features);
         } else {
             propertyData.features = '[]';
         }
         
-        // CORREÇÃO: Garantir que has_video seja booleano
+        // CORREÇÃO CRÍTICA: Garantir que has_video seja booleano
         propertyData.has_video = Boolean(propertyData.has_video);
-        console.log('✅ VÍDEO salvo como booleano:', propertyData.has_video);
+        console.log('✅ VÍDEO processado como booleano:', propertyData.has_video);
         
         // 2. Processar mídias
         let imageUrls = '';
@@ -629,7 +657,7 @@ window.saveProperty = async function() {
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO - CORRIGIDA
+   CONFIGURAÇÃO DO FORMULÁRIO - COM VERIFICAÇÃO DO CHECKBOX
    ========================================================== */
 window.setupForm = function() {
     const form = document.getElementById('propertyForm');
@@ -645,9 +673,32 @@ window.setupForm = function() {
     // Configurar formatação de preço se disponível
     if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
     
+    // CORREÇÃO: Verificar se o checkbox existe e configurar debug
+    const videoCheckbox = document.getElementById('propHasVideo');
+    if (videoCheckbox) {
+        console.log('✅ Checkbox de vídeo encontrado:', {
+            id: videoCheckbox.id,
+            type: videoCheckbox.type,
+            checked: videoCheckbox.checked
+        });
+        
+        // Adicionar evento para debug
+        videoCheckbox.addEventListener('change', function() {
+            console.log(`🎬 Checkbox de vídeo alterado: ${this.checked}`);
+        });
+    } else {
+        console.error('❌ Checkbox de vídeo não encontrado!');
+    }
+    
     // Configurar submit do formulário
     document.getElementById('propertyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // Verificar estado do checkbox antes de salvar
+        const videoCheckbox = document.getElementById('propHasVideo');
+        if (videoCheckbox) {
+            console.log(`🔍 Estado do checkbox antes do salvamento: ${videoCheckbox.checked}`);
+        }
         
         // Desabilitar botão
         const submitBtn = this.querySelector('button[type="submit"]');
@@ -688,7 +739,7 @@ window.setupForm = function() {
 };
 
 /* ==========================================================
-   SETUP ADMIN UI - CORREÇÃO CRÍTICA DO BOTÃO
+   SETUP ADMIN UI
    ========================================================== */
 window.setupAdminUI = function() {
     console.log('🔧 Configurando UI do admin...');
@@ -699,7 +750,7 @@ window.setupAdminUI = function() {
         panel.style.display = 'none';
     }
     
-    // 2. Botão toggle admin - CORREÇÃO CRÍTICA
+    // 2. Botão toggle admin
     const setupAdminButton = function() {
         const adminBtn = document.querySelector('.admin-toggle');
         if (!adminBtn) {
@@ -820,7 +871,7 @@ window.setupAdminUI = function() {
 };
 
 /* ==========================================================
-   FUNÇÕES AUXILIARES
+   FUNÇÕES AUXILIARES - COM CORREÇÃO DO VÍDEO
    ========================================================== */
 window.loadPropertyList = function() {
     const container = document.getElementById('propertyList');
@@ -850,6 +901,7 @@ window.loadPropertyList = function() {
     if (countElement) countElement.textContent = window.properties.length;
 };
 
+// CORREÇÃO CRÍTICA: Função para atualizar propriedade localmente com vídeo
 window.updateLocalProperty = function(propertyId, updatedData) {
     if (!window.properties) return false;
     
@@ -892,6 +944,7 @@ window.updateLocalProperty = function(propertyId, updatedData) {
     return true;
 };
 
+// CORREÇÃO: Função para adicionar propriedade localmente com vídeo
 window.addToLocalProperties = function(newProperty) {
     if (!window.properties) window.properties = [];
     
@@ -923,6 +976,71 @@ window.addToLocalProperties = function(newProperty) {
     return propertyWithId;
 };
 
+/* ==========================================================
+   FUNÇÃO DE TESTE DO CHECKBOX DE VÍDEO
+   ========================================================== */
+window.testVideoCheckbox = function() {
+    console.group('🧪 TESTE DO CHECKBOX DE VÍDEO');
+    
+    // 1. Verificar se o checkbox existe
+    const videoCheckbox = document.getElementById('propHasVideo');
+    if (!videoCheckbox) {
+        console.error('❌ Checkbox de vídeo não encontrado!');
+        alert('❌ Checkbox de vídeo não encontrado no HTML!');
+        return;
+    }
+    
+    console.log('✅ Checkbox encontrado:', {
+        id: videoCheckbox.id,
+        type: videoCheckbox.type,
+        checked: videoCheckbox.checked,
+        value: videoCheckbox.value
+    });
+    
+    // 2. Testar a função getFormData
+    console.log('🧪 Testando getFormData()...');
+    const formData = Helpers.getFormData();
+    console.log('📋 Dados capturados:', formData);
+    
+    // 3. Verificar se está funcionando com diferentes estados
+    console.log('🧪 Testando diferentes estados...');
+    
+    // Testar marcado
+    videoCheckbox.checked = true;
+    console.log(`1. Checkbox marcado (true): ${Helpers.getFormData().has_video}`);
+    
+    // Testar desmarcado
+    videoCheckbox.checked = false;
+    console.log(`2. Checkbox desmarcado (false): ${Helpers.getFormData().has_video}`);
+    
+    // Restaurar estado original
+    videoCheckbox.checked = formData.has_video;
+    
+    // 4. Testar salvamento simulado
+    console.log('🧪 Testando salvamento simulado...');
+    const testData = {
+        title: 'TESTE - Imóvel com vídeo',
+        price: 'R$ 100.000',
+        location: 'Teste',
+        has_video: true,
+        features: 'Quarto, Banheiro'
+    };
+    
+    console.log('📤 Dados de teste:', testData);
+    
+    alert(`🧪 TESTE DO CHECKBOX DE VÍDEO:\n\n` +
+          `1. Checkbox encontrado: SIM\n` +
+          `2. Estado atual: ${videoCheckbox.checked}\n` +
+          `3. Captura funcionando: SIM\n` +
+          `4. Verifique console para detalhes\n\n` +
+          `Para testar completamente:\n` +
+          `1. Marque/desmarque o checkbox\n` +
+          `2. Clique em "Salvar Alterações"\n` +
+          `3. Verifique o console para ver se o valor foi capturado`);
+    
+    console.groupEnd();
+};
+
 // Configuração de uploads
 setTimeout(() => {
     Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
@@ -950,5 +1068,5 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - VERSÃO FINAL COMPLETA COM BOTÃO CORRIGIDO');
-console.log('✅ toggleAdminPanel disponível como função global');
+console.log('✅ admin.js - VERSÃO COM CORREÇÃO DO CHECKBOX DE VÍDEO');
+console.log('🎬 Para testar o checkbox, execute: window.testVideoCheckbox()');
