@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO FINAL COMPLETA COM CORREÇÕES
-console.log('🔧 admin.js - VERSÃO FINAL COMPLETA COM CORREÇÕES');
+// js/modules/admin.js - VERSÃO FINAL COM CORREÇÃO DO BOTÃO
+console.log('🔧 admin.js - VERSÃO FINAL COM CORREÇÃO DO BOTÃO');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -14,6 +14,38 @@ const ADMIN_CONFIG = {
 window.editingPropertyId = null;
 let autoSaveTimeout = null;
 let pendingAutoSave = false;
+
+/* ==========================================================
+   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL (DEVE SER GLOBAL)
+   ========================================================== */
+window.toggleAdminPanel = function() {
+    console.log('🔧 toggleAdminPanel chamada');
+    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
+    if (password === null) return;
+    if (password === "") return alert('⚠️ Campo vazio!');
+    
+    if (password === ADMIN_CONFIG.password) {
+        const panel = document.getElementById(ADMIN_CONFIG.panelId);
+        if (panel) {
+            const isVisible = panel.style.display === 'block';
+            
+            if (!isVisible) {
+                window.resetAdminFormCompletely(false);
+            }
+            
+            panel.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                setTimeout(() => {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+                }, 300);
+            }
+        }
+    } else {
+        alert('❌ Senha incorreta!');
+    }
+};
 
 /* ==========================================================
    HELPER FUNCTIONS - CORRIGIDAS
@@ -283,6 +315,23 @@ window.resetAdminFormCompletely = function(showNotification = true) {
     
     console.log('✅ RESET COMPLETO DO FORMULÁRIO - FINALIZADO');
     return true;
+};
+
+/* ==========================================================
+   FUNÇÃO DE CANCELAMENTO
+   ========================================================== */
+window.cancelEdit = function() {
+    if (window.editingPropertyId) {
+        if (confirm('❓ Cancelar edição?\n\nTodos os dados não salvos serão perdidos.')) {
+            console.log('❌ Cancelando edição do imóvel:', window.editingPropertyId);
+            window.resetAdminFormCompletely(true);
+            return true;
+        }
+    } else {
+        console.log('ℹ️ Nenhuma edição em andamento para cancelar');
+        window.resetAdminFormCompletely(false);
+    }
+    return false;
 };
 
 /* ==========================================================
@@ -580,7 +629,198 @@ window.saveProperty = async function() {
 };
 
 /* ==========================================================
-   FUNÇÕES AUXILIARES CORRIGIDAS
+   CONFIGURAÇÃO DO FORMULÁRIO - CORRIGIDA
+   ========================================================== */
+window.setupForm = function() {
+    const form = document.getElementById('propertyForm');
+    if (!form) {
+        console.warn('⚠️ Formulário não encontrado');
+        return;
+    }
+    
+    // Clonar para remover listeners antigos
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    // Configurar formatação de preço se disponível
+    if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
+    
+    // Configurar submit do formulário
+    document.getElementById('propertyForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Desabilitar botão
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn?.innerHTML;
+        
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+        }
+        
+        // Mostrar loading
+        const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Por favor, aguarde...', { variant: 'processing' });
+        
+        try {
+            // Usar a função de salvamento corrigida
+            await window.saveProperty();
+            
+        } catch (error) {
+            console.error('❌ Erro no salvamento:', error);
+            Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
+            
+        } finally {
+            // Restaurar botão
+            if (submitBtn) {
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText || 
+                        (window.editingPropertyId ? 
+                            '<i class="fas fa-save"></i> Salvar Alterações' : 
+                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site');
+                }, 1000);
+            }
+            
+            // Esconder loading
+            if (loading) loading.hide();
+        }
+    });
+};
+
+/* ==========================================================
+   SETUP ADMIN UI - CORREÇÃO CRÍTICA DO BOTÃO
+   ========================================================== */
+window.setupAdminUI = function() {
+    console.log('🔧 Configurando UI do admin...');
+    
+    // 1. Painel oculto por padrão
+    const panel = document.getElementById('adminPanel');
+    if (panel) {
+        panel.style.display = 'none';
+    }
+    
+    // 2. Botão toggle admin - CORREÇÃO CRÍTICA
+    const setupAdminButton = function() {
+        const adminBtn = document.querySelector('.admin-toggle');
+        if (!adminBtn) {
+            console.warn('⚠️ Botão admin-toggle não encontrado');
+            return;
+        }
+        
+        console.log('🔧 Configurando botão admin-toggle...');
+        
+        // Remover qualquer handler antigo
+        adminBtn.onclick = null;
+        
+        // Clonar para limpar event listeners
+        const newBtn = adminBtn.cloneNode(true);
+        adminBtn.parentNode.replaceChild(newBtn, adminBtn);
+        
+        const freshBtn = document.querySelector('.admin-toggle');
+        
+        // Adicionar event listener DIRETO E SIMPLES
+        freshBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🟢 Botão admin clicado!');
+            
+            // Garantir que a função existe
+            if (typeof window.toggleAdminPanel === 'function') {
+                window.toggleAdminPanel();
+            } else {
+                console.error('❌ toggleAdminPanel não é uma função!');
+                alert('❌ Erro: Função admin não disponível. Recarregue a página.');
+            }
+        }, { once: false });
+        
+        console.log('✅ Botão admin-toggle configurado');
+    };
+    
+    // Executar a configuração do botão
+    setupAdminButton();
+    
+    // 3. Configurar botão Cancelar
+    const setupCancelButton = function() {
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (!cancelBtn) {
+            console.warn('⚠️ Botão Cancelar não encontrado');
+            return;
+        }
+        
+        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+        const freshCancelBtn = document.getElementById('cancelEditBtn');
+        
+        freshCancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.cancelEdit();
+        }, { once: false });
+        
+        freshCancelBtn.style.display = 'none';
+        freshCancelBtn.style.opacity = '1';
+        freshCancelBtn.style.visibility = 'visible';
+        freshCancelBtn.style.pointerEvents = 'auto';
+        freshCancelBtn.style.cursor = 'pointer';
+        freshCancelBtn.disabled = false;
+    };
+    
+    setupCancelButton();
+    
+    // 4. Configurar formulário
+    if (typeof window.setupForm === 'function') {
+        setTimeout(window.setupForm, 100);
+    }
+    
+    // 5. Adicionar estilos dinâmicos
+    const style = document.createElement('style');
+    style.textContent = `
+        .admin-toggle {
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            z-index: 10000 !important;
+            position: fixed !important;
+        }
+        
+        #cancelEditBtn {
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: inline-block !important;
+            z-index: 1000 !important;
+            position: relative !important;
+        }
+        
+        #cancelEditBtn:disabled {
+            opacity: 0.5 !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
+        
+        #cancelEditBtn:hover {
+            background: #7f8c8d !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3) !important;
+        }
+        
+        .auto-save-notification {
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    console.log('✅ UI do admin configurada');
+};
+
+/* ==========================================================
+   FUNÇÕES AUXILIARES
    ========================================================== */
 window.loadPropertyList = function() {
     const container = document.getElementById('propertyList');
@@ -683,158 +923,6 @@ window.addToLocalProperties = function(newProperty) {
     return propertyWithId;
 };
 
-/* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO - CORRIGIDA
-   ========================================================== */
-window.setupForm = function() {
-    const form = document.getElementById('propertyForm');
-    if (!form) {
-        console.warn('⚠️ Formulário não encontrado');
-        return;
-    }
-    
-    // Clonar para remover listeners antigos
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
-    
-    // Configurar formatação de preço se disponível
-    if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
-    
-    // Configurar submit do formulário
-    document.getElementById('propertyForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Desabilitar botão
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn?.innerHTML;
-        
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-        }
-        
-        // Mostrar loading
-        const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Por favor, aguarde...', { variant: 'processing' });
-        
-        try {
-            // Usar a função de salvamento corrigida
-            await window.saveProperty();
-            
-        } catch (error) {
-            console.error('❌ Erro no salvamento:', error);
-            Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
-            
-        } finally {
-            // Restaurar botão
-            if (submitBtn) {
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText || 
-                        (window.editingPropertyId ? 
-                            '<i class="fas fa-save"></i> Salvar Alterações' : 
-                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site');
-                }, 1000);
-            }
-            
-            // Esconder loading
-            if (loading) loading.hide();
-        }
-    });
-};
-
-/* ==========================================================
-   SETUP ADMIN UI
-   ========================================================== */
-window.setupAdminUI = function() {
-    console.log('🔧 Configurando UI do admin...');
-    
-    // 1. Painel oculto por padrão
-    const panel = document.getElementById('adminPanel');
-    if (panel) {
-        panel.style.display = 'none';
-    }
-    
-    // 2. Botão toggle admin
-    const adminBtn = document.querySelector('.admin-toggle');
-    if (adminBtn) {
-        adminBtn.onclick = null;
-        adminBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.toggleAdminPanel();
-        }, { once: false });
-    }
-    
-    // 3. Configurar botão Cancelar
-    const setupCancelButton = function() {
-        const cancelBtn = document.getElementById('cancelEditBtn');
-        if (!cancelBtn) {
-            console.warn('⚠️ Botão Cancelar não encontrado');
-            return;
-        }
-        
-        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-        const freshCancelBtn = document.getElementById('cancelEditBtn');
-        
-        freshCancelBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.cancelEdit();
-        }, { once: false });
-        
-        freshCancelBtn.style.display = 'none';
-        freshCancelBtn.style.opacity = '1';
-        freshCancelBtn.style.visibility = 'visible';
-        freshCancelBtn.style.pointerEvents = 'auto';
-        freshCancelBtn.style.cursor = 'pointer';
-        freshCancelBtn.disabled = false;
-    };
-    
-    setupCancelButton();
-    
-    // 4. Configurar formulário
-    if (typeof window.setupForm === 'function') {
-        setTimeout(window.setupForm, 100);
-    }
-    
-    // 5. Adicionar estilos dinâmicos
-    const style = document.createElement('style');
-    style.textContent = `
-        #cancelEditBtn {
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            display: inline-block !important;
-            z-index: 1000 !important;
-            position: relative !important;
-        }
-        
-        #cancelEditBtn:disabled {
-            opacity: 0.5 !important;
-            cursor: not-allowed !important;
-            pointer-events: none !important;
-        }
-        
-        #cancelEditBtn:hover {
-            background: #7f8c8d !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3) !important;
-        }
-        
-        .auto-save-notification {
-            animation: slideInRight 0.3s ease;
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    console.log('✅ UI do admin configurada');
-};
-
 // Configuração de uploads
 setTimeout(() => {
     Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
@@ -862,4 +950,5 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - VERSÃO FINAL COM CORREÇÕES DE VÍDEO E FEATURES');
+console.log('✅ admin.js - VERSÃO FINAL COMPLETA COM BOTÃO CORRIGIDO');
+console.log('✅ toggleAdminPanel disponível como função global');
