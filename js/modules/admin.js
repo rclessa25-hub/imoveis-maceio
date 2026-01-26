@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO COMPLETA CORRIGIDA
-console.log('🔧 admin.js - VERSÃO COMPLETA CORRIGIDA');
+// js/modules/admin.js - VERSÃO FINAL COMPLETA COM CORREÇÕES
+console.log('🔧 admin.js - VERSÃO FINAL COMPLETA COM CORREÇÕES');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -16,19 +16,79 @@ let autoSaveTimeout = null;
 let pendingAutoSave = false;
 
 /* ==========================================================
-   HELPER FUNCTIONS
+   HELPER FUNCTIONS - CORRIGIDAS
    ========================================================== */
 const Helpers = {
     format: {
         price: (value) => window.SharedCore?.PriceFormatter?.formatForInput?.(value) || value,
         features: (value) => {
-            if (!value) return '[]';
+            console.log('🔍 Formatando features:', { input: value, type: typeof value });
+            
+            if (!value) return '';
+            
             try {
-                if (Array.isArray(value)) return JSON.stringify(value);
-                if (value.startsWith('[')) return value;
-                const arr = value.split(',').map(f => f.trim()).filter(f => f);
-                return JSON.stringify(arr);
-            } catch { return '[]'; }
+                // Se for array, transformar em string separada por vírgula
+                if (Array.isArray(value)) {
+                    return value.filter(f => f && f.trim()).join(', ');
+                }
+                
+                // Se for string JSON (com colchetes), extrair array
+                if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        if (Array.isArray(parsed)) {
+                            return parsed.filter(f => f && f.trim()).join(', ');
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Erro ao parsear JSON de features:', e);
+                        // Se falhar o parse, tentar limpar
+                        return value.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
+                    }
+                }
+                
+                // Se já for string com colchetes, remover
+                let cleaned = value.toString();
+                cleaned = cleaned.replace(/[\[\]"]/g, ''); // Remover colchetes e aspas
+                cleaned = cleaned.replace(/\s*,\s*/g, ', '); // Normalizar espaços
+                
+                return cleaned;
+            } catch (error) {
+                console.error('❌ Erro ao formatar features:', error);
+                return '';
+            }
+        }
+    },
+    
+    parseFeatures: (value) => {
+        console.log('🔍 Parseando features:', { input: value });
+        
+        if (!value) return '[]';
+        
+        try {
+            // Se já é array, converter para JSON
+            if (Array.isArray(value)) {
+                return JSON.stringify(value.filter(f => f && f.trim()));
+            }
+            
+            // Se é string JSON, manter
+            if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
+                try {
+                    JSON.parse(value); // Validar
+                    return value;
+                } catch (e) {
+                    // Se inválido, processar como string normal
+                }
+            }
+            
+            // Se é string normal, converter para array
+            const featuresArray = value.split(',')
+                .map(f => f.trim())
+                .filter(f => f && f !== '');
+            
+            return JSON.stringify(featuresArray);
+        } catch (error) {
+            console.error('❌ Erro ao parsear features:', error);
+            return '[]';
         }
     },
     
@@ -119,7 +179,6 @@ const Helpers = {
         setTimeout(() => notification.remove(), duration);
     },
     
-    // CORREÇÃO: Fechar modal sem jQuery
     closeModal: function() {
         const modal = document.getElementById('propertyModal');
         if (modal) {
@@ -131,7 +190,6 @@ const Helpers = {
         }
     },
     
-    // CORREÇÃO: Obter dados do formulário
     getFormData: function() {
         const fields = ['propTitle','propPrice','propLocation','propDescription',
                        'propFeatures','propType','propBadge','propHasVideo'];
@@ -143,6 +201,7 @@ const Helpers = {
             if (el) {
                 if (el.type === 'checkbox') {
                     acc[key] = el.checked;
+                    console.log(`✅ Checkbox ${key}: ${el.checked}`);
                 } else if (el.type === 'select-one') {
                     acc[key] = el.value;
                 } else {
@@ -157,7 +216,7 @@ const Helpers = {
 };
 
 /* ==========================================================
-   FUNÇÃO PARA LIMPAR COMPLETAMENTE O FORMULÁRIO - CORRIGIDA
+   FUNÇÃO PARA LIMPAR COMPLETAMENTE O FORMULÁRIO
    ========================================================== */
 window.resetAdminFormCompletely = function(showNotification = true) {
     console.log('🧹 RESET COMPLETO DO FORMULÁRIO - INICIANDO');
@@ -227,55 +286,7 @@ window.resetAdminFormCompletely = function(showNotification = true) {
 };
 
 /* ==========================================================
-   FUNÇÃO DE CANCELAMENTO
-   ========================================================== */
-window.cancelEdit = function() {
-    if (window.editingPropertyId) {
-        if (confirm('❓ Cancelar edição?\n\nTodos os dados não salvos serão perdidos.')) {
-            console.log('❌ Cancelando edição do imóvel:', window.editingPropertyId);
-            window.resetAdminFormCompletely(true);
-            return true;
-        }
-    } else {
-        console.log('ℹ️ Nenhuma edição em andamento para cancelar');
-        window.resetAdminFormCompletely(false);
-    }
-    return false;
-};
-
-/* ==========================================================
-   TOGGLE ADMIN PANEL
-   ========================================================== */
-window.toggleAdminPanel = function() {
-    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
-    if (password === null) return;
-    if (password === "") return alert('⚠️ Campo vazio!');
-    
-    if (password === ADMIN_CONFIG.password) {
-        const panel = document.getElementById(ADMIN_CONFIG.panelId);
-        if (panel) {
-            const isVisible = panel.style.display === 'block';
-            
-            if (!isVisible) {
-                window.resetAdminFormCompletely(false);
-            }
-            
-            panel.style.display = isVisible ? 'none' : 'block';
-            
-            if (!isVisible) {
-                setTimeout(() => {
-                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-                }, 300);
-            }
-        }
-    } else {
-        alert('❌ Senha incorreta!');
-    }
-};
-
-/* ==========================================================
-   FUNÇÃO EDIT PROPERTY
+   FUNÇÃO EDIT PROPERTY - CORRIGIDA PARA VÍDEO E FEATURES
    ========================================================== */
 window.editProperty = function(id) {
     console.log('✏️ Iniciando edição do imóvel ID:', id);
@@ -289,16 +300,24 @@ window.editProperty = function(id) {
     // Resetar formulário primeiro
     window.resetAdminFormCompletely(false);
     
-    // Preencher campos
+    // Debug: verificar dados do imóvel
+    console.log('📋 Dados do imóvel para edição:', {
+        title: property.title,
+        has_video: property.has_video,
+        features: property.features,
+        featuresType: typeof property.features
+    });
+    
+    // Preencher campos - CORREÇÃO DO VÍDEO
     const fieldMappings = {
         'propTitle': property.title || '',
         'propPrice': Helpers.format.price(property.price) || '',
         'propLocation': property.location || '',
         'propDescription': property.description || '',
-        'propFeatures': Array.isArray(property.features) ? property.features.join(', ') : (property.features || ''),
+        'propFeatures': Helpers.format.features(property.features) || '', // CORREÇÃO: Formatar features
         'propType': property.type || 'residencial',
         'propBadge': property.badge || 'Novo',
-        'propHasVideo': property.has_video === true || property.has_video === 'true'
+        'propHasVideo': property.has_video === true || property.has_video === 'true' // CORREÇÃO: Boolean correto
     };
     
     Object.entries(fieldMappings).forEach(([fieldId, value]) => {
@@ -306,6 +325,7 @@ window.editProperty = function(id) {
         if (element) {
             if (element.type === 'checkbox') {
                 element.checked = Boolean(value);
+                console.log(`✅ Checkbox ${fieldId} definido para: ${Boolean(value)} (valor: ${value})`);
             } else {
                 element.value = value;
             }
@@ -339,36 +359,58 @@ window.editProperty = function(id) {
     }, 150);
     
     console.log('✅ Modo edição ativado para imóvel ID:', property.id);
+    console.log('✅ VÍDEO configurado para:', fieldMappings.propHasVideo);
+    console.log('✅ FEATURES configuradas como:', fieldMappings.propFeatures);
+    
     return true;
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - COMPLETAMENTE CORRIGIDA
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - CORRIGIDA
    ========================================================== */
 window.saveProperty = async function() {
-    console.group('💾 SALVANDO IMÓVEL COM UPLOAD DE MÍDIA');
+    console.group('💾 SALVANDO IMÓVEL COM CORREÇÕES DE VÍDEO E FEATURES');
     
     try {
         // 1. Obter dados do formulário
         const propertyData = Helpers.getFormData();
+        
+        console.log('📋 Dados coletados do formulário:', {
+            title: propertyData.title,
+            has_video: propertyData.has_video,
+            has_video_type: typeof propertyData.has_video,
+            features_raw: propertyData.features,
+            features_type: typeof propertyData.features
+        });
         
         // Validação básica
         if (!propertyData.title || !propertyData.price || !propertyData.location) {
             throw new Error('Preencha Título, Preço e Localização!');
         }
         
-        // Formatar dados
+        // Formatar dados - CORREÇÕES CRÍTICAS
         propertyData.price = Helpers.format.price(propertyData.price);
-        propertyData.features = Helpers.format.features(propertyData.features);
         
-        // 2. Fazer upload das mídias (se houver MediaSystem)
+        // CORREÇÃO: Converter features para JSON (sem colchetes visíveis)
+        if (propertyData.features) {
+            const parsedFeatures = Helpers.parseFeatures(propertyData.features);
+            propertyData.features = parsedFeatures;
+            console.log('✅ Features convertidas para JSON:', parsedFeatures);
+        } else {
+            propertyData.features = '[]';
+        }
+        
+        // CORREÇÃO: Garantir que has_video seja booleano
+        propertyData.has_video = Boolean(propertyData.has_video);
+        console.log('✅ VÍDEO salvo como booleano:', propertyData.has_video);
+        
+        // 2. Processar mídias
         let imageUrls = '';
         let pdfUrls = '';
         
         if (window.MediaSystem) {
-            console.log('📤 Iniciando processamento de mídias...');
+            console.log('📤 Processando mídias...');
             
-            // Usar a função saveAndKeepLocal se Supabase não estiver configurado
             const hasSupabase = window.SUPABASE_CONSTANTS && 
                               window.SUPABASE_CONSTANTS.URL && 
                               window.SUPABASE_CONSTANTS.KEY;
@@ -421,9 +463,11 @@ window.saveProperty = async function() {
         propertyData.images = imageUrls || 'EMPTY';
         propertyData.pdfs = pdfUrls || 'EMPTY';
         
-        console.log('📦 Dados prontos para salvar:', {
+        console.log('📦 Dados finais para salvar:', {
             id: window.editingPropertyId || 'Novo',
             title: propertyData.title,
+            has_video: propertyData.has_video,
+            features: propertyData.features,
             imagesCount: imageUrls && imageUrls !== 'EMPTY' ? imageUrls.split(',').length : 0,
             pdfsCount: pdfUrls && pdfUrls !== 'EMPTY' ? pdfUrls.split(',').length : 0
         });
@@ -432,10 +476,14 @@ window.saveProperty = async function() {
         if (window.editingPropertyId) {
             console.log(`✏️ Salvando edição do imóvel ${window.editingPropertyId}...`);
             
-            // Salvar localmente primeiro (sempre)
-            window.updateLocalProperty(window.editingPropertyId, propertyData);
+            // Salvar localmente primeiro
+            const localSuccess = window.updateLocalProperty(window.editingPropertyId, propertyData);
             
-            // Tentar salvar no Supabase se configurado
+            if (!localSuccess) {
+                throw new Error('Falha ao salvar localmente');
+            }
+            
+            // Tentar salvar no Supabase
             const hasSupabase = window.SUPABASE_CONSTANTS && 
                               window.SUPABASE_CONSTANTS.URL && 
                               window.SUPABASE_CONSTANTS.KEY;
@@ -487,7 +535,7 @@ window.saveProperty = async function() {
             // Adicionar localmente
             window.addToLocalProperties(newProperty);
             
-            // Tentar salvar no Supabase se configurado
+            // Tentar salvar no Supabase
             const hasSupabase = window.SUPABASE_CONSTANTS && 
                               window.SUPABASE_CONSTANTS.URL && 
                               window.SUPABASE_CONSTANTS.KEY;
@@ -532,7 +580,111 @@ window.saveProperty = async function() {
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO
+   FUNÇÕES AUXILIARES CORRIGIDAS
+   ========================================================== */
+window.loadPropertyList = function() {
+    const container = document.getElementById('propertyList');
+    const countElement = document.getElementById('propertyCount');
+    if (!container || !window.properties) return;
+    
+    container.innerHTML = window.properties.length === 0 ? 
+        '<p style="text-align: center; color: #666;">Nenhum imóvel</p>' :
+        window.properties.sort((a,b) => b.id - a.id).map(property => `
+            <div class="property-item">
+                <div style="flex: 1;">
+                    <strong style="color: var(--primary);">${property.title}</strong><br>
+                    <small>${property.price} - ${property.location}</small>
+                    <div style="font-size: 0.8em; color: #666; margin-top: 0.2rem;">
+                        ID: ${property.id} | Tipo: ${property.type || 'residencial'}
+                        ${property.has_video ? ' | 🎬 Tem vídeo' : ''}
+                        ${property.badge ? ` | 🏷️ ${property.badge}` : ''}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button onclick="editProperty(${property.id})" class="btn-edit">Editar</button>
+                    <button onclick="deleteProperty(${property.id})" class="btn-delete">Excluir</button>
+                </div>
+            </div>
+        `).join('');
+    
+    if (countElement) countElement.textContent = window.properties.length;
+};
+
+window.updateLocalProperty = function(propertyId, updatedData) {
+    if (!window.properties) return false;
+    
+    const index = window.properties.findIndex(p => p.id === propertyId);
+    if (index === -1) return false;
+    
+    // CORREÇÃO: Garantir que has_video seja booleano
+    if (updatedData.has_video !== undefined) {
+        updatedData.has_video = Boolean(updatedData.has_video);
+        console.log(`✅ VÍDEO salvo localmente para ${propertyId}: ${updatedData.has_video}`);
+    }
+    
+    // CORREÇÃO: Manter features como string JSON
+    if (Array.isArray(updatedData.features)) {
+        updatedData.features = JSON.stringify(updatedData.features);
+    }
+    
+    window.properties[index] = {
+        ...window.properties[index],
+        ...updatedData,
+        id: propertyId,
+        updated_at: new Date().toISOString()
+    };
+    
+    // Salvar no localStorage
+    try {
+        localStorage.setItem('properties', JSON.stringify(window.properties));
+        console.log(`💾 Imóvel ${propertyId} salvo no localStorage com vídeo: ${updatedData.has_video}`);
+    } catch (error) {
+        console.error('❌ Erro ao salvar no localStorage:', error);
+    }
+    
+    setTimeout(() => {
+        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties(window.currentFilter || 'todos', true);
+        }
+    }, 150);
+    
+    return true;
+};
+
+window.addToLocalProperties = function(newProperty) {
+    if (!window.properties) window.properties = [];
+    
+    const maxId = window.properties.length > 0 ? Math.max(...window.properties.map(p => p.id)) : 0;
+    const propertyWithId = {
+        ...newProperty,
+        id: maxId + 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+    
+    window.properties.push(propertyWithId);
+    
+    // Salvar no localStorage
+    try {
+        localStorage.setItem('properties', JSON.stringify(window.properties));
+        console.log(`💾 Novo imóvel ID: ${propertyWithId.id} salvo no localStorage`);
+    } catch (error) {
+        console.error('❌ Erro ao salvar no localStorage:', error);
+    }
+    
+    setTimeout(() => {
+        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties('todos', true);
+        }
+    }, 200);
+    
+    return propertyWithId;
+};
+
+/* ==========================================================
+   CONFIGURAÇÃO DO FORMULÁRIO - CORRIGIDA
    ========================================================== */
 window.setupForm = function() {
     const form = document.getElementById('propertyForm');
@@ -565,7 +717,7 @@ window.setupForm = function() {
         const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Por favor, aguarde...', { variant: 'processing' });
         
         try {
-            // Usar a nova função de salvamento
+            // Usar a função de salvamento corrigida
             await window.saveProperty();
             
         } catch (error) {
@@ -683,111 +835,6 @@ window.setupAdminUI = function() {
     console.log('✅ UI do admin configurada');
 };
 
-/* ==========================================================
-   FUNÇÕES AUXILIARES
-   ========================================================== */
-window.loadPropertyList = function() {
-    const container = document.getElementById('propertyList');
-    const countElement = document.getElementById('propertyCount');
-    if (!container || !window.properties) return;
-    
-    container.innerHTML = window.properties.length === 0 ? 
-        '<p style="text-align: center; color: #666;">Nenhum imóvel</p>' :
-        window.properties.sort((a,b) => b.id - a.id).map(property => `
-            <div class="property-item">
-                <div style="flex: 1;">
-                    <strong style="color: var(--primary);">${property.title}</strong><br>
-                    <small>${property.price} - ${property.location}</small>
-                    <div style="font-size: 0.8em; color: #666; margin-top: 0.2rem;">
-                        ID: ${property.id} | Tipo: ${property.type || 'residencial'}
-                        ${property.has_video ? ' | 🎬 Tem vídeo' : ''}
-                        ${property.badge ? ` | 🏷️ ${property.badge}` : ''}
-                    </div>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button onclick="editProperty(${property.id})" class="btn-edit">Editar</button>
-                    <button onclick="deleteProperty(${property.id})" class="btn-delete">Excluir</button>
-                </div>
-            </div>
-        `).join('');
-    
-    if (countElement) countElement.textContent = window.properties.length;
-};
-
-window.updateLocalProperty = function(propertyId, updatedData) {
-    if (!window.properties) return false;
-    
-    const index = window.properties.findIndex(p => p.id === propertyId);
-    if (index === -1) return false;
-    
-    // Garantir que has_video seja booleano
-    if (updatedData.has_video !== undefined) {
-        updatedData.has_video = Boolean(updatedData.has_video);
-    }
-    
-    // Garantir que features seja string JSON
-    if (Array.isArray(updatedData.features)) {
-        updatedData.features = JSON.stringify(updatedData.features);
-    }
-    
-    // Atualizar propriedade
-    window.properties[index] = {
-        ...window.properties[index],
-        ...updatedData,
-        id: propertyId,
-        updated_at: new Date().toISOString()
-    };
-    
-    // Atualizar localStorage
-    try {
-        localStorage.setItem('properties', JSON.stringify(window.properties));
-        console.log(`💾 Imóvel ${propertyId} salvo no localStorage`);
-    } catch (error) {
-        console.error('❌ Erro ao salvar no localStorage:', error);
-    }
-    
-    // Atualizar UI
-    setTimeout(() => {
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties(window.currentFilter || 'todos', true);
-        }
-    }, 150);
-    
-    return true;
-};
-
-window.addToLocalProperties = function(newProperty) {
-    if (!window.properties) window.properties = [];
-    
-    const maxId = window.properties.length > 0 ? Math.max(...window.properties.map(p => p.id)) : 0;
-    const propertyWithId = {
-        ...newProperty,
-        id: maxId + 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    };
-    
-    window.properties.push(propertyWithId);
-    
-    // Salvar no localStorage
-    try {
-        localStorage.setItem('properties', JSON.stringify(window.properties));
-        console.log(`💾 Novo imóvel ID: ${propertyWithId.id} salvo no localStorage`);
-    } catch (error) {
-        console.error('❌ Erro ao salvar no localStorage:', error);
-    }
-    
-    setTimeout(() => {
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties('todos', true);
-        }
-    }, 200);
-    
-    return propertyWithId;
-};
-
 // Configuração de uploads
 setTimeout(() => {
     Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
@@ -799,32 +846,6 @@ setTimeout(() => {
             setTimeout(() => window.forceMediaPreviewUpdate?.(), 300);
         }, 'media_addition');
 }, 1000);
-
-window.triggerAutoSave = function(reason = 'media_deletion') {
-    if (!window.editingPropertyId) return;
-    
-    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
-    
-    autoSaveTimeout = setTimeout(async () => {
-        if (!pendingAutoSave) return;
-        
-        try {
-            const fields = ['propTitle','propPrice','propLocation','propDescription'];
-            const propertyData = fields.reduce((acc, id) => {
-                const el = document.getElementById(id);
-                acc[id.replace('prop', '').toLowerCase()] = el?.value?.trim() || '';
-                return acc;
-            }, {});
-            
-        } catch (error) {
-            console.error('Auto-salvamento falhou:', error);
-        } finally {
-            pendingAutoSave = false;
-        }
-    }, 2000);
-    
-    pendingAutoSave = true;
-};
 
 window.forceMediaPreviewUpdate = function() {
     if (window.MediaSystem && typeof window.MediaSystem.updateUI === 'function') {
@@ -841,4 +862,4 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - VERSÃO COMPLETA CORRIGIDA');
+console.log('✅ admin.js - VERSÃO FINAL COM CORREÇÕES DE VÍDEO E FEATURES');
