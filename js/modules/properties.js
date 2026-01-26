@@ -1,5 +1,5 @@
-// js/modules/properties.js - VERSÃO FINAL COM PADRÃO IDÊNTICO PARA TODAS AS QUANTIDADES DE FOTOS
-console.log('🏠 properties.js - VERSÃO FINAL - PADRÃO IDÊNTICO PARA 1+ FOTOS');
+// js/modules/properties.js - VERSÃO FINAL COMPLETA COM FORMATAÇÃO UNIFICADA E LAYOUT UNIFICADO
+console.log('🏠 properties.js - VERSÃO FINAL COMPLETA - FORMATAÇÃO UNIFICADA E LAYOUT UNIFICADO');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -18,72 +18,122 @@ window.ensureSupabaseCredentials = function() {
         };
     }
     
+    // Garantir que as constantes globais também existam
     if (!window.SUPABASE_URL) window.SUPABASE_URL = window.SUPABASE_CONSTANTS.URL;
     if (!window.SUPABASE_KEY) window.SUPABASE_KEY = window.SUPABASE_CONSTANTS.KEY;
+    
+    console.log('✅ Credenciais Supabase garantidas:', {
+        hasURL: !!window.SUPABASE_URL,
+        hasKEY: !!window.SUPABASE_KEY
+    });
     
     return !!window.SUPABASE_URL && !!window.SUPABASE_KEY;
 };
 
-// ========== FUNÇÕES DE FORMATAÇÃO ==========
+// ========== FUNÇÕES DE FORMATAÇÃO PARA VÍDEO E FEATURES ==========
 window.formatFeaturesForDisplay = function(features) {
+    console.log('🔍 Formatando features para exibição:', { input: features, type: typeof features });
+    
     if (!features) return '';
+    
     try {
+        // Se for array, transformar em string separada por vírgula
         if (Array.isArray(features)) {
             return features.filter(f => f && f.trim()).join(', ');
         }
-        if (typeof features === 'string' && features.trim().startsWith('[')) {
+        
+        // Se for string JSON (com colchetes), extrair array
+        if (typeof features === 'string' && features.trim().startsWith('[') && features.trim().endsWith(']')) {
             try {
                 const parsed = JSON.parse(features);
                 if (Array.isArray(parsed)) {
                     return parsed.filter(f => f && f.trim()).join(', ');
                 }
             } catch (e) {
+                console.warn('⚠️ Erro ao parsear JSON de features:', e);
+                // Se falhar o parse, tentar limpar
                 return features.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
             }
         }
+        
+        // Se já for string com colchetes, remover
         let cleaned = features.toString();
-        cleaned = cleaned.replace(/[\[\]"]/g, '');
-        cleaned = cleaned.replace(/\s*,\s*/g, ', ');
+        cleaned = cleaned.replace(/[\[\]"]/g, ''); // Remover colchetes e aspas
+        cleaned = cleaned.replace(/\s*,\s*/g, ', '); // Normalizar espaços
+        
         return cleaned;
     } catch (error) {
+        console.error('❌ Erro ao formatar features:', error);
         return '';
     }
 };
 
 window.parseFeaturesForStorage = function(value) {
+    console.log('🔍 Parseando features para armazenamento:', { input: value });
+    
     if (!value) return '[]';
+    
     try {
+        // Se já é array, converter para JSON
         if (Array.isArray(value)) {
             return JSON.stringify(value.filter(f => f && f.trim()));
         }
-        if (typeof value === 'string' && value.trim().startsWith('[')) {
+        
+        // Se é string JSON, manter
+        if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
             try {
-                JSON.parse(value);
+                JSON.parse(value); // Validar
                 return value;
-            } catch (e) {}
+            } catch (e) {
+                // Se inválido, processar como string normal
+            }
         }
+        
+        // Se é string normal, converter para array
         const featuresArray = value.split(',')
             .map(f => f.trim())
             .filter(f => f && f !== '');
+        
         return JSON.stringify(featuresArray);
     } catch (error) {
+        console.error('❌ Erro ao parsear features:', error);
         return '[]';
     }
 };
 
 window.ensureBooleanVideo = function(videoValue) {
-    if (videoValue === undefined || videoValue === null) return false;
-    if (typeof videoValue === 'boolean') return videoValue;
+    console.log('🔍 Convertendo vídeo para booleano:', { input: videoValue, type: typeof videoValue });
+    
+    if (videoValue === undefined || videoValue === null) {
+        return false;
+    }
+    
+    // Se já é booleano
+    if (typeof videoValue === 'boolean') {
+        return videoValue;
+    }
+    
+    // Se é string 'true' ou 'false'
     if (typeof videoValue === 'string') {
         const lower = videoValue.toLowerCase().trim();
-        if (lower === 'true' || lower === '1' || lower === 'sim' || lower === 'yes') return true;
-        if (lower === 'false' || lower === '0' || lower === 'não' || lower === 'no') return false;
+        if (lower === 'true' || lower === '1' || lower === 'sim' || lower === 'yes') {
+            return true;
+        }
+        if (lower === 'false' || lower === '0' || lower === 'não' || lower === 'no') {
+            return false;
+        }
     }
-    if (typeof videoValue === 'number') return videoValue === 1;
+    
+    // Se é número
+    if (typeof videoValue === 'number') {
+        return videoValue === 1;
+    }
+    
+    // Converter para booleano
     return Boolean(videoValue);
 };
 
-// ========== TEMPLATE ENGINE COM PADRÃO IDÊNTICO ==========
+// ========== TEMPLATE ENGINE COM CACHE AVANÇADO E LAYOUT UNIFICADO ==========
 class PropertyTemplateEngine {
     constructor() {
         this.cache = new Map();
@@ -92,16 +142,22 @@ class PropertyTemplateEngine {
 
     generate(property) {
         const cacheKey = `prop_${property.id}_${property.images?.length || 0}_${property.has_video}`;
+        // Remover do cache para forçar atualização
         if (this.cache.has(cacheKey)) {
             this.cache.delete(cacheKey);
         }
 
+        // Formatar features para exibição
         const displayFeatures = window.formatFeaturesForDisplay(property.features);
         
+        // Formatação de preço usando SharedCore
         const formatPrice = (price) => {
+            // Usar SharedCore se disponível, fallback para formato básico
             if (window.SharedCore?.PriceFormatter?.formatForCard) {
                 return window.SharedCore.PriceFormatter.formatForCard(price);
             }
+            
+            // Fallback básico
             if (!price) return 'R$ 0,00';
             if (typeof price === 'string' && price.includes('R$')) return price;
             return `R$ ${price.toString().replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.')}`;
@@ -143,102 +199,65 @@ class PropertyTemplateEngine {
         const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
         const hasVideo = window.ensureBooleanVideo(property.has_video);
         
-        console.log('🎬 Renderizando card (PADRÃO IDÊNTICO):', {
+        console.log('🎬 Renderizando card com layout unificado:', {
             id: property.id,
+            title: property.title,
+            has_video: property.has_video,
+            hasVideo_boolean: hasVideo,
             imageCount: imageCount,
-            hasVideo: hasVideo,
             hasPdfs: hasPdfs
         });
         
-        // ✅ PADRÃO IDÊNTICO PARA TODAS AS QUANTIDADES DE FOTOS
+        // ✅ LAYOUT UNIFICADO: SEMPRE usar o mesmo layout independente do número de imagens
+        // ✅ Contador SEMPRE visível (mesmo para 1 imagem)
+        // ✅ Vídeo SEMPRE no topo direito
+        // ✅ PDF SEMPRE no canto inferior direito
+        // ✅ Mesmo estilo CSS para todas as situações
+        
         return `
             <div class="property-image ${property.rural ? 'rural-image' : ''}" 
-                 style="position: relative; height: 250px;">
+                 style="position: relative; height: 250px; overflow: hidden;">
                 <img src="${firstImageUrl}" 
                      style="width: 100%; height: 100%; object-fit: cover;"
                      alt="${property.title}"
                      onerror="this.src='${this.imageFallback}'">
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 
-                <!-- ✅ CONTADOR SEMPRE VISÍVEL (mesmo para 1 foto) -->
-                <div class="image-count" style="
-                    position: absolute;
-                    top: 10px;
-                    right: 10px;
-                    background: rgba(0, 0, 0, 0.9);
-                    color: white;
-                    padding: 5px 10px;
-                    border-radius: 4px;
-                    font-size: 13px;
-                    font-weight: bold;
-                    z-index: 10;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-                ">
-                    <i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}
-                </div>
-                
-                <!-- ✅ VÍDEO SEMPRE EM 35px (abaixo do contador) -->
+                <!-- ✅ INDICADOR DE VÍDEO SEMPRE NO MESMO LUGAR (topo direito) -->
                 ${hasVideo ? `
-                    <div class="video-indicator" style="
-                        position: absolute;
-                        top: 45px;  <!-- 10px do contador + 35px = 45px -->
-                        right: 10px;
-                        background: rgba(0, 0, 0, 0.8);
-                        color: white;
-                        padding: 6px 12px;
-                        border-radius: 6px;
-                        font-size: 12px;
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        z-index: 9;
-                        animation: pulseVideo 2s infinite;
-                        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-                        border: 1px solid rgba(255,255,255,0.3);
-                        backdrop-filter: blur(5px);
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    ">
-                        <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
+                    <div class="video-indicator">
+                        <i class="fas fa-video"></i>
                         <span>TEM VÍDEO</span>
                     </div>
                 ` : ''}
                 
+                <!-- ✅ CONTADOR DE IMAGENS SEMPRE VISÍVEL (mesmo para 1 imagem) -->
+                <div class="image-count" style="top: ${hasVideo ? '45px' : '10px'}">
+                    <i class="fas fa-images"></i>${imageCount}
+                </div>
+                
+                <!-- ✅ BOTÃO PDF SEMPRE NO MESMO LUGAR (canto inferior direito) -->
                 ${hasPdfs ? `
-                    <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})" style="
-                        position: absolute;
-                        bottom: 10px;
-                        right: 10px;
-                        background: rgba(220, 53, 69, 0.9);
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        cursor: pointer;
-                        z-index: 8;
-                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-                        transition: all 0.3s ease;
-                    ">
-                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                    <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})">
+                        <i class="fas fa-file-pdf"></i>
                     </button>
                 ` : ''}
             </div>
         `;
     }
     
+    // NOVA FUNÇÃO: Atualizar conteúdo do card sem substituir completamente
     updateCardContent(propertyId, propertyData) {
-        console.log(`🔍 Atualizando conteúdo do card ${propertyId}`, propertyData);
+        console.log(`🔍 Atualizando conteúdo do card ${propertyId} com layout unificado`, propertyData);
         
         const card = document.querySelector(`.property-card[data-property-id="${propertyId}"]`);
-        if (!card) return false;
+        if (!card) {
+            console.warn(`⚠️ Card ${propertyId} não encontrado para atualização parcial`);
+            return false;
+        }
         
         try {
-            // Atualizar preço
+            // Atualizar preço se fornecido
             if (propertyData.price !== undefined) {
                 const priceElement = card.querySelector('[data-price-field]');
                 if (priceElement) {
@@ -251,16 +270,17 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar título
+            // Atualizar título se fornecido
             if (propertyData.title !== undefined) {
                 const titleElement = card.querySelector('[data-title-field]');
                 if (titleElement) {
                     titleElement.textContent = propertyData.title;
                 }
+                // Atualizar também o atributo data
                 card.setAttribute('data-property-title', propertyData.title);
             }
             
-            // Atualizar localização
+            // Atualizar localização se fornecido
             if (propertyData.location !== undefined) {
                 const locationElement = card.querySelector('[data-location-field]');
                 if (locationElement) {
@@ -268,7 +288,7 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar descrição
+            // Atualizar descrição se fornecido
             if (propertyData.description !== undefined) {
                 const descriptionElement = card.querySelector('[data-description-field]');
                 if (descriptionElement) {
@@ -276,10 +296,11 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar features
+            // Atualizar features se fornecido
             if (propertyData.features !== undefined) {
                 const featuresElement = card.querySelector('[data-features-field]');
                 const displayFeatures = window.formatFeaturesForDisplay(propertyData.features);
+                
                 if (featuresElement) {
                     if (displayFeatures) {
                         featuresElement.innerHTML = displayFeatures.split(',').map(f => `
@@ -291,87 +312,58 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // ✅ ATUALIZAR CONTADOR (SEMPRE VISÍVEL)
-            if (propertyData.images !== undefined) {
-                const imageCountElement = card.querySelector('.image-count');
-                const imageUrls = propertyData.images && propertyData.images !== 'EMPTY' 
-                    ? propertyData.images.split(',').filter(url => url.trim() !== '') 
-                    : [];
-                const imageCount = imageUrls.length;
-                
-                if (imageCountElement) {
-                    imageCountElement.innerHTML = `<i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}`;
-                } else {
-                    // Adicionar contador se não existir
-                    const imageSection = card.querySelector('.property-image');
-                    if (imageSection) {
-                        const countDiv = document.createElement('div');
-                        countDiv.className = 'image-count';
-                        countDiv.style.cssText = `
-                            position: absolute;
-                            top: 10px;
-                            right: 10px;
-                            background: rgba(0, 0, 0, 0.9);
-                            color: white;
-                            padding: 5px 10px;
-                            border-radius: 4px;
-                            font-size: 13px;
-                            font-weight: bold;
-                            z-index: 10;
-                            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-                        `;
-                        countDiv.innerHTML = `<i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}`;
-                        imageSection.appendChild(countDiv);
-                    }
-                }
-            }
-            
-            // ✅ ATUALIZAR VÍDEO (SEMPRE EM 45px)
+            // ✅ CORREÇÃO: Atualizar indicador de vídeo (SEMPRE na mesma posição)
             if (propertyData.has_video !== undefined) {
                 const videoIndicator = card.querySelector('.video-indicator');
+                const imageCountElement = card.querySelector('.image-count');
                 const hasVideo = window.ensureBooleanVideo(propertyData.has_video);
                 
                 if (hasVideo && !videoIndicator) {
+                    // Adicionar indicador de vídeo (SEMPRE no topo)
                     const imageSection = card.querySelector('.property-image');
                     if (imageSection) {
                         const videoDiv = document.createElement('div');
                         videoDiv.className = 'video-indicator';
-                        videoDiv.style.cssText = `
-                            position: absolute;
-                            top: 45px;
-                            right: 10px;
-                            background: rgba(0, 0, 0, 0.8);
-                            color: white;
-                            padding: 6px 12px;
-                            border-radius: 6px;
-                            font-size: 12px;
-                            display: flex;
-                            align-items: center;
-                            gap: 6px;
-                            z-index: 9;
-                            animation: pulseVideo 2s infinite;
-                            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-                            border: 1px solid rgba(255,255,255,0.3);
-                            backdrop-filter: blur(5px);
-                            font-weight: 600;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                        `;
-                        videoDiv.innerHTML = '<i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i><span>TEM VÍDEO</span>';
+                        videoDiv.innerHTML = '<i class="fas fa-video"></i><span>TEM VÍDEO</span>';
                         imageSection.appendChild(videoDiv);
+                        
+                        // Se tiver contador de imagens, ajustar sua posição
+                        if (imageCountElement) {
+                            imageCountElement.style.top = '45px';
+                        }
                     }
                 } else if (!hasVideo && videoIndicator) {
+                    // Remover indicador de vídeo
                     videoIndicator.remove();
+                    
+                    // Ajustar contador de imagens de volta ao topo
+                    if (imageCountElement) {
+                        imageCountElement.style.top = '10px';
+                    }
                 }
             }
             
-            // ✅ ATUALIZAR PDF
+            // ✅ CORREÇÃO: Atualizar contador de imagens SEMPRE
+            if (propertyData.images !== undefined) {
+                const imageCountElement = card.querySelector('.image-count');
+                if (imageCountElement) {
+                    const imageUrls = propertyData.images && propertyData.images !== 'EMPTY' 
+                        ? propertyData.images.split(',').filter(url => url.trim() !== '') 
+                        : [];
+                    const imageCount = imageUrls.length;
+                    
+                    imageCountElement.innerHTML = `<i class="fas fa-images"></i>${imageCount}`;
+                }
+            }
+            
+            // ✅ CORREÇÃO: Atualizar botão PDF SEMPRE
             if (propertyData.pdfs !== undefined) {
                 const pdfButton = card.querySelector('.pdf-access');
                 const hasPdfs = propertyData.pdfs && propertyData.pdfs !== 'EMPTY' && propertyData.pdfs.trim() !== '';
                 const imageSection = card.querySelector('.property-image');
                 
                 if (hasPdfs && !pdfButton && imageSection) {
+                    // Adicionar botão PDF
                     const pdfBtn = document.createElement('button');
                     pdfBtn.className = 'pdf-access';
                     pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i>';
@@ -381,36 +373,20 @@ class PropertyTemplateEngine {
                             window.PdfSystem.showModal(propertyId);
                         }
                     };
-                    pdfBtn.style.cssText = `
-                        position: absolute;
-                        bottom: 10px;
-                        right: 10px;
-                        background: rgba(220, 53, 69, 0.9);
-                        color: white;
-                        border: none;
-                        border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        cursor: pointer;
-                        z-index: 8;
-                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-                        transition: all 0.3s ease;
-                    `;
                     imageSection.appendChild(pdfBtn);
                 } else if (!hasPdfs && pdfButton) {
+                    // Remover botão PDF
                     pdfButton.remove();
                 }
             }
             
+            // Adicionar efeito visual de atualização
             card.style.animation = 'highlightUpdate 1s ease';
             setTimeout(() => {
                 card.style.animation = '';
             }, 1000);
             
-            console.log(`✅ Conteúdo do card ${propertyId} atualizado com sucesso`);
+            console.log(`✅ Conteúdo do card ${propertyId} atualizado com sucesso (layout unificado)`);
             return true;
             
         } catch (error) {
@@ -424,10 +400,10 @@ class PropertyTemplateEngine {
 window.propertyTemplates = new PropertyTemplateEngine();
 
 /* ==========================================================
-   FUNÇÃO PARA ATUALIZAR CARD ESPECÍFICO APÓS EDIÇÃO
+   FUNÇÃO PARA ATUALIZAR CARD ESPECÍFICO APÓS EDIÇÃO - VERSÃO MELHORADA
    ========================================================== */
 window.updatePropertyCard = function(propertyId, updatedData = null) {
-    console.log('🔄 Atualizando card do imóvel:', propertyId, updatedData ? 'com dados específicos' : '');
+    console.log('🔄 Atualizando card do imóvel com layout unificado:', propertyId, updatedData ? 'com dados específicos' : '');
     
     const property = window.properties?.find(p => p.id === propertyId);
     if (!property) {
@@ -435,13 +411,16 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
         return false;
     }
     
+    // Se dados atualizados foram fornecidos, usar eles
     const propertyToRender = updatedData ? { ...property, ...updatedData } : property;
     
+    // Tentar atualização parcial primeiro
     if (updatedData && window.propertyTemplates.updateCardContent) {
         const partialSuccess = window.propertyTemplates.updateCardContent(propertyId, propertyToRender);
         if (partialSuccess) {
             console.log(`✅ Atualização parcial bem-sucedida para ${propertyId}`);
             
+            // Atualizar também no array global
             const index = window.properties.findIndex(p => p.id === propertyId);
             if (index !== -1) {
                 window.properties[index] = { ...window.properties[index], ...updatedData };
@@ -451,8 +430,10 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
         }
     }
     
+    // Se falhar a atualização parcial, fazer substituição completa
     console.log(`🔄 Realizando substituição completa do card ${propertyId}`);
     
+    // Encontrar o card existente
     const allCards = document.querySelectorAll('.property-card');
     let cardToUpdate = null;
     
@@ -464,21 +445,27 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
     });
     
     if (cardToUpdate) {
+        // Gerar novo HTML para o card
         const newCardHTML = window.propertyTemplates.generate(propertyToRender);
+        
+        // Substituir o card antigo pelo novo
         cardToUpdate.outerHTML = newCardHTML;
         
-        console.log('✅ Card completamente substituído com todos os campos atualizados:', {
+        console.log('✅ Card completamente substituído com layout unificado:', {
             título: propertyToRender.title,
             preço: propertyToRender.price,
             localização: propertyToRender.location,
-            vídeo: propertyToRender.has_video
+            vídeo: propertyToRender.has_video,
+            imagens: propertyToRender.images ? propertyToRender.images.split(',').length : 0
         });
         
+        // Atualizar também no array global
         const index = window.properties.findIndex(p => p.id === propertyId);
         if (index !== -1) {
             window.properties[index] = propertyToRender;
         }
         
+        // Adicionar animação para destacar a atualização
         setTimeout(() => {
             const updatedCard = document.querySelector(`[data-property-id="${propertyId}"]`);
             if (updatedCard) {
@@ -521,14 +508,17 @@ async function waitForAllPropertyImages() {
         propertyImages.forEach(img => {
             if (img.complete && img.naturalWidth > 0) {
                 loadedCount++;
+                console.log(`✅ Imagem já carregada: ${img.src.substring(0, 50)}...`);
             } else {
                 img.onload = () => {
                     loadedCount++;
+                    console.log(`✅ Imagem carregada: ${img.src.substring(0, 50)}...`);
                     checkCompletion();
                 };
                 
                 img.onerror = () => {
                     loadedCount++;
+                    console.warn(`⚠️ Falha na imagem: ${img.src.substring(0, 50)}...`);
                     checkCompletion();
                 };
             }
@@ -564,6 +554,7 @@ window.loadPropertiesData = async function () {
     );
     
     try {
+        // Garantir credenciais Supabase
         window.ensureSupabaseCredentials();
         
         const loadStrategies = [
@@ -586,17 +577,19 @@ window.loadPropertiesData = async function () {
             try {
                 propertiesData = await strategy();
                 if (propertiesData && propertiesData.length > 0) break;
-            } catch (e) { }
+            } catch (e) { /* Silenciosamente tenta próxima estratégia */ }
         }
 
         window.properties = propertiesData || getInitialProperties();
         
+        // Processar dados para garantir formato correto
         window.properties = window.properties.map(prop => ({
             ...prop,
             has_video: window.ensureBooleanVideo(prop.has_video),
             features: window.parseFeaturesForStorage(prop.features)
         }));
         
+        // Salvar no localStorage sempre
         window.savePropertiesToStorage();
 
         loading?.setVariant?.('success');
@@ -676,7 +669,7 @@ function getInitialProperties() {
     ];
 }
 
-// ========== 3. RENDERIZAÇÃO OTIMIZADA ==========
+// ========== 3. RENDERIZAÇÃO OTIMIZADA COM LAYOUT UNIFICADO ==========
 window.renderProperties = function(filter = 'todos', forceClearCache = false) {
     console.log(`🎨 Renderizando propriedades (filtro: ${filter})${forceClearCache ? ' - CACHE LIMPO' : ''}`);
     
@@ -709,6 +702,7 @@ window.renderProperties = function(filter = 'todos', forceClearCache = false) {
 
     console.log(`✅ ${filtered.length} imóveis renderizados (filtro: ${filter})`);
     
+    // Atualizar contador
     const countElement = document.getElementById('propertyCount');
     if (countElement) {
         countElement.textContent = `${filtered.length} imóveis`;
@@ -751,10 +745,12 @@ window.updateLocalStorage = function() {
 window.setupFilters = function() {
     console.log('🎛️ Configurando filtros (compatibilidade)...');
     
+    // Delegar para FilterManager se disponível
     if (window.FilterManager && typeof window.FilterManager.setupWithFallback === 'function') {
         return window.FilterManager.setupWithFallback();
     }
     
+    // Fallback extremo
     console.error('❌ Sistema de filtros não disponível!');
     return false;
 };
@@ -772,7 +768,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL (COM FORMATAÇÃO UNIFICADA) - CORREÇÃO CRÍTICA ==========
 window.addNewProperty = async function(propertyData) {
     console.group('➕ ADICIONANDO NOVO IMÓVEL');
     console.log('📋 Dados recebidos:', propertyData);
@@ -784,10 +780,13 @@ window.addNewProperty = async function(propertyData) {
     }
 
     try {
+        // Formatar preço usando SharedCore unificado
         if (propertyData.price) {
+            // Usar SharedCore se disponível
             if (window.SharedCore?.PriceFormatter?.formatForInput) {
                 propertyData.price = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
             } else {
+                // Fallback básico
                 let formattedPrice = propertyData.price;
                 if (!formattedPrice.startsWith('R$')) {
                     formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
@@ -796,6 +795,7 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
+        // CORREÇÃO: Processar features corretamente
         if (propertyData.features) {
             propertyData.features = window.parseFeaturesForStorage(propertyData.features);
             console.log('✅ Features processadas:', propertyData.features);
@@ -803,9 +803,11 @@ window.addNewProperty = async function(propertyData) {
             propertyData.features = '[]';
         }
 
+        // CORREÇÃO: Garantir que has_video seja booleano
         propertyData.has_video = window.ensureBooleanVideo(propertyData.has_video);
         console.log('✅ Vídeo processado:', propertyData.has_video);
 
+        // Processar mídia
         let mediaResult = { images: '', pdfs: '' };
         let hasMedia = false;
 
@@ -829,6 +831,7 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
+        // Salvar no Supabase se configurado
         let supabaseSuccess = false;
         let supabaseId = null;
 
@@ -859,14 +862,24 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
-        const newId = supabaseSuccess && supabaseId
-            ? supabaseId
-            : (window.properties.length > 0
-                ? Math.max(...window.properties.map(p => parseInt(p.id) || 0)) + 1
-                : 1);
+        // ✅ CORREÇÃO CRÍTICA: ID ÚNICO E SINCRONIZADO
+        let newId;
+        
+        if (supabaseSuccess && supabaseId) {
+            // 1. Se Supabase retornou ID, usar ESSE ID
+            newId = supabaseId;
+            console.log(`✅ ID sincronizado do Supabase: ${newId}`);
+        } else {
+            // 2. Gerar ID local temporário (será sobrescrito após sync)
+            const maxLocalId = window.properties.length > 0 ? 
+                Math.max(...window.properties.map(p => parseInt(p.id) || 0)) : 0;
+            newId = maxLocalId + 1;
+            console.log(`⚠️ ID local temporário: ${newId} (sem conexão Supabase)`);
+        }
 
+        // Criar objeto com ID CORRETO
         const newProperty = {
-            id: newId,
+            id: newId,  // ✅ ID correto (Supabase ou local)
             title: propertyData.title,
             price: propertyData.price,
             location: propertyData.location,
@@ -880,20 +893,61 @@ window.addNewProperty = async function(propertyData) {
             pdfs: propertyData.pdfs || '',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            savedToSupabase: supabaseSuccess
+            savedToSupabase: supabaseSuccess,
+            // ✅ NOVO: flag de sincronização
+            syncStatus: supabaseSuccess ? 'synced' : 'local_only'
         };
 
+        // ✅ SALVAR NO ARRAY LOCAL (CRÍTICO)
         window.properties.unshift(newProperty);
-        window.savePropertiesToStorage();
-
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties('todos');
+        
+        // ✅ FORÇAR SALVAMENTO NO LOCALSTORAGE (CRÍTICO)
+        try {
+            localStorage.setItem('properties', JSON.stringify(window.properties));
+            console.log(`💾 Imóvel ID:${newId} salvo PERMANENTEMENTE no localStorage`);
+        } catch (error) {
+            console.error('❌ Erro ao salvar no localStorage:', error);
+            // Continua mesmo com erro de storage
         }
 
-        if (typeof window.loadPropertyList === 'function') {
-            setTimeout(() => window.loadPropertyList(), 300);
-        }
+        // ✅ ATUALIZAÇÃO IMEDIATA DA INTERFACE (GARANTIDA)
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos', true); // true = limpar cache
+            }
+            
+            if (typeof window.loadPropertyList === 'function') {
+                window.loadPropertyList();
+            }
+            
+            console.log(`🎯 Interface atualizada para imóvel ${newId}`);
+        }, 300);
 
+        // ✅ VERIFICAÇÃO DE INTEGRIDADE (NOVA)
+        setTimeout(() => {
+            console.group('🔍 VERIFICAÇÃO DE SINCRONIZAÇÃO');
+            
+            // Verificar se imóvel está no array
+            const inArray = window.properties.some(p => p.id === newId);
+            console.log(`📋 No array properties: ${inArray ? '✅' : '❌'}`);
+            
+            // Verificar localStorage
+            try {
+                const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+                const inStorage = stored.some(p => p.id === newId);
+                console.log(`💾 No localStorage: ${inStorage ? '✅' : '❌'}`);
+            } catch (e) {
+                console.error('❌ Erro ao verificar localStorage:', e);
+            }
+            
+            // Verificar interface
+            const inUI = !!document.querySelector(`[data-property-id="${newId}"]`);
+            console.log(`🎨 Na interface (card): ${inUI ? '✅' : '❌'}`);
+            
+            console.groupEnd();
+        }, 1000);
+
+        // Feedback ao usuário
         const imageCount = newProperty.images
             ? newProperty.images.split(',').filter(u => u.trim() && u !== 'EMPTY').length
             : 0;
@@ -924,12 +978,14 @@ window.addNewProperty = async function(propertyData) {
 
         alert(message);
 
+        // Limpar sistema de mídia
         setTimeout(() => {
             if (typeof MediaSystem !== 'undefined') {
                 MediaSystem.resetState();
             }
         }, 300);
 
+        // Invalidar cache
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
         }
@@ -962,12 +1018,15 @@ window.validateIdForSupabase = function(propertyId) {
         return null;
     }
     
+    // Se já for número e válido, retornar como está
     if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) {
         console.log(`✅ ID já é numérico válido: ${propertyId}`);
         return propertyId;
     }
     
+    // Se for string, tentar extrair número
     if (typeof propertyId === 'string') {
+        // Remover prefixos comuns de teste
         const cleanId = propertyId
             .replace('test_id_', '')
             .replace('temp_', '')
@@ -981,6 +1040,7 @@ window.validateIdForSupabase = function(propertyId) {
         }
     }
     
+    // Tentar converter direto
     const directConvert = parseInt(propertyId);
     if (!isNaN(directConvert) && directConvert > 0) {
         console.log(`✅ ID convertido diretamente: ${directConvert}`);
@@ -991,9 +1051,9 @@ window.validateIdForSupabase = function(propertyId) {
     return null;
 };
 
-// ========== 9. ATUALIZAR IMÓVEL - VERSÃO COMPLETA ==========
+// ========== 9. ATUALIZAR IMÓVEL - VERSÃO COMPLETA COM FORMATAÇÃO UNIFICADA ==========
 window.updateProperty = async function(id, propertyData) {
-    console.group('📤 updateProperty CHAMADO');
+    console.group('📤 updateProperty CHAMADO - COM FORMATAÇÃO UNIFICADA');
     console.log('📋 Dados recebidos:', {
         id: id,
         tipoId: typeof id,
@@ -1007,6 +1067,7 @@ window.updateProperty = async function(id, propertyData) {
         timestamp: new Date().toISOString()
     });
 
+    // ✅ VALIDAR ID
     if (!id || id === 'null' || id === 'undefined') {
         console.error('❌ ID inválido fornecido:', id);
         if (window.editingPropertyId) {
@@ -1021,6 +1082,7 @@ window.updateProperty = async function(id, propertyData) {
 
     console.log(`🔍 ID para atualização: ${id} (${typeof id})`);
 
+    // ✅ BUSCAR IMÓVEL
     const index = window.properties.findIndex(p => p.id == id || p.id === id);
     if (index === -1) {
         console.error('❌ Imóvel não encontrado! IDs disponíveis:', window.properties.map(p => p.id));
@@ -1030,10 +1092,13 @@ window.updateProperty = async function(id, propertyData) {
     }
 
     try {
+        // ✅ FORMATAR PREÇO (USANDO SHAREDCORE UNIFICADO)
         if (propertyData.price) {
+            // Usar SharedCore se disponível
             if (window.SharedCore?.PriceFormatter?.formatForInput) {
                 propertyData.price = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
             } else {
+                // Fallback básico
                 let formattedPrice = propertyData.price;
                 if (!formattedPrice.startsWith('R$')) {
                     formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
@@ -1042,6 +1107,7 @@ window.updateProperty = async function(id, propertyData) {
             }
         }
 
+        // ✅ CORREÇÕES CRÍTICAS: Vídeo e Features
         const processedData = {
             ...propertyData,
             has_video: window.ensureBooleanVideo(propertyData.has_video)
@@ -1056,6 +1122,7 @@ window.updateProperty = async function(id, propertyData) {
             features_original: propertyData.features ? propertyData.features.substring(0, 50) + '...' : 'vazio'
         });
 
+        // ✅ DADOS PARA ATUALIZAÇÃO (COM CORREÇÕES)
         const updateData = {
             title: processedData.title || window.properties[index].title,
             price: processedData.price || window.properties[index].price,
@@ -1063,6 +1130,7 @@ window.updateProperty = async function(id, propertyData) {
             description: processedData.description || window.properties[index].description || '',
             features: processedData.features || window.properties[index].features || '[]',
             type: processedData.type || window.properties[index].type || 'residencial',
+            // ✅ CORREÇÃO CRÍTICA: Garantir vídeo booleano
             has_video: processedData.has_video,
             badge: processedData.badge || window.properties[index].badge || 'Novo',
             rural: processedData.type === 'rural' || window.properties[index].rural || false,
@@ -1080,20 +1148,24 @@ window.updateProperty = async function(id, propertyData) {
             imageCount: updateData.images ? updateData.images.split(',').filter(p => p.trim()).length : 0
         });
 
+        // ✅ ATUALIZAR LOCALMENTE (SEMPRE) - USANDO FUNÇÃO CORRIGIDA
         const localSuccess = window.updateLocalProperty(id, updateData);
         
         if (!localSuccess) {
             throw new Error('Falha ao atualizar localmente');
         }
 
+        // ✅ ESTRATÉGIA DE PERSISTÊNCIA PARA SUPABASE
         let supabaseSuccess = false;
         let supabaseError = null;
         let supabaseResponse = null;
         
+        // Verificar se Supabase está configurado
         const hasSupabase = window.ensureSupabaseCredentials();
         
         if (hasSupabase) {
             try {
+                // Validar ID para Supabase
                 const validId = this.validateIdForSupabase?.(id) || id;
                 
                 console.log('🌐 Iniciando persistência no Supabase...', {
@@ -1104,6 +1176,7 @@ window.updateProperty = async function(id, propertyData) {
                     has_video: updateData.has_video
                 });
                 
+                // Tentar atualização completa
                 const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${validId}`, {
                     method: 'PATCH',
                     headers: {
@@ -1143,11 +1216,16 @@ window.updateProperty = async function(id, propertyData) {
             console.warn('⚠️ Credenciais Supabase não configuradas');
         }
 
+        // ✅ ATUALIZAR INTERFACE (independente do Supabase)
+        // Já foi feito pela função updateLocalProperty
+
+        // ✅ INVALIDAR CACHE
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
             console.log('🗑️ Cache invalidado após atualizar imóvel');
         }
 
+        // ✅ FEEDBACK AO USUÁRIO
         const imagesCount = updateData.images ? updateData.images.split(',').filter(p => p.trim()).length : 0;
         
         if (supabaseSuccess) {
@@ -1202,25 +1280,29 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         return false;
     }
     
+    // CORREÇÃO: Garantir que has_video seja booleano
     if (updatedData.has_video !== undefined) {
         updatedData.has_video = window.ensureBooleanVideo(updatedData.has_video);
         console.log(`✅ VÍDEO salvo localmente para ${propertyId}: ${updatedData.has_video}`);
     }
     
+    // CORREÇÃO: Processar features
     if (updatedData.features !== undefined) {
         updatedData.features = window.parseFeaturesForStorage(updatedData.features);
         console.log(`✅ FEATURES salvas localmente para ${propertyId}`);
     }
     
+    // Preservar dados importantes
     const existingProperty = window.properties[index];
     
     window.properties[index] = {
         ...existingProperty,
         ...updatedData,
-        id: propertyId,
+        id: propertyId, // Garantir que o ID não mude
         updated_at: new Date().toISOString()
     };
     
+    // SALVAR NO localStorage (CRÍTICO PARA PERSISTÊNCIA)
     try {
         localStorage.setItem('properties', JSON.stringify(window.properties));
         console.log(`💾 Imóvel ${propertyId} salvo PERMANENTEMENTE no localStorage`);
@@ -1240,15 +1322,19 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         imagensDepois: updatedData.images ? updatedData.images.split(',').length : 0
     });
     
+    // ✅ ATUALIZAÇÃO IMEDIATA DA INTERFACE - CORREÇÃO CRÍTICA
     setTimeout(() => {
+        // Atualizar lista do admin
         if (typeof window.loadPropertyList === 'function') {
             window.loadPropertyList();
         }
         
+        // ATUALIZAR CARD NA GALERIA IMEDIATAMENTE - PASSANDO OS DADOS ATUALIZADOS
         if (typeof window.updatePropertyCard === 'function') {
             console.log(`🎬 Atualizando card ${propertyId} na galeria principal com dados atualizados...`);
             window.updatePropertyCard(propertyId, updatedData);
         } else {
+            // Fallback: renderizar todos os imóveis com cache limpo
             if (typeof window.renderProperties === 'function') {
                 window.renderProperties(window.currentFilter || 'todos', true);
             }
@@ -1265,6 +1351,7 @@ window.addToLocalProperties = function(newProperty) {
     
     if (!window.properties) window.properties = [];
     
+    // Gerar novo ID se não tiver
     let propertyWithId = newProperty;
     if (!propertyWithId.id) {
         const maxId = window.properties.length > 0 ? 
@@ -1272,6 +1359,7 @@ window.addToLocalProperties = function(newProperty) {
         propertyWithId.id = maxId + 1;
     }
     
+    // Garantir timestamps
     if (!propertyWithId.created_at) {
         propertyWithId.created_at = new Date().toISOString();
     }
@@ -1279,11 +1367,13 @@ window.addToLocalProperties = function(newProperty) {
         propertyWithId.updated_at = new Date().toISOString();
     }
     
+    // Garantir formato correto
     propertyWithId.has_video = window.ensureBooleanVideo(propertyWithId.has_video);
     propertyWithId.features = window.parseFeaturesForStorage(propertyWithId.features);
     
     window.properties.push(propertyWithId);
     
+    // SALVAR NO localStorage (CRÍTICO PARA PERSISTÊNCIA)
     try {
         localStorage.setItem('properties', JSON.stringify(window.properties));
         console.log(`💾 Novo imóvel ID: ${propertyWithId.id} salvo PERMANENTEMENTE no localStorage`);
@@ -1301,6 +1391,7 @@ window.addToLocalProperties = function(newProperty) {
         features: propertyWithId.features
     });
     
+    // Atualizar UI
     setTimeout(() => {
         if (typeof window.loadPropertyList === 'function') {
             window.loadPropertyList();
@@ -1334,6 +1425,7 @@ window.deleteProperty = async function(id) {
     let supabaseSuccess = false;
     let supabaseError = null;
 
+    // ✅ PRIMEIRO: Tentar excluir do Supabase se configurado
     if (window.ensureSupabaseCredentials()) {
         const validId = window.validateIdForSupabase?.(id) || id;
         
@@ -1361,9 +1453,11 @@ window.deleteProperty = async function(id) {
         }
     }
 
+    // ✅ Excluir localmente (SEMPRE)
     const originalLength = window.properties.length;
     window.properties = window.properties.filter(p => p.id !== id);
     
+    // SALVAR NO localStorage (CRÍTICO PARA PERSISTÊNCIA)
     try {
         localStorage.setItem('properties', JSON.stringify(window.properties));
         console.log(`💾 Imóvel ${id} removido PERMANENTEMENTE do localStorage`);
@@ -1371,10 +1465,12 @@ window.deleteProperty = async function(id) {
         console.error('❌ Erro ao salvar no localStorage:', error);
     }
 
+    // ✅ Atualizar interface
     if (typeof window.renderProperties === 'function') {
         window.renderProperties('todos', true);
     }
 
+    // ✅ Atualizar lista do admin
     if (typeof window.loadPropertyList === 'function') {
         setTimeout(() => {
             window.loadPropertyList();
@@ -1382,6 +1478,7 @@ window.deleteProperty = async function(id) {
         }, 300);
     }
 
+    // ✅ Feedback ao usuário
     if (supabaseSuccess) {
         alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
         console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
@@ -1462,6 +1559,7 @@ window.loadPropertyList = function() {
             if (stored) {
                 try {
                     window.properties = JSON.parse(stored);
+                    // Processar dados para garantir formato correto
                     window.properties = window.properties.map(prop => ({
                         ...prop,
                         has_video: window.ensureBooleanVideo(prop.has_video),
@@ -1486,8 +1584,8 @@ window.loadPropertyList = function() {
     }, 3000);
 })();
 
-// ========== 15. ADICIONAR ESTILOS CSS PARA ANIMAÇÕES ==========
-const videoUpdateStyles = `
+// ========== 15. ADICIONAR ESTILOS CSS PARA LAYOUT UNIFICADO ==========
+const unifiedLayoutStyles = `
     @keyframes highlightUpdate {
         0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
         50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
@@ -1504,35 +1602,294 @@ const videoUpdateStyles = `
         animation: highlightUpdate 1s ease;
     }
     
-    [data-title-field], [data-price-field], [data-location-field], 
-    [data-description-field], [data-features-field] {
-        transition: all 0.3s ease;
-    }
-    
-    .property-card.updated {
-        animation: highlightUpdate 1s ease;
-    }
-    
+    /* ✅ ESTILOS UNIFICADOS PARA INDICADORES (MESMO PADRÃO SEMPRE) */
     .video-indicator {
         animation: pulseVideo 2s infinite !important;
         transition: all 0.3s ease !important;
+        position: absolute !important;
+        top: 10px !important;
+        right: 10px !important;
+        background: rgba(0, 0, 0, 0.8) !important;
+        color: white !important;
+        padding: 6px 12px !important;
+        border-radius: 6px !important;
+        font-size: 12px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        z-index: 10 !important;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4) !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
+        backdrop-filter: blur(5px) !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+    
+    .video-indicator i {
+        color: #FFD700 !important;
+        font-size: 14px !important;
     }
     
     .image-count {
-        z-index: 10 !important;
+        position: absolute !important;
+        right: 10px !important;
+        background: rgba(0, 0, 0, 0.9) !important;
+        color: white !important;
+        padding: 5px 10px !important;
+        border-radius: 4px !important;
+        font-size: 13px !important;
         font-weight: bold !important;
+        z-index: 9 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
+        display: flex !important;
+        align-items: center !important;
+        transition: top 0.3s ease !important;
+    }
+    
+    .image-count i {
+        margin-right: 5px !important;
+    }
+    
+    /* ✅ Contador SEMPRE visível (mesmo para 1 imagem) */
+    .property-image .image-count {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* ✅ Ajuste de posição quando tem vídeo */
+    .property-image .video-indicator ~ .image-count {
+        top: 45px !important;
+    }
+    
+    .property-image:not(:has(.video-indicator)) .image-count {
+        top: 10px !important;
+    }
+    
+    /* ✅ Botão PDF sempre no mesmo lugar */
+    .pdf-access {
+        position: absolute !important;
+        bottom: 10px !important;
+        right: 10px !important;
+        background: rgba(220, 53, 69, 0.9) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        z-index: 8 !important;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .pdf-access:hover {
+        background: rgba(220, 53, 69, 1) !important;
+        transform: scale(1.1) !important;
+    }
+    
+    .pdf-access i {
+        font-size: 18px !important;
     }
 `;
 
-if (!document.querySelector('#video-update-styles')) {
+// Adicionar estilos dinamicamente para layout unificado
+if (!document.querySelector('#unified-layout-styles')) {
     const styleEl = document.createElement('style');
-    styleEl.id = 'video-update-styles';
-    styleEl.textContent = videoUpdateStyles;
+    styleEl.id = 'unified-layout-styles';
+    styleEl.textContent = unifiedLayoutStyles;
     document.head.appendChild(styleEl);
+    console.log('✅ Estilos de layout unificado adicionados');
 }
 
+// ========== 16. FUNÇÕES DE TESTE ==========
+window.testFullUpdate = function() {
+    console.group('🧪 TESTE DE ATUALIZAÇÃO COMPLETA DA GALERIA');
+    
+    if (!window.properties || window.properties.length === 0) {
+        alert('❌ Nenhum imóvel disponível para teste');
+        return;
+    }
+    
+    const testProperty = window.properties[0];
+    const hasVideoBefore = testProperty.has_video;
+    const titleBefore = testProperty.title;
+    const priceBefore = testProperty.price;
+    const locationBefore = testProperty.location;
+    
+    console.log('📊 Estado antes:', {
+        id: testProperty.id,
+        title: titleBefore,
+        price: priceBefore,
+        location: locationBefore,
+        has_video: hasVideoBefore
+    });
+    
+    // Alterar dados para teste
+    testProperty.has_video = !hasVideoBefore;
+    testProperty.title = `${titleBefore} [TESTE ATUALIZADO]`;
+    testProperty.price = `R$ ${Math.floor(Math.random() * 1000000).toLocaleString()}`;
+    testProperty.location = `${locationBefore} [LOCAL ATUALIZADO]`;
+    
+    // Atualizar no array
+    const index = window.properties.findIndex(p => p.id === testProperty.id);
+    if (index !== -1) {
+        window.properties[index] = testProperty;
+        
+        // Salvar no localStorage
+        window.savePropertiesToStorage();
+        
+        // Atualizar interface usando a função melhorada
+        if (typeof window.updatePropertyCard === 'function') {
+            window.updatePropertyCard(testProperty.id, {
+                title: testProperty.title,
+                price: testProperty.price,
+                location: testProperty.location,
+                has_video: testProperty.has_video
+            });
+        }
+        
+        console.log('📊 Estado depois:', {
+            title: testProperty.title,
+            price: testProperty.price,
+            location: testProperty.location,
+            has_video: testProperty.has_video,
+            atualizado: true
+        });
+        
+        alert(`🧪 TESTE DE ATUALIZAÇÃO COMPLETA (LAYOUT UNIFICADO):\n\n` +
+              `Imóvel: ${testProperty.title}\n` +
+              `Preço: ${testProperty.price}\n` +
+              `Local: ${testProperty.location}\n` +
+              `Vídeo: ${testProperty.has_video ? 'SIM' : 'NÃO'}\n\n` +
+              `Todos os campos devem atualizar IMEDIATAMENTE na galeria.\n` +
+              `✅ Contador de imagens sempre visível\n` +
+              `✅ Indicador de vídeo sempre no mesmo lugar\n` +
+              `✅ Layout consistente para 1 ou várias imagens`);
+        
+        // Restaurar estado original após 10 segundos
+        setTimeout(() => {
+            if (window.properties[index]) {
+                window.properties[index].title = titleBefore;
+                window.properties[index].price = priceBefore;
+                window.properties[index].location = locationBefore;
+                window.properties[index].has_video = hasVideoBefore;
+                
+                window.savePropertiesToStorage();
+                
+                if (typeof window.updatePropertyCard === 'function') {
+                    window.updatePropertyCard(testProperty.id, {
+                        title: titleBefore,
+                        price: priceBefore,
+                        location: locationBefore,
+                        has_video: hasVideoBefore
+                    });
+                }
+                console.log('✅ Estado original restaurado');
+            }
+        }, 10000);
+    }
+    
+    console.groupEnd();
+};
+
+window.forceFullGalleryUpdate = function() {
+    console.log('🔄 Forçando atualização completa da galeria...');
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties(window.currentFilter || 'todos', true);
+        alert('✅ Galeria atualizada com cache limpo! Todos os campos devem estar atualizados.\n✅ Layout unificado para todas as imagens.');
+    } else {
+        alert('❌ Função renderProperties não disponível');
+    }
+};
+
+window.testUnifiedLayout = function() {
+    console.group('🧪 TESTE DO LAYOUT UNIFICADO');
+    
+    if (!window.properties || window.properties.length === 0) {
+        alert('❌ Nenhum imóvel disponível para teste');
+        return;
+    }
+    
+    // Criar um imóvel de teste com 1 imagem
+    const testProperty = {
+        id: 999,
+        title: "TESTE LAYOUT UNIFICADO",
+        price: "R$ 1,00",
+        location: "Local de Teste",
+        description: "Imóvel de teste com layout unificado",
+        features: '["Teste"]',
+        type: "residencial",
+        has_video: true,
+        badge: "Teste",
+        rural: false,
+        images: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+        pdfs: "EMPTY",
+        created_at: new Date().toISOString()
+    };
+    
+    // Adicionar temporariamente
+    window.properties.unshift(testProperty);
+    
+    // Renderizar
+    if (typeof window.renderProperties === 'function') {
+        window.renderProperties('todos', true);
+    }
+    
+    alert(`🧪 TESTE DO LAYOUT UNIFICADO:\n\n` +
+          `Foi adicionado um imóvel de teste com 1 imagem.\n\n` +
+          `VERIFIQUE:\n` +
+          `✅ Contador de imagens visível (deve mostrar "1")\n` +
+          `✅ Indicador de vídeo no topo direito\n` +
+          `✅ Mesmo estilo de cards com múltiplas imagens\n` +
+          `✅ Layout consistente e profissional\n\n` +
+          `O card será removido automaticamente em 10 segundos.`);
+    
+    // Remover após 10 segundos
+    setTimeout(() => {
+        window.properties = window.properties.filter(p => p.id !== 999);
+        if (typeof window.renderProperties === 'function') {
+            window.renderProperties('todos', true);
+        }
+        console.log('✅ Imóvel de teste removido');
+    }, 10000);
+    
+    console.groupEnd();
+};
+
+// ========== 17. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
+setTimeout(() => {
+    console.log('🔍 Verificando sincronização e layout ao iniciar...');
+    
+    // 1. Verificar se há imóveis no localStorage
+    const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+    console.log(`📊 Ao iniciar: ${stored.length} imóveis no localStorage`);
+    
+    // 2. Se window.properties estiver vazio mas localStorage tem dados
+    if ((!window.properties || window.properties.length === 0) && stored.length > 0) {
+        console.log('🔄 Carregando imóveis do localStorage para window.properties...');
+        window.properties = stored.map(prop => ({
+            ...prop,
+            has_video: window.ensureBooleanVideo(prop.has_video),
+            features: window.parseFeaturesForStorage(prop.features)
+        }));
+        
+        // Atualizar interface
+        setTimeout(() => {
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties('todos', true);
+            }
+            console.log(`✅ ${window.properties.length} imóveis carregados do localStorage`);
+        }, 500);
+    }
+}, 3000);
+
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js VERSÃO FINAL - PADRÃO IDÊNTICO PARA 1+ FOTOS');
+console.log('✅ properties.js VERSÃO FINAL COMPLETA COM LAYOUT UNIFICADO');
 
 function runLowPriority(task) {
     if ('requestIdleCallback' in window) {
@@ -1542,9 +1899,10 @@ function runLowPriority(task) {
     }
 }
 
+// Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🏠 DOM carregado - inicializando properties...');
+        console.log('🏠 DOM carregado - inicializando properties com layout unificado...');
 
         runLowPriority(() => {
             if (typeof window.loadPropertiesData === 'function') {
@@ -1578,10 +1936,14 @@ if (document.readyState === 'loading') {
     });
 }
 
+// Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 PADRÃO IDÊNTICO IMPLEMENTADO!');
-console.log('✅ Contador SEMPRE visível (mesmo para 1 foto)');
-console.log('✅ Vídeo SEMPRE em 45px (abaixo do contador)');
-console.log('✅ Mesmo z-index e posições para todas as quantidades de fotos');
-console.log('💡 Teste: Adicione um imóvel com 1 foto - o layout será IDÊNTICO ao de 5+ fotos');
+console.log('🎯 LAYOUT UNIFICADO IMPLEMENTADO!');
+console.log('✅ Contador de imagens SEMPRE visível (mesmo para 1 imagem)');
+console.log('✅ Indicador de vídeo SEMPRE na mesma posição');
+console.log('✅ Botão PDF SEMPRE no mesmo lugar');
+console.log('✅ Mesmo estilo CSS para todas as situações');
+console.log('💡 Execute window.testUnifiedLayout() para testar o layout unificado');
+console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
+console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
