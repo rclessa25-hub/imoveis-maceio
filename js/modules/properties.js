@@ -1,4 +1,4 @@
-// js/modules/properties.js - COM NOVAS MENSAGENS DE LOADING E CORREÇÃO CRÍTICA
+// js/modules/properties.js - COM NOVAS MENSAGENS DE LOADING
 console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO OTIMIZADA COMPLETA)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
@@ -659,7 +659,7 @@ window.deleteProperty = async function(id) {
 
     // ✅ 8. Feedback ao usuário
     if (supabaseSuccess) {
-        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor não voltará a aparecer.`);
+        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
         console.log(`🎯 Imóvel ${id} excluído completamente (online + local)`);
     } else {
         const errorMessage = supabaseError ? 
