@@ -1,5 +1,5 @@
-// js/modules/properties.js - COM CORREÇÃO DE UPLOAD, CARREGAMENTO DE IMAGENS E COMPATIBILIDADE TOTAL
-console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO SEGURA COM COMPATIBILIDADE TOTAL)');
+// js/modules/properties.js - COM CORREÇÃO DE UPLOAD E CARREGAMENTO DE IMAGENS
+console.log('🏠 properties.js - Sistema Core de Propriedades (COM CORREÇÃO DE UPLOAD E CARREGAMENTO DE IMAGENS)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -383,9 +383,9 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO SEGURA COM COMPATIBILIDADE ==========
+// ========== 7. ADICIONAR NOVO IMÓVEL - VERSÃO CORRIGIDA ==========
 window.addNewProperty = async function(propertyData) {
-    console.group('➕ ADICIONANDO NOVO IMÓVEL - VERSÃO SEGURA COM COMPATIBILIDADE');
+    console.group('➕ ADICIONANDO NOVO IMÓVEL - COM CORREÇÃO DE UPLOAD');
     console.log('📋 Dados recebidos:', propertyData);
 
     // ✅ Validação básica
@@ -396,55 +396,6 @@ window.addNewProperty = async function(propertyData) {
     }
 
     try {
-        // ✅ FORMATAR PREÇO - VERSÃO SEGURA COM COMPATIBILIDADE TOTAL
-        // 1. Primeiro tenta usar SharedCore se disponível
-        // 2. Se não, usa o método antigo formatPriceForInput
-        // 3. Se nenhum disponível, mantém o preço como está
-        
-        if (propertyData.price) {
-            let formattedPrice = propertyData.price;
-            let formatMethod = 'nenhum';
-            
-            // Tentar SharedCore primeiro (sistema moderno)
-            if (window.SharedCore?.PriceFormatter?.formatForInput) {
-                try {
-                    const sharedCoreFormatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
-                    if (sharedCoreFormatted) {
-                        formattedPrice = sharedCoreFormatted;
-                        formatMethod = 'SharedCore';
-                        console.log(`💰 Preço formatado via SharedCore: ${formattedPrice}`);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Erro no SharedCore PriceFormatter:', e);
-                }
-            }
-            
-            // Fallback para método antigo
-            if (formatMethod === 'nenhum' && window.formatPriceForInput) {
-                try {
-                    const oldFormatted = window.formatPriceForInput(propertyData.price);
-                    if (oldFormatted) {
-                        formattedPrice = oldFormatted;
-                        formatMethod = 'formatPriceForInput (legado)';
-                        console.log(`💰 Preço formatado via método legado: ${formattedPrice}`);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Erro no formatPriceForInput:', e);
-                }
-            }
-            
-            // Garantir formato R$ se ainda não estiver
-            if (formatMethod === 'nenhum' && !formattedPrice.startsWith('R$')) {
-                // Formatação básica de fallback
-                formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-                formatMethod = 'fallback';
-                console.log(`💰 Preço formatado via fallback: ${formattedPrice}`);
-            }
-            
-            propertyData.price = formattedPrice;
-            console.log(`✅ Formatação usada: ${formatMethod}`);
-        }
-
         // =========================================================
         // 1. PROCESSAR MÍDIA (IMAGENS + PDFs) VIA SISTEMA UNIFICADO
         // =========================================================
@@ -680,9 +631,9 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. ATUALIZAR IMÓVEL - VERSÃO SEGURA COM COMPATIBILIDADE ==========
+// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA ==========
 window.updateProperty = async function(id, propertyData) {
-    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - VERSÃO SEGURA COM COMPATIBILIDADE:`, propertyData);
+    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - COM CORREÇÃO DE UPLOAD:`, propertyData);
 
     // ✅ VALIDAÇÃO DO ID
     if (!id || id === 'null' || id === 'undefined') {
@@ -707,52 +658,7 @@ window.updateProperty = async function(id, propertyData) {
     }
 
     try {
-        // ✅ 1. FORMATAR PREÇO - VERSÃO SEGURA COM COMPATIBILIDADE TOTAL
-        if (propertyData.price) {
-            let formattedPrice = propertyData.price;
-            let formatMethod = 'nenhum';
-            
-            // Tentar SharedCore primeiro (sistema moderno)
-            if (window.SharedCore?.PriceFormatter?.formatForInput) {
-                try {
-                    const sharedCoreFormatted = window.SharedCore.PriceFormatter.formatForInput(propertyData.price);
-                    if (sharedCoreFormatted) {
-                        formattedPrice = sharedCoreFormatted;
-                        formatMethod = 'SharedCore';
-                        console.log(`💰 Preço formatado via SharedCore: ${formattedPrice}`);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Erro no SharedCore PriceFormatter:', e);
-                }
-            }
-            
-            // Fallback para método antigo
-            if (formatMethod === 'nenhum' && window.formatPriceForInput) {
-                try {
-                    const oldFormatted = window.formatPriceForInput(propertyData.price);
-                    if (oldFormatted) {
-                        formattedPrice = oldFormatted;
-                        formatMethod = 'formatPriceForInput (legado)';
-                        console.log(`💰 Preço formatado via método legado: ${formattedPrice}`);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Erro no formatPriceForInput:', e);
-                }
-            }
-            
-            // Garantir formato R$ se ainda não estiver
-            if (formatMethod === 'nenhum' && !formattedPrice.startsWith('R$')) {
-                // Formatação básica de fallback
-                formattedPrice = 'R$ ' + formattedPrice.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-                formatMethod = 'fallback';
-                console.log(`💰 Preço formatado via fallback: ${formattedPrice}`);
-            }
-            
-            propertyData.price = formattedPrice;
-            console.log(`✅ Formatação usada: ${formatMethod}`);
-        }
-
-        // ✅ 2. DADOS PARA SUPABASE
+        // ✅ 1. DADOS PARA SUPABASE
         const updateData = {
             title: propertyData.title || window.properties[index].title,
             price: propertyData.price || window.properties[index].price,
@@ -767,7 +673,7 @@ window.updateProperty = async function(id, propertyData) {
             pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
         };
 
-        // ✅ 3. ATUALIZAR NO SUPABASE
+        // ✅ 2. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
         if (window.SUPABASE_URL && window.SUPABASE_KEY) {
             try {
@@ -791,7 +697,7 @@ window.updateProperty = async function(id, propertyData) {
             }
         }
 
-        // ✅ 4. ATUALIZAR LOCALMENTE
+        // ✅ 3. ATUALIZAR LOCALMENTE
         window.properties[index] = {
             ...window.properties[index],
             ...updateData,
@@ -800,23 +706,23 @@ window.updateProperty = async function(id, propertyData) {
         window.savePropertiesToStorage();
         console.log('✅ Atualização local salva');
 
-        // ✅ 5. RENDERIZAR
+        // ✅ 4. RENDERIZAR
         if (typeof window.renderProperties === 'function') {
             window.renderProperties('todos');
         }
 
-        // ✅ 6. ATUALIZAR ADMIN
+        // ✅ 5. ATUALIZAR ADMIN
         if (typeof window.loadPropertyList === 'function') {
             setTimeout(() => window.loadPropertyList(), 300);
         }
 
-        // ✅ 7. INVALIDAR CACHE
+        // ✅ 6. INVALIDAR CACHE
         if (window.SmartCache) {
             SmartCache.invalidatePropertiesCache();
             console.log('🗑️ Cache invalidado após atualizar imóvel');
         }
 
-        // ✅ 8. FEEDBACK
+        // ✅ 7. FEEDBACK
         if (supabaseSuccess) {
             const pdfsCount = updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0;
             const pdfMsg = pdfsCount > 0 ? ` com ${pdfsCount} PDF(s)` : '';
@@ -1102,7 +1008,7 @@ if (window.properties && window.properties.length > 0) {
 })();
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js carregado com correção de upload, carregamento de imagens e COMPATIBILIDADE TOTAL');
+console.log('✅ properties.js carregado com correção de upload e carregamento de imagens');
 
 // Função utilitária para executar tarefas em baixa prioridade
 function runLowPriority(task) {
@@ -1201,63 +1107,4 @@ window.testUploadSystem = function() {
     console.groupEnd();
 };
 
-// Adicionar função para testar compatibilidade de formatação de preço
-window.testPriceFormatting = function() {
-    console.group('🧪 TESTE DE COMPATIBILIDADE DE FORMATAÇÃO DE PREÇO');
-    
-    const testPrices = [
-        '180000',
-        'R$180000',
-        'R$ 180.000,00',
-        '1.500.000',
-        '1500000',
-        'R$ 1.500.000,00'
-    ];
-    
-    console.log('🔍 Testando diferentes métodos de formatação:');
-    
-    testPrices.forEach(price => {
-        console.log(`\n📊 Preço original: "${price}"`);
-        
-        // Teste 1: SharedCore (se disponível)
-        let sharedCoreResult = price;
-        if (window.SharedCore?.PriceFormatter?.formatForInput) {
-            try {
-                sharedCoreResult = window.SharedCore.PriceFormatter.formatForInput(price);
-                console.log(`   SharedCore: "${sharedCoreResult}"`);
-            } catch (e) {
-                console.log(`   SharedCore: ❌ ERRO - ${e.message}`);
-            }
-        } else {
-            console.log(`   SharedCore: ❌ Não disponível`);
-        }
-        
-        // Teste 2: Método antigo (se disponível)
-        let oldMethodResult = price;
-        if (window.formatPriceForInput) {
-            try {
-                oldMethodResult = window.formatPriceForInput(price);
-                console.log(`   Método antigo: "${oldMethodResult}"`);
-            } catch (e) {
-                console.log(`   Método antigo: ❌ ERRO - ${e.message}`);
-            }
-        } else {
-            console.log(`   Método antigo: ❌ Não disponível`);
-        }
-        
-        // Teste 3: Fallback manual
-        let fallbackResult = price;
-        if (!fallbackResult.startsWith('R$')) {
-            fallbackResult = 'R$ ' + fallbackResult.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-            console.log(`   Fallback manual: "${fallbackResult}"`);
-        } else {
-            console.log(`   Fallback manual: "${fallbackResult}" (já formatado)`);
-        }
-    });
-    
-    console.log('\n✅ Teste de compatibilidade concluído');
-    console.groupEnd();
-};
-
 console.log('💡 Execute window.testUploadSystem() para testar o upload');
-console.log('💡 Execute window.testPriceFormatting() para testar a formatação de preços');
