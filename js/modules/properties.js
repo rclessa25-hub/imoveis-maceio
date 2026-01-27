@@ -1,4 +1,4 @@
-// js/modules/properties.js - COM NOVAS MENSAGENS DE LOADING
+// js/modules/properties.js - SISTEMA COMPLETO OTIMIZADO (VERSÃO FINAL CORRIGIDA)
 console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO OTIMIZADA COMPLETA)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
@@ -91,9 +91,9 @@ class PropertyTemplateEngine {
 // Instância global
 window.propertyTemplates = new PropertyTemplateEngine();
 
-// ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO COM NOVAS MENSAGENS ==========
+// ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO ==========
 window.loadPropertiesData = async function () {
-    const loading = window.LoadingManager?.show?.('Olá! 👋', 'Estamos preparando tudo para você...');
+    const loading = window.LoadingManager?.show?.('Carregando imóveis...', 'Buscando dados atualizados');
     
     try {
         // Estratégias de carregamento otimizadas
@@ -109,11 +109,6 @@ window.loadPropertiesData = async function () {
 
         let propertiesData = null;
         
-        // Atualizar mensagem durante o carregamento
-        setTimeout(() => {
-            loading?.updateMessage?.('Encontre seu imóvel dos sonhos em Maceió 🌴');
-        }, 800);
-        
         // Executar estratégias sequencialmente até sucesso
         for (const strategy of loadStrategies) {
             try {
@@ -125,26 +120,9 @@ window.loadPropertiesData = async function () {
         window.properties = propertiesData || getInitialProperties();
         window.savePropertiesToStorage();
 
-        // Feedback visual otimizado
+        // Feedback visual
         loading?.setVariant?.('success');
-        
-        // Mensagem final personalizada
-        const propertyCount = window.properties.length;
-        let finalMessage = '';
-        
-        if (propertyCount === 0) {
-            finalMessage = 'Pronto para começar! 🏠';
-        } else if (propertyCount === 1) {
-            finalMessage = '✨ 1 imóvel disponível!';
-        } else if (propertyCount <= 5) {
-            finalMessage = `✨ ${propertyCount} opções incríveis!`;
-        } else if (propertyCount <= 20) {
-            finalMessage = `🏘️ ${propertyCount} oportunidades em Maceió!`;
-        } else {
-            finalMessage = `🎉 ${propertyCount} imóveis para você explorar!`;
-        }
-        
-        loading?.updateMessage?.(finalMessage);
+        loading?.updateMessage?.(`${window.properties.length} imóveis carregados`);
         
         // Renderizar com cache otimizado
         window.renderProperties('todos');
@@ -152,13 +130,12 @@ window.loadPropertiesData = async function () {
     } catch (error) {
         console.error('❌ Erro no carregamento:', error);
         loading?.setVariant?.('error');
-        loading?.updateMessage?.('Tudo pronto! Recarregue se necessário 🔄');
+        loading?.updateMessage?.('Erro ao carregar imóveis');
         window.properties = getInitialProperties();
         window.renderProperties('todos');
         
     } finally {
-        // Fechar loading mais rapidamente para melhor experiência
-        setTimeout(() => loading?.hide?.(), 800);
+        setTimeout(() => loading?.hide?.(), 1000);
     }
 };
 
