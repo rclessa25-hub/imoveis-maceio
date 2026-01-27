@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO FINAL COMPLETA CORRIGIDA COM FORMATAÇÃO UNIFICADA
-console.log('🔧 admin.js - VERSÃO FINAL COMPLETA CORRIGIDA COM FORMATAÇÃO UNIFICADA');
+// js/modules/admin.js - VERSÃO FINAL COMPLETA CORRIGIDA
+console.log('🔧 admin.js - VERSÃO FINAL COMPLETA CORRIGIDA');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -16,18 +16,43 @@ let autoSaveTimeout = null;
 let pendingAutoSave = false;
 
 /* ==========================================================
-   HELPER FUNCTIONS - CORRIGIDAS COM FORMATAÇÃO UNIFICADA
+   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL
+   ========================================================== */
+window.toggleAdminPanel = function() {
+    console.log('🔧 toggleAdminPanel chamada');
+    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
+    if (password === null) return;
+    if (password === "") return alert('⚠️ Campo vazio!');
+    
+    if (password === ADMIN_CONFIG.password) {
+        const panel = document.getElementById(ADMIN_CONFIG.panelId);
+        if (panel) {
+            const isVisible = panel.style.display === 'block';
+            
+            if (!isVisible) {
+                window.resetAdminFormCompletely(false);
+            }
+            
+            panel.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                setTimeout(() => {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+                }, 300);
+            }
+        }
+    } else {
+        alert('❌ Senha incorreta!');
+    }
+};
+
+/* ==========================================================
+   HELPER FUNCTIONS - CORRIGIDAS
    ========================================================== */
 const Helpers = {
     format: {
-        price: (value) => {
-            // Delegar para SharedCore se disponível
-            if (window.SharedCore?.PriceFormatter?.formatForAdmin) {
-                return window.SharedCore.PriceFormatter.formatForAdmin(value);
-            }
-            // Fallback mínimo
-            return value && value.toString ? value.toString() : '';
-        },
+        price: (value) => window.SharedCore?.PriceFormatter?.formatForInput?.(value) || value,
         features: (value) => {
             console.log('🔍 Formatando features:', { input: value, type: typeof value });
             
@@ -155,10 +180,7 @@ const Helpers = {
             if (e.target.files.length) {
                 callback(e.target.files);
                 e.target.value = '';
-                // CORREÇÃO: Removida chamada à função não existente
-                if (autoSaveType) {
-                    console.log(`📁 Upload detectado para ${autoSaveType}`);
-                }
+                if (autoSaveType) window.triggerAutoSave(autoSaveType);
             }
         });
         
@@ -245,38 +267,6 @@ const Helpers = {
         
         console.log('📋 Dados capturados do formulário:', formData);
         return formData;
-    }
-};
-
-/* ==========================================================
-   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL
-   ========================================================== */
-window.toggleAdminPanel = function() {
-    console.log('🔧 toggleAdminPanel chamada');
-    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
-    if (password === null) return;
-    if (password === "") return alert('⚠️ Campo vazio!');
-    
-    if (password === ADMIN_CONFIG.password) {
-        const panel = document.getElementById(ADMIN_CONFIG.panelId);
-        if (panel) {
-            const isVisible = panel.style.display === 'block';
-            
-            if (!isVisible) {
-                window.resetAdminFormCompletely(false);
-            }
-            
-            panel.style.display = isVisible ? 'none' : 'block';
-            
-            if (!isVisible) {
-                setTimeout(() => {
-                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-                }, 300);
-            }
-        }
-    } else {
-        alert('❌ Senha incorreta!');
     }
 };
 
@@ -453,10 +443,10 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM FORMATAÇÃO UNIFICADA
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM ATUALIZAÇÃO IMEDIATA
    ========================================================== */
 window.saveProperty = async function() {
-    console.group('💾 SALVANDO IMÓVEL COM FORMATAÇÃO UNIFICADA');
+    console.group('💾 SALVANDO IMÓVEL COM ATUALIZAÇÃO IMEDIATA DA GALERIA');
     
     try {
         // 1. Obter dados do formulário
@@ -476,7 +466,7 @@ window.saveProperty = async function() {
             throw new Error('Preencha Título, Preço e Localização!');
         }
         
-        // Formatar dados (usando SharedCore unificado)
+        // Formatar dados
         propertyData.price = Helpers.format.price(propertyData.price);
         
         // CORREÇÃO: Converter features para JSON
@@ -550,18 +540,8 @@ window.saveProperty = async function() {
         propertyData.images = imageUrls || 'EMPTY';
         propertyData.pdfs = pdfUrls || 'EMPTY';
         
-        // ✅ NOVO: ID consistente
-        if (window.editingPropertyId) {
-            propertyData.id = window.editingPropertyId;
-        } else {
-            // Para novo imóvel, garantir ID consistente
-            const maxId = window.properties?.length > 0 ? 
-                Math.max(...window.properties.map(p => parseInt(p.id) || 0)) : 0;
-            propertyData.id = maxId + 1;
-        }
-        
         console.log('📦 Dados finais para salvar:', {
-            id: propertyData.id,
+            id: window.editingPropertyId || 'Novo',
             title: propertyData.title,
             has_video: propertyData.has_video,
             features: propertyData.features,
@@ -624,22 +604,45 @@ window.saveProperty = async function() {
         } else {
             console.log('🆕 Criando novo imóvel...');
             
+            // Gerar novo ID
+            const maxId = window.properties?.length > 0 ? 
+                Math.max(...window.properties.map(p => p.id)) : 0;
+            const newId = maxId + 1;
+            
             // Criar objeto completo
             const newProperty = {
                 ...propertyData,
+                id: newId,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
             
-            // CORREÇÃO CRÍTICA: Usar a função corrigida de properties.js
-            const addedProperty = window.addNewProperty(newProperty);
+            // Adicionar localmente
+            window.addToLocalProperties(newProperty);
             
-            if (!addedProperty) {
-                throw new Error('Falha ao adicionar imóvel localmente');
+            // Tentar salvar no Supabase
+            const hasSupabase = window.SUPABASE_CONSTANTS && 
+                              window.SUPABASE_CONSTANTS.URL && 
+                              window.SUPABASE_CONSTANTS.KEY;
+            
+            if (hasSupabase && typeof window.savePropertyToDatabase === 'function') {
+                try {
+                    const saveResult = await window.savePropertyToDatabase(newProperty);
+                    
+                    if (saveResult && saveResult.id) {
+                        Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
+                        console.log(`✅ Novo imóvel ID: ${saveResult.id}`);
+                    } else {
+                        Helpers.showNotification('⚠️ Imóvel criado apenas localmente', 'info', 3000);
+                        console.log('⚠️ Imóvel criado apenas localmente (Supabase falhou)');
+                    }
+                } catch (supabaseError) {
+                    console.error('❌ Erro ao criar no Supabase:', supabaseError);
+                    Helpers.showNotification('✅ Imóvel criado localmente (Supabase offline)', 'info', 3000);
+                }
+            } else {
+                Helpers.showNotification('✅ Imóvel criado localmente', 'success', 3000);
             }
-            
-            // Tentar salvar no Supabase (já foi tentado em addNewProperty)
-            Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
             
             // Atualizar galeria
             setTimeout(() => {
@@ -907,7 +910,7 @@ window.setupAdminUI = function() {
     
     // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
-        if (panel) {
+    if (panel) {
         panel.style.display = 'none';
     }
     
@@ -1121,67 +1124,6 @@ window.forceMediaPreviewUpdate = function() {
     }
 };
 
-/* ==========================================================
-   ADICIONAR BOTÃO DE DIAGNÓSTICO AO PAINEL ADMIN
-   ========================================================== */
-function addDiagnosticButton() {
-    setTimeout(() => {
-        const adminPanel = document.getElementById('adminPanel');
-        if (!adminPanel) return;
-        
-        // Verificar se o botão já existe
-        if (document.getElementById('diagnosticButton')) return;
-        
-        const diagnosticButton = document.createElement('button');
-        diagnosticButton.id = 'diagnosticButton';
-        diagnosticButton.innerHTML = '<i class="fas fa-bug"></i> Diagnosticar Sincronização';
-        diagnosticButton.style.cssText = `
-            background: #9b59b6;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        `;
-        
-        diagnosticButton.onmouseover = () => {
-            diagnosticButton.style.background = '#8e44ad';
-            diagnosticButton.style.transform = 'translateY(-2px)';
-        };
-        
-        diagnosticButton.onmouseout = () => {
-            diagnosticButton.style.background = '#9b59b6';
-            diagnosticButton.style.transform = 'translateY(0)';
-        };
-        
-        diagnosticButton.onclick = () => {
-            if (typeof window.debugSyncIssue === 'function') {
-                window.debugSyncIssue();
-                alert('🔍 Diagnóstico executado!\n\nVerifique o console (F12) para detalhes.');
-            } else {
-                alert('❌ Função de diagnóstico não disponível');
-            }
-        };
-        
-        // Adicionar botão após o formulário
-        const form = document.getElementById('propertyForm');
-        if (form) {
-            form.parentNode.insertBefore(diagnosticButton, form.nextSibling);
-        }
-        
-        console.log('✅ Botão de diagnóstico adicionado ao painel admin');
-    }, 2000);
-}
-
-// Executar após carregar o admin
-setTimeout(addDiagnosticButton, 3000);
-
 // Inicialização
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -1191,7 +1133,6 @@ if (document.readyState === 'loading') {
     setTimeout(window.setupAdminUI, 300);
 }
 
-console.log('✅ admin.js - VERSÃO FINAL COM FORMATAÇÃO UNIFICADA');
+console.log('✅ admin.js - VERSÃO FINAL COM CORREÇÕES DE VÍDEO E ATUALIZAÇÃO DA GALERIA');
 console.log('🎬 Para testar o checkbox, execute: window.testVideoCheckbox()');
 console.log('🔄 Para forçar atualização da galeria: window.forceGalleryUpdate()');
-console.log('🔍 Para diagnosticar sincronização: Clique no botão "Diagnosticar Sincronização" no painel admin');
