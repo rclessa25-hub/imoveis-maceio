@@ -517,27 +517,13 @@ window.addNewProperty = async function(propertyData) {
         if (typeof MediaSystem !== 'undefined' &&
             (MediaSystem.state.files.length > 0 || MediaSystem.state.pdfs.length > 0)) {
 
-            console.log('📤 Processando mídia com MediaSystem (COM PREVIEW GARANTIDO)...');
+            console.log('📤 Processando mídia com MediaSystem...');
             const tempId = `temp_${Date.now()}`;
 
             mediaResult = await MediaSystem.uploadAll(tempId, propertyData.title);
 
-            if (mediaResult.images) {
-                propertyData.images = mediaResult.images;
-                console.log(`✅ ${mediaResult.images.split(',').length} URL(s) de imagem obtidas`);
-            }
-            if (mediaResult.pdfs) {
-                propertyData.pdfs = mediaResult.pdfs;
-                console.log(`✅ ${mediaResult.pdfs.split(',').length} URL(s) de PDF obtidas`);
-            }
-            
-            // ✅ FORÇAR ATUALIZAÇÃO DO PREVIEW IMEDIATAMENTE
-            setTimeout(() => {
-                if (MediaSystem && typeof MediaSystem.updateUI === 'function') {
-                    MediaSystem.updateUI();
-                    console.log('🔄 Preview atualizado após upload');
-                }
-            }, 500);
+            if (mediaResult.images) propertyData.images = mediaResult.images;
+            if (mediaResult.pdfs) propertyData.pdfs = mediaResult.pdfs;
         } else {
             console.log('ℹ️ Nenhuma mídia selecionada para este imóvel');
         }
@@ -840,16 +826,7 @@ window.updateProperty = async function(id, propertyData) {
             alert(`⚠️ Imóvel "${updateData.title}" atualizado apenas LOCALMENTE.\n\nAlterações serão sincronizadas quando possível.`);
         }
 
-        // ✅ 8. ATUALIZAR PREVIEWS APÓS SUCESSO
-        if (typeof MediaSystem !== 'undefined' && MediaSystem.state) {
-            // Forçar atualização do preview com URLs permanentes
-            setTimeout(() => {
-                MediaSystem.updateUI();
-                console.log('🔄 Previews visuais atualizados após salvamento');
-            }, 300);
-        }
-
-        // ✅ 9. Finalizar monitoramento
+        // ✅ 8. Finalizar monitoramento
         if (operationId && window.OperationMonitor) {
             window.OperationMonitor.endOperationSuccess(operationId, { id, title: propertyData.title });
         }
