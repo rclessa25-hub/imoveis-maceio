@@ -93,11 +93,7 @@ window.propertyTemplates = new PropertyTemplateEngine();
 
 // ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO COM NOVAS MENSAGENS ==========
 window.loadPropertiesData = async function () {
-    const loading = window.LoadingManager?.show?.(
-        'Carregando imóveis...', 
-        'Buscando as melhores oportunidades em Maceió',
-        { variant: 'processing' }
-    );
+    const loading = window.LoadingManager?.show?.('Olá! 👋', 'Estamos preparando tudo para você...');
     
     try {
         // Estratégias de carregamento otimizadas
@@ -144,6 +140,8 @@ window.loadPropertiesData = async function () {
             finalMessage = `✨ ${propertyCount} opções incríveis!`;
         } else if (propertyCount <= 20) {
             finalMessage = `🏘️ ${propertyCount} oportunidades em Maceió!`;
+        } else {
+            finalMessage = `🎉 ${propertyCount} imóveis para você explorar!`;
         }
         
         loading?.updateMessage?.(finalMessage);
@@ -154,7 +152,7 @@ window.loadPropertiesData = async function () {
     } catch (error) {
         console.error('❌ Erro no carregamento:', error);
         loading?.setVariant?.('error');
-        loading?.updateMessage?.('⚠️ Erro ao carregar imóveis');
+        loading?.updateMessage?.('Tudo pronto! Recarregue se necessário 🔄');
         window.properties = getInitialProperties();
         window.renderProperties('todos');
         
@@ -229,8 +227,7 @@ window.filterProperties = function(properties, filter) {
         'Minha Casa Minha Vida': p => p.badge === 'MCMV'
     };
 
-    const filterFn = filterMap[filter];
-    return filterFn ? properties.filter(filterFn) : properties;
+    return properties.filter(filterMap[filter] || (() => true));
 };
 
 // ========== 4. SALVAR NO STORAGE (MANTIDA) ==========
@@ -245,48 +242,52 @@ window.savePropertiesToStorage = function() {
     }
 };
 
-// ========== 5. CONFIGURAR FILTROS (DELEGADO PARA FILTERMANAGER) ==========
+// ========== 5. CONFIGURAR FILTROS (MANTIDA) ==========
 window.setupFilters = function() {
-    console.log('🎛️ Configurando filtros via FilterManager...');
+    console.log('🎛️ Configurando filtros...');
     
-    // Delegar para FilterManager se disponível
-    if (window.FilterManager && typeof window.FilterManager.init === 'function') {
-        window.FilterManager.init((filterValue) => {
-            if (typeof window.renderProperties === 'function') {
-                window.renderProperties(filterValue);
-            }
-        });
-        console.log('✅ Filtros configurados via FilterManager');
-        return;
-    }
-    
-    // Fallback para código original (compatibilidade)
-    console.warn('⚠️ FilterManager não disponível, usando fallback...');
     const filterButtons = document.querySelectorAll('.filter-btn');
-    
     if (!filterButtons || filterButtons.length === 0) {
         console.error('❌ Botões de filtro não encontrados!');
         return;
     }
     
-    // Código fallback simplificado (15 linhas vs 45 original)
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            const filterText = this.textContent.trim();
-            const filter = filterText === 'Todos' ? 'todos' : filterText;
-            
-            if (window.renderProperties) window.renderProperties(filter);
-        });
-    });
-    
-    // Ativar "Todos" por padrão
+    // Ativar "Todos" automaticamente
     const todosBtn = Array.from(filterButtons).find(btn => 
         btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
     );
-    if (todosBtn) todosBtn.classList.add('active');
+    
+    if (todosBtn && !todosBtn.classList.contains('active')) {
+        todosBtn.classList.add('active');
+    }
+    
+    // Configurar eventos
+    filterButtons.forEach(button => {
+        // Remover event listeners antigos
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+        
+        newButton.addEventListener('click', function() {
+            // Remover active de todos
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Adicionar active ao clicado
+            this.classList.add('active');
+            
+            // Obter filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            console.log(`🎯 Filtrando por: ${filter}`);
+            
+            // Renderizar
+            if (typeof window.renderProperties === 'function') {
+                window.renderProperties(filter);
+            }
+        });
+    });
+    
+    console.log('✅ Filtros configurados');
 };
 
 // ========== 6. CONTATAR AGENTE (MANTIDA) ==========
