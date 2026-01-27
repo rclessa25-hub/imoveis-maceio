@@ -682,16 +682,7 @@ window.addNewProperty = async function(propertyData) {
 
 // ========== 8. ATUALIZAR IMÓVEL - VERSÃO SEGURA COM COMPATIBILIDADE ==========
 window.updateProperty = async function(id, propertyData) {
-    // ✅ ADICIONADO: LOG DE DIAGNÓSTICO SOLICITADO
-    console.group('📤 updateProperty CHAMADO - VERIFICANDO PDFs');
-    console.log('📋 Dados recebidos:', {
-        id: id,
-        temPdfsPropertyData: !!propertyData.pdfs,
-        pdfsPropertyData: propertyData.pdfs || 'Nenhum em propertyData',
-        pdfsCount: propertyData.pdfs ? propertyData.pdfs.split(',').filter(p => p.trim()).length : 0,
-        camposRecebidos: Object.keys(propertyData),
-        timestamp: new Date().toISOString()
-    });
+    console.log(`✏️ ATUALIZANDO IMÓVEL ${id} - VERSÃO SEGURA COM COMPATIBILIDADE:`, propertyData);
 
     // ✅ VALIDAÇÃO DO ID
     if (!id || id === 'null' || id === 'undefined') {
@@ -701,7 +692,6 @@ window.updateProperty = async function(id, propertyData) {
             id = window.editingPropertyId;
         } else {
             alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!');
-            console.groupEnd();
             return false;
         }
     }
@@ -713,7 +703,6 @@ window.updateProperty = async function(id, propertyData) {
     if (index === -1) {
         console.error('❌ Imóvel não encontrado! IDs disponíveis:', window.properties.map(p => p.id));
         alert(`❌ Imóvel não encontrado!\n\nIDs disponíveis: ${window.properties.map(p => p.id).join(', ')}`);
-        console.groupEnd();
         return false;
     }
 
@@ -778,15 +767,6 @@ window.updateProperty = async function(id, propertyData) {
             pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
         };
 
-        // ✅ ADICIONADO: LOG DE DIAGNÓSTICO SOLICITADO
-        console.log('🌐 Enviando para Supabase - updateData contém:', {
-            pdfsInUpdateData: !!updateData.pdfs,
-            pdfsValue: updateData.pdfs || 'Nenhum em updateData',
-            pdfsCount: updateData.pdfs ? updateData.pdfs.split(',').filter(p => p.trim()).length : 0,
-            fieldsEnviados: Object.keys(updateData),
-            imagesCount: updateData.images ? updateData.images.split(',').filter(p => p.trim()).length : 0
-        });
-
         // ✅ 3. ATUALIZAR NO SUPABASE
         let supabaseSuccess = false;
         if (window.SUPABASE_URL && window.SUPABASE_KEY) {
@@ -804,19 +784,7 @@ window.updateProperty = async function(id, propertyData) {
 
                 if (response.ok) {
                     supabaseSuccess = true;
-                    const responseData = await response.json();
                     console.log(`✅ Imóvel ${id} atualizado no Supabase`);
-                    console.log('📡 Resposta do Supabase:', {
-                        pdfsNaResposta: responseData[0]?.pdfs || 'Não retornado',
-                        status: response.status
-                    });
-                } else {
-                    const errorText = await response.text();
-                    console.error('❌ Supabase respondeu com erro:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        error: errorText
-                    });
                 }
             } catch (error) {
                 console.error('❌ Erro de conexão com Supabase:', error);
@@ -857,13 +825,10 @@ window.updateProperty = async function(id, propertyData) {
             alert(`⚠️ Imóvel "${updateData.title}" atualizado apenas LOCALMENTE.\n\nAlterações serão sincronizadas quando possível.`);
         }
 
-        console.log('🎯 updateProperty concluído com', supabaseSuccess ? 'SUCESSO NO SUPABASE' : 'APENAS LOCALMENTE');
-        console.groupEnd();
         return true;
 
     } catch (error) {
         console.error('❌ ERRO ao atualizar imóvel:', error);
-        console.groupEnd();
         alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
         return false;
     }
