@@ -1,45 +1,272 @@
-// js/modules/admin.js - VERSÃO FINAL COMPLETA CORRIGIDA
-console.log('🔧 admin.js - VERSÃO FINAL COMPLETA CORRIGIDA');
+// js/modules/admin.js - SISTEMA ADMIN CORRETO E FUNCIONAL
+console.log('🔧 admin.js carregado - Sistema Administrativo');
 
 /* ==========================================================
-   CONFIGURAÇÃO E CONSTANTES
+   INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA (ETAPA 12)
    ========================================================== */
-const ADMIN_CONFIG = {
-    password: "wl654",
-    panelId: "adminPanel",
-    buttonClass: "admin-toggle"
+
+/**
+ * Sobrescreve as funções globais antigas para apontar
+ * exclusivamente para o MediaSystem (media-unified.js)
+ * Mantém compatibilidade sem refatoração agressiva
+ */
+
+// ========== INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA ==========
+
+// Sobrescrever funções antigas para usar o sistema unificado
+window.handleNewMediaFiles = function(files) {
+    return MediaSystem.addFiles(files);
 };
 
-// Estado global
-window.editingPropertyId = null;
-let autoSaveTimeout = null;
-let pendingAutoSave = false;
+// ========== GARANTIR QUE A FUNÇÃO handleNewPdfFiles USA APENAS MEDIASYSTEM ==========
+window.handleNewPdfFiles = function(files) {
+    console.log('📄 handleNewPdfFiles chamada - Delegando APENAS para MediaSystem');
+    
+    if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+        return MediaSystem.addPdfs(files);
+    }
+    
+    console.warn('⚠️ MediaSystem não disponível para PDFs');
+    return 0;
+};
+
+window.loadExistingMediaForEdit = function(property) {
+    MediaSystem.loadExisting(property);
+};
+
+window.clearMediaSystem = function() {
+    MediaSystem.resetState();
+};
+
+window.clearMediaSystemComplete = function() {
+    MediaSystem.resetState();
+};
+
+// ========== BLOQUEAR QUALQUER OUTRO PROCESSAMENTO DE PDF NO admin.js ==========
+// Sobrescrever funções antigas para evitar processamento duplicado
+window.processAndSavePdfs = async function(propertyId, propertyTitle) {
+    console.log(`📄 processAndSavePdfs REDIRECIONADO para MediaSystem: ${propertyId}`);
+    
+    // DELEGAR 100% PARA MEDIASYSTEM
+    if (window.MediaSystem && typeof window.MediaSystem.processAndSavePdfs === 'function') {
+        try {
+            const result = await window.MediaSystem.processAndSavePdfs(propertyId, propertyTitle);
+            console.log(`✅ MediaSystem processou PDFs: ${result ? 'Sucesso' : 'Vazio'}`);
+            return result || '';
+        } catch (error) {
+            console.error('❌ Erro no MediaSystem:', error);
+        }
+    }
+    
+    // Fallback
+    console.warn('⚠️ Usando fallback vazio');
+    return '';
+};
+
+window.clearAllPdfs = function() {
+    console.log('🧹 admin.js: clearAllPdfs chamado');
+    
+    // Limpar ambos os sistemas para garantir
+    if (window.PdfSystem && typeof window.PdfSystem.clearAllPdfs === 'function') {
+        window.PdfSystem.clearAllPdfs();
+    }
+    
+    if (window.MediaSystem && typeof window.MediaSystem.clearAllPdfs === 'function') {
+        window.MediaSystem.clearAllPdfs();
+    }
+    
+    // Limpeza manual de fallback
+    if (window.selectedPdfFiles) window.selectedPdfFiles = [];
+    if (window.existingPdfFiles) window.existingPdfFiles = [];
+    
+    console.log('✅ PDFs limpos em todos os sistemas');
+};
+
+window.loadExistingPdfsForEdit = function(property) {
+    console.log('📄 admin.js: loadExistingPdfsForEdit chamado');
+    
+    // PRIORIDADE 1: PdfSystem
+    if (window.PdfSystem && typeof window.PdfSystem.loadExistingPdfsForEdit === 'function') {
+        return window.PdfSystem.loadExistingPdfsForEdit(property);
+    }
+    
+    // PRIORIDADE 2: MediaSystem
+    if (window.MediaSystem && typeof window.MediaSystem.loadExistingPdfsForEdit === 'function') {
+        return window.MediaSystem.loadExistingPdfsForEdit(property);
+    }
+    
+    console.warn('⚠️  Nenhum sistema PDF disponível para carregar existentes');
+};
+
+window.getPdfsToSave = async function(propertyId) {
+    console.log(`💾 admin.js: getPdfsToSave chamado para ${propertyId}`);
+    
+    // Redirecionar para processAndSavePdfs (mesma lógica)
+    return await window.processAndSavePdfs(propertyId, 'Imóvel');
+};
+
+window.getMediaUrlsForProperty = async function(propertyId, propertyTitle) {
+    if (MediaSystem && MediaSystem.getMediaUrlsForProperty) {
+        return await MediaSystem.getMediaUrlsForProperty(propertyId, propertyTitle);
+    }
+    return '';
+};
+
+window.clearProcessedPdfs = function() {
+    // Esta função limpa apenas PDFs processados
+    if (MediaSystem && MediaSystem.state && MediaSystem.state.pdfs) {
+        MediaSystem.state.pdfs = MediaSystem.state.pdfs.filter(pdf => !pdf.uploaded);
+        MediaSystem.updateUI();
+    }
+};
+
+// ========== CONFIGURAÇÕES ==========
+const ADMIN_CONFIG = {
+    password: "wl654",
+    pdfPassword: "doc123",
+    panelId: "adminPanel",
+    buttonClass: "admin-toggle",
+    storageKey: "weberlessa_properties"
+};
 
 /* ==========================================================
-   TOGGLE ADMIN PANEL - FUNÇÃO PRINCIPAL
+   INTEGRAÇÃO COM SISTEMA UNIFICADO DE MÍDIA
    ========================================================== */
+
+// Verificar se LoadingManager está disponível, senão carregar fallback
+if (typeof LoadingManager === 'undefined') {
+    console.warn('⚠️ LoadingManager não encontrado. Criando fallback básico...');
+    
+    // Fallback mínimo compatível com a API
+    window.LoadingManager = {
+        show: function(title, message) {
+            console.log(`🔄 [FALLBACK] Loading: ${title}`);
+            return {
+                updateTitle: () => {},
+                updateMessage: () => {},
+                updateProgress: () => {},
+                completeStep: () => {},
+                hide: () => console.log('✅ [FALLBACK] Loading oculto')
+            };
+        },
+        hide: function() {
+            console.log('✅ [FALLBACK] LoadingManager.hide() chamado');
+        }
+    };
+}
+
+// ========== VARIÁVEIS GLOBAIS ==========
+window.editingPropertyId = null;
+
+// ========== FUNÇÕES DE FORMATAÇÃO DE PREÇO ==========
+// ⭐⭐ NOVAS FUNÇÕES ADICIONADAS ⭐⭐
+window.formatPriceForInput = function(value) {
+    if (!value) return '';
+    
+    // Remove tudo que não for número
+    let numbersOnly = value.toString().replace(/\D/g, '');
+    
+    // Se não tem números, retorna vazio
+    if (numbersOnly === '') return '';
+    
+    // Converte para número inteiro
+    let priceNumber = parseInt(numbersOnly);
+    
+    // Formata como "R$ X.XXX" (sem centavos)
+    let formatted = 'R$ ' + priceNumber.toLocaleString('pt-BR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+    
+    return formatted;
+};
+
+// Função para obter apenas números do preço formatado
+window.getPriceNumbersOnly = function(formattedPrice) {
+    if (!formattedPrice) return '';
+    // Remove "R$ " e todos os pontos
+    return formattedPrice.replace('R$ ', '').replace(/\./g, '');
+};
+
+// ========== FORMATAÇÃO AUTOMÁTICA DO CAMPO PREÇO ==========
+function setupPriceAutoFormat() {
+    const priceField = document.getElementById('propPrice');
+    if (!priceField) return;
+    
+    // Formatar ao carregar (se já tiver valor)
+    if (priceField.value && !priceField.value.startsWith('R$')) {
+        priceField.value = window.formatPriceForInput(priceField.value);
+    }
+    
+    // Formatar ao digitar
+    priceField.addEventListener('input', function(e) {
+        // Permite backspace, delete, setas
+        if (e.inputType === 'deleteContentBackward' || 
+            e.inputType === 'deleteContentForward' ||
+            e.inputType === 'deleteByCut') {
+            return;
+        }
+        
+        // Salva posição do cursor
+        const cursorPos = this.selectionStart;
+        const originalValue = this.value;
+        
+        // Formata o valor
+        this.value = window.formatPriceForInput(this.value);
+        
+        // Ajusta posição do cursor
+        const diff = this.value.length - originalValue.length;
+        this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+    });
+    
+    // Formatar ao perder foco (garantir formatação)
+    priceField.addEventListener('blur', function() {
+        if (this.value && !this.value.startsWith('R$')) {
+            this.value = window.formatPriceForInput(this.value);
+        }
+    });
+    
+    console.log('✅ Formatação automática de preço configurada');
+}
+
+// ========== FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL ==========
 window.toggleAdminPanel = function() {
-    console.log('🔧 toggleAdminPanel chamada');
-    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
-    if (password === null) return;
-    if (password === "") return alert('⚠️ Campo vazio!');
+    console.log('🔄 toggleAdminPanel() executada');
+    
+    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha de administrador:");
+    
+    if (password === null) {
+        console.log('❌ Usuário cancelou o acesso');
+        return;
+    }
+    
+    if (password === "") {
+        alert('⚠️ Campo de senha vazio!');
+        return;
+    }
     
     if (password === ADMIN_CONFIG.password) {
         const panel = document.getElementById(ADMIN_CONFIG.panelId);
         if (panel) {
             const isVisible = panel.style.display === 'block';
-            
-            if (!isVisible) {
-                window.resetAdminFormCompletely(false);
-            }
-            
             panel.style.display = isVisible ? 'none' : 'block';
+            
+            console.log(`✅ Painel admin ${isVisible ? 'oculto' : 'exibido'}`);
             
             if (!isVisible) {
                 setTimeout(() => {
-                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+                    panel.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                    console.log('📜 Rolando até o painel admin');
                 }, 300);
+                
+                setTimeout(() => {
+                    if (typeof window.loadPropertyList === 'function') {
+                        window.loadPropertyList();
+                    }
+                }, 100);
             }
         }
     } else {
@@ -47,1092 +274,2305 @@ window.toggleAdminPanel = function() {
     }
 };
 
-/* ==========================================================
-   HELPER FUNCTIONS - CORRIGIDAS
-   ========================================================== */
-const Helpers = {
-    format: {
-        price: (value) => window.SharedCore?.PriceFormatter?.formatForInput?.(value) || value,
-        features: (value) => {
-            console.log('🔍 Formatando features:', { input: value, type: typeof value });
-            
-            if (!value) return '';
-            
-            try {
-                // Se for array, transformar em string separada por vírgula
-                if (Array.isArray(value)) {
-                    return value.filter(f => f && f.trim()).join(', ');
-                }
-                
-                // Se for string JSON (com colchetes), extrair array
-                if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
-                    try {
-                        const parsed = JSON.parse(value);
-                        if (Array.isArray(parsed)) {
-                            return parsed.filter(f => f && f.trim()).join(', ');
-                        }
-                    } catch (e) {
-                        console.warn('⚠️ Erro ao parsear JSON de features:', e);
-                        // Se falhar o parse, tentar limpar
-                        return value.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
-                    }
-                }
-                
-                // Se já for string com colchetes, remover
-                let cleaned = value.toString();
-                cleaned = cleaned.replace(/[\[\]"]/g, ''); // Remover colchetes e aspas
-                cleaned = cleaned.replace(/\s*,\s*/g, ', '); // Normalizar espaços
-                
-                return cleaned;
-            } catch (error) {
-                console.error('❌ Erro ao formatar features:', error);
-                return '';
-            }
+// ========== FUNÇÕES DO FORMULÁRIO ==========
+// NO admin.js - ATUALIZAR função cancelEdit (linha ~130)
+window.cancelEdit = function() {
+    console.log('❌ Cancelando edição...');
+    console.group('🧹 LIMPEZA COMPLETA DO FORMULÁRIO');
+    
+    // 1. Resetar ID de edição
+    window.editingPropertyId = null;
+
+    // 2. LIMPAR SISTEMA DE MÍDIA (fotos/vídeos)
+    if (typeof MediaSystem !== 'undefined') {
+        console.log('🔄 Limpando sistema de mídia...');
+        MediaSystem.resetState();
+    } else {
+        console.log('⚠️ MediaSystem não disponível, limpando manualmente...');
+        if (typeof window.clearMediaSystemComplete === 'function') {
+            window.clearMediaSystemComplete();
         }
-    },
+    }
     
-    parseFeatures: (value) => {
-        console.log('🔍 Parseando features:', { input: value });
-        
-        if (!value) return '[]';
-        
-        try {
-            // Se já é array, converter para JSON
-            if (Array.isArray(value)) {
-                return JSON.stringify(value.filter(f => f && f.trim()));
-            }
-            
-            // Se é string JSON, manter
-            if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
-                try {
-                    JSON.parse(value); // Validar
-                    return value;
-                } catch (e) {
-                    // Se inválido, processar como string normal
-                }
-            }
-            
-            // Se é string normal, converter para array
-            const featuresArray = value.split(',')
-                .map(f => f.trim())
-                .filter(f => f && f !== '');
-            
-            return JSON.stringify(featuresArray);
-        } catch (error) {
-            console.error('❌ Erro ao parsear features:', error);
-            return '[]';
-        }
-    },
+    // 3. LIMPAR SISTEMA DE PDFs
+    console.log('📄 Limpando PDFs...');
+    if (typeof window.clearAllPdfs === 'function') {
+        window.clearAllPdfs();
+    } else {
+        // Fallback manual
+        if (window.selectedPdfFiles) window.selectedPdfFiles = [];
+        if (window.existingPdfFiles) window.existingPdfFiles = [];
+    }
     
-    updateUI: {
-        formTitle: (text) => {
-            const el = document.getElementById('formTitle');
-            if (el) el.textContent = text;
-        },
-        submitButton: (isEditing = false) => {
-            const btn = document.querySelector('#propertyForm button[type="submit"]');
-            if (!btn) return;
-            btn.innerHTML = isEditing ? 
-                '<i class="fas fa-save"></i> Salvar Alterações' : 
-                '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-            btn.style.background = isEditing ? 'var(--accent)' : 'var(--success)';
-            btn.disabled = false;
-        },
-        cancelButton: (show = true) => {
-            const btn = document.getElementById('cancelEditBtn');
-            if (btn) {
-                if (show) {
-                    btn.style.display = 'inline-block';
-                    btn.style.opacity = '1';
-                    btn.style.visibility = 'visible';
-                    btn.style.pointerEvents = 'auto';
-                    btn.disabled = false;
-                } else {
-                    btn.style.display = 'none';
-                    btn.style.opacity = '0';
-                    btn.style.visibility = 'hidden';
-                    btn.style.pointerEvents = 'none';
-                    btn.disabled = true;
-                }
-            }
-        }
-    },
-    
-    setupUpload: (inputId, areaId, callback, autoSaveType = null) => {
-        const input = document.getElementById(inputId);
-        const area = document.getElementById(areaId);
-        if (!input || !area) return false;
+    // 4. ⚠️⚠️⚠️ LIMPAR TODOS OS CAMPOS DE TEXTO DO FORMULÁRIO ⚠️⚠️⚠️
+    console.log('📝 Limpando campos de texto...');
+    const form = document.getElementById('propertyForm');
+    if (form) {
+        // Método 1: Reset padrão
+        form.reset();
         
-        const cleanInput = input.cloneNode(true);
-        const cleanArea = area.cloneNode(true);
-        input.parentNode.replaceChild(cleanInput, input);
-        area.parentNode.replaceChild(cleanArea, area);
-        
-        const freshInput = document.getElementById(inputId);
-        const freshArea = document.getElementById(areaId);
-        
-        freshArea.addEventListener('click', (e) => {
-            e.preventDefault();
-            freshInput.click();
-        });
-        
-        freshInput.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                callback(e.target.files);
-                e.target.value = '';
-                if (autoSaveType) window.triggerAutoSave(autoSaveType);
-            }
-        });
-        
-        return true;
-    },
-    
-    showNotification: (message, type = 'success', duration = 3000) => {
-        const existing = document.querySelectorAll('.auto-save-notification');
-        existing.forEach(n => n.remove());
-        
-        const notification = document.createElement('div');
-        notification.className = `auto-save-notification ${type}`;
-        notification.innerHTML = `
-            <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-            <span>${message}</span>
-        `;
-        
-        notification.style.cssText = `
-            position: fixed; top: 20px; right: 20px;
-            background: ${type === 'error' ? '#e74c3c' : 'var(--success)'};
-            color: white; padding: 12px 18px; border-radius: 8px;
-            z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex; align-items: center; gap: 10px;
-            animation: slideInRight 0.3s ease;
-        `;
-        
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), duration);
-    },
-    
-    closeModal: function() {
-        const modal = document.getElementById('propertyModal');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.classList.remove('show');
-            document.body.classList.remove('modal-open');
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        }
-    },
-    
-    // CORREÇÃO CRÍTICA: Função para capturar dados do formulário
-    getFormData: function() {
-        console.log('🔍 Capturando dados do formulário...');
-        
-        // Mapeamento dos IDs dos campos
-        const formData = {};
-        
-        // 1. Capturar campo de vídeo (checkbox) - CORREÇÃO CRÍTICA
-        const videoCheckbox = document.getElementById('propHasVideo');
-        if (videoCheckbox) {
-            formData.has_video = videoCheckbox.checked;
-            console.log(`✅ Checkbox de vídeo capturado: ${videoCheckbox.checked}`);
-        } else {
-            formData.has_video = false;
-            console.warn('⚠️ Checkbox de vídeo não encontrado');
-        }
-        
-        // 2. Capturar outros campos
-        const fields = [
-            { id: 'propTitle', key: 'title' },
-            { id: 'propPrice', key: 'price' },
-            { id: 'propLocation', key: 'location' },
-            { id: 'propDescription', key: 'description' },
-            { id: 'propFeatures', key: 'features' },
-            { id: 'propType', key: 'type' },
-            { id: 'propBadge', key: 'badge' }
+        // Método 2: Garantir campos específicos vazios
+        const textFields = [
+            'propTitle', 'propPrice', 'propLocation', 
+            'propDescription', 'propFeatures'
         ];
         
-        fields.forEach(field => {
-            const element = document.getElementById(field.id);
-            if (element) {
-                if (element.type === 'select-one') {
-                    formData[field.key] = element.value;
-                } else {
-                    formData[field.key] = element.value.trim();
-                }
-                console.log(`✅ ${field.key}: ${formData[field.key]}`);
-            } else {
-                formData[field.key] = '';
-                console.warn(`⚠️ Campo ${field.id} não encontrado`);
+        textFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = '';
+                console.log(`   ✅ ${fieldId}: limpo`);
             }
         });
         
-        console.log('📋 Dados capturados do formulário:', formData);
-        return formData;
-    }
-};
-
-/* ==========================================================
-   FUNÇÃO PARA LIMPAR COMPLETAMENTE O FORMULÁRIO
-   ========================================================== */
-window.resetAdminFormCompletely = function(showNotification = true) {
-    console.log('🧹 RESET COMPLETO DO FORMULÁRIO - INICIANDO');
-    
-    // 1. Limpar estado global
-    window.editingPropertyId = null;
-    
-    // 2. Resetar campos do formulário
-    const fields = [
-        'propTitle', 'propPrice', 'propLocation', 'propDescription',
-        'propFeatures', 'propType', 'propBadge', 'propHasVideo'
-    ];
-    
-    fields.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (el.type === 'select-one') {
-                el.value = el.id === 'propType' ? 'residencial' : 'Novo';
-            } else if (el.type === 'checkbox') {
-                el.checked = false;
-            } else {
-                el.value = '';
-            }
-        }
-    });
-    
-    // 3. Resetar MediaSystem se existir
-    if (window.MediaSystem) {
-        try {
-            if (typeof window.MediaSystem.resetState === 'function') {
-                window.MediaSystem.resetState();
-            }
-            
-            // Limpar previews visualmente
-            ['uploadPreview', 'pdfUploadPreview', 'newPdfsSection', 'existingPdfsSection'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.innerHTML = '';
-            });
-        } catch (error) {
-            console.error('Erro ao resetar MediaSystem:', error);
-        }
+        // Resetar selects e checkbox
+        const typeSelect = document.getElementById('propType');
+        const badgeSelect = document.getElementById('propBadge');
+        const videoCheckbox = document.getElementById('propHasVideo');
+        
+        if (typeSelect) typeSelect.value = 'residencial';
+        if (badgeSelect) badgeSelect.value = 'Novo';
+        if (videoCheckbox) videoCheckbox.checked = false;
+        
+        console.log('✅ Campos resetados:', { 
+            type: typeSelect ? typeSelect.value : 'n/a',
+            badge: badgeSelect ? badgeSelect.value : 'n/a',
+            hasVideo: videoCheckbox ? videoCheckbox.checked : 'n/a'
+        });
     }
     
-    // 4. Limpar adminPdfHandler
-    if (window.adminPdfHandler && typeof window.adminPdfHandler.clear === 'function') {
-        window.adminPdfHandler.clear();
-    }
-    
-    // 5. Atualizar UI
-    Helpers.updateUI.formTitle('Adicionar Novo Imóvel');
-    Helpers.updateUI.submitButton(false);
-    Helpers.updateUI.cancelButton(false);
-    
-    // 6. Scroll para topo
+    // 5. LIMPAR PREVIEWS VISUAIS (redundante, mas garante)
+    console.log('🎨 Resetando previews visuais...');
     setTimeout(() => {
-        const form = document.getElementById('propertyForm');
-        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const mediaPreview = document.getElementById('uploadPreview');
+        const pdfPreview = document.getElementById('pdfUploadPreview');
+        
+        if (mediaPreview) {
+            mediaPreview.innerHTML = `
+                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
+                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
+                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
+                </div>
+            `;
+        }
+        
+        if (pdfPreview) {
+            pdfPreview.innerHTML = `
+                <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                    <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+                </div>
+            `;
+        }
+        
+        console.log('✅ Previews resetados');
     }, 100);
     
-    // 7. Notificação
-    if (showNotification) {
-        Helpers.showNotification('✅ Formulário limpo para novo imóvel', 'info');
+    // 6. ATUALIZAR UI DO FORMULÁRIO
+    console.log('🏷️ Atualizando interface...');
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
+    
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+        submitBtn.style.background = 'var(--primary)';
     }
     
-    console.log('✅ RESET COMPLETO DO FORMULÁRIO - FINALIZADO');
+    // 7. LIMPAR VARIÁVEIS GLOBAIS
+    console.log('🧼 Limpando variáveis globais...');
+    if (typeof window.selectedMediaFiles !== 'undefined') {
+        window.selectedMediaFiles = [];
+    }
+    if (typeof window.existingMediaFiles !== 'undefined') {
+        window.existingMediaFiles = [];
+    }
+    
+    // 8. VERIFICAÇÃO FINAL
+    setTimeout(() => {
+        const formState = window.isAdminFormEmpty ? window.isAdminFormEmpty() : null;
+        if (formState && !formState.isEmpty && formState.isEditing === false) {
+            console.warn('⚠️ Formulário ainda não está vazio após limpeza!');
+            console.log('🔍 Estado:', formState.checks);
+            // Forçar limpeza novamente
+            form.reset();
+        }
+    }, 300);
+    
+    console.groupEnd();
+    console.log('✅ Edição cancelada e formulário COMPLETAMENTE limpo');
     return true;
 };
 
-/* ==========================================================
-   FUNÇÃO DE CANCELAMENTO
-   ========================================================== */
-window.cancelEdit = function() {
-    if (window.editingPropertyId) {
-        if (confirm('❓ Cancelar edição?\n\nTodos os dados não salvos serão perdidos.')) {
-            console.log('❌ Cancelando edição do imóvel:', window.editingPropertyId);
-            window.resetAdminFormCompletely(true);
-            return true;
+// ADICIONAR TAMBÉM UMA FUNÇÃO DE FORÇAR LIMPEZA
+window.forceFormCleanup = function() {
+    console.log('🧹 FORÇANDO limpeza completa do formulário...');
+    
+    // Limpar manualmente cada campo
+    const fieldsToClear = [
+        { id: 'propTitle', type: 'text', defaultValue: '' },
+        { id: 'propPrice', type: 'text', defaultValue: '' },
+        { id: 'propLocation', type: 'text', defaultValue: '' },
+        { id: 'propDescription', type: 'textarea', defaultValue: '' },
+        { id: 'propFeatures', type: 'text', defaultValue: '' },
+        { id: 'propType', type: 'select', defaultValue: 'residencial' },
+        { id: 'propBadge', type: 'select', defaultValue: 'Novo' }
+    ];
+    
+    fieldsToClear.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.value = field.defaultValue;
+            console.log(`   ✅ ${field.id} = "${field.defaultValue}"`);
+            
+            // Disparar evento change para qualquer listener
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+            element.dispatchEvent(new Event('input', { bubbles: true }));
         }
-    } else {
-        console.log('ℹ️ Nenhuma edição em andamento para cancelar');
-        window.resetAdminFormCompletely(false);
+    });
+    
+    // Checkbox específico
+    const videoCheckbox = document.getElementById('propHasVideo');
+    if (videoCheckbox) {
+        videoCheckbox.checked = false;
+        videoCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log('   ✅ propHasVideo = false');
     }
-    return false;
+    
+    console.log('✅ Limpeza forçada completa');
+    return true;
 };
 
-/* ==========================================================
-   FUNÇÃO EDIT PROPERTY - COM CORREÇÃO DO CHECKBOX DE VÍDEO
-   ========================================================== */
-window.editProperty = function(id) {
-    console.log('✏️ Iniciando edição do imóvel ID:', id);
+window.loadPropertyList = function() {
+    console.log('📋 Carregando lista de imóveis...');
     
-    const property = window.properties?.find(p => p.id === id);
+    const container = document.getElementById('propertyList');
+    const countElement = document.getElementById('propertyCount');
+    
+    if (!container || !window.properties) return;
+    
+    container.innerHTML = '';
+    if (countElement) countElement.textContent = window.properties.length;
+    
+    if (window.properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">Nenhum imóvel</p>';
+        return;
+    }
+    
+    window.properties.forEach(property => {
+        const item = document.createElement('div');
+        item.className = 'property-item';
+        item.innerHTML = `
+            <div style="flex: 1;">
+                <strong style="color: var(--primary);">${property.title}</strong><br>
+                <small>${property.price} - ${property.location}</small>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="editProperty(${property.id})" 
+                        style="background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer;">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button onclick="deleteProperty(${property.id})" 
+                        style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 3px; cursor: pointer;">
+                    <i class="fas fa-trash"></i> Excluir
+                </button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+    
+    console.log(`✅ ${window.properties.length} imóveis listados`);
+};
+
+// ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA, SCROLL E FORMATAÇÃO DE PREÇO ==========
+window.editProperty = function(id) {
+    console.log(`📝 EDITANDO IMÓVEL ${id} (MediaSystem unificado ativo)`);
+
+    // Buscar imóvel
+    const property = window.properties.find(p => p.id === id);
     if (!property) {
         alert('❌ Imóvel não encontrado!');
-        return false;
+        return;
+    }
+
+    // ==============================
+    // 1️⃣ RESET COMPLETO DA MÍDIA
+    // ==============================
+    if (window.MediaSystem) {
+        MediaSystem.resetState();
+    } else {
+        console.warn('⚠️ MediaSystem não disponível');
+    }
+
+    // ==============================
+    // 2️⃣ PREENCHER FORMULÁRIO COM PREÇO FORMATADO
+    // ==============================
+    document.getElementById('propTitle').value = property.title || '';
+    
+    // ⭐⭐ FORMATAR PREÇO COM "R$" SEM VÍRGULA/CENTAVOS ⭐⭐
+    const priceField = document.getElementById('propPrice');
+    if (priceField && property.price) {
+        // Se já começa com R$, usa como está
+        if (property.price.startsWith('R$')) {
+            priceField.value = property.price;
+        } else {
+            // Formata o preço
+            priceField.value = window.formatPriceForInput(property.price) || '';
+        }
     }
     
-    // Resetar formulário primeiro
-    window.resetAdminFormCompletely(false);
-    
-    // Debug: verificar dados do imóvel
-    console.log('📋 Dados do imóvel para edição:', {
-        title: property.title,
-        has_video: property.has_video,
-        has_video_type: typeof property.has_video,
-        features: property.features,
-        featuresType: typeof property.features
-    });
-    
-    // Preencher campos - CORREÇÃO DO VÍDEO
-    const fieldMappings = {
-        'propTitle': property.title || '',
-        'propPrice': Helpers.format.price(property.price) || '',
-        'propLocation': property.location || '',
-        'propDescription': property.description || '',
-        'propFeatures': Helpers.format.features(property.features) || '',
-        'propType': property.type || 'residencial',
-        'propBadge': property.badge || 'Novo',
-        // CORREÇÃO CRÍTICA: Converter para booleano corretamente
-        'propHasVideo': property.has_video === true || 
-                       property.has_video === 'true' || 
-                       property.has_video === 1 || 
-                       property.has_video === '1'
-    };
-    
-    Object.entries(fieldMappings).forEach(([fieldId, value]) => {
-        const element = document.getElementById(fieldId);
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = Boolean(value);
-                console.log(`✅ Checkbox ${fieldId} definido para: ${Boolean(value)} (valor original: ${property.has_video})`);
-            } else {
-                element.value = value;
+    document.getElementById('propLocation').value = property.location || '';
+    document.getElementById('propDescription').value = property.description || '';
+
+    document.getElementById('propFeatures').value = Array.isArray(property.features)
+        ? property.features.join(', ')
+        : (property.features || '');
+
+    document.getElementById('propType').value = property.type || 'residencial';
+    document.getElementById('propBadge').value = property.badge || 'Novo';
+
+    document.getElementById('propHasVideo').checked =
+        property.has_video === true ||
+        property.has_video === 'true' ||
+        (typeof property.has_video === 'string' && property.has_video.toLowerCase() === 'true') ||
+        false;
+
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+        formTitle.textContent = `Editando: ${property.title}`;
+    }
+
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+        submitBtn.style.background = 'var(--accent)'; // Cor diferente para edição
+    }
+
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'block';
+    }
+
+    // Marcar modo edição
+    window.editingPropertyId = property.id;
+
+    // ==============================
+    // 3️⃣ CARREGAR MÍDIA EXISTENTE
+    // ==============================
+    if (window.MediaSystem) {
+        MediaSystem.loadExisting(property);
+        console.log('🖼️ Mídia existente carregada no MediaSystem');
+    }
+
+    // ==============================
+    // ⭐⭐ 4️⃣ ROLAR ATÉ O FORMULÁRIO COM COMPORTAMENTO CORRIGIDO ⭐⭐
+    // ==============================
+    setTimeout(() => {
+        const adminPanel = document.getElementById('adminPanel');
+        const propertyForm = document.getElementById('propertyForm');
+        
+        // Primeiro garantir que o painel admin está visível
+        if (adminPanel && adminPanel.style.display !== 'block') {
+            adminPanel.style.display = 'block';
+            console.log('✅ Painel admin aberto automaticamente');
+        }
+        
+        // Agora rolar suavemente até o formulário SEM SELECIONAR TEXTO
+        if (propertyForm) {
+            console.log('📜 Rolando até o formulário de edição...');
+            
+            // Método 1: Usar scrollIntoView com comportamento suave
+            propertyForm.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'start', // Alinha ao topo
+                inline: 'nearest'
+            });
+            
+            // Método 2: Destacar visualmente o formulário (sem selecionar texto)
+            propertyForm.style.transition = 'all 0.3s ease';
+            propertyForm.style.boxShadow = '0 0 0 3px var(--accent)';
+            
+            // Remover destaque após 2 segundos
+            setTimeout(() => {
+                propertyForm.style.boxShadow = '';
+            }, 2000);
+            
+            console.log('✅ Formulário em foco para edição');
+            
+            // ⭐⭐ CRÍTICO: Focar no campo título SEM SELECIONAR o texto ⭐⭐
+            setTimeout(() => {
+                const titleField = document.getElementById('propTitle');
+                if (titleField) {
+                    // Focar no campo mas NÃO selecionar o texto
+                    titleField.focus();
+                    
+                    // ⭐⭐ SOLUÇÃO: Posicionar cursor no FINAL do texto em vez de selecionar tudo ⭐⭐
+                    // Isso previne a exclusão acidental
+                    const textLength = titleField.value.length;
+                    titleField.setSelectionRange(textLength, textLength);
+                    
+                    console.log('🎯 Foco no campo título (cursor posicionado no final)');
+                }
+            }, 700); // Aumentar delay para garantir que o scroll terminou
+        } else {
+            console.warn('⚠️ Formulário não encontrado para scroll');
+            // Fallback: rolar até o painel admin
+            if (adminPanel) {
+                adminPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
-    });
-    
-    // Atualizar UI
-    Helpers.updateUI.formTitle(`Editando: ${property.title}`);
-    Helpers.updateUI.submitButton(true);
-    Helpers.updateUI.cancelButton(true);
-    
-    // Definir ID em edição
-    window.editingPropertyId = property.id;
-    
-    // Carregar mídia e PDFs
-    if (window.MediaSystem && typeof window.MediaSystem.loadExisting === 'function') {
-        window.MediaSystem.loadExisting(property);
-    }
-    
-    if (window.adminPdfHandler && typeof window.adminPdfHandler.load === 'function') {
-        window.adminPdfHandler.load(property);
-    }
-    
-    // Abrir painel
-    setTimeout(() => {
-        const panel = document.getElementById('adminPanel');
-        if (panel) {
-            panel.style.display = 'block';
-            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, 150);
-    
-    console.log('✅ Modo edição ativado para imóvel ID:', property.id);
-    console.log('✅ VÍDEO configurado para:', fieldMappings.propHasVideo);
-    console.log('✅ FEATURES configuradas como:', fieldMappings.propFeatures);
-    
+    }, 100); // Pequeno delay para garantir que o DOM foi atualizado
+
+    console.log(`✅ Imóvel ${id} pronto para edição`);
     return true;
 };
 
-/* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM ATUALIZAÇÃO IMEDIATA
-   ========================================================== */
-window.saveProperty = async function() {
-    console.group('💾 SALVANDO IMÓVEL COM ATUALIZAÇÃO IMEDIATA DA GALERIA');
+// ========== Função de Limpeza do Formulário ==========
+
+window.resetAdminFormToInitialState = function() {
+    console.log('🔄 Resetando formulário admin para estado inicial');
     
     try {
-        // 1. Obter dados do formulário
-        const propertyData = Helpers.getFormData();
+        // 1. Resetar campos do formulário
+        document.getElementById('propertyForm').reset();
         
-        console.log('📋 Dados coletados do formulário:', {
-            title: propertyData.title,
-            has_video: propertyData.has_video,
-            has_video_type: typeof propertyData.has_video,
-            features_raw: propertyData.features,
-            features_type: typeof propertyData.features,
-            timestamp: new Date().toISOString()
-        });
-        
-        // Validação básica
-        if (!propertyData.title || !propertyData.price || !propertyData.location) {
-            throw new Error('Preencha Título, Preço e Localização!');
+        // 2. Limpar sistema de mídia (fotos/vídeos)
+        if (typeof window.clearMediaSystemComplete === 'function') {
+            window.clearMediaSystemComplete();
+        } else if (typeof window.clearMediaSystem === 'function') {
+            window.clearMediaSystem();
         }
         
-        // Formatar dados
-        propertyData.price = Helpers.format.price(propertyData.price);
-        
-        // CORREÇÃO: Converter features para JSON
-        if (propertyData.features) {
-            propertyData.features = Helpers.parseFeatures(propertyData.features);
-            console.log('✅ Features convertidas para JSON:', propertyData.features);
+        // 3. Limpar sistema de PDFs
+        if (typeof window.clearAllPdfs === 'function') {
+            window.clearAllPdfs();
         } else {
-            propertyData.features = '[]';
+            // Fallback manual para PDFs
+            if (window.selectedPdfFiles) window.selectedPdfFiles = [];
+            if (window.existingPdfFiles) window.existingPdfFiles = [];
+            
+            const pdfPreview = document.getElementById('pdfUploadPreview');
+            if (pdfPreview) {
+                pdfPreview.innerHTML = `
+                    <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+                        <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
+                    </div>
+                `;
+            }
         }
         
-        // CORREÇÃO CRÍTICA: Garantir que has_video seja booleano
-        propertyData.has_video = Boolean(propertyData.has_video);
-        console.log('✅ VÍDEO processado como booleano:', propertyData.has_video);
+        // 4. Resetar variáveis de edição
+        window.editingPropertyId = null;
         
-        // 2. Processar mídias
-        let imageUrls = '';
-        let pdfUrls = '';
+        // 5. Atualizar interface
+        const formTitle = document.getElementById('formTitle');
+        if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
         
-        if (window.MediaSystem) {
-            console.log('📤 Processando mídias...');
-            
-            const hasSupabase = window.SUPABASE_CONSTANTS && 
-                              window.SUPABASE_CONSTANTS.URL && 
-                              window.SUPABASE_CONSTANTS.KEY;
-            
-            if (hasSupabase) {
-                try {
-                    const uploadResult = await MediaSystem.uploadAll(
-                        window.editingPropertyId || 'temp_' + Date.now(),
-                        propertyData.title || 'Imóvel'
-                    );
-                    
-                    if (uploadResult.success) {
-                        imageUrls = uploadResult.images;
-                        pdfUrls = uploadResult.pdfs;
-                        console.log(`✅ Upload concluído: ${uploadResult.uploadedCount} arquivo(s)`);
-                    } else {
-                        console.warn('⚠️ Upload falhou, salvando localmente');
-                        const localResult = MediaSystem.saveAndKeepLocal(
-                            window.editingPropertyId || 'temp_' + Date.now(),
-                            propertyData.title || 'Imóvel'
-                        );
-                        imageUrls = localResult.images;
-                        pdfUrls = localResult.pdfs;
-                    }
-                } catch (uploadError) {
-                    console.error('❌ Erro no upload:', uploadError);
-                    const localResult = MediaSystem.saveAndKeepLocal(
-                        window.editingPropertyId || 'temp_' + Date.now(),
-                        propertyData.title || 'Imóvel'
-                    );
-                    imageUrls = localResult.images;
-                    pdfUrls = localResult.pdfs;
-                }
-            } else {
-                console.log('⚠️ Supabase não configurado, salvando localmente');
-                const localResult = MediaSystem.saveAndKeepLocal(
-                    window.editingPropertyId || 'temp_' + Date.now(),
-                    propertyData.title || 'Imóvel'
-                );
-                imageUrls = localResult.images;
-                pdfUrls = localResult.pdfs;
-            }
-        } else {
-            console.warn('⚠️ MediaSystem não disponível');
-            imageUrls = 'EMPTY';
-            pdfUrls = 'EMPTY';
-        }
+        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
         
-        // 3. Atualizar dados com URLs
-        propertyData.images = imageUrls || 'EMPTY';
-        propertyData.pdfs = pdfUrls || 'EMPTY';
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
         
-        console.log('📦 Dados finais para salvar:', {
-            id: window.editingPropertyId || 'Novo',
-            title: propertyData.title,
-            has_video: propertyData.has_video,
-            features: propertyData.features,
-            imagesCount: imageUrls && imageUrls !== 'EMPTY' ? imageUrls.split(',').length : 0,
-            pdfsCount: pdfUrls && pdfUrls !== 'EMPTY' ? pdfUrls.split(',').length : 0
-        });
-        
-        // 4. Salvar no sistema
-        if (window.editingPropertyId) {
-            console.log(`✏️ Salvando edição do imóvel ${window.editingPropertyId}...`);
-            
-            // Salvar localmente primeiro
-            const localSuccess = window.updateLocalProperty(window.editingPropertyId, propertyData);
-            
-            if (!localSuccess) {
-                throw new Error('Falha ao salvar localmente');
-            }
-            
-            // Tentar salvar no Supabase
-            const hasSupabase = window.SUPABASE_CONSTANTS && 
-                              window.SUPABASE_CONSTANTS.URL && 
-                              window.SUPABASE_CONSTANTS.KEY;
-            
-            if (hasSupabase && typeof window.updateProperty === 'function') {
-                try {
-                    const updateResult = await window.updateProperty(window.editingPropertyId, propertyData);
-                    
-                    if (updateResult && updateResult.success) {
-                        Helpers.showNotification('✅ Imóvel atualizado com sucesso!', 'success', 3000);
-                        console.log('✅ Imóvel salvo no Supabase');
-                    } else {
-                        Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
-                        console.log('⚠️ Imóvel salvo apenas localmente (Supabase falhou)');
-                    }
-                } catch (supabaseError) {
-                    console.error('❌ Erro ao salvar no Supabase:', supabaseError);
-                    Helpers.showNotification('✅ Imóvel salvo localmente (Supabase offline)', 'info', 3000);
-                }
-            } else {
-                Helpers.showNotification('✅ Imóvel salvo localmente', 'success', 3000);
-            }
-            
-            // CORREÇÃO CRÍTICA: Atualizar galeria imediatamente
-            setTimeout(() => {
-                if (typeof window.updatePropertyCard === 'function') {
-                    window.updatePropertyCard(window.editingPropertyId);
-                    console.log('🎬 Card atualizado na galeria principal');
-                } else if (typeof window.renderProperties === 'function') {
-                    window.renderProperties(window.currentFilter || 'todos');
-                    console.log('🔄 Galeria renderizada completamente');
-                }
-            }, 300);
-            
-            // Fechar modal e resetar
-            setTimeout(() => {
-                Helpers.closeModal();
-                window.resetAdminFormCompletely(true);
-            }, 1500);
-            
-        } else {
-            console.log('🆕 Criando novo imóvel...');
-            
-            // Gerar novo ID
-            const maxId = window.properties?.length > 0 ? 
-                Math.max(...window.properties.map(p => p.id)) : 0;
-            const newId = maxId + 1;
-            
-            // Criar objeto completo
-            const newProperty = {
-                ...propertyData,
-                id: newId,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-            
-            // Adicionar localmente
-            window.addToLocalProperties(newProperty);
-            
-            // Tentar salvar no Supabase
-            const hasSupabase = window.SUPABASE_CONSTANTS && 
-                              window.SUPABASE_CONSTANTS.URL && 
-                              window.SUPABASE_CONSTANTS.KEY;
-            
-            if (hasSupabase && typeof window.savePropertyToDatabase === 'function') {
-                try {
-                    const saveResult = await window.savePropertyToDatabase(newProperty);
-                    
-                    if (saveResult && saveResult.id) {
-                        Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
-                        console.log(`✅ Novo imóvel ID: ${saveResult.id}`);
-                    } else {
-                        Helpers.showNotification('⚠️ Imóvel criado apenas localmente', 'info', 3000);
-                        console.log('⚠️ Imóvel criado apenas localmente (Supabase falhou)');
-                    }
-                } catch (supabaseError) {
-                    console.error('❌ Erro ao criar no Supabase:', supabaseError);
-                    Helpers.showNotification('✅ Imóvel criado localmente (Supabase offline)', 'info', 3000);
-                }
-            } else {
-                Helpers.showNotification('✅ Imóvel criado localmente', 'success', 3000);
-            }
-            
-            // Atualizar galeria
-            setTimeout(() => {
-                if (typeof window.renderProperties === 'function') {
-                    window.renderProperties('todos');
-                }
-            }, 300);
-            
-            // Fechar modal e resetar
-            setTimeout(() => {
-                Helpers.closeModal();
-                window.resetAdminFormCompletely(true);
-            }, 1500);
-        }
+        console.log('✅ Formulário resetado completamente para estado inicial');
+        return true;
         
     } catch (error) {
-        console.error('❌ Erro ao salvar imóvel:', error);
-        Helpers.showNotification(`❌ Erro: ${error.message}`, 'error', 5000);
-        alert(`❌ Erro ao salvar: ${error.message}`);
-        
-    } finally {
-        console.groupEnd();
+        console.error('❌ Erro ao resetar formulário:', error);
+        return false;
     }
 };
 
-/* ==========================================================
-   FUNÇÃO PARA ATUALIZAR CARD ESPECÍFICO APÓS EDIÇÃO
-   ========================================================== */
-window.updatePropertyCard = function(propertyId) {
-    console.log('🔄 Atualizando card do imóvel:', propertyId);
+// ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM SISTEMA DE LOADING E FORMATAÇÃO DE PREÇO ==========
+window.setupForm = function() {
+    console.log('📝 Configurando formulário admin com sistema de mídia integrado...');
     
-    const property = window.properties?.find(p => p.id === propertyId);
-    if (!property) {
-        console.error('❌ Imóvel não encontrado para atualizar card:', propertyId);
-        return false;
+    const form = document.getElementById('propertyForm');
+    if (!form) {
+        console.error('❌ Formulário propertyForm não encontrado!');
+        return;
     }
     
-    // Encontrar o card existente
-    const allCards = document.querySelectorAll('.property-card');
-    let cardToUpdate = null;
+    // REMOVER event listeners antigos para evitar duplicação
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    const freshForm = document.getElementById('propertyForm');
     
-    allCards.forEach(card => {
-        // Verificar se o card corresponde ao imóvel (por ID ou título)
-        const titleElement = card.querySelector('.property-title');
-        if (titleElement && titleElement.textContent.includes(property.title)) {
-            cardToUpdate = card;
+    // ⭐⭐ CONFIGURAR FORMATAÇÃO AUTOMÁTICA DE PREÇO ⭐⭐
+    setupPriceAutoFormat();
+    
+    // Configurar botão de submit
+    const submitBtn = freshForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        const originalHtml = submitBtn.innerHTML;
+        submitBtn.addEventListener('click', function() {
+            // Não desabilitar aqui, será desabilitado no listener de submit
+        });
+    }
+    
+    freshForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.group('🚀 SUBMISSÃO DO FORMULÁRIO ADMIN');
+        
+        // 1. INICIAR LOADING
+        const loading = window.LoadingManager.show(
+            'Salvando Imóvel...', 
+            'Por favor, aguarde enquanto processamos todos os dados.',
+            [ // Etapas opcionais - mantém compatibilidade
+                'Validando dados do formulário...',
+                'Processando fotos e vídeos...',
+                'Enviando documentos PDF...',
+                'Salvando no banco de dados...'
+            ]
+        );
+        
+        // Desabilitar botão de submit
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
         }
-    });
-    
-    if (cardToUpdate) {
-        // Gerar novo HTML para o card
-        const newCardHTML = window.propertyTemplates ? window.propertyTemplates.generate(property) : 
-                           `<div class="property-card" data-property-id="${property.id}">
-                                <div class="property-image">
-                                    <img src="${property.images ? property.images.split(',')[0] : ''}" 
-                                         alt="${property.title}">
-                                    ${property.has_video ? 
-                                        `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                                </div>
-                                <div class="property-content">
-                                    <div class="property-price">${property.price || 'R$ 0,00'}</div>
-                                    <h3 class="property-title">${property.title || 'Sem título'}</h3>
-                                    <div class="property-location">
-                                        <i class="fas fa-map-marker-alt"></i> ${property.location || 'Local não informado'}
-                                    </div>
-                                </div>
-                            </div>`;
         
-        // Substituir o card antigo pelo novo
-        cardToUpdate.outerHTML = newCardHTML;
-        
-        console.log('✅ Card atualizado com indicador de vídeo:', property.has_video);
-        
-        // Adicionar animação para destacar a atualização
-        const updatedCard = document.querySelector(`[data-property-id="${propertyId}"]`) || 
-                           Array.from(document.querySelectorAll('.property-card')).find(card => 
-                               card.querySelector('.property-title')?.textContent.includes(property.title));
-        
-        if (updatedCard) {
-            updatedCard.style.animation = 'highlightUpdate 1s ease';
+        try {
+            // 2. COLETAR DADOS DO FORMULÁRIO
+            loading.updateMessage('Validando dados do formulário...');
+            const propertyData = {
+                title: document.getElementById('propTitle').value,
+                price: document.getElementById('propPrice').value,
+                location: document.getElementById('propLocation').value,
+                description: document.getElementById('propDescription').value,
+                features: document.getElementById('propFeatures').value,
+                type: document.getElementById('propType').value,
+                badge: document.getElementById('propBadge').value,
+                has_video: document.getElementById('propHasVideo')?.checked || false
+            };
+            
+            console.log('📋 Dados coletados:', propertyData);
+            loading.completeStep(); // Etapa 1 completa
+            
+            // 3. VALIDAÇÃO BÁSICA
+            if (!propertyData.title || !propertyData.price || !propertyData.location) {
+                loading.updateTitle('❌ Validação Falhou');
+                loading.updateMessage('Preencha Título, Preço e Localização!');
+                setTimeout(() => {
+                    loading.hide();
+                    alert('❌ Preencha Título, Preço e Localização!');
+                    
+                    // Reabilitar botão
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = window.editingPropertyId ? 
+                            '<i class="fas fa-save"></i> Salvar Alterações' : 
+                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+                    }
+                }, 1500);
+                console.error('❌ Validação falhou: campos obrigatórios vazios');
+                console.groupEnd();
+                return;
+            }
+            
+            loading.updateMessage('Validação aprovada, processando...');
+            console.log('✅ Validação básica OK');
+            
+            // 4. PROCESSAMENTO PRINCIPAL
+            if (window.editingPropertyId) {
+                // ========== EDIÇÃO DE IMÓVEL EXISTENTE ==========
+                console.log(`🔄 EDITANDO imóvel ID: ${window.editingPropertyId}`);
+                loading.updateTitle('Atualizando Imóvel...');
+                
+                // 4.1 Preparar objeto de atualização
+                const updateData = { ...propertyData };
+                
+                // 4.2 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
+                if (updateData.price && !updateData.price.startsWith('R$')) {
+                    updateData.price = window.formatPriceForInput(updateData.price);
+                }
+                
+                // 4.3 PROCESSAR PDFs
+                loading.updateMessage('Processando documentos PDF...');
+                loading.completeStep(); // Etapa 2 completa
+                
+                if (typeof window.processAndSavePdfs === 'function') {
+                    console.log(`📄 Delegando processamento de PDFs para MediaSystem...`);
+                    const pdfsString = await window.processAndSavePdfs(window.editingPropertyId, propertyData.title);
+                    
+                    if (pdfsString && pdfsString.trim() !== '') {
+                        updateData.pdfs = pdfsString;
+                        console.log(`✅ PDFs processados pelo MediaSystem: ${pdfsString.substring(0, 60)}...`);
+                    } else {
+                        updateData.pdfs = '';
+                        console.log('ℹ️ Nenhum PDF para o imóvel (MediaSystem retornou vazio)');
+                    }
+                } else {
+                    console.warn('⚠️ Função processAndSavePdfs não disponível');
+                    updateData.pdfs = '';
+                }
+                
+                // 4.4 PROCESSAR MÍDIA (FOTOS/VIDEOS)
+                loading.updateMessage('Processando fotos e vídeos...');
+                loading.completeStep(); // Etapa 3 completa
+                
+                try {
+                    if (typeof window.getMediaUrlsForProperty === 'function') {
+                        console.log(`🎯 Chamando getMediaUrlsForProperty para ID ${window.editingPropertyId}...`);
+                        
+                        // Usar função com ordenação se disponível
+                        let mediaUrls;
+                        if (window.MediaSystem && typeof window.MediaSystem.getOrderedMediaUrls === 'function') {
+                            const ordered = window.MediaSystem.getOrderedMediaUrls();
+                            mediaUrls = ordered.images;
+                            console.log('🔄 Usando ordem visual personalizada');
+                        } else {
+                            mediaUrls = await window.getMediaUrlsForProperty(window.editingPropertyId, propertyData.title);
+                        }
+                        
+                        if (mediaUrls !== undefined && mediaUrls !== null) {
+                            if (mediaUrls.trim() !== '') {
+                                updateData.images = mediaUrls;
+                                const urlCount = mediaUrls.split(',').filter(url => url.trim() !== '').length;
+                                console.log(`✅ Mídia processada: ${urlCount} URL(s)`);
+                                console.log(`📝 Amostra: ${mediaUrls.substring(0, 80)}...`);
+                            } else {
+                                // String vazia - sem mídia
+                                updateData.images = '';
+                                console.log('ℹ️ Nenhuma mídia para salvar');
+                            }
+                        } else {
+                            console.warn('⚠️  getMediaUrlsForProperty retornou undefined/null');
+                            updateData.images = '';
+                        }
+                    } else {
+                        console.error('❌ Função getMediaUrlsForProperty não disponível!');
+                        console.log('🔍 Verificando window object:', {
+                            hasGetMediaUrls: typeof window.getMediaUrlsForProperty,
+                            mediaConfig: window.MEDIA_CONFIG,
+                            currentSystem: window.currentMediaSystem
+                        });
+                        updateData.images = '';
+                    }
+                } catch (mediaError) {
+                    console.error('❌ ERRO CRÍTICO ao processar mídia:', mediaError);
+                    console.log('🔄 Usando fallback: mantendo imagens existentes');
+                    // Tenta manter as imagens existentes do imóvel atual
+                    const currentProperty = window.properties.find(p => p.id == window.editingPropertyId);
+                    updateData.images = currentProperty ? currentProperty.images : '';
+                }
+                
+                // 4.5 SALVAR NO BANCO
+                loading.updateMessage('Salvando alterações no banco de dados...');
+                loading.completeStep(); // Etapa 4 completa
+                
+                if (typeof window.updateProperty === 'function') {
+                    console.log('💾 Enviando atualização para o sistema de propriedades...');
+                    const success = await window.updateProperty(window.editingPropertyId, updateData);
+                    
+                    if (success) {
+                        console.log('✅ Imóvel atualizado com sucesso no banco de dados!');
+                        
+                        // Feedback final
+                        loading.updateTitle('✅ Concluído!');
+                        loading.updateMessage('Imóvel atualizado com sucesso!');
+                        
+                        // Mostrar resumo para o usuário
+                        setTimeout(() => {
+                            const imageCount = updateData.images ? updateData.images.split(',').filter(url => url.trim() !== '').length : 0;
+                            const pdfCount = updateData.pdfs ? updateData.pdfs.split(',').filter(url => url.trim() !== '').length : 0;
+                            
+                            let successMessage = `✅ Imóvel "${updateData.title}" atualizado!`;
+                            if (imageCount > 0) successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) salvo(s)`;
+                            if (pdfCount > 0) successMessage += `\n📄 ${pdfCount} documento(s) PDF salvo(s)`;
+                            
+                            alert(successMessage);
+                        }, 800);
+                        
+                    } else {
+                        loading.updateTitle('❌ Erro');
+                        loading.updateMessage('Falha na atualização');
+                        setTimeout(() => {
+                            loading.hide();
+                            alert('❌ Não foi possível atualizar o imóvel. Verifique o console.');
+                        }, 1500);
+                    }
+                } else {
+                    console.error('❌ Função updateProperty não disponível!');
+                    alert('❌ Erro: sistema de propriedades não disponível');
+                }
+                
+            } else {
+                // ========== CRIAÇÃO DE NOVO IMÓVEL ==========
+                console.log('🆕 CRIANDO novo imóvel...');
+                loading.updateTitle('Criando Novo Imóvel...');
+                
+                // 4.6 ⭐⭐ GARANTIR FORMATAÇÃO DO PREÇO ⭐⭐
+                if (propertyData.price && !propertyData.price.startsWith('R$')) {
+                    propertyData.price = window.formatPriceForInput(propertyData.price);
+                }
+                
+                // 4.7 PROCESSAR MÍDIA PARA NOVO IMÓVEL
+                loading.updateMessage('Processando fotos e vídeos...');
+                loading.completeStep(); // Etapa 2 completa
+                
+                let mediaUrls = '';
+                if (window.selectedMediaFiles && window.selectedMediaFiles.length > 0) {
+                    console.log(`🖼️ Processando ${window.selectedMediaFiles.length} arquivo(s) de mídia para novo imóvel...`);
+                    
+                    try {
+                        if (typeof window.getMediaUrlsForProperty === 'function') {
+                            // Para novo imóvel, usar ID temporário
+                            const tempId = `new_${Date.now()}`;
+                            mediaUrls = await window.getMediaUrlsForProperty(tempId, propertyData.title);
+                            
+                            if (mediaUrls && mediaUrls.trim() !== '') {
+                                propertyData.images = mediaUrls;
+                                console.log(`✅ Mídia processada para novo imóvel: ${mediaUrls.substring(0, 80)}...`);
+                            }
+                        }
+                    } catch (mediaError) {
+                        console.error('❌ Erro ao processar mídia para novo imóvel:', mediaError);
+                    }
+                }
+                
+                // 4.8 PROCESSAR PDFs PARA NOVO IMÓVEL
+                loading.updateMessage('Processando documentos PDF...');
+                loading.completeStep(); // Etapa 3 completa
+                
+                if (window.selectedPdfFiles && window.selectedPdfFiles.length > 0) {
+                    console.log(`📄 Processando ${window.selectedPdfFiles.length} PDF(s) para novo imóvel...`);
+                    // A lógica de PDFs para novo imóvel já está em addNewProperty
+                }
+                
+                // 4.9 CRIAR NO BANCO
+                loading.updateMessage('Salvando no banco de dados...');
+                loading.completeStep(); // Etapa 4 completa
+                
+                if (typeof window.addNewProperty === 'function') {
+                    console.log('💾 Chamando addNewProperty com dados:', {
+                        title: propertyData.title,
+                        hasMedia: !!(propertyData.images),
+                        hasPdfs: !!(window.selectedPdfFiles && window.selectedPdfFiles.length > 0)
+                    });
+                    
+                    const newProperty = await window.addNewProperty(propertyData);
+                    
+                    if (newProperty) {
+                        console.log(`✅ Novo imóvel criado com ID: ${newProperty.id}`);
+
+                        // Feedback final
+                        loading.updateTitle('✅ Concluído!');
+                        loading.updateMessage('Imóvel cadastrado com sucesso!');
+                        
+                        // Mostrar resumo
+                        setTimeout(() => {
+                            let successMessage = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!`;
+                            if (newProperty.images && newProperty.images !== 'EMPTY') {
+                                const imageCount = newProperty.images.split(',').filter(url => url.trim() !== '').length;
+                                successMessage += `\n📸 ${imageCount} foto(s)/vídeo(s) incluída(s)`;
+                            }
+                            if (newProperty.pdfs && newProperty.pdfs !== 'EMPTY') {
+                                const pdfCount = newProperty.pdfs.split(',').filter(url => url.trim() !== '').length;
+                                successMessage += `\n📄 ${pdfCount} documento(s) PDF incluído(s)`;
+                            }
+                            
+                            alert(successMessage);
+                        }, 800);
+                        
+                    } else {
+                        loading.updateTitle('❌ Erro');
+                        loading.updateMessage('Falha na criação');
+                        setTimeout(() => {
+                            loading.hide();
+                            alert('❌ Não foi possível criar o imóvel. Verifique o console.');
+                        }, 1500);
+                    }
+                } else {
+                    console.error('❌ Função addNewProperty não disponível!');
+                    alert('❌ Erro: sistema de criação não disponível');
+                }
+            }
+            
+        } catch (error) {
+            // 5. TRATAMENTO DE ERROS
+            console.error('❌ ERRO CRÍTICO no processamento do formulário:', error);
+            console.error('🔍 Stack trace:', error.stack);
+            
+            loading.updateTitle('❌ Erro no Processamento');
+            loading.updateMessage(error.message || 'Erro desconhecido');
+            
             setTimeout(() => {
-                updatedCard.style.animation = '';
+                loading.hide();
+                
+                let errorMessage = `❌ Erro ao processar: ${error.message || 'Erro desconhecido'}`;
+                
+                // Mensagens mais amigáveis para erros comuns
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = '❌ Erro de conexão. Verifique sua internet e tente novamente.';
+                } else if (error.message.includes('Supabase') || error.message.includes('storage')) {
+                    errorMessage = '❌ Erro no servidor de armazenamento. Tente novamente em alguns instantes.';
+                }
+                
+                alert(errorMessage + '\n\nVerifique o console para detalhes técnicos.');
+                
+                // Reabilitar botão
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = window.editingPropertyId ? 
+                        '<i class="fas fa-save"></i> Salvar Alterações' : 
+                        '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+                }
+                
+            }, 1500);
+            
+        } finally {
+            // 6. LIMPEZA E RESET APÓS SALVAMENTO (SUCESSO OU ERRO)
+            setTimeout(() => {
+                console.log('🧹 Executando limpeza automática pós-salvamento...');
+                
+                // Esconder loading
+                loading.hide();
+                
+                // ✅ CHAVE: Resetar formulário para estado inicial
+                if (typeof window.resetAdminFormToInitialState === 'function') {
+                    setTimeout(() => {
+                        window.resetAdminFormToInitialState();
+                    }, 500);
+                } else {
+                    // Fallback: chamar cancelEdit() que já existe
+                    if (typeof window.cancelEdit === 'function') {
+                        setTimeout(() => {
+                            window.cancelEdit();
+                        }, 500);
+                    }
+                }
+                
+                // Reabilitar botão de submit
+                if (submitBtn) {
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = window.editingPropertyId ? 
+                            '<i class="fas fa-save"></i> Salvar Alterações' : 
+                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+                    }, 500);
+                }
+                
+                // Atualizar lista de imóveis no admin
+                if (typeof window.loadPropertyList === 'function') {
+                    setTimeout(() => {
+                        window.loadPropertyList();
+                        console.log('📋 Lista de imóveis atualizada');
+                    }, 700);
+                }
+                
+                // Forçar recarregamento da galeria principal
+                if (typeof window.renderProperties === 'function') {
+                    setTimeout(() => {
+                        window.renderProperties('todos');
+                        console.log('🔄 Galeria principal atualizada');
+                    }, 1000);
+                }
+                
+                // Feedback visual para usuário
+                console.log('🎯 Formulário limpo e pronto para novo imóvel');
+                
             }, 1000);
         }
         
-        return true;
-    } else {
-        console.warn('⚠️ Card não encontrado na página, renderizando todos os imóveis');
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties(window.currentFilter || 'todos');
-        }
-        return false;
-    }
+        console.groupEnd();
+    });
+    
+    console.log('✅ Formulário admin configurado com sistema de loading visual e formatação de preço');
 };
 
-/* ==========================================================
-   FUNÇÃO AUXILIAR: Atualizar propriedade localmente
-   ========================================================== */
-window.updateLocalProperty = function(propertyId, updatedData) {
-    if (!window.properties) return false;
-    
-    const index = window.properties.findIndex(p => p.id === propertyId);
-    if (index === -1) return false;
-    
-    // CORREÇÃO: Garantir que has_video seja booleano
-    if (updatedData.has_video !== undefined) {
-        updatedData.has_video = Boolean(updatedData.has_video);
-        console.log(`✅ VÍDEO salvo localmente para ${propertyId}: ${updatedData.has_video}`);
-    }
-    
-    // CORREÇÃO: Manter features como string JSON
-    if (Array.isArray(updatedData.features)) {
-        updatedData.features = JSON.stringify(updatedData.features);
-    }
-    
-    window.properties[index] = {
-        ...window.properties[index],
-        ...updatedData,
-        id: propertyId,
-        updated_at: new Date().toISOString()
-    };
-    
-    // Salvar no localStorage
-    try {
-        localStorage.setItem('properties', JSON.stringify(window.properties));
-        console.log(`💾 Imóvel ${propertyId} salvo no localStorage com vídeo: ${updatedData.has_video}`);
-    } catch (error) {
-        console.error('❌ Erro ao salvar no localStorage:', error);
-    }
-    
-    // Atualizar UI
-    setTimeout(() => {
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
+// ========== SINCRONIZAÇÃO MANUAL ==========
+window.syncWithSupabaseManual = async function() {
+    if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
+        console.log('🔄 Iniciando sincronização manual...');
         
-        // Chamar a função de atualização do card
-        if (typeof window.updatePropertyCard === 'function') {
-            window.updatePropertyCard(propertyId);
+        const syncBtn = document.getElementById('syncButton');
+        if (syncBtn) {
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
         }
-    }, 100);
-    
-    return true;
-};
-
-/* ==========================================================
-   FUNÇÃO AUXILIAR: Adicionar propriedade localmente
-   ========================================================== */
-window.addToLocalProperties = function(newProperty) {
-    if (!window.properties) window.properties = [];
-    
-    const maxId = window.properties.length > 0 ? Math.max(...window.properties.map(p => p.id)) : 0;
-    const propertyWithId = {
-        ...newProperty,
-        id: maxId + 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    };
-    
-    window.properties.push(propertyWithId);
-    
-    // Salvar no localStorage
-    try {
-        localStorage.setItem('properties', JSON.stringify(window.properties));
-        console.log(`💾 Novo imóvel ID: ${propertyWithId.id} salvo no localStorage`);
-    } catch (error) {
-        console.error('❌ Erro ao salvar no localStorage:', error);
+        
+        try {
+            if (typeof window.syncWithSupabase === 'function') {
+                const result = await window.syncWithSupabase();
+                
+                if (result && result.success) {
+                    alert(`✅ Sincronização completa!\n\n${result.count} novos imóveis carregados.`);
+                    
+                    if (typeof window.loadPropertyList === 'function') {
+                        window.loadPropertyList();
+                    }
+                } else {
+                    alert('⚠️ Não foi possível sincronizar. Verifique a conexão.');
+                }
+            } else {
+                alert('❌ Função de sincronização não disponível!');
+            }
+        } catch (error) {
+            console.error('❌ Erro na sincronização:', error);
+            alert('❌ Erro ao sincronizar: ' + error.message);
+        } finally {
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+            }
+        }
     }
-    
-    setTimeout(() => {
-        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-        if (typeof window.renderProperties === 'function') {
-            window.renderProperties('todos', true);
-        }
-    }, 200);
-    
-    return propertyWithId;
 };
 
-/* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO
-   ========================================================== */
-window.setupForm = function() {
-    const form = document.getElementById('propertyForm');
-    if (!form) {
-        console.warn('⚠️ Formulário não encontrado');
+// ========== BOTÃO SINCRONIZAÇÃO ==========
+function addSyncButton() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (!adminPanel) return;
+    
+    if (document.getElementById('syncButton')) {
         return;
     }
     
-    // Clonar para remover listeners antigos
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
+    const syncButton = document.createElement('button');
+    syncButton.id = 'syncButton';
+    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+    syncButton.style.cssText = `
+        background: var(--gold);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+    `;
     
-    // Configurar formatação de preço se disponível
-    if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
+    syncButton.onclick = window.syncWithSupabaseManual;
     
-    // CORREÇÃO: Verificar se o checkbox existe e configurar debug
-    const videoCheckbox = document.getElementById('propHasVideo');
-    if (videoCheckbox) {
-        console.log('✅ Checkbox de vídeo encontrado:', {
-            id: videoCheckbox.id,
-            type: videoCheckbox.type,
-            checked: videoCheckbox.checked
-        });
-        
-        // Adicionar evento para debug
-        videoCheckbox.addEventListener('change', function() {
-            console.log(`🎬 Checkbox de vídeo alterado: ${this.checked}`);
-        });
-    } else {
-        console.error('❌ Checkbox de vídeo não encontrado!');
+    const panelTitle = adminPanel.querySelector('h3');
+    if (panelTitle) {
+        panelTitle.parentNode.insertBefore(syncButton, panelTitle.nextSibling);
     }
     
-    // Configurar submit do formulário
-    document.getElementById('propertyForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
+    console.log('✅ Botão de sincronização adicionado');
+}
+
+// ========== CORREÇÃO DEFINITIVA DOS FILTROS ==========
+window.fixFilterVisuals = function() {
+    console.log('🎨 CORREÇÃO DEFINITIVA DOS FILTROS VISUAIS');
+    
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    if (!filterButtons || filterButtons.length === 0) {
+        console.log('⚠️ Nenhum botão de filtro encontrado');
+        return;
+    }
+    
+    console.log(`🔍 Encontrados ${filterButtons.length} botões de filtro`);
+    
+    // Para CADA botão, remover e recriar completamente
+    filterButtons.forEach((button, index) => {
+        console.log(`   ${index + 1}. Processando: "${button.textContent.trim()}"`);
         
-        // Verificar estado do checkbox antes de salvar
-        const videoCheckbox = document.getElementById('propHasVideo');
-        if (videoCheckbox) {
-            console.log(`🔍 Estado do checkbox antes do salvamento: ${videoCheckbox.checked}`);
-        }
+        // Clonar botão (remove event listeners antigos)
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
         
-        // Desabilitar botão
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn?.innerHTML;
-        
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-        }
-        
-        // Mostrar loading
-        const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Por favor, aguarde...', { variant: 'processing' });
-        
-        try {
-            // Usar a função de salvamento corrigida
-            await window.saveProperty();
+        // Configurar NOVO event listener DIRETO
+        newButton.addEventListener('click', function handleFilterClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
             
-        } catch (error) {
-            console.error('❌ Erro no salvamento:', error);
-            Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
+            console.log(`🎯 Filtro clicado: "${this.textContent.trim()}"`);
             
-        } finally {
-            // Restaurar botão
-            if (submitBtn) {
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText || 
-                        (window.editingPropertyId ? 
-                            '<i class="fas fa-save"></i> Salvar Alterações' : 
-                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site');
-                }, 1000);
+            // ✅ CRÍTICO: Remover 'active' de TODOS os botões
+            const allButtons = document.querySelectorAll('.filter-btn');
+            allButtons.forEach(btn => {
+                btn.classList.remove('active');
+                // Remover também style inline se existir
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+                btn.style.borderColor = '';
+            });
+            
+            // ✅ Adicionar 'active' apenas ao clicado
+            this.classList.add('active');
+            
+            // Aplicar estilos visuais
+            this.style.backgroundColor = 'var(--primary)';
+            this.style.color = 'white';
+            this.style.borderColor = 'var(--primary)';
+            
+            console.log(`   ✅ "active" removido de ${allButtons.length - 1} botões`);
+            console.log(`   ✅ "active" adicionado a: "${this.textContent.trim()}"`);
+            
+            // Executar filtro
+            const filterText = this.textContent.trim();
+            const filter = filterText === 'Todos' ? 'todos' : filterText;
+            
+            if (typeof window.renderProperties === 'function') {
+                console.log(`   🚀 Executando filtro: ${filter}`);
+                window.renderProperties(filter);
             }
-            
-            // Esconder loading
-            if (loading) loading.hide();
-        }
+        });
     });
+    
+    console.log(`✅ ${filterButtons.length} botões de filtro CORRIGIDOS`);
+    
+    // ✅ ATIVAR "Todos" por padrão se nenhum estiver ativo
+    setTimeout(() => {
+        const activeButtons = document.querySelectorAll('.filter-btn.active');
+        if (activeButtons.length === 0) {
+            const todosBtn = Array.from(filterButtons).find(btn => 
+                btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
+            );
+            if (todosBtn) {
+                todosBtn.classList.add('active');
+                todosBtn.style.backgroundColor = 'var(--primary)';
+                todosBtn.style.color = 'white';
+                console.log('✅ "Todos" ativado por padrão');
+            }
+        }
+    }, 500);
 };
 
-/* ==========================================================
-   SETUP ADMIN UI
-   ========================================================== */
-window.setupAdminUI = function() {
-    console.log('🔧 Configurando UI do admin...');
+// ========== CONFIGURAÇÃO CORRIGIDA DO UPLOAD DE PDF ==========
+console.log('🔒 Configurando upload de PDFs: DELEGANDO para MediaSystem');
+
+// ========== VERIFICAR E AGUARDAR MEDIASYSTEM ANTES DE CONFIGURAR ==========
+setTimeout(() => {
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
     
-    // 1. Painel oculto por padrão
+    if (pdfFileInput && pdfUploadArea) {
+        console.log('🎯 Elementos de PDF encontrados - Configurando...');
+        
+        // 1. REMOVER QUALQUER LISTENER ANTIGO (clonando elementos)
+        const cleanPdfInput = pdfFileInput.cloneNode(true);
+        const cleanPdfArea = pdfUploadArea.cloneNode(true);
+        
+        pdfFileInput.parentNode.replaceChild(cleanPdfInput, pdfFileInput);
+        pdfUploadArea.parentNode.replaceChild(cleanPdfArea, pdfUploadArea);
+        
+        console.log('✅ Elementos resetados - Prontos para MediaSystem');
+        
+        // 2. AGORA APENAS CONFIGURAR O BÁSICO - O MediaSystem fará o resto
+        const freshUploadArea = document.getElementById('pdfUploadArea');
+        const freshFileInput = document.getElementById('pdfFileInput');
+        
+        // 3. CONFIGURAR APENAS O CLICK BÁSICO (sem processamento)
+        freshUploadArea.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🎯 Área de PDF clicada - Abrindo seletor...');
+            freshFileInput.click();
+        });
+        
+        // 4. DELEGAR 100% PARA MEDIASYSTEM QUANDO ARQUIVO FOR SELECIONADO
+        freshFileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                console.log(`📄 ${e.target.files.length} arquivo(s) selecionado(s)`);
+                
+                // CHAMAR DIRETAMENTE O MEDIASYSTEM
+                if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                    console.log('🔄 Delegando para MediaSystem.addPdfs()');
+                    window.MediaSystem.addPdfs(e.target.files);
+                } else {
+                    console.error('❌ MediaSystem não disponível!');
+                    alert('⚠️ Sistema de upload não está pronto. Recarregue a página.');
+                }
+                
+                // Limpar input para permitir mesmo arquivo novamente
+                e.target.value = '';
+            }
+        });
+        
+        // 5. CONFIGURAR DRAG & DROP PARA A ÁREA DE PDF
+        freshUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.borderColor = '#3498db';
+            this.style.background = '#e8f4fc';
+            console.log('📄 Drag over área PDF');
+        });
+        
+        freshUploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.borderColor = '#ddd';
+            this.style.background = '#fafafa';
+        });
+        
+        freshUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            this.style.borderColor = '#ddd';
+            this.style.background = '#fafafa';
+            
+            if (e.dataTransfer.files.length > 0) {
+                console.log(`📄 ${e.dataTransfer.files.length} arquivo(s) solto(s)`);
+                
+                // CHAMAR DIRETAMENTE O MEDIASYSTEM
+                if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                    window.MediaSystem.addPdfs(e.dataTransfer.files);
+                }
+            }
+        });
+        
+        console.log('✅ Upload de PDFs configurado - MediaSystem responsável pelo processamento');
+        
+    } else {
+        console.warn('⚠️ Elementos de PDF não encontrados no DOM');
+    }
+}, 1000); // Aguardar 1s para garantir que MediaSystem carregou
+
+// ========== GARANTIR QUE MEDIASYSTEM ESTÁ PRONTO ==========
+function waitForMediaSystem(maxAttempts = 10, interval = 500) {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        
+        const checkInterval = setInterval(() => {
+            attempts++;
+            
+            if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                clearInterval(checkInterval);
+                console.log('✅ MediaSystem pronto após', attempts, 'tentativas');
+                resolve(true);
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('❌ MediaSystem não carregou após', maxAttempts * interval, 'ms');
+                resolve(false);
+            } else {
+                console.log('⏳ Aguardando MediaSystem... tentativa', attempts);
+            }
+        }, interval);
+    });
+}
+
+// ========== FUNÇÃO DE FALLBACK SE MEDIASYSTEM FALHAR ==========
+function setupPdfFallback() {
+    console.log('🔄 Configurando fallback para PDFs...');
+    
+    const pdfUploadArea = document.getElementById('pdfUploadArea');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    
+    if (!pdfUploadArea || !pdfFileInput) {
+        console.error('❌ Elementos de PDF não encontrados para fallback');
+        return;
+    }
+    
+    // Configuração básica de fallback
+    pdfUploadArea.addEventListener('click', () => pdfFileInput.click());
+    
+    pdfFileInput.addEventListener('change', async function(e) {
+        if (e.target.files.length > 0) {
+            console.log('📄 Fallback: Processando', e.target.files.length, 'PDF(s)');
+            
+            // Tentar MediaSystem primeiro
+            if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
+                window.MediaSystem.addPdfs(e.target.files);
+            } 
+            // Fallback manual extremo
+            else {
+                alert('⚠️ Sistema de upload em manutenção. Tente novamente em alguns segundos.');
+            }
+        }
+    });
+}
+
+// ========== EXECUTAR VERIFICAÇÃO DE MEDIASYSTEM ==========
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Verificando sistema de mídia...');
+    
+    waitForMediaSystem().then(isReady => {
+        if (!isReady) {
+            console.warn('⚠️ Configurando fallback para PDFs');
+            setupPdfFallback();
+        }
+    });
+});
+
+// ========== INICIALIZAÇÃO DO SISTEMA ==========
+function initializeAdminSystem() {
+    console.log('🚀 Inicializando sistema admin...');
+    
+    // 1. Esconder painel
     const panel = document.getElementById('adminPanel');
     if (panel) {
         panel.style.display = 'none';
+        console.log('✅ Painel admin oculto');
     }
     
-    // 2. Botão toggle admin
-    const setupAdminButton = function() {
-        const adminBtn = document.querySelector('.admin-toggle');
-        if (!adminBtn) {
-            console.warn('⚠️ Botão admin-toggle não encontrado');
-            return;
-        }
-        
-        console.log('🔧 Configurando botão admin-toggle...');
-        
-        // Remover qualquer handler antigo
-        adminBtn.onclick = null;
-        
-        // Clonar para limpar event listeners
-        const newBtn = adminBtn.cloneNode(true);
-        adminBtn.parentNode.replaceChild(newBtn, adminBtn);
-        
-        const freshBtn = document.querySelector('.admin-toggle');
-        
-        // Adicionar event listener DIRETO E SIMPLES
-        freshBtn.addEventListener('click', function(e) {
+    // 2. Configurar botão admin
+    const adminBtn = document.querySelector('.admin-toggle');
+    if (adminBtn) {
+        adminBtn.removeAttribute('onclick');
+        adminBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🟢 Botão admin clicado!');
-            
-            // Garantir que a função existe
-            if (typeof window.toggleAdminPanel === 'function') {
-                window.toggleAdminPanel();
-            } else {
-                console.error('❌ toggleAdminPanel não é uma função!');
-                alert('❌ Erro: Função admin não disponível. Recarregue a página.');
-            }
-        }, { once: false });
-        
-        console.log('✅ Botão admin-toggle configurado');
-    };
+            console.log('🖱️ Botão admin clicado');
+            window.toggleAdminPanel();
+        });
+        console.log('✅ Botão admin configurado');
+    }
     
-    // Executar a configuração do botão
-    setupAdminButton();
-    
-    // 3. Configurar botão Cancelar
-    const setupCancelButton = function() {
-        const cancelBtn = document.getElementById('cancelEditBtn');
-        if (!cancelBtn) {
-            console.warn('⚠️ Botão Cancelar não encontrado');
-            return;
-        }
-        
-        cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-        const freshCancelBtn = document.getElementById('cancelEditBtn');
-        
-        freshCancelBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.cancelEdit();
-        }, { once: false });
-        
-        freshCancelBtn.style.display = 'none';
-        freshCancelBtn.style.opacity = '1';
-        freshCancelBtn.style.visibility = 'visible';
-        freshCancelBtn.style.pointerEvents = 'auto';
-        freshCancelBtn.style.cursor = 'pointer';
-        freshCancelBtn.disabled = false;
-    };
-    
-    setupCancelButton();
-    
-    // 4. Configurar formulário
+    // 3. Configurar formulário
     if (typeof window.setupForm === 'function') {
-        setTimeout(window.setupForm, 100);
+        window.setupForm();
+        console.log('✅ Formulário configurado');
     }
     
-    // 5. Adicionar estilos dinâmicos para animações
-    const style = document.createElement('style');
-    style.textContent = `
-        .admin-toggle {
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            z-index: 10000 !important;
-            position: fixed !important;
-        }
-        
-        #cancelEditBtn {
-            cursor: pointer !important;
-            pointer-events: auto !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            display: inline-block !important;
-            z-index: 1000 !important;
-            position: relative !important;
-        }
-        
-        #cancelEditBtn:disabled {
-            opacity: 0.5 !important;
-            cursor: not-allowed !important;
-            pointer-events: none !important;
-        }
-        
-        #cancelEditBtn:hover {
-            background: #7f8c8d !important;
-            transform: translateY(-2px) !important;
-            box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3) !important;
-        }
-        
-        .auto-save-notification {
-            animation: slideInRight 0.3s ease;
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes highlightUpdate {
-            0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
-            50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
-        }
-        
-        .video-indicator {
-            animation: pulseVideo 2s infinite;
-        }
-        
-        @keyframes pulseVideo {
-            0% { opacity: 0.8; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.05); }
-            100% { opacity: 0.8; transform: scale(1); }
-        }
-    `;
-    document.head.appendChild(style);
+    // 4. Adicionar botão sincronização
+    addSyncButton();
     
-    console.log('✅ UI do admin configurada');
-};
+    // 5. CORREÇÃO GARANTIDA DOS FILTROS (VERSÃO FINAL)
+    console.log('🎯 Iniciando correção garantida dos filtros...');
 
-/* ==========================================================
-   FUNÇÃO DE TESTE DO CHECKBOX DE VÍDEO
-   ========================================================== */
-window.testVideoCheckbox = function() {
-    console.group('🧪 TESTE DO CHECKBOX DE VÍDEO');
+    // A configuração do upload de PDF já foi tratada acima
+    console.log('✅ Upload de PDF delegado 100% para MediaSystem');
+
+    // Tentativa 1: Imediata (800ms)
+    setTimeout(() => {
+        if (typeof window.fixFilterVisuals === 'function') {
+            console.log('🔄 Tentativa 1: Aplicando correção de filtros...');
+            window.fixFilterVisuals();
+        } else {
+            console.error('❌ window.fixFilterVisuals não encontrada!');
+        }
+    }, 800);
+
+    // Tentativa 2: Após 2 segundos (backup)
+    setTimeout(() => {
+        console.log('🔍 Verificando se filtros funcionam...');
+        
+        // Testar se algum filtro tem listener
+        const testBtn = document.querySelector('.filter-btn');
+        if (testBtn && !testBtn.onclick) {
+            console.log('⚠️ Filtros sem listeners - reaplicando...');
+            if (typeof window.fixFilterVisuals === 'function') {
+                window.fixFilterVisuals();
+            }
+        }
+    }, 2000);
+
+    // 6. VERIFICAR SISTEMA DE LOADING (⭐ NOVA SEÇÃO ⭐)
+    console.log('🔍 Verificando sistema de loading...');
+    if (typeof LoadingManager !== 'undefined') {
+        console.log('✅ LoadingManager disponível');
+    } else {
+        console.warn('⚠️ LoadingManager não carregado');
+    }
+   
+    console.log('✅ Sistema admin inicializado');
+}
+
+// ========== EXECUÇÃO AUTOMÁTICA ==========
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initializeAdminSystem, 500);
+    });
+} else {
+    setTimeout(initializeAdminSystem, 300);
+}
+
+// ========== FUNÇÕES PDF BÁSICAS ==========
+window.showPdfModal = function(propertyId) {
+    console.log(`📄 showPdfModal chamado para ID: ${propertyId}`);
     
-    // 1. Verificar se o checkbox existe
-    const videoCheckbox = document.getElementById('propHasVideo');
-    if (!videoCheckbox) {
-        console.error('❌ Checkbox de vídeo não encontrado!');
-        alert('❌ Checkbox de vídeo não encontrado no HTML!');
+    // Usar o PdfSystem unificado se disponível (PRIORIDADE 1)
+    if (window.PdfSystem && typeof window.PdfSystem.showModal === 'function') {
+        window.PdfSystem.showModal(propertyId);
         return;
     }
     
-    console.log('✅ Checkbox encontrado:', {
-        id: videoCheckbox.id,
-        type: videoCheckbox.type,
-        checked: videoCheckbox.checked,
-        value: videoCheckbox.value
-    });
-    
-    // 2. Testar a função getFormData
-    console.log('🧪 Testando getFormData()...');
-    const formData = Helpers.getFormData();
-    console.log('📋 Dados capturados:', formData);
-    
-    alert(`🧪 TESTE DO CHECKBOX DE VÍDEO:\n\n` +
-          `1. Checkbox encontrado: SIM\n` +
-          `2. Estado atual: ${videoCheckbox.checked ? 'MARCADO' : 'DESMARCADO'}\n` +
-          `3. Captura funcionando: SIM\n\n` +
-          `Para testar completamente:\n` +
-          `1. Marque/desmarque o checkbox\n` +
-          `2. Clique em "Salvar Alterações"\n` +
-          `3. O card na galeria deve atualizar IMEDIATAMENTE`);
-    
-    console.groupEnd();
+    // Fallback robusto que GARANTE campo de senha
+    openPdfModalDirectFallback(propertyId);
 };
 
-/* ==========================================================
-   FUNÇÃO PARA FORÇAR ATUALIZAÇÃO DA GALERIA
-   ========================================================== */
-window.forceGalleryUpdate = function() {
-    console.log('🔄 Forçando atualização completa da galeria...');
+// ========== FUNÇÃO DE FALLBACK (ATUALIZADA E MELHORADA) ==========
+function openPdfModalDirectFallback(propertyId) {
+    console.log(`📄 Fallback PDF modal para ID: ${propertyId} - Versão Corrigida`);
     
-    if (typeof window.renderProperties === 'function') {
-        window.renderProperties(window.currentFilter || 'todos');
-        Helpers.showNotification('✅ Galeria atualizada!', 'success');
-        console.log('✅ Galeria forçada a atualizar');
-        return true;
+    // 1. Buscar imóvel
+    const property = window.properties?.find(p => p.id == propertyId);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        return;
+    }
+    
+    // 2. Verificar se tem PDFs
+    if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
+        alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
+        return;
+    }
+    
+    // 3. Armazenar ID para uso posterior
+    window.currentPropertyId = propertyId;
+    
+    // ✅ 4. GARANTIR QUE O MODAL EXISTE COM TODOS OS ELEMENTOS
+    const modal = window.ensurePdfModalExists(true); // true = forçar verificação completa
+    
+    // ✅ 5. Configurar título com segurança
+    const titleElement = document.getElementById('pdfModalTitle');
+    if (titleElement) {
+        titleElement.innerHTML = `<i class="fas fa-file-pdf"></i> Documentos: ${property.title}`;
+        titleElement.dataset.propertyId = propertyId;
+    }
+    
+    // ✅ 6. GARANTIR QUE O CAMPO DE SENHA EXISTE E É VISÍVEL (CORREÇÃO CRÍTICA)
+    let passwordInput = document.getElementById('pdfPassword');
+    
+    // Se não existe ou está oculto por form pai
+    if (!passwordInput || (passwordInput.parentElement && 
+        window.getComputedStyle(passwordInput.parentElement).display === 'none')) {
+        
+        console.log('⚠️ Campo de senha não encontrado ou oculto. Recriando...');
+        
+        // Remover input antigo se existir
+        if (passwordInput && passwordInput.parentElement) {
+            passwordInput.parentElement.removeChild(passwordInput);
+        }
+        
+        // Criar novo campo VISÍVEL
+        passwordInput = document.createElement('input');
+        passwordInput.type = 'password';
+        passwordInput.id = 'pdfPassword';
+        passwordInput.className = 'pdf-password-input';
+        passwordInput.placeholder = 'Digite a senha para acessar';
+        passwordInput.autocomplete = 'off';
+        passwordInput.style.cssText = `
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-size: 1rem;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: static !important;
+        `;
+        
+        // Inserir no local correto (após o preview, antes dos botões)
+        const previewDiv = document.getElementById('pdfPreview');
+        const buttonContainer = modal.querySelector('div[style*="display: flex; gap: 1rem;"]');
+        
+        if (previewDiv && buttonContainer && previewDiv.parentNode === buttonContainer.parentNode) {
+            previewDiv.parentNode.insertBefore(passwordInput, buttonContainer);
+            console.log('✅ Campo de senha inserido na posição correta');
+        } else {
+            // Fallback: inserir antes dos botões
+            const modalContent = document.querySelector('.pdf-modal-content');
+            if (modalContent) {
+                const buttons = modalContent.querySelectorAll('button');
+                if (buttons.length > 0) {
+                    buttons[0].parentNode.insertBefore(passwordInput, buttons[0]);
+                    console.log('✅ Campo de senha inserido antes dos botões');
+                }
+            }
+        }
     } else {
-        console.error('❌ Função renderProperties não disponível');
-        alert('❌ Não foi possível atualizar a galeria');
-        return false;
+        // ✅ Tornar visível se existir mas estiver oculto
+        passwordInput.style.display = 'block';
+        passwordInput.style.visibility = 'visible';
+        passwordInput.style.opacity = '1';
+        passwordInput.style.position = 'static';
+        
+        // Remover qualquer display: none do pai
+        if (passwordInput.parentElement && passwordInput.parentElement.style.display === 'none') {
+            passwordInput.parentElement.style.display = 'block';
+        }
     }
-};
-
-// Configuração de uploads
-setTimeout(() => {
-    Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
-        files => window.MediaSystem?.addPdfs?.(files), 'pdf_addition');
     
-    Helpers.setupUpload('fileInput', 'uploadArea', 
-        files => {
-            window.MediaSystem?.addFiles?.(files);
-            setTimeout(() => window.forceMediaPreviewUpdate?.(), 300);
-        }, 'media_addition');
-}, 1000);
-
-window.forceMediaPreviewUpdate = function() {
-    if (window.MediaSystem && typeof window.MediaSystem.updateUI === 'function') {
-        window.MediaSystem.updateUI();
-    }
-};
-
-// Inicialização
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(window.setupAdminUI, 500);
-    });
-} else {
-    setTimeout(window.setupAdminUI, 300);
+    // ✅ 7. Resetar campo de senha
+    passwordInput.value = '';
+    
+    // ✅ 8. Conectar evento de Enter para facilitar
+    passwordInput.onkeydown = function(e) {
+        if (e.key === 'Enter') {
+            window.accessPdfDocuments();
+        }
+    };
+    
+    // ✅ 9. Exibir modal
+    modal.style.display = 'flex';
+    
+    // ✅ 10. Focar no campo de senha após breve delay
+    setTimeout(() => {
+        if (passwordInput) {
+            passwordInput.focus();
+            passwordInput.select();
+            console.log('✅ Modal PDF aberto com campo de senha visível e focado');
+            
+            // DEBUG: Verificar visibilidade
+            const style = window.getComputedStyle(passwordInput);
+            console.log('🔍 DEBUG Campo senha:', {
+                display: style.display,
+                visibility: style.visibility,
+                opacity: style.opacity,
+                parentDisplay: passwordInput.parentElement ? 
+                    window.getComputedStyle(passwordInput.parentElement).display : 'no parent'
+            });
+        }
+    }, 200);
 }
 
-console.log('✅ admin.js - VERSÃO FINAL COM CORREÇÕES DE VÍDEO E ATUALIZAÇÃO DA GALERIA');
-console.log('🎬 Para testar o checkbox, execute: window.testVideoCheckbox()');
-console.log('🔄 Para forçar atualização da galeria: window.forceGalleryUpdate()');
+// ✅ FUNÇÃO AUXILIAR PARA TESTE RÁPIDO
+window.testPdfModalFallback = function(testId = 101) {
+    console.log('🧪 TESTE: Abrindo modal PDF via fallback...');
+    openPdfModalDirectFallback(testId);
+};
+
+// ✅ VERIFICAÇÃO AUTOMÁTICA DO CAMPO DE SENHA
+function checkPdfPasswordField() {
+    const passwordInput = document.getElementById('pdfPassword');
+    if (!passwordInput) {
+        console.warn('⚠️ Campo de senha PDF não encontrado no DOM');
+        return false;
+    }
+    
+    const style = window.getComputedStyle(passwordInput);
+    const isVisible = style.display !== 'none' && 
+                     style.visibility !== 'hidden' && 
+                     style.opacity !== '0';
+    
+    console.log(`🔍 Status campo senha: ${isVisible ? 'VISÍVEL ✅' : 'OCULTO ❌'}`, {
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        hasParent: !!passwordInput.parentElement,
+        parentDisplay: passwordInput.parentElement ? 
+            window.getComputedStyle(passwordInput.parentElement).display : 'no parent'
+    });
+    
+    return isVisible;
+}
+
+// Executar verificação após carregamento
+setTimeout(() => {
+    console.log('🔍 Verificando integridade do campo de senha PDF...');
+    checkPdfPasswordField();
+}, 3000);
+
+// ✅ ADICIONAR ESTA FUNÇÃO PARA TESTAR (opcional):
+window.testPdfModalDirect = function(propertyId) {
+    console.log('🧪 TESTE DIRETO DO MODAL PDF');
+    openPdfModalDirectFallback(propertyId || 101); // Testar com ID 101 ou fornecido
+};
+
+// ========== VERIFICAÇÃO DO SISTEMA PDF UNIFICADO ==========
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO SISTEMA PDF UNIFICADO (pdf-unified.js):');
+    
+    // 1. VERIFICAR SE O ARQUIVO pdf-unified.js FOI CARREGADO
+    const hasPdfUnified = Array.from(document.scripts).some(script => 
+        script.src && script.src.includes('pdf-unified.js')
+    );
+    
+    console.log('📦 pdf-unified.js no HTML:', hasPdfUnified ? '✅ Carregado' : '❌ Não encontrado');
+    
+    // 2. VERIFICAR SE PdfSystem FOI CRIADO
+    if (window.PdfSystem) {
+        console.log('✅ PdfSystem disponível');
+        
+        // Verificar métodos CRÍTICOS
+        const criticalMethods = ['showModal', 'processAndSavePdfs', 'clearAllPdfs'];
+        console.log('🎯 Métodos críticos disponíveis:');
+        criticalMethods.forEach(method => {
+            console.log(`   - ${method}:`, typeof window.PdfSystem[method] === 'function' ? '✅' : '❌');
+        });
+    } else {
+        console.warn('⚠️  PdfSystem NÃO disponível');
+        console.log('🔧 Possíveis causas:');
+        console.log('   1. pdf-unified.js não foi carregado corretamente');
+        console.log('   2. Há erro de sintaxe em pdf-unified.js');
+        console.log('   3. O arquivo não exporta window.PdfSystem');
+    }
+    
+    // 3. VERIFICAR FUNÇÕES GLOBAIS QUE O admin.js USA
+    console.log('🌐 Funções globais para admin.js:');
+    const adminFunctions = [
+        'showPdfModal',
+        'accessPdfDocuments', 
+        'processAndSavePdfs',
+        'clearAllPdfs',
+        'loadExistingPdfsForEdit',
+        'getPdfsToSave',
+        'clearProcessedPdfs'
+    ];
+    
+    adminFunctions.forEach(func => {
+        console.log(`   - ${func}:`, typeof window[func] === 'function' ? '✅' : '❌');
+    });
+    
+    // 4. CONCLUSÃO
+    const systemReady = window.PdfSystem && typeof window.PdfSystem.showModal === 'function';
+    console.log(systemReady ? '🎉 Sistema PDF unificado PRONTO!' : '⚠️  Sistema PDF precisa de ajustes');
+    
+}, 2000);
+
+// ✅ SUBSTITUIR A FUNÇÃO accessPdfDocuments POR ESTA VERSÃO SIMPLIFICADA:
+window.accessPdfDocuments = function() {
+    console.log('🔓 accessPdfDocuments chamada - Versão Corrigida');
+    
+    // 1. Obter elementos CRÍTICOS
+    const passwordInput = document.getElementById('pdfPassword');
+    const modalTitle = document.getElementById('pdfModalTitle');
+    
+    if (!passwordInput) {
+        console.error('❌ Campo de senha PDF não encontrado!');
+        // Recriar dinamicamente se necessário
+        recreatePdfPasswordField();
+        setTimeout(() => window.accessPdfDocuments(), 100);
+        return;
+    }
+    
+    // 2. Obter senha digitada
+    const password = passwordInput.value.trim();
+    
+    if (!password) {
+        alert('Digite a senha para acessar os documentos!');
+        passwordInput.focus();
+        return;
+    }
+    
+    // 3. Validar senha (senha fixa "doc123")
+    if (password !== "doc123") {
+        alert('❌ Senha incorreta!\n\nA senha correta é: doc123\n(Solicite ao corretor se não souber)');
+        passwordInput.value = '';
+        passwordInput.focus();
+        return;
+    }
+    
+    console.log('✅ Senha válida! Processando documentos...');
+    
+    // 4. Obter ID do imóvel de múltiplas fontes (robustez)
+    const propertyId = 
+        window.currentPropertyId || 
+        (modalTitle && modalTitle.dataset.propertyId) || 
+        (document.querySelector('.property-card.active') && 
+         document.querySelector('.property-card.active').dataset.propertyId);
+    
+    if (!propertyId) {
+        console.error('❌ Não foi possível identificar o imóvel');
+        alert('⚠️ Não foi possível identificar o imóvel. Tente novamente.');
+        return;
+    }
+    
+    // 5. Buscar imóvel
+    const property = window.properties.find(p => p.id == propertyId);
+    if (!property) {
+        alert('❌ Imóvel não encontrado!');
+        closePdfModal();
+        return;
+    }
+    
+    // 6. Verificar se tem PDFs
+    if (!property.pdfs || property.pdfs === 'EMPTY' || property.pdfs.trim() === '') {
+        alert('ℹ️ Este imóvel não tem documentos PDF disponíveis.');
+        closePdfModal();
+        return;
+    }
+    
+    // 7. Processar URLs dos PDFs
+    const pdfUrls = property.pdfs.split(',')
+        .map(url => url.trim())
+        .filter(url => url && url !== 'EMPTY' && url !== '');
+    
+    if (pdfUrls.length === 0) {
+        alert('ℹ️ Nenhum documento PDF disponível.');
+        closePdfModal();
+        return;
+    }
+    
+    console.log(`📄 ${pdfUrls.length} documento(s) encontrado(s) para imóvel ${propertyId}`);
+    
+    // 8. Fechar modal de senha e abrir modal de seleção
+    closePdfModal();
+    showPdfSelectionList(propertyId, property.title, pdfUrls);
+};
+
+// Função auxiliar para recriar campo de senha se necessário
+function recreatePdfPasswordField() {
+    console.log('🔧 Recriando campo de senha PDF...');
+    
+    const modal = document.getElementById('pdfModal');
+    if (!modal) return;
+    
+    // Verificar se já existe o input
+    let passwordInput = document.getElementById('pdfPassword');
+    if (!passwordInput) {
+        // Criar novo input
+        passwordInput = document.createElement('input');
+        passwordInput.type = 'password';
+        passwordInput.id = 'pdfPassword';
+        passwordInput.className = 'pdf-password-input';
+        passwordInput.placeholder = 'Digite a senha para acessar';
+        passwordInput.style.cssText = `
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 1rem 0;
+            font-size: 1rem;
+        `;
+        
+        // Inserir no local correto
+        const previewDiv = document.getElementById('pdfPreview');
+        if (previewDiv && previewDiv.parentNode) {
+            previewDiv.parentNode.insertBefore(passwordInput, previewDiv.nextSibling);
+            console.log('✅ Campo de senha recriado');
+        }
+    }
+}
+
+// ✅ 5. FUNÇÃO PARA MOSTRAR LISTA DE SELEÇÃO DE PDFs
+function showPdfSelectionList(propertyId, propertyTitle, pdfUrls) {
+    console.log('📋 Criando lista de seleção de PDFs...');
+    
+    // Fechar modal de senha primeiro
+    closePdfModal();
+    
+    // Criar modal de seleção
+    let selectionModal = document.getElementById('pdfSelectionModal');
+    
+    if (!selectionModal) {
+        selectionModal = document.createElement('div');
+        selectionModal.id = 'pdfSelectionModal';
+        selectionModal.className = 'pdf-modal';
+        selectionModal.style.cssText = `
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        
+        document.body.appendChild(selectionModal);
+    }
+    
+    // Gerar HTML da lista
+    const pdfListHtml = pdfUrls.map((url, index) => {
+        const fileName = url.split('/').pop() || `Documento ${index + 1}`;
+        const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
+        const fileSize = 'PDF Document'; // Poderia extrair tamanho se disponível
+        
+        return `
+            <div class="pdf-list-item" style="
+                background: white;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 0.8rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+                transition: all 0.3s ease;
+                cursor: pointer;
+                border-left: 4px solid var(--primary);
+            ">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-file-pdf" style="color: #e74c3c; font-size: 1.5rem;"></i>
+                        <div>
+                            <strong style="display: block; color: #2c3e50;">${displayName}</strong>
+                            <small style="color: #7f8c8d;">${fileSize} • Documento ${index + 1}/${pdfUrls.length}</small>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="openPdfInNewTab('${url}')" 
+                        style="
+                            background: var(--primary);
+                            color: white;
+                            border: none;
+                            padding: 0.6rem 1.2rem;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-weight: 600;
+                            display: flex;
+                            align-items: center;
+                            gap: 5px;
+                            transition: all 0.3s ease;
+                        "
+                        onmouseover="this.style.background='#154060'"
+                        onmouseout="this.style.background='var(--primary)'">
+                    <i class="fas fa-eye"></i> Visualizar
+                </button>
+            </div>
+        `;
+    }).join('');
+    
+    selectionModal.innerHTML = `
+        <div style="
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        ">
+            <button onclick="closePdfSelectionModal()" 
+                    style="
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        background: #e74c3c;
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 30px;
+                        height: 30px;
+                        cursor: pointer;
+                        font-size: 1rem;
+                    ">
+                ×
+            </button>
+            
+            <h3 style="color: var(--primary); margin: 0 0 1.5rem 0;">
+                <i class="fas fa-file-pdf"></i> Documentos do Imóvel
+            </h3>
+            
+            <p style="color: #666; margin-bottom: 1.5rem;">
+                <strong>${propertyTitle}</strong><br>
+                Selecione o documento que deseja visualizar:
+            </p>
+            
+            <div style="margin-bottom: 1.5rem;">
+                ${pdfListHtml}
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <small style="color: #95a5a6;">
+                    <i class="fas fa-info-circle"></i> Clique em "Visualizar" para abrir em nova aba
+                </small>
+                <button onclick="downloadAllPdfs([${pdfUrls.map(url => `'${url}'`).join(',')}])" 
+                        style="
+                            background: var(--success);
+                            color: white;
+                            border: none;
+                            padding: 0.6rem 1.2rem;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 5px;
+                        ">
+                    <i class="fas fa-download"></i> Baixar Todos
+                </button>
+            </div>
+        </div>
+    `;
+    
+    selectionModal.style.display = 'flex';
+    console.log('✅ Lista de PDFs exibida para seleção');
+}
+
+// ✅ 6. FUNÇÃO PARA ABRIR PDF EM NOVA ABA
+window.openPdfInNewTab = function(url) {
+    console.log('🔗 Abrindo PDF:', url.substring(0, 80) + '...');
+    window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+// ✅ 7. FUNÇÃO PARA BAIXAR TODOS OS PDFs
+window.downloadAllPdfs = async function(urls) {
+    console.log(`📥 Iniciando download de ${urls.length} PDF(s)...`);
+    
+    let successCount = 0;
+    
+    for (const [index, url] of urls.entries()) {
+        try {
+            const fileName = url.split('/').pop() || `documento_${index + 1}.pdf`;
+            const tempAnchor = document.createElement('a');
+            tempAnchor.href = url;
+            tempAnchor.download = fileName;
+            tempAnchor.style.display = 'none';
+            document.body.appendChild(tempAnchor);
+            tempAnchor.click();
+            document.body.removeChild(tempAnchor);
+            
+            successCount++;
+            console.log(`✅ Download iniciado: ${fileName}`);
+            
+            // Pequena pausa entre downloads
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+        } catch (error) {
+            console.error(`❌ Erro ao baixar ${url}:`, error);
+        }
+    }
+    
+    if (successCount > 0) {
+        alert(`✅ ${successCount} documento(s) enviado(s) para download!\n\nVerifique a barra de downloads do seu navegador.`);
+    }
+};
+
+// ✅ 8. FUNÇÃO PARA FECHAR MODAL DE SELEÇÃO
+window.closePdfSelectionModal = function() {
+    const modal = document.getElementById('pdfSelectionModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.remove(); // Remove completamente do DOM
+        console.log('✅ Modal de seleção de PDFs fechado');
+    }
+};
+
+// ✅ FUNÇÃO DE TESTE DIRETO (adicionar após accessPdfDocuments)
+window.testPdfAccessDirect = function(propertyId) {
+    console.log('🧪 TESTE DIRETO DE ACESSO A PDFs');
+    
+    if (!propertyId) {
+        propertyId = window.currentPropertyId || 101; // Usar ID 101 como teste
+    }
+    
+    const property = window.properties.find(p => p.id == propertyId);
+    if (!property) {
+        alert('Imóvel de teste não encontrado');
+        return;
+    }
+    
+    console.log(`📊 Imóvel ${propertyId}: "${property.title}"`);
+    console.log(`📄 PDFs: ${property.pdfs || 'Nenhum'}`);
+    
+    // Abrir PDFs diretamente (pular validação de senha)
+    if (property.pdfs && property.pdfs !== 'EMPTY') {
+        const pdfUrls = property.pdfs.split(',').filter(url => url.trim() !== '');
+        pdfUrls.forEach(url => {
+            console.log(`🔗 Abrindo: ${url.substring(0, 80)}...`);
+            window.open(url, '_blank');
+        });
+        alert(`✅ ${pdfUrls.length} PDF(s) aberto(s) diretamente!`);
+    } else {
+        alert('ℹ️ Imóvel de teste não tem PDFs');
+    }
+};
+
+// ✅ FUNÇÃO PARA CRIAR MODAL PDF SE NÃO EXISTIR
+window.ensurePdfModalExists = function(forceComplete = false) {
+    let modal = document.getElementById('pdfModal');
+    
+    if (!modal || forceComplete) {
+        console.log('🔄 Criando/Atualizando modal PDF completo...');
+        
+        // Remover modal existente se incompleto
+        if (modal && forceComplete) {
+            modal.remove();
+            modal = null;
+        }
+        
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'pdfModal';
+            modal.className = 'pdf-modal';
+            modal.style.cssText = `
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                z-index: 10000;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            // ✅ HTML COMPLETO com TODOS os elementos necessários
+            modal.innerHTML = `
+                <div class="pdf-modal-content" style="background: white; border-radius: 10px; padding: 2rem; max-width: 400px; width: 90%; text-align: center;">
+                    <h3 id="pdfModalTitle" style="color: var(--primary); margin: 0 0 1rem 0;">
+                        <i class="fas fa-file-pdf"></i> Documentos do Imóvel
+                    </h3>
+                    <div id="pdfPreview" class="pdf-preview" style="margin: 1rem 0; padding: 1rem; background: #f8f9fa; border-radius: 5px;">
+                        <p>Documentos técnicos e legais disponíveis</p>
+                    </div>
+                    <!-- ✅ CAMPO DE SENHA SEMPRE PRESENTE -->
+                    <input type="password" id="pdfPassword" class="pdf-password-input" 
+                           placeholder="Digite a senha para acessar" 
+                           style="width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 5px; margin: 1rem 0; display: block;">
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <button onclick="accessPdfDocuments()" 
+                                style="background: var(--primary); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer; flex: 1;">
+                            <i class="fas fa-lock-open"></i> Acessar
+                        </button>
+                        <button onclick="closePdfModal()" 
+                                style="background: #95a5a6; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 5px; cursor: pointer;">
+                            <i class="fas fa-times"></i> Fechar
+                        </button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">
+                        <i class="fas fa-info-circle"></i> Solicite a senha ao corretor
+                    </p>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            console.log('✅ Modal PDF completo criado');
+        }
+    }
+    
+    return modal;
+};
+
+// Verificação automática na inicialização
+setTimeout(() => {
+    if (!document.getElementById('pdfModal')) {
+        console.log('⚠️ Modal PDF não encontrado. Criando automaticamente...');
+        window.ensurePdfModalExists();
+    }
+}, 1000);
+
+window.closePdfModal = function() {
+    const modal = document.getElementById('pdfModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+// ========== BOTÃO DE EMERGÊNCIA ==========
+setTimeout(() => {
+    if (!document.getElementById('emergency-admin-btn')) {
+        const emergencyBtn = document.createElement('button');
+        emergencyBtn.id = 'emergency-admin-btn';
+        emergencyBtn.innerHTML = '🔧 ADMIN';
+        emergencyBtn.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 9999;
+            font-weight: bold;
+        `;
+        
+        emergencyBtn.onclick = function() {
+            const password = prompt("🔒 Acesso de Emergência\n\nDigite a senha:");
+            if (password === "wl654") {
+                const panel = document.getElementById('adminPanel');
+                if (panel) {
+                    panel.style.display = 'block';
+                    panel.scrollIntoView({ behavior: 'smooth' });
+                    if (typeof window.loadPropertyList === 'function') {
+                        window.loadPropertyList();
+                    }
+                }
+            }
+        };
+        
+        document.body.appendChild(emergencyBtn);
+        console.log('🆘 Botão de emergência criado');
+    }
+}, 3000);
+
+// ========== BOTÃO DE TESTE DE MÍDIA ==========
+setTimeout(() => {
+    if (!document.getElementById('media-test-btn')) {
+        const testBtn = document.createElement('button');
+        testBtn.id = 'media-test-btn';
+        testBtn.innerHTML = '🖼️ TEST UPLOAD';
+        testBtn.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 10px;
+            background: #9b59b6;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 9999;
+            font-weight: bold;
+            font-size: 0.8rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        `;
+        
+        testBtn.onclick = function() {
+            console.group('🧪 TESTE COMPLETO DO SISTEMA DE MÍDIA');
+            
+            // 1. Testar conexão básica
+            console.log('1️⃣ Testando conexão entre módulos...');
+            console.log('- handleNewMediaFiles:', typeof window.handleNewMediaFiles);
+            console.log('- updateMediaPreview:', typeof window.updateMediaPreview);
+            
+            // 2. Testar com arquivo simulado
+            if (typeof window.handleNewMediaFiles === 'function') {
+                console.log('2️⃣ Simulando upload de arquivo...');
+                
+                // Criar arquivo de teste em memória
+                const blob = new Blob(['dummy image data'], { type: 'image/jpeg' });
+                const testFile = new File([blob], 'test_foto.jpg', { 
+                    type: 'image/jpeg',
+                    lastModified: Date.now()
+                });
+                
+                // Chamar função diretamente
+                const fileList = {
+                    0: testFile,
+                    length: 1,
+                    item: (index) => index === 0 ? testFile : null
+                };
+                
+                window.handleNewMediaFiles(fileList);
+                console.log('✅ Arquivo de teste enviado para processamento');
+            } else {
+                console.error('❌ handleNewMediaFiles não disponível!');
+            }
+            
+            // 3. Verificar preview
+            setTimeout(() => {
+                console.log('3️⃣ Verificando preview...');
+                const preview = document.getElementById('uploadPreview');
+                if (preview) {
+                    console.log('✅ Preview container encontrado');
+                    console.log('📸 Conteúdo:', preview.innerHTML.length, 'caracteres');
+                    
+                    if (preview.innerHTML.includes('test_foto')) {
+                        console.log('🎉 ARQUIVO DE TESTE APARECE NO PREVIEW!');
+                        alert('✅ SISTEMA FUNCIONANDO!\n\nArquivo de teste apareceu no preview.');
+                   } else {
+                        console.log('⚠️ Preview não mostra arquivo de teste');
+                        console.log('🔍 HTML do preview:', preview.innerHTML.substring(0, 200));
+                    }
+                } else {
+                    console.error('❌ Preview container NÃO encontrado!');
+                }
+            }, 500);
+            
+            console.groupEnd();
+        };
+        
+        document.body.appendChild(testBtn);
+        console.log('🧪 Botão de teste de mídia criado');
+    }
+}, 2000);
+
+// ========== SOLUÇÃO FINAL - OBSERVADOR DE FILTROS ==========
+(function startFilterObserver() {
+    console.log('👁️ Iniciando observador de filtros...');
+    
+    // Observar quando os filtros forem clicados
+    document.addEventListener('click', function(e) {
+        const clickedFilter = e.target.closest('.filter-btn');
+        if (clickedFilter) {
+            console.log('🎯 Filtro clicado via observer:', clickedFilter.textContent.trim());
+            
+            // Forçar remoção de 'active' de todos (SEM ESTILO INLINE)
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn !== clickedFilter) {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Forçar adição de 'active' ao clicado (SEM ESTILO INLINE)
+            clickedFilter.classList.add('active');
+            
+            // Executar filtro
+            const filter = clickedFilter.textContent.trim() === 'Todos' ? 'todos' : clickedFilter.textContent.trim();
+            if (window.renderProperties) {
+                window.renderProperties(filter);
+            }
+        }
+    });
+    
+    console.log('✅ Observador de filtros ativo');
+})();
+
+// Limpar PDFs processados após salvamento
+window.clearProcessedPdfs = function() {
+    console.log('🧹 Limpando PDFs processados...');
+    
+    // Manter apenas PDFs NÃO processados
+    window.selectedPdfFiles = window.selectedPdfFiles.filter(pdf => !pdf.processed);
+    
+    console.log(`📊 Após limpeza: ${window.selectedPdfFiles.length} PDF(s) não processados`);
+    
+    // Atualizar preview
+    if (typeof window.updatePdfPreview === 'function') {
+        window.updatePdfPreview();
+    }
+};
+
+// ========== VERIFICAÇÃO DE FORMULÁRIO VAZIO (MANTER - É ESSENCIAL) ==========
+window.isAdminFormEmpty = function() {
+    const checks = {
+        titulo: !document.getElementById('propTitle').value.trim(),
+        preco: !document.getElementById('propPrice').value.trim(),
+        localizacao: !document.getElementById('propLocation').value.trim(),
+        descricao: !document.getElementById('propDescription').value.trim(),
+        temMidia: !window.selectedMediaFiles || window.selectedMediaFiles.length === 0,
+        temPdfs: !window.selectedPdfFiles || window.selectedPdfFiles.length === 0
+    };
+    
+    const isEditing = window.editingPropertyId !== null;
+    const isTrulyEmpty = checks.titulo && checks.preco && checks.localizacao && 
+                        checks.temMidia && checks.temPdfs && !isEditing;
+    
+    return {
+        isEmpty: isTrulyEmpty,
+        isEditing: isEditing,
+        checks: checks
+    };
+};
+
+// ========== ADICIONAR VERIFICAÇÃO AO CARREGAR O FORMULÁRIO ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar se o formulário está sujo ao carregar
+    setTimeout(() => {
+        const hasTitle = document.getElementById('propTitle')?.value.trim();
+        const hasPrice = document.getElementById('propPrice')?.value.trim();
+        const hasLocation = document.getElementById('propLocation')?.value.trim();
+        
+        if ((hasTitle || hasPrice || hasLocation) && !window.editingPropertyId) {
+            console.warn('⚠️ Formulário carregado com dados! Limpando automaticamente...');
+            window.forceFormCleanup();
+        }
+    }, 500);
+});
+
+// Verificação automática ao carregar formulário
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const formState = window.isAdminFormEmpty();
+        console.log('🔍 Estado inicial do formulário:', formState);
+        
+        // Se não está vazio, limpar
+        if (!formState.isEmpty && !formState.isEditing) {
+            console.log('⚠️ Formulário não estava vazio inicialmente. Limpando...');
+            window.resetAdminFormToInitialState();
+        }
+    }, 1500);
+});
+
+console.log('✅ admin.js pronto e funcional');
+
+// CORREÇÃO DEFINITIVA: Ocultar botão de teste de upload
+function hideMediaTestButtonPermanently() {
+    console.log('🔧 Ocultando botão de teste de mídia definitivamente...');
+    
+    // Método 1: Remover completamente o elemento
+    const testBtn = document.getElementById('media-test-btn');
+    if (testBtn) {
+        testBtn.remove();
+        console.log('✅ Botão de teste REMOVIDO completamente');
+        return;
+    }
+    
+    // Método 2: Se não encontrado, criar observer para quando aparecer
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.id === 'media-test-btn' || 
+                    (node.querySelector && node.querySelector('#media-test-btn'))) {
+                    const btn = document.getElementById('media-test-btn');
+                    if (btn) {
+                        btn.remove();
+                        console.log('✅ Botão de teste detectado e removido via observer');
+                        observer.disconnect();
+                    }
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Método 3: Verificar periodicamente por 10 segundos
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
+        attempts++;
+        const btn = document.getElementById('media-test-btn');
+        if (btn) {
+            btn.style.display = 'none';
+            btn.style.visibility = 'hidden';
+            btn.style.opacity = '0';
+            btn.style.position = 'absolute';
+            btn.style.left = '-9999px';
+            console.log('✅ Botão de teste ocultado via fallback');
+            clearInterval(checkInterval);
+        }
+        if (attempts > 20) { // 10 segundos (20 * 500ms)
+            clearInterval(checkInterval);
+            console.log('⚠️  Botão de teste não encontrado após 10s');
+        }
+    }, 500);
+}
+
+// Executar imediatamente e após DOM carregado
+setTimeout(hideMediaTestButtonPermanently, 100);
+document.addEventListener('DOMContentLoaded', hideMediaTestButtonPermanently);
+
+// Em js/modules/admin.js - ADICIONAR NO FINAL DO ARQUIVO (antes do último console.log)
+// Ocultar botão de teste de mídia
+setTimeout(() => {
+    const testBtn = document.getElementById('media-test-btn');
+    if (testBtn) {
+        testBtn.style.display = 'none';
+        console.log('🚫 Botão de teste de mídia ocultado');
+    }
+    
+    // Ocultar botão de emergência (opcional - mantém funcionalidade mas esconde)
+    const emergencyBtn = document.getElementById('emergency-admin-btn');
+    if (emergencyBtn) {
+        emergencyBtn.style.display = 'none';
+        console.log('🚫 Botão de emergência ocultado');
+    }
+}, 3000);
+
+// NO FINAL DO admin.js - ADICIONAR verificação de integridade
+setTimeout(() => {
+    console.log('🔍 VERIFICAÇÃO DE INTEGRIDADE DO SISTEMA PDF');
+    
+    // Verificar se elementos críticos existem
+    const criticalElements = [
+        { id: 'pdfModal', desc: 'Modal principal' },
+        { id: 'pdfPassword', desc: 'Campo de senha' },
+        { id: 'pdfModalTitle', desc: 'Título do modal' }
+    ];
+    
+    let allExist = true;
+    criticalElements.forEach(el => {
+        const exists = document.getElementById(el.id);
+        console.log(`${exists ? '✅' : '❌'} ${el.desc}: ${exists ? 'OK' : 'FALTANDO'}`);
+        if (!exists) allExist = false;
+    });
+    
+    if (!allExist) {
+        console.log('⚠️  Elementos PDF faltando. Recriando sistema...');
+        window.ensurePdfModalExists(true);
+    }
+    
+    // Teste funcional (apenas em debug)
+    if (window.location.search.includes('debug=true')) {
+        console.log('🧪 Teste funcional do sistema PDF disponível');
+        console.log('💡 Use: testPdfAccessDirect(101) para testar com imóvel ID 101');
+    }
+}, 3000);
+
+console.log('✅ admin.js pronto e funcional');
+
+// 🔧 PATCH TEMPORÁRIO: Corrigir checkbox "Tem vídeo" na edição
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const videoCheckbox = document.getElementById('propHasVideo');
+        if (videoCheckbox) {
+            // Garantir que o evento change funcione
+            videoCheckbox.addEventListener('change', function() {
+                console.log('✅ Checkbox "Tem vídeo" alterado:', this.checked);
+            });
+        }
+    }, 1000);
+});
+
+// ========== ADICIONAR ESTILOS CSS PARA O LOADING ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Estilos já foram adicionados no createOverlay, mas adicionamos extras aqui
+    const extraStyles = document.createElement('style');
+    extraStyles.textContent = `
+        /* Melhorar botão de submit durante processamento */
+        #propertyForm button[type="submit"]:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            position: relative;
+        }
+        
+        #propertyForm button[type="submit"]:disabled::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Feedback visual durante upload */
+        .uploading-file {
+            opacity: 0.7;
+            position: relative;
+        }
+        
+        .uploading-file::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.2), transparent);
+            animation: file-uploading 2s infinite;
+            z-index: 1;
+        }
+        
+        @keyframes file-uploading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Animações para o loading */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading-enter {
+            animation: fadeIn 0.3s ease forwards;
+        }
+        
+        /* Estilo para botões durante processamento */
+        .processing {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .processing::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.3) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(30deg);
+            animation: processing-shimmer 2s infinite;
+        }
+        
+        @keyframes processing-shimmer {
+            0% { transform: translateX(-100%) rotate(30deg); }
+            100% { transform: translateX(100%) rotate(30deg); }
+        }
+    `;
+    document.head.appendChild(extraStyles);
+    
+    console.log('🎨 Estilos de loading visual aplicados');
+});
+
+console.log('✅ Sistema de loading visual adicionado ao admin.js');
+
+console.log('✅ admin.js pronto e funcional - COM FORMATAÇÃO DE PREÇO IMPLEMENTADA');
