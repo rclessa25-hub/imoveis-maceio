@@ -178,175 +178,84 @@ window.toggleAdminPanel = function() {
 };
 
 // ========== FUNÇÕES DO FORMULÁRIO ==========
-// NO admin.js - ATUALIZAR função cancelEdit (linha ~130)
-window.cancelEdit = function() {
-    console.log('❌ Cancelando edição...');
-    console.group('🧹 LIMPEZA COMPLETA DO FORMULÁRIO');
+// ATUALIZADO: FUNÇÃO UNIFICADA DE LIMPEZA COM VERSÃO CORRIGIDA DA ETAPA 16.1
+window.cleanAdminForm = function(mode = 'cancel') {
+    console.group(`🧹 [admin.js] LIMPEZA COMPLETA DO FORMULÁRIO (${mode})`);
     
-    // 1. Resetar ID de edição
+    // 1. RESETAR ESTADO DE EDIÇÃO (CRÍTICO)
     window.editingPropertyId = null;
-
-    // 2. LIMPAR SISTEMA DE MÍDIA (fotos/vídeos)
-    if (typeof MediaSystem !== 'undefined') {
-        console.log('🔄 Limpando sistema de mídia...');
-        MediaSystem.resetState();
-    } else {
-        console.log('⚠️ MediaSystem não disponível, limpando manualmente...');
-        if (typeof window.clearMediaSystemComplete === 'function') {
-            window.clearMediaSystemComplete();
-        }
-    }
+    console.log('✅ Estado de edição resetado');
     
-    // 3. LIMPAR SISTEMA DE PDFs
-    console.log('📄 Limpando PDFs...');
-    if (typeof window.clearAllPdfs === 'function') {
-        window.clearAllPdfs();
-    } else {
-        // Fallback manual
-        if (window.selectedPdfFiles) window.selectedPdfFiles = [];
-        if (window.existingPdfFiles) window.existingPdfFiles = [];
-    }
-    
-    // 4. ⚠️⚠️⚠️ LIMPAR TODOS OS CAMPOS DE TEXTO DO FORMULÁRIO ⚠️⚠️⚠️
-    console.log('📝 Limpando campos de texto...');
+    // 2. RESETAR CAMPOS DO FORMULÁRIO
     const form = document.getElementById('propertyForm');
     if (form) {
-        // Método 1: Reset padrão
         form.reset();
-        
-        // Método 2: Garantir campos específicos vazios
-        const textFields = [
-            'propTitle', 'propPrice', 'propLocation', 
-            'propDescription', 'propFeatures'
-        ];
-        
-        textFields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.value = '';
-                console.log(`   ✅ ${fieldId}: limpo`);
-            }
-        });
-        
-        // Resetar selects e checkbox
-        const typeSelect = document.getElementById('propType');
-        const badgeSelect = document.getElementById('propBadge');
-        const videoCheckbox = document.getElementById('propHasVideo');
-        
-        if (typeSelect) typeSelect.value = 'residencial';
-        if (badgeSelect) badgeSelect.value = 'Novo';
-        if (videoCheckbox) videoCheckbox.checked = false;
-        
-        console.log('✅ Campos resetados:', { 
-            type: typeSelect ? typeSelect.value : 'n/a',
-            badge: badgeSelect ? badgeSelect.value : 'n/a',
-            hasVideo: videoCheckbox ? videoCheckbox.checked : 'n/a'
-        });
+        console.log('✅ Campos do formulário resetados');
     }
     
-    // 5. LIMPAR PREVIEWS VISUAIS (redundante, mas garante)
-    console.log('🎨 Resetando previews visuais...');
-    setTimeout(() => {
-        const mediaPreview = document.getElementById('uploadPreview');
-        const pdfPreview = document.getElementById('pdfUploadPreview');
-        
-        if (mediaPreview) {
-            mediaPreview.innerHTML = `
-                <div style="text-align: center; color: #95a5a6; padding: 2rem;">
-                    <i class="fas fa-images" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                    <p style="margin: 0;">Nenhuma foto ou vídeo adicionada</p>
-                    <small style="font-size: 0.8rem;">Arraste ou clique para adicionar</small>
-                </div>
-            `;
-        }
-        
-        if (pdfPreview) {
-            pdfPreview.innerHTML = `
-                <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                    <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
-                </div>
-            `;
-        }
-        
-        console.log('✅ Previews resetados');
-    }, 100);
+    // 3. LIMPAR SISTEMA DE MÍDIA COMPLETAMENTE
+    if (window.MediaSystem && typeof MediaSystem.resetState === 'function') {
+        MediaSystem.resetState();
+        console.log('✅ Sistema de mídia limpo');
+    }
     
-    // 6. ATUALIZAR UI DO FORMULÁRIO
-    console.log('🏷️ Atualizando interface...');
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) cancelBtn.style.display = 'none';
+    // 4. LIMPAR PDFs (se houver sistema específico)
+    if (typeof window.clearAllPdfs === 'function') {
+        window.clearAllPdfs();
+        console.log('✅ PDFs limpos');
+    }
     
+    // 5. ATUALIZAR UI DO FORMULÁRIO (CRÍTICO PARA VISUAL)
     const formTitle = document.getElementById('formTitle');
-    if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
-    
+    const cancelBtn = document.getElementById('cancelEditBtn');
     const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    
+    // Restaurar título original
+    if (formTitle) {
+        formTitle.textContent = 'Adicionar Novo Imóvel';
+        console.log('✅ Título do formulário restaurado');
+    }
+    
+    // Esconder botão Cancelar (MUDANÇA IMPORTANTE)
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+        cancelBtn.disabled = false; // Garantir que não fique desabilitado
+        console.log('✅ Botão "Cancelar Edição" ocultado');
+    }
+    
+    // Restaurar botão de submit
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-        submitBtn.style.background = 'var(--primary)';
+        submitBtn.style.background = 'var(--success)';
+        submitBtn.disabled = false;
+        console.log('✅ Botão de submit restaurado');
     }
     
-    // 7. LIMPAR VARIÁVEIS GLOBAIS
-    console.log('🧼 Limpando variáveis globais...');
-    if (typeof window.selectedMediaFiles !== 'undefined') {
-        window.selectedMediaFiles = [];
+    // 6. LIMPAR QUALQUER CACHE DE PREVIEW
+    if (document.getElementById('uploadPreview')) {
+        document.getElementById('uploadPreview').innerHTML = '';
     }
-    if (typeof window.existingMediaFiles !== 'undefined') {
-        window.existingMediaFiles = [];
+    if (document.getElementById('pdfUploadPreview')) {
+        document.getElementById('pdfUploadPreview').innerHTML = '';
     }
     
-    // 8. VERIFICAÇÃO FINAL
+    // 7. REMOVER DESTAQUE VISUAL (se houver)
+    if (form) {
+        form.style.boxShadow = '';
+    }
+    
+    // 8. FOCAR NO CAMPO TÍTULO PARA PRÓXIMA INTERAÇÃO
     setTimeout(() => {
-        const formState = window.isAdminFormEmpty ? window.isAdminFormEmpty() : null;
-        if (formState && !formState.isEmpty && formState.isEditing === false) {
-            console.warn('⚠️ Formulário ainda não está vazio após limpeza!');
-            console.log('🔍 Estado:', formState.checks);
-            // Forçar limpeza novamente
-            form.reset();
+        const titleField = document.getElementById('propTitle');
+        if (titleField) {
+            titleField.focus();
+            console.log('✅ Foco restaurado no campo título');
         }
-    }, 300);
+    }, 100);
     
+    console.log(`✅ Formulário completamente limpo (modo: ${mode})`);
     console.groupEnd();
-    console.log('✅ Edição cancelada e formulário COMPLETAMENTE limpo');
-    return true;
-};
-
-// ADICIONAR TAMBÉM UMA FUNÇÃO DE FORÇAR LIMPEZA
-window.forceFormCleanup = function() {
-    console.log('🧹 FORÇANDO limpeza completa do formulário...');
     
-    // Limpar manualmente cada campo
-    const fieldsToClear = [
-        { id: 'propTitle', type: 'text', defaultValue: '' },
-        { id: 'propPrice', type: 'text', defaultValue: '' },
-        { id: 'propLocation', type: 'text', defaultValue: '' },
-        { id: 'propDescription', type: 'textarea', defaultValue: '' },
-        { id: 'propFeatures', type: 'text', defaultValue: '' },
-        { id: 'propType', type: 'select', defaultValue: 'residencial' },
-        { id: 'propBadge', type: 'select', defaultValue: 'Novo' }
-    ];
-    
-    fieldsToClear.forEach(field => {
-        const element = document.getElementById(field.id);
-        if (element) {
-            element.value = field.defaultValue;
-            console.log(`   ✅ ${field.id} = "${field.defaultValue}"`);
-            
-            // Disparar evento change para qualquer listener
-            element.dispatchEvent(new Event('change', { bubbles: true }));
-            element.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-    });
-    
-    // Checkbox específico
-    const videoCheckbox = document.getElementById('propHasVideo');
-    if (videoCheckbox) {
-        videoCheckbox.checked = false;
-        videoCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-        console.log('   ✅ propHasVideo = false');
-    }
-    
-    console.log('✅ Limpeza forçada completa');
     return true;
 };
 
@@ -392,6 +301,7 @@ window.loadPropertyList = function() {
 };
 
 // ========== FUNÇÃO editProperty ATUALIZADA COM SUPORTE A MÍDIA, SCROLL E FORMATAÇÃO DE PREÇO ==========
+// ATUALIZADO: ADICIONADO VISIBILIDADE DO BOTÃO CANCELAR (ETAPA 16.1 - PASSO 5)
 window.editProperty = function(id) {
     console.log(`📝 EDITANDO IMÓVEL ${id} (MediaSystem unificado ativo)`);
 
@@ -464,6 +374,13 @@ window.editProperty = function(id) {
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.style.display = 'block';
+        cancelBtn.disabled = false; // GARANTIR que não está desabilitado
+        cancelBtn.style.opacity = '1';
+        cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.pointerEvents = 'auto';
+        cancelBtn.style.visibility = 'visible'; // ADICIONAR ESTA LINHA CRÍTICA
+        
+        console.log('✅ Botão "Cancelar Edição" tornado visível');
     }
 
     // Marcar modo edição
@@ -561,63 +478,6 @@ function formatPriceForInputFallback(value) {
     
     return formatted;
 }
-
-// ========== Função de Limpeza do Formulário ==========
-
-window.resetAdminFormToInitialState = function() {
-    console.log('🔄 Resetando formulário admin para estado inicial');
-    
-    try {
-        // 1. Resetar campos do formulário
-        document.getElementById('propertyForm').reset();
-        
-        // 2. Limpar sistema de mídia (fotos/vídeos)
-        if (typeof window.clearMediaSystemComplete === 'function') {
-            window.clearMediaSystemComplete();
-        } else if (typeof window.clearMediaSystem === 'function') {
-            window.clearMediaSystem();
-        }
-        
-        // 3. Limpar sistema de PDFs
-        if (typeof window.clearAllPdfs === 'function') {
-            window.clearAllPdfs();
-        } else {
-            // Fallback manual para PDFs
-            if (window.selectedPdfFiles) window.selectedPdfFiles = [];
-            if (window.existingPdfFiles) window.existingPdfFiles = [];
-            
-            const pdfPreview = document.getElementById('pdfUploadPreview');
-            if (pdfPreview) {
-                pdfPreview.innerHTML = `
-                    <div style="text-align: center; color: #95a5a6; padding: 1rem; font-size: 0.9rem;">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 1.5rem; margin-bottom: 0.5rem; opacity: 0.5;"></i>
-                        <p style="margin: 0;">Arraste ou clique para adicionar PDFs</p>
-                    </div>
-                `;
-            }
-        }
-        
-        // 4. Resetar variáveis de edição
-        window.editingPropertyId = null;
-        
-        // 5. Atualizar interface
-        const formTitle = document.getElementById('formTitle');
-        if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
-        
-        const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
-        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-        
-        const cancelBtn = document.getElementById('cancelEditBtn');
-        if (cancelBtn) cancelBtn.style.display = 'none';
-        
-        console.log('✅ Formulário resetado completamente para estado inicial');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro ao resetar formulário:', error);
-        return false;
-    }
-};
 
 // ========== CONFIGURAÇÃO DO FORMULÁRIO ATUALIZADA COM SISTEMA DE LOADING E FORMATAÇÃO DE PREÇO ==========
 window.setupForm = function() {
@@ -971,18 +831,9 @@ window.setupForm = function() {
                 loading.hide();
                 
                 // ✅ CHAVE: Resetar formulário para estado inicial
-                if (typeof window.resetAdminFormToInitialState === 'function') {
-                    setTimeout(() => {
-                        window.resetAdminFormToInitialState();
-                    }, 500);
-                } else {
-                    // Fallback: chamar cancelEdit() que já existe
-                    if (typeof window.cancelEdit === 'function') {
-                        setTimeout(() => {
-                            window.cancelEdit();
-                        }, 500);
-                    }
-                }
+                setTimeout(() => {
+                    window.cleanAdminForm('reset');
+                }, 500);
                 
                 // Reabilitar botão de submit
                 if (submitBtn) {
@@ -1065,7 +916,7 @@ function setupPriceAutoFormatFallback() {
 
 // ========== SINCRONIZAÇÃO MANUAL ==========
 window.syncWithSupabaseManual = async function() {
-    if (confirm('🔄 Sincronizar com Supabase?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
+    if (confirm('🔄 Sincronizar?\n\nIsso irá buscar os imóveis do banco de dados online.')) {
         console.log('🔄 Iniciando sincronização manual...');
         
         const syncBtn = document.getElementById('syncButton');
@@ -1096,7 +947,7 @@ window.syncWithSupabaseManual = async function() {
         } finally {
             if (syncBtn) {
                 syncBtn.disabled = false;
-                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+                syncBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
             }
         }
     }
@@ -1113,7 +964,7 @@ function addSyncButton() {
     
     const syncButton = document.createElement('button');
     syncButton.id = 'syncButton';
-    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar com Supabase';
+    syncButton.innerHTML = '<i class="fas fa-sync-alt"></i> Sincronizar';
     syncButton.style.cssText = `
         background: var(--gold);
         color: white;
@@ -1397,6 +1248,41 @@ function initializeAdminSystem() {
         console.log('✅ Botão admin configurado');
     }
     
+    // 🔥 CRÍTICO: CONFIGURAR BOTÃO "CANCELAR EDIÇÃO" COM CONFIRMAÇÃO
+    // ATUALIZADO: ETAPA 16.1 - PASSO 2 E 3
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    if (cancelEditBtn) {
+        cancelEditBtn.removeAttribute('onclick'); // Remover atributo antigo
+        
+        cancelEditBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('🖱️ Botão "Cancelar Edição" clicado');
+            
+            // CONFIRMAÇÃO DE CANCELAMENTO (apenas se estiver editando)
+            if (window.editingPropertyId) {
+                const confirmCancel = confirm('Deseja realmente cancelar a edição?\n\nTodas as alterações serão perdidas.');
+                if (!confirmCancel) {
+                    console.log('❌ Cancelamento abortado pelo usuário');
+                    return;
+                }
+            }
+            
+            // EXECUTAR LIMPEZA
+            window.cleanAdminForm('cancel');
+            
+            // FEEDBACK VISUAL IMEDIATO
+            if (this.style.display !== 'none') {
+                this.style.display = 'none';
+            }
+            
+            console.log('✅ Edição cancelada com sucesso');
+        });
+        
+        console.log('✅ Botão "Cancelar Edição" configurado com listener e confirmação');
+    }
+    
     // 3. Configurar formulário
     if (typeof window.setupForm === 'function') {
         window.setupForm();
@@ -1445,6 +1331,24 @@ function initializeAdminSystem() {
     }
    
     console.log('✅ Sistema admin inicializado');
+    
+    // Teste imediato do botão Cancelar - ETAPA 16.1 PASSO 4
+    setTimeout(() => {
+        const testCancelBtn = document.getElementById('cancelEditBtn');
+        if (testCancelBtn) {
+            console.log('🔍 VERIFICAÇÃO DO BOTÃO CANCELAR:');
+            console.log('- Display:', testCancelBtn.style.display);
+            console.log('- Disabled:', testCancelBtn.disabled);
+            console.log('- Visible:', testCancelBtn.offsetParent !== null);
+            console.log('- Has listener:', !!testCancelBtn.onclick);
+            
+            // TESTAR CLIQUE PROGRAMÁTICO (apenas em debug)
+            if (window.location.search.includes('debug=true')) {
+                console.log('🧪 Testando funcionalidade do botão...');
+                testCancelBtn.click();
+            }
+        }
+    }, 1500);
 }
 
 // ========== EXECUÇÃO AUTOMÁTICA ==========
@@ -2316,7 +2220,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if ((hasTitle || hasPrice || hasLocation) && !window.editingPropertyId) {
             console.warn('⚠️ Formulário carregado com dados! Limpando automaticamente...');
-            window.forceFormCleanup();
+            window.cleanAdminForm('force');
         }
     }, 500);
 });
@@ -2330,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Se não está vazio, limpar
         if (!formState.isEmpty && !formState.isEditing) {
             console.log('⚠️ Formulário não estava vazio inicialmente. Limpando...');
-            window.resetAdminFormToInitialState();
+            window.cleanAdminForm('reset');
         }
     }, 1500);
 });
