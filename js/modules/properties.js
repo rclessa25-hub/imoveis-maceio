@@ -1,5 +1,5 @@
-// js/modules/properties.js - SISTEMA CORE COM PERSISTÊNCIA DE PDFs GARANTIDA (CORRIGIDO)
-console.log('🏠 properties.js - Sistema Core com persistência de PDFs (SEM updated_at)');
+// js/modules/properties.js - SISTEMA CORE COM PERSISTÊNCIA DE PDFs GARANTIDA
+console.log('🏠 properties.js - Sistema Core com persistência de PDFs (VERSÃO CORRIGIDA)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -481,7 +481,7 @@ window.addNewProperty = async function(propertyData) {
         }
 
         // =========================================================
-        // 2. SALVAR NO SUPABASE (SE DISPONÍVEL) - SEM updated_at
+        // 2. SALVAR NO SUPABASE (SE DISPONÍVEL)
         // =========================================================
         let supabaseSuccess = false;
         let supabaseId = null;
@@ -504,8 +504,8 @@ window.addNewProperty = async function(propertyData) {
                     badge: propertyData.badge || 'Novo',
                     rural: propertyData.type === 'rural',
                     images: propertyData.images || '',
-                    pdfs: propertyData.pdfs || ''
-                    // ❌ REMOVIDO: created_at: new Date().toISOString() - Pode não existir
+                    pdfs: propertyData.pdfs || '',
+                    created_at: new Date().toISOString()
                 };
 
                 console.log('📤 Enviando imóvel ao Supabase:', supabaseData);
@@ -552,7 +552,7 @@ window.addNewProperty = async function(propertyData) {
             rural: propertyData.type === 'rural',
             images: propertyData.images || '',
             pdfs: propertyData.pdfs || '',
-            created_at: new Date().toISOString(), // ✅ Mantido apenas localmente
+            created_at: new Date().toISOString(),
             savedToSupabase: supabaseSuccess
         };
 
@@ -648,9 +648,9 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA COM PERSISTÊNCIA DE PDF (SEM updated_at) ==========
+// ========== 8. ATUALIZAR IMÓVEL - VERSÃO CORRIGIDA COM PERSISTÊNCIA DE PDF ==========
 window.updateProperty = async function(id, propertyData) {
-    console.group('📤 updateProperty CHAMADO - PERSISTÊNCIA DE PDF GARANTIDA (SEM updated_at)');
+    console.group('📤 updateProperty CHAMADO - PERSISTÊNCIA DE PDF GARANTIDA');
     console.log('📋 Dados recebidos:', {
         id: id,
         temPdfsPropertyData: !!propertyData.pdfs,
@@ -723,7 +723,7 @@ window.updateProperty = async function(id, propertyData) {
             console.log(`💰 Formatação usada: ${formatMethod}`);
         }
 
-        // ✅ 2. CONSTRUIR DADOS PARA ATUALIZAÇÃO (SEM updated_at)
+        // ✅ 2. CONSTRUIR DADOS PARA ATUALIZAÇÃO
         const updateData = {
             title: propertyData.title || window.properties[index].title,
             price: propertyData.price || window.properties[index].price,
@@ -735,8 +735,8 @@ window.updateProperty = async function(id, propertyData) {
             badge: propertyData.badge || window.properties[index].badge || 'Novo',
             rural: propertyData.type === 'rural' || window.properties[index].rural || false,
             images: propertyData.images || window.properties[index].images || '',
-            pdfs: propertyData.pdfs || window.properties[index].pdfs || ''
-            // ❌ REMOVIDO: updated_at: new Date().toISOString() - NÃO EXISTE NA TABELA
+            pdfs: propertyData.pdfs || window.properties[index].pdfs || '',
+            updated_at: new Date().toISOString()
         };
 
         console.log('📦 Dados preparados para atualização:', {
@@ -746,7 +746,7 @@ window.updateProperty = async function(id, propertyData) {
             camposEnviados: Object.keys(updateData)
         });
 
-        // ✅ 3. ESTRATÉGIA DE PERSISTÊNCIA ROBUSTA PARA SUPABASE (SEM updated_at)
+        // ✅ 3. ESTRATÉGIA DE PERSISTÊNCIA ROBUSTA PARA SUPABASE
         let supabaseSuccess = false;
         let supabaseError = null;
         
@@ -776,6 +776,14 @@ window.updateProperty = async function(id, propertyData) {
                         idAtualizado: responseData[0]?.id
                     });
                     
+                    // ✅ VERIFICAÇÃO CRÍTICA: Confirmar que PDFs foram salvos
+                    if (updateData.pdfs && responseData[0]?.pdfs !== updateData.pdfs) {
+                        console.warn('⚠️ Discrepância detectada! PDFs podem não ter sido salvos corretamente.');
+                        
+                        // Tentar atualizar apenas PDFs como fallback
+                        await this.forcePdfUpdate(id, updateData.pdfs);
+                    }
+                    
                 } else {
                     supabaseError = await response.text();
                     console.error('❌ Erro na atualização completa:', {
@@ -802,12 +810,11 @@ window.updateProperty = async function(id, propertyData) {
             console.warn('⚠️ Credenciais Supabase não configuradas');
         }
 
-        // ✅ 4. ATUALIZAR LOCALMENTE (SEMPRE) - Aqui mantemos updated_at para controle interno
+        // ✅ 4. ATUALIZAR LOCALMENTE (SEMPRE)
         window.properties[index] = {
             ...window.properties[index],
             ...updateData,
-            id: id,
-            updated_at: new Date().toISOString() // ✅ Mantido apenas localmente
+            id: id
         };
         window.savePropertiesToStorage();
         console.log('💾 Atualização local salva');
@@ -852,7 +859,7 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// ✅ MÉTODO AUXILIAR: Forçar atualização de PDFs (SEM updated_at)
+// ✅ MÉTODO AUXILIAR: Forçar atualização de PDFs
 window.updateProperty.forcePdfUpdate = async function(propertyId, pdfUrls) {
     console.log('[forcePdfUpdate] Forçando atualização de PDFs para imóvel:', propertyId);
     
@@ -876,8 +883,8 @@ window.updateProperty.forcePdfUpdate = async function(propertyId, pdfUrls) {
                 'Prefer': 'return=representation'
             },
             body: JSON.stringify({ 
-                pdfs: pdfUrls
-                // ❌ REMOVIDO: updated_at: new Date().toISOString() - NÃO EXISTE NA TABELA
+                pdfs: pdfUrls,
+                updated_at: new Date().toISOString() 
             })
         });
         
@@ -1194,7 +1201,7 @@ if (window.properties && window.properties.length > 0) {
 })();
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js carregado com PERSISTÊNCIA DE PDFs GARANTIDA (SEM updated_at)');
+console.log('✅ properties.js carregado com PERSISTÊNCIA DE PDFs GARANTIDA');
 
 // Função utilitária para executar tarefas em baixa prioridade
 function runLowPriority(task) {
@@ -1353,7 +1360,7 @@ window.testPriceFormatting = function() {
 
 // Função especial para testar persistência de PDFs
 window.testPdfPersistenceDirect = async function() {
-    console.group('🧪 TESTE DIRETO DE PERSISTÊNCIA DE PDFs (SEM updated_at)');
+    console.group('🧪 TESTE DIRETO DE PERSISTÊNCIA DE PDFs');
     
     if (!window.editingPropertyId) {
         console.error('❌ Nenhum imóvel em edição');
