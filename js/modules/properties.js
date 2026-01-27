@@ -868,15 +868,8 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// Função auxiliar para similaridade de strings (usando SharedCore se disponível)
-// NOTA: A função stringSimilarity foi migrada para SharedCore.js
-// Esta função mantém compatibilidade temporária
-function getStringSimilarity(str1, str2) {
-    if (window.SharedCore && typeof window.SharedCore.stringSimilarity === 'function') {
-        return window.SharedCore.stringSimilarity(str1, str2);
-    }
-    
-    // Fallback local temporário (deve ser removido após validação)
+// Função auxiliar para similaridade de strings (adicionar após a função updateProperty)
+function stringSimilarity(str1, str2) {
     if (!str1 || !str2) return 0;
     
     str1 = str1.toLowerCase();
