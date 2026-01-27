@@ -1,11 +1,11 @@
-// js/modules/properties.js - SISTEMA COMPLETO OTIMIZADO (VERSÃO FINAL CORRIGIDA)
+// js/modules/properties.js - SISTEMA COMPLETO OTIMIZADO (VERSÃO FINAL)
 console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO OTIMIZADA COMPLETA)');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
 window.editingPropertyId = null;
 
-// ========== TEMPLATE ENGINE COM CACHE AVANÇADO E GALERIA ==========
+// ========== TEMPLATE ENGINE COM CACHE AVANÇADO ==========
 class PropertyTemplateEngine {
     constructor() {
         this.cache = new Map();
@@ -40,33 +40,18 @@ class PropertyTemplateEngine {
     }
 
     generateImageSection(property) {
-        const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
-        const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
-        const imageCount = imageUrls.length;
-        const firstImageUrl = imageCount > 0 ? imageUrls[0] : this.imageFallback;
-        const hasGallery = imageCount > 1;
-        const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
-
-        // ✅ CRÍTICO: Verificar se existe função de galeria e usá-la se disponível
-        if (hasGallery && typeof window.createPropertyGallery === 'function') {
-            try {
-                // Usar galeria se disponível
-                return window.createPropertyGallery(property);
-            } catch (e) {
-                console.warn('❌ Erro na galeria, usando fallback:', e);
-            }
-        }
-
-        // Fallback: Imagem única com todos os elementos visuais
+        const hasImages = property.images && property.images !== 'EMPTY';
+        const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim()) : [];
+        const firstImage = imageUrls[0] || this.imageFallback;
+        const hasGallery = imageUrls.length > 1;
+        const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY';
+        
         return `
-            <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-                <img src="${firstImageUrl}" 
-                     style="width: 100%; height: 100%; object-fit: cover;"
-                     alt="${property.title}"
-                     onerror="this.src='${this.imageFallback}'">
+            <div class="property-image ${property.rural ? 'rural-image' : ''}">
+                <img src="${firstImage}" alt="${property.title}" onerror="this.src='${this.imageFallback}'">
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                ${hasGallery ? `<div class="image-count">${imageCount}</div>` : ''}
+                ${hasGallery ? `<div class="image-count">${imageUrls.length}</div>` : ''}
                 ${hasPdfs ? `
                     <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})">
                         <i class="fas fa-file-pdf"></i>
@@ -91,7 +76,7 @@ class PropertyTemplateEngine {
 // Instância global
 window.propertyTemplates = new PropertyTemplateEngine();
 
-// ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO ==========
+// ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO (RENOMEADA) ==========
 window.loadPropertiesData = async function () {
     const loading = window.LoadingManager?.show?.('Carregando imóveis...', 'Buscando dados atualizados');
     
