@@ -5,122 +5,80 @@ console.log('🏠 properties.js - Sistema Core de Propriedades (VERSÃO OTIMIZAD
 window.properties = [];
 window.editingPropertyId = null;
 
-// ========== TEMPLATE ENGINE COM CACHE AVANÇADO ==========
-class PropertyTemplateEngine {
-    constructor() {
-        this.cache = new Map();
-        this.imageFallback = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
-    }
-
-    generate(property) {
-        const cacheKey = `prop_${property.id}_${property.images?.length || 0}`;
-        if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
-
-        // Template minimalista com todos os elementos visuais CRÍTICOS
-        const html = `
-            <div class="property-card">
-                ${this.generateImageSection(property)}
-                <div class="property-content">
-                    <div class="property-price">${property.price || 'R$ 0,00'}</div>
-                    <h3 class="property-title">${property.title || 'Sem título'}</h3>
-                    <div class="property-location">
-                        <i class="fas fa-map-marker-alt"></i> ${property.location || 'Local não informado'}
-                    </div>
-                    <p>${property.description || 'Descrição não disponível.'}</p>
-                    ${this.generateFeatures(property.features, property.rural)}
-                    <button class="contact-btn" onclick="contactAgent(${property.id})">
-                        <i class="fab fa-whatsapp"></i> Entrar em Contato
-                    </button>
-                </div>
-            </div>
-        `;
-
-        this.cache.set(cacheKey, html);
-        return html;
-    }
-
-    generateImageSection(property) {
-        const hasImages = property.images && property.images !== 'EMPTY';
-        const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim()) : [];
-        const firstImage = imageUrls[0] || this.imageFallback;
-        const hasGallery = imageUrls.length > 1;
-        const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY';
-        
-        return `
-            <div class="property-image ${property.rural ? 'rural-image' : ''}">
-                <img src="${firstImage}" alt="${property.title}" onerror="this.src='${this.imageFallback}'">
-                ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                ${hasGallery ? `<div class="image-count">${imageUrls.length}</div>` : ''}
-                ${hasPdfs ? `
-                    <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})">
-                        <i class="fas fa-file-pdf"></i>
-                    </button>` : ''}
-            </div>
-        `;
-    }
-
-    generateFeatures(features, isRural = false) {
-        if (!features) return '';
-        const featureArray = Array.isArray(features) ? features : 
-                           (typeof features === 'string' ? features.split(',') : []);
-        
-        return featureArray.length > 0 ? `
-            <div class="property-features">
-                ${featureArray.map(f => `<span class="feature-tag ${isRural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
-            </div>
-        ` : '';
-    }
-}
-
-// Instância global
-window.propertyTemplates = new PropertyTemplateEngine();
+// ========== CACHE DE TEMPLATES PARA PERFORMANCE ==========
+const propertyTemplateCache = new Map();
+window.lastFilter = 'todos';
 
 // ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO (RENOMEADA) ==========
 window.loadPropertiesData = async function () {
-    const loading = window.LoadingManager?.show?.('Carregando imóveis...', 'Buscando dados atualizados');
-    
-    try {
-        // Estratégias de carregamento otimizadas
-        const loadStrategies = [
-            () => window.supabaseLoadProperties?.()?.then(r => r?.data?.length ? r.data : null),
-            () => window.supabaseFetch?.('/properties?select=*')?.then(r => r.ok ? r.data : null),
-            () => {
-                const stored = localStorage.getItem('weberlessa_properties');
-                return stored ? JSON.parse(stored) : null;
-            },
-            () => getInitialProperties()
-        ];
+    console.log('🔄 Carregando dados de propriedades (VERSÃO CONSOLIDADA)...');
 
-        let propertiesData = null;
+    // Estratégias de carregamento em ordem de prioridade
+    const strategies = {
+        supabase: async () => {
+            if (window.supabaseLoadProperties) {
+                const result = await window.supabaseLoadProperties();
+                return result?.data?.length > 0 ? result.data : null;
+            }
+            return null;
+        },
         
-        // Executar estratégias sequencialmente até sucesso
-        for (const strategy of loadStrategies) {
-            try {
-                propertiesData = await strategy();
-                if (propertiesData && propertiesData.length > 0) break;
-            } catch (e) { /* Silenciosamente tenta próxima estratégia */ }
+        fetch: async () => {
+            if (window.supabaseFetch) {
+                const result = await window.supabaseFetch('/properties?select=*');
+                return result.ok && result.data?.length > 0 ? result.data : null;
+            }
+            return null;
+        },
+        
+        localStorage: () => {
+            const stored = localStorage.getItem('weberlessa_properties');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    return parsed.length > 0 ? parsed : null;
+                } catch (e) {}
+            }
+            return null;
+        },
+        
+        initial: () => getInitialProperties()
+    };
+
+    try {
+        let loadedData = null;
+        
+        // Tentar em ordem de prioridade
+        for (const [strategyName, strategyFn] of Object.entries(strategies)) {
+            console.log(`🔄 Tentando estratégia: ${strategyName}`);
+            loadedData = await strategyFn();
+            if (loadedData) {
+                console.log(`✅ Carregado via ${strategyName}: ${loadedData.length} imóveis`);
+                break;
+            }
         }
 
-        window.properties = propertiesData || getInitialProperties();
+        window.properties = loadedData || [];
         window.savePropertiesToStorage();
 
-        // Feedback visual
-        loading?.setVariant?.('success');
-        loading?.updateMessage?.(`${window.properties.length} imóveis carregados`);
-        
-        // Renderizar com cache otimizado
-        window.renderProperties('todos');
+        // Cache inteligente (se disponível)
+        if (window.SmartCache && window.PerformanceCache) {
+            SmartCache.setWithAutoInvalidation('properties_data', window.properties, 'data', 60000);
+        }
+
+        // Renderizar imóveis
+        if (typeof window.renderProperties === 'function') {
+            setTimeout(() => window.renderProperties('todos'), 100);
+        }
+
+        console.log(`✅ Dados de propriedades carregados: ${window.properties.length} imóveis`);
         
     } catch (error) {
-        console.error('❌ Erro no carregamento:', error);
-        loading?.setVariant?.('error');
-        loading?.updateMessage?.('Erro ao carregar imóveis');
+        console.error('❌ Erro crítico:', error);
         window.properties = getInitialProperties();
-        window.renderProperties('todos');
-        
-    } finally {
-        setTimeout(() => loading?.hide?.(), 1000);
+        if (typeof window.renderProperties === 'function') {
+            setTimeout(() => window.renderProperties('todos'), 100);
+        }
     }
 };
 
@@ -158,41 +116,143 @@ function getInitialProperties() {
     ];
 }
 
-// ========== 3. RENDERIZAÇÃO OTIMIZADA ==========
-window.renderProperties = function(filter = 'todos') {
-    const container = document.getElementById('properties-container');
-    if (!container || !window.properties) return;
-
-    // Filtrar propriedades
-    const filtered = this.filterProperties(window.properties, filter);
-    
-    if (filtered.length === 0) {
-        container.innerHTML = '<p class="no-properties">Nenhum imóvel disponível.</p>';
-        return;
+// ========== 3. FUNÇÃO AUXILIAR: GERAR HTML COM CACHE E TODOS OS ELEMENTOS VISUAIS ==========
+const generatePropertyCardHTML = (property) => {
+    const cacheKey = `property_${property.id}`;
+    if (propertyTemplateCache.has(cacheKey)) {
+        return propertyTemplateCache.get(cacheKey);
     }
 
-    // Renderizar com template engine otimizada
-    container.innerHTML = filtered.map(prop => 
-        window.propertyTemplates.generate(prop)
-    ).join('');
+    const features = Array.isArray(property.features) ? property.features : 
+                     (property.features ? property.features.split(',') : []);
 
-    console.log(`✅ ${filtered.length} imóveis renderizados (filtro: ${filter})`);
-};
-
-window.filterProperties = function(properties, filter) {
-    if (filter === 'todos' || !filter) return properties;
+    // ✅ ELEMENTOS VISUAIS CRÍTICOS QUE DEVEM SER MANTIDOS:
+    const hasImages = property.images && property.images.length > 0 && property.images !== 'EMPTY';
+    const imageUrls = hasImages ? property.images.split(',').filter(url => url.trim() !== '') : [];
+    const imageCount = imageUrls.length;
     
-    const filterMap = {
-        'Residencial': p => p.type === 'residencial',
-        'Comercial': p => p.type === 'comercial',
-        'Rural': p => p.type === 'rural' || p.rural === true,
-        'Minha Casa Minha Vida': p => p.badge === 'MCMV'
-    };
+    const firstImageUrl = imageCount > 0 ? 
+        imageUrls[0] : 
+        'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
 
-    return properties.filter(filterMap[filter] || (() => true));
+    // ✅ VERIFICAR SE TEM GALERIA (múltiplas imagens)
+    const hasGallery = imageCount > 1;
+    
+    // ✅ BOTÃO PDF - CRÍTICO!
+    const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
+    const pdfButton = hasPdfs ? 
+        `<button class="pdf-access" 
+                onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})" 
+                title="Documentos do imóvel (senha: doc123)">
+            <i class="fas fa-file-pdf"></i>
+        </button>` : 
+        '';
+
+    // ✅ BADGE COM CORES DIFERENCIADAS
+    const badgeClass = property.rural ? 'rural-badge' : '';
+    const badgeHtml = property.badge ? 
+        `<div class="property-badge ${badgeClass}">${property.badge}</div>` : 
+        '';
+
+    // ✅ INDICADOR DE VÍDEO
+    const videoIndicator = property.has_video ? 
+        `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : 
+        '';
+
+    // ✅ CONTADOR DE FOTOS
+    const imageCountHtml = imageCount > 0 ? 
+        `<div class="image-count">${imageCount}</div>` : 
+        '';
+
+    // ✅ GERAR HTML DA IMAGEM PRINCIPAL (COM GALERIA SE TIVER MÚLTIPLAS)
+    let propertyImageHTML = '';
+    
+    if (hasGallery && typeof window.createPropertyGallery === 'function') {
+        // Usar galeria se disponível
+        propertyImageHTML = window.createPropertyGallery(property);
+    } else {
+        // Imagem única com todos os elementos visuais
+        propertyImageHTML = `
+            <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
+                <img src="${firstImageUrl}" 
+                     style="width: 100%; height: 100%; object-fit: cover;"
+                     alt="${property.title}"
+                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                ${badgeHtml}
+                ${videoIndicator}
+                ${imageCountHtml}
+                ${pdfButton}
+            </div>
+        `;
+    }
+
+    // ✅ HTML FINAL DO CARD
+    const html = `
+        <div class="property-card">
+            ${propertyImageHTML}
+            <div class="property-content">
+                <div class="property-price">${property.price || 'R$ 0,00'}</div>
+                <h3 class="property-title">${property.title || 'Sem título'}</h3>
+                <div class="property-location">
+                    <i class="fas fa-map-marker-alt"></i> ${property.location || 'Local não informado'}
+                </div>
+                <p>${property.description || 'Descrição não disponível.'}</p>
+                <div class="property-features">
+                    ${features.map(f => `<span class="feature-tag ${property.rural ? 'rural-tag' : ''}">${f.trim()}</span>`).join('')}
+                </div>
+                <button class="contact-btn" onclick="contactAgent(${property.id})">
+                    <i class="fab fa-whatsapp"></i> Entrar em Contato
+                </button>
+            </div>
+        </div>
+    `;
+
+    propertyTemplateCache.set(cacheKey, html);
+    return html;
 };
 
-// ========== 4. SALVAR NO STORAGE (MANTIDA) ==========
+// ========== 4. RENDERIZAÇÃO OTIMIZADA COM CACHE (MANTENDO ELEMENTOS VISUAIS) ==========
+window.renderProperties = function(filter = 'todos') {
+    console.log('🎨 Renderizando com filtro:', filter);
+    
+    const container = document.getElementById('properties-container');
+    if (!container) return;
+    
+    // Limpar cache se mudou o filtro
+    if (window.lastFilter !== filter) {
+        propertyTemplateCache.clear();
+        window.lastFilter = filter;
+    }
+    
+    if (!window.properties || window.properties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 3rem; color: #666;">Nenhum imóvel disponível.</p>';
+        return;
+    }
+    
+    // Filtrar (lógica existente mantida)
+    let filteredProperties = [...window.properties];
+    if (filter !== 'todos') {
+        filteredProperties = window.properties.filter(p => {
+            if (filter === 'Residencial') return p.type === 'residencial';
+            if (filter === 'Comercial') return p.type === 'comercial';
+            if (filter === 'Rural') return p.type === 'rural' || p.rural === true;
+            if (filter === 'Minha Casa Minha Vida') return p.badge === 'MCMV';
+            return true;
+        });
+    }
+    
+    if (filteredProperties.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 2rem; color: #666;">Nenhum imóvel para este filtro.</p>';
+        return;
+    }
+    
+    // Renderizar usando templates com cache
+    container.innerHTML = filteredProperties.map(generatePropertyCardHTML).join('');
+    
+    console.log(`✅ ${filteredProperties.length} imóveis renderizados`);
+};
+
+// ========== 5. SALVAR NO STORAGE (MANTIDA) ==========
 window.savePropertiesToStorage = function() {
     try {
         localStorage.setItem('weberlessa_properties', JSON.stringify(window.properties));
@@ -204,7 +264,7 @@ window.savePropertiesToStorage = function() {
     }
 };
 
-// ========== 5. CONFIGURAR FILTROS (MANTIDA) ==========
+// ========== 6. CONFIGURAR FILTROS (MANTIDA) ==========
 window.setupFilters = function() {
     console.log('🎛️ Configurando filtros...');
     
@@ -252,7 +312,7 @@ window.setupFilters = function() {
     console.log('✅ Filtros configurados');
 };
 
-// ========== 6. CONTATAR AGENTE (MANTIDA) ==========
+// ========== 7. CONTATAR AGENTE (MANTIDA) ==========
 window.contactAgent = function(id) {
     const property = window.properties.find(p => p.id === id);
     if (!property) {
@@ -265,7 +325,7 @@ window.contactAgent = function(id) {
     window.open(whatsappURL, '_blank');
 };
 
-// ========== 7. ADICIONAR NOVO IMÓVEL (MANTIDA) ==========
+// ========== 8. ADICIONAR NOVO IMÓVEL (MANTIDA) ==========
 window.addNewProperty = async function(propertyData) {
     console.log('➕ ADICIONANDO NOVO IMÓVEL COM SISTEMA UNIFICADO:', propertyData);
 
@@ -433,7 +493,7 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. ATUALIZAR IMÓVEL (MANTIDA) ==========
+// ========== 9. ATUALIZAR IMÓVEL (MANTIDA) ==========
 window.updateProperty = async function(id, propertyData) {
     console.log(`✏️ ATUALIZANDO IMÓVEL ${id}:`, propertyData);
 
@@ -542,7 +602,7 @@ window.updateProperty = async function(id, propertyData) {
     }
 };
 
-// ========== 9. EXCLUIR IMÓVEL (MANTIDA) ==========
+// ========== 10. EXCLUIR IMÓVEL (MANTIDA) ==========
 window.deleteProperty = async function(id) {
     console.log(`🗑️ Iniciando exclusão COMPLETA do imóvel ${id}...`);
 
@@ -636,7 +696,7 @@ window.deleteProperty = async function(id) {
     return supabaseSuccess;
 };
 
-// ========== 10. CARREGAR LISTA PARA ADMIN (MANTIDA) ==========
+// ========== 11. CARREGAR LISTA PARA ADMIN (MANTIDA) ==========
 window.loadPropertyList = function() {
     if (!window.properties || typeof window.properties.forEach !== 'function') {
         console.error('❌ window.properties não é um array válido');
@@ -684,7 +744,7 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados no admin`);
 };
 
-// ========== 11. SINCRONIZAÇÃO SIMPLIFICADA (MANTIDA) ==========
+// ========== 12. SINCRONIZAÇÃO SIMPLIFICADA (MANTIDA) ==========
 window.testSupabaseConnectionSimple = async function() {
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
         return { connected: false, error: 'Credenciais não configuradas' };
@@ -731,54 +791,6 @@ window.syncWithSupabase = async function() {
         return { success: false, error: error.message };
     }
 };
-
-// ========== 12. SISTEMA DE ESTADO SIMPLIFICADO ==========
-window.PropertyState = {
-    properties: [],
-    currentFilter: 'todos',
-    editingId: null,
-
-    init(initialData = []) {
-        this.properties = initialData;
-        return this;
-    },
-
-    add(property) {
-        this.properties.unshift(property);
-        this.save();
-        return property;
-    },
-
-    update(id, updates) {
-        const index = this.properties.findIndex(p => p.id == id);
-        if (index === -1) return false;
-        
-        this.properties[index] = { ...this.properties[index], ...updates };
-        this.save();
-        return true;
-    },
-
-    remove(id) {
-        const initialLength = this.properties.length;
-        this.properties = this.properties.filter(p => p.id !== id);
-        this.save();
-        return initialLength !== this.properties.length;
-    },
-
-    save() {
-        try {
-            localStorage.setItem('weberlessa_properties', JSON.stringify(this.properties));
-        } catch (e) {
-            console.warn('⚠️ Não foi possível salvar no localStorage');
-        }
-    }
-};
-
-// Inicializar com dados existentes
-if (window.properties && window.properties.length > 0) {
-    window.PropertyState.init(window.properties);
-    window.properties = window.PropertyState.properties; // Manter compatibilidade
-}
 
 // ========== 13. RECUPERAÇÃO ESSENCIAL (MANTIDA) ==========
 (function essentialPropertiesRecovery() {
