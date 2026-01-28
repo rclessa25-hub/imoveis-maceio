@@ -1,5 +1,5 @@
-// js/modules/core/SharedCore.js - COM CONSTANTES SUPABASE FIXAS E FORMATAÇÃO CORRIGIDA (CORRIGIDO)
-console.log('🔧 SharedCore.js carregado - COM FORMATAÇÃO DE PREÇO CORRIGIDA E UNIFICADA');
+// js/modules/core/SharedCore.js - COM FUNÇÕES UNIFICADAS DE FEATURES E VIDEO
+console.log('🔧 SharedCore.js carregado - COM FUNÇÕES UNIFICADAS DE FEATURES E VIDEO');
 
 // ========== CONSTANTES SUPABASE FIXAS (IMPORTANTE!) ==========
 // Verificar se já foi declarado por outro módulo (media-unified.js)
@@ -90,6 +90,109 @@ const SharedCore = (function() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         });
+    };
+
+    // ========== FUNÇÕES UNIFICADAS DE FEATURES E VIDEO ==========
+    const formatFeaturesForDisplay = function(features) {
+        console.log('🔍 SharedCore.formatFeaturesForDisplay:', { input: features, type: typeof features });
+        
+        if (!features) return '';
+        
+        try {
+            // Se for array, transformar em string separada por vírgula
+            if (Array.isArray(features)) {
+                return features.filter(f => f && f.trim()).join(', ');
+            }
+            
+            // Se for string JSON (com colchetes), extrair array
+            if (typeof features === 'string' && features.trim().startsWith('[') && features.trim().endsWith(']')) {
+                try {
+                    const parsed = JSON.parse(features);
+                    if (Array.isArray(parsed)) {
+                        return parsed.filter(f => f && f.trim()).join(', ');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ SharedCore: Erro ao parsear JSON de features:', e);
+                    // Se falhar o parse, tentar limpar
+                    return features.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
+                }
+            }
+            
+            // Se já for string com colchetes, remover
+            let cleaned = features.toString();
+            cleaned = cleaned.replace(/[\[\]"]/g, ''); // Remover colchetes e aspas
+            cleaned = cleaned.replace(/\s*,\s*/g, ', '); // Normalizar espaços
+            
+            return cleaned;
+        } catch (error) {
+            console.error('❌ SharedCore: Erro ao formatar features:', error);
+            return '';
+        }
+    };
+    
+    const parseFeaturesForStorage = function(value) {
+        console.log('🔍 SharedCore.parseFeaturesForStorage:', { input: value });
+        
+        if (!value) return '[]';
+        
+        try {
+            // Se já é array, converter para JSON
+            if (Array.isArray(value)) {
+                return JSON.stringify(value.filter(f => f && f.trim()));
+            }
+            
+            // Se é string JSON, manter
+            if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
+                try {
+                    JSON.parse(value); // Validar
+                    return value;
+                } catch (e) {
+                    // Se inválido, processar como string normal
+                }
+            }
+            
+            // Se é string normal, converter para array
+            const featuresArray = value.split(',')
+                .map(f => f.trim())
+                .filter(f => f && f !== '');
+            
+            return JSON.stringify(featuresArray);
+        } catch (error) {
+            console.error('❌ SharedCore: Erro ao parsear features:', error);
+            return '[]';
+        }
+    };
+    
+    const ensureBooleanVideo = function(videoValue) {
+        console.log('🔍 SharedCore.ensureBooleanVideo:', { input: videoValue, type: typeof videoValue });
+        
+        if (videoValue === undefined || videoValue === null) {
+            return false;
+        }
+        
+        // Se já é booleano
+        if (typeof videoValue === 'boolean') {
+            return videoValue;
+        }
+        
+        // Se é string 'true' ou 'false'
+        if (typeof videoValue === 'string') {
+            const lower = videoValue.toLowerCase().trim();
+            if (lower === 'true' || lower === '1' || lower === 'sim' || lower === 'yes') {
+                return true;
+            }
+            if (lower === 'false' || lower === '0' || lower === 'não' || lower === 'no') {
+                return false;
+            }
+        }
+        
+        // Se é número
+        if (typeof videoValue === 'number') {
+            return videoValue === 1;
+        }
+        
+        // Converter para booleano
+        return Boolean(videoValue);
     };
 
     const truncateText = (text, maxLength = 100) => {
@@ -618,6 +721,11 @@ const SharedCore = (function() {
         truncateText,
         stringSimilarity,
         
+        // Funções unificadas de features e video
+        formatFeaturesForDisplay,
+        parseFeaturesForStorage,
+        ensureBooleanVideo,
+        
         // Sistema de formatação de preço UNIFICADO
         PriceFormatter,
         
@@ -682,7 +790,26 @@ window.SharedCore = SharedCore;
         };
     }
     
-    console.log('✅ Compatibilidade de formatação de preço configurada');
+    // Expor funções de features globalmente para compatibilidade
+    if (typeof window.formatFeaturesForDisplay === 'undefined') {
+        window.formatFeaturesForDisplay = function(features) {
+            return SharedCore.formatFeaturesForDisplay(features);
+        };
+    }
+    
+    if (typeof window.parseFeaturesForStorage === 'undefined') {
+        window.parseFeaturesForStorage = function(value) {
+            return SharedCore.parseFeaturesForStorage(value);
+        };
+    }
+    
+    if (typeof window.ensureBooleanVideo === 'undefined') {
+        window.ensureBooleanVideo = function(videoValue) {
+            return SharedCore.ensureBooleanVideo(videoValue);
+        };
+    }
+    
+    console.log('✅ Compatibilidade de formatação de preço e features configurada');
 })();
 
 // ========== INICIALIZAÇÃO E COMPATIBILIDADE ==========
@@ -705,6 +832,11 @@ function initializeGlobalCompatibility() {
         formatPrice: SharedCore.formatPrice,
         truncateText: SharedCore.truncateText,
         stringSimilarity: SharedCore.stringSimilarity,
+        
+        // Funções unificadas de features e video
+        formatFeaturesForDisplay: SharedCore.formatFeaturesForDisplay,
+        parseFeaturesForStorage: SharedCore.parseFeaturesForStorage,
+        ensureBooleanVideo: SharedCore.ensureBooleanVideo,
         
         // Formatação de preço (compatibilidade com código legado)
         formatPriceForInput: SharedCore.formatPriceForInput,
@@ -785,7 +917,15 @@ setTimeout(() => {
         if (!available) allAvailable = false;
     });
     
-    console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO' : '⚠️ VERIFICAÇÃO REQUERIDA');
+    // Verificar novas funções unificadas
+    const unifiedFunctions = ['formatFeaturesForDisplay', 'parseFeaturesForStorage', 'ensureBooleanVideo'];
+    unifiedFunctions.forEach(func => {
+        const available = window.SharedCore?.[func] !== undefined;
+        console.log(`${available ? '✅' : '❌'} ${func} disponível no SharedCore`);
+        if (!available) allAvailable = false;
+    });
+    
+    console.log(allAvailable ? '🎪 SHAREDCORE VALIDADO COM FUNÇÕES UNIFICADAS' : '⚠️ VERIFICAÇÃO REQUERIDA');
     console.groupEnd();
 }, 2000);
 
@@ -806,4 +946,75 @@ setTimeout(() => {
     console.log('✅ SUPABASE_CONSTANTS definido globalmente');
 })();
 
-console.log(`✅ SharedCore.js pronto - Sistema de formatação de preço unificado e corrigido`);
+// ========== TESTE DAS FUNÇÕES UNIFICADAS ==========
+setTimeout(() => {
+    if (window.location.search.includes('debug=true')) {
+        console.group('🧪 TESTE DAS FUNÇÕES UNIFICADAS DE FEATURES E VIDEO');
+        
+        // Teste 1: formatFeaturesForDisplay
+        const testFeaturesJSON = '["2 Quartos", "Garagem", "Piscina"]';
+        const testFeaturesString = '2 Quartos, Garagem, Piscina';
+        const testFeaturesArray = ['2 Quartos', 'Garagem', 'Piscina'];
+        
+        const result1 = SharedCore.formatFeaturesForDisplay(testFeaturesJSON);
+        const result2 = SharedCore.formatFeaturesForDisplay(testFeaturesString);
+        const result3 = SharedCore.formatFeaturesForDisplay(testFeaturesArray);
+        
+        console.log('✅ formatFeaturesForDisplay:', {
+            'JSON → String': result1 === '2 Quartos, Garagem, Piscina' ? 'OK' : 'FALHOU',
+            'String → String': result2 === '2 Quartos, Garagem, Piscina' ? 'OK' : 'FALHOU',
+            'Array → String': result3 === '2 Quartos, Garagem, Piscina' ? 'OK' : 'FALHOU'
+        });
+        
+        // Teste 2: parseFeaturesForStorage
+        const parsed1 = SharedCore.parseFeaturesForStorage('2 Quartos, Garagem, Piscina');
+        const parsed2 = SharedCore.parseFeaturesForStorage(testFeaturesArray);
+        const parsed3 = SharedCore.parseFeaturesForStorage(testFeaturesJSON);
+        
+        console.log('✅ parseFeaturesForStorage:', {
+            'String → JSON': parsed1.includes('2 Quartos') ? 'OK' : 'FALHOU',
+            'Array → JSON': parsed2.includes('2 Quartos') ? 'OK' : 'FALHOU',
+            'JSON → JSON': parsed3 === testFeaturesJSON ? 'OK' : 'FALHOU'
+        });
+        
+        // Teste 3: ensureBooleanVideo
+        const videoTests = [
+            { input: true, expected: true },
+            { input: false, expected: false },
+            { input: 'true', expected: true },
+            { input: 'false', expected: false },
+            { input: 'sim', expected: true },
+            { input: 'não', expected: false },
+            { input: 1, expected: true },
+            { input: 0, expected: false },
+            { input: '1', expected: true },
+            { input: '0', expected: false }
+        ];
+        
+        let videoPassed = 0;
+        videoTests.forEach((test, index) => {
+            const result = SharedCore.ensureBooleanVideo(test.input);
+            if (result === test.expected) {
+                videoPassed++;
+            } else {
+                console.warn(`⚠️ Teste ${index + 1} falhou: ${test.input} → ${result} (esperado: ${test.expected})`);
+            }
+        });
+        
+        console.log(`✅ ensureBooleanVideo: ${videoPassed}/${videoTests.length} testes passados`);
+        
+        // Teste 4: Compatibilidade global
+        console.log('✅ Funções disponíveis globalmente:', {
+            window_formatFeaturesForDisplay: typeof window.formatFeaturesForDisplay,
+            window_parseFeaturesForStorage: typeof window.parseFeaturesForStorage,
+            window_ensureBooleanVideo: typeof window.ensureBooleanVideo,
+            SharedCore_formatFeaturesForDisplay: typeof SharedCore.formatFeaturesForDisplay,
+            SharedCore_parseFeaturesForStorage: typeof SharedCore.parseFeaturesForStorage,
+            SharedCore_ensureBooleanVideo: typeof SharedCore.ensureBooleanVideo
+        });
+        
+        console.groupEnd();
+    }
+}, 3000);
+
+console.log(`✅ SharedCore.js pronto - Sistema de formatação unificado (features + video + preço)`);
