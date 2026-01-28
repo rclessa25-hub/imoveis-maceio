@@ -1,5 +1,5 @@
-// js/modules/properties.js - VERSÃO FINAL CORRIGIDA
-console.log('🏠 properties.js - VERSÃO FINAL CORRIGIDA - PERSISTÊNCIA GARANTIDA');
+// js/modules/properties.js - VERSÃO FINAL CORRIGIDA (SEM FUNÇÕES DUPLICADAS)
+console.log('🏠 properties.js - VERSÃO FINAL CORRIGIDA - FUNÇÕES CENTRALIZADAS NO SHAREDCORE');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.properties = [];
@@ -30,108 +30,21 @@ window.ensureSupabaseCredentials = function() {
     return !!window.SUPABASE_URL && !!window.SUPABASE_KEY;
 };
 
-// ========== FUNÇÕES DE FORMATAÇÃO PARA VÍDEO E FEATURES ==========
-window.formatFeaturesForDisplay = function(features) {
-    console.log('🔍 Formatando features para exibição:', { input: features, type: typeof features });
-    
-    if (!features) return '';
-    
-    try {
-        // Se for array, transformar em string separada por vírgula
-        if (Array.isArray(features)) {
-            return features.filter(f => f && f.trim()).join(', ');
-        }
-        
-        // Se for string JSON (com colchetes), extrair array
-        if (typeof features === 'string' && features.trim().startsWith('[') && features.trim().endsWith(']')) {
-            try {
-                const parsed = JSON.parse(features);
-                if (Array.isArray(parsed)) {
-                    return parsed.filter(f => f && f.trim()).join(', ');
-                }
-            } catch (e) {
-                console.warn('⚠️ Erro ao parsear JSON de features:', e);
-                // Se falhar o parse, tentar limpar
-                return features.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
-            }
-        }
-        
-        // Se já for string com colchetes, remover
-        let cleaned = features.toString();
-        cleaned = cleaned.replace(/[\[\]"]/g, ''); // Remover colchetes e aspas
-        cleaned = cleaned.replace(/\s*,\s*/g, ', '); // Normalizar espaços
-        
-        return cleaned;
-    } catch (error) {
-        console.error('❌ Erro ao formatar features:', error);
-        return '';
-    }
-};
-
-window.parseFeaturesForStorage = function(value) {
-    console.log('🔍 Parseando features para armazenamento:', { input: value });
-    
-    if (!value) return '[]';
-    
-    try {
-        // Se já é array, converter para JSON
-        if (Array.isArray(value)) {
-            return JSON.stringify(value.filter(f => f && f.trim()));
-        }
-        
-        // Se é string JSON, manter
-        if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
-            try {
-                JSON.parse(value); // Validar
-                return value;
-            } catch (e) {
-                // Se inválido, processar como string normal
-            }
-        }
-        
-        // Se é string normal, converter para array
-        const featuresArray = value.split(',')
-            .map(f => f.trim())
-            .filter(f => f && f !== '');
-        
-        return JSON.stringify(featuresArray);
-    } catch (error) {
-        console.error('❌ Erro ao parsear features:', error);
-        return '[]';
-    }
-};
-
-window.ensureBooleanVideo = function(videoValue) {
-    console.log('🔍 Convertendo vídeo para booleano:', { input: videoValue, type: typeof videoValue });
-    
-    if (videoValue === undefined || videoValue === null) {
-        return false;
-    }
-    
-    // Se já é booleano
-    if (typeof videoValue === 'boolean') {
-        return videoValue;
-    }
-    
-    // Se é string 'true' ou 'false'
-    if (typeof videoValue === 'string') {
-        const lower = videoValue.toLowerCase().trim();
-        if (lower === 'true' || lower === '1' || lower === 'sim' || lower === 'yes') {
-            return true;
-        }
-        if (lower === 'false' || lower === '0' || lower === 'não' || lower === 'no') {
-            return false;
-        }
-    }
-    
-    // Se é número
-    if (typeof videoValue === 'number') {
-        return videoValue === 1;
-    }
-    
-    // Converter para booleano
-    return Boolean(videoValue);
-};
+// ========== FUNÇÕES DE FORMATAÇÃO (AGORA CENTRALIZADAS NO SHAREDCORE) ==========
+// NOTA: As funções formatFeaturesForDisplay, parseFeaturesForStorage e ensureBooleanVideo
+// foram movidas para SharedCore.js para eliminar duplicação e facilitar reuso.
+// 
+// As funções agora estão disponíveis via:
+// 1. window.SharedCore.formatFeaturesForDisplay()
+// 2. window.SharedCore.parseFeaturesForStorage()
+// 3. window.SharedCore.ensureBooleanVideo()
+// 
+// Compatibilidade: As funções também estão disponíveis globalmente via:
+// 1. window.formatFeaturesForDisplay()
+// 2. window.parseFeaturesForStorage()
+// 3. window.ensureBooleanVideo()
+// 
+// Isso garante que código existente continue funcionando sem modificações.
 
 // ========== TEMPLATE ENGINE COM CACHE AVANÇADO E GALERIA ==========
 class PropertyTemplateEngine {
@@ -147,8 +60,8 @@ class PropertyTemplateEngine {
             this.cache.delete(cacheKey);
         }
 
-        // Formatar features para exibição
-        const displayFeatures = window.formatFeaturesForDisplay(property.features);
+        // Formatar features para exibição (usando SharedCore)
+        const displayFeatures = window.SharedCore?.formatFeaturesForDisplay?.(property.features) || '';
         
         // Formatação de preço usando SharedCore
         const formatPrice = (price) => {
@@ -199,8 +112,8 @@ class PropertyTemplateEngine {
         const hasGallery = imageCount > 1;
         const hasPdfs = property.pdfs && property.pdfs !== 'EMPTY' && property.pdfs.trim() !== '';
 
-        // CORREÇÃO CRÍTICA: Verificar vídeo corretamente
-        const hasVideo = window.ensureBooleanVideo(property.has_video);
+        // CORREÇÃO CRÍTICA: Verificar vídeo corretamente (usando SharedCore)
+        const hasVideo = window.SharedCore?.ensureBooleanVideo?.(property.has_video) || false;
         
         console.log('🎬 Renderizando card com vídeo:', {
             id: property.id,
@@ -349,10 +262,10 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Atualizar features se fornecido
+            // Atualizar features se fornecido (usando SharedCore)
             if (propertyData.features !== undefined) {
                 const featuresElement = card.querySelector('[data-features-field]');
-                const displayFeatures = window.formatFeaturesForDisplay(propertyData.features);
+                const displayFeatures = window.SharedCore?.formatFeaturesForDisplay?.(propertyData.features) || '';
                 
                 if (featuresElement) {
                     if (displayFeatures) {
@@ -368,7 +281,7 @@ class PropertyTemplateEngine {
             // Atualizar indicador de vídeo (AJUSTADO)
             if (propertyData.has_video !== undefined) {
                 const videoIndicator = card.querySelector('.video-indicator');
-                const hasVideo = window.ensureBooleanVideo(propertyData.has_video);
+                const hasVideo = window.SharedCore?.ensureBooleanVideo?.(propertyData.has_video) || false;
                 
                 if (hasVideo && !videoIndicator) {
                     // Adicionar indicador de vídeo (posição ajustada)
@@ -651,11 +564,11 @@ window.loadPropertiesData = async function () {
 
         window.properties = propertiesData || getInitialProperties();
         
-        // Processar dados para garantir formato correto
+        // Processar dados para garantir formato correto (usando SharedCore)
         window.properties = window.properties.map(prop => ({
             ...prop,
-            has_video: window.ensureBooleanVideo(prop.has_video),
-            features: window.parseFeaturesForStorage(prop.features)
+            has_video: window.SharedCore?.ensureBooleanVideo?.(prop.has_video) || false,
+            features: window.SharedCore?.parseFeaturesForStorage?.(prop.features) || '[]'
         }));
         
         // ========== SALVAMENTO CRÍTICO GARANTIDO ==========
@@ -914,16 +827,16 @@ window.addNewProperty = async function(propertyData) {
             }
         }
 
-        // CORREÇÃO: Processar features corretamente
+        // CORREÇÃO: Processar features corretamente (usando SharedCore)
         if (propertyData.features) {
-            propertyData.features = window.parseFeaturesForStorage(propertyData.features);
+            propertyData.features = window.SharedCore?.parseFeaturesForStorage?.(propertyData.features) || '[]';
             console.log('✅ Features processadas:', propertyData.features);
         } else {
             propertyData.features = '[]';
         }
 
-        // CORREÇÃO: Garantir que has_video seja booleano
-        propertyData.has_video = window.ensureBooleanVideo(propertyData.has_video);
+        // CORREÇÃO: Garantir que has_video seja booleano (usando SharedCore)
+        propertyData.has_video = window.SharedCore?.ensureBooleanVideo?.(propertyData.has_video) || false;
         console.log('✅ Vídeo processado:', propertyData.has_video);
 
         // Processar mídia
@@ -1230,10 +1143,10 @@ window.updateProperty = async function(id, propertyData) {
             }
         }
 
-        // ✅ CORREÇÕES CRÍTICAS
+        // ✅ CORREÇÕES CRÍTICAS (usando SharedCore)
         const processedData = {
             ...propertyData,
-            has_video: window.ensureBooleanVideo(propertyData.has_video)
+            has_video: window.SharedCore?.ensureBooleanVideo?.(propertyData.has_video) || false
         };
 
         // ✅ DADOS PARA ATUALIZAÇÃO
@@ -1371,15 +1284,15 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         return false;
     }
     
-    // CORREÇÃO: Garantir que has_video seja booleano
+    // CORREÇÃO: Garantir que has_video seja booleano (usando SharedCore)
     if (updatedData.has_video !== undefined) {
-        updatedData.has_video = window.ensureBooleanVideo(updatedData.has_video);
+        updatedData.has_video = window.SharedCore?.ensureBooleanVideo?.(updatedData.has_video) || false;
         console.log(`✅ VÍDEO salvo localmente para ${propertyId}: ${updatedData.has_video}`);
     }
     
-    // CORREÇÃO: Processar features
+    // CORREÇÃO: Processar features (usando SharedCore)
     if (updatedData.features !== undefined) {
-        updatedData.features = window.parseFeaturesForStorage(updatedData.features);
+        updatedData.features = window.SharedCore?.parseFeaturesForStorage?.(updatedData.features) || '[]';
         console.log(`✅ FEATURES salvas localmente para ${propertyId}`);
     }
     
@@ -1459,9 +1372,9 @@ window.addToLocalProperties = function(newProperty) {
         propertyWithId.updated_at = new Date().toISOString();
     }
     
-    // Garantir formato correto
-    propertyWithId.has_video = window.ensureBooleanVideo(propertyWithId.has_video);
-    propertyWithId.features = window.parseFeaturesForStorage(propertyWithId.features);
+    // Garantir formato correto (usando SharedCore)
+    propertyWithId.has_video = window.SharedCore?.ensureBooleanVideo?.(propertyWithId.has_video) || false;
+    propertyWithId.features = window.SharedCore?.parseFeaturesForStorage?.(propertyWithId.features) || '[]';
     
     window.properties.unshift(propertyWithId);
     
@@ -1664,11 +1577,11 @@ window.loadPropertyList = function() {
             if (stored) {
                 try {
                     window.properties = JSON.parse(stored);
-                    // Processar dados para garantir formato correto
+                    // Processar dados para garantir formato correto (usando SharedCore)
                     window.properties = window.properties.map(prop => ({
                         ...prop,
-                        has_video: window.ensureBooleanVideo(prop.has_video),
-                        features: window.parseFeaturesForStorage(prop.features)
+                        has_video: window.SharedCore?.ensureBooleanVideo?.(prop.has_video) || false,
+                        features: window.SharedCore?.parseFeaturesForStorage?.(prop.features) || '[]'
                     }));
                     
                     console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóveis`);
@@ -1966,7 +1879,7 @@ setTimeout(() => {
 }, 5000);
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
-console.log('✅ properties.js VERSÃO FINAL CORRIGIDA - PERSISTÊNCIA GARANTIDA');
+console.log('✅ properties.js VERSÃO FINAL CORRIGIDA - FUNÇÕES CENTRALIZADAS NO SHAREDCORE');
 
 function runLowPriority(task) {
     if ('requestIdleCallback' in window) {
@@ -2081,7 +1994,7 @@ window.diagnosticoSincronizacao = function() {
     alert('✅ Diagnóstico completo! Verifique o console (F12) para detalhes.');
 };
 
-console.log('🎯 VERSÃO CORRIGIDA - PERSISTÊNCIA GARANTIDA');
+console.log('🎯 VERSÃO CORRIGIDA - FUNÇÕES CENTRALIZADAS NO SHAREDCORE');
 console.log('💡 Execute window.diagnosticoSincronizacao() para verificar o estado do sistema');
 console.log('💡 Execute window.testFullUpdate() para testar atualização completa');
 console.log('💡 Adicione ?debug=true na URL para logs detalhados');
