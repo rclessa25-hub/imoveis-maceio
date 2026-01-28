@@ -30,22 +30,6 @@ window.ensureSupabaseCredentials = function() {
     return !!window.SUPABASE_URL && !!window.SUPABASE_KEY;
 };
 
-// ========== FUNÇÕES DE FORMATAÇÃO (AGORA CENTRALIZADAS NO SHAREDCORE) ==========
-// NOTA: As funções formatFeaturesForDisplay, parseFeaturesForStorage e ensureBooleanVideo
-// foram movidas para SharedCore.js para eliminar duplicação e facilitar reuso.
-// 
-// As funções agora estão disponíveis via:
-// 1. window.SharedCore.formatFeaturesForDisplay()
-// 2. window.SharedCore.parseFeaturesForStorage()
-// 3. window.SharedCore.ensureBooleanVideo()
-// 
-// Compatibilidade: As funções também estão disponíveis globalmente via:
-// 1. window.formatFeaturesForDisplay()
-// 2. window.parseFeaturesForStorage()
-// 3. window.ensureBooleanVideo()
-// 
-// Isso garante que código existente continue funcionando sem modificações.
-
 // ========== TEMPLATE ENGINE COM CACHE AVANÇADO E GALERIA ==========
 class PropertyTemplateEngine {
     constructor() {
@@ -933,7 +917,7 @@ window.addNewProperty = async function(propertyData) {
         // 1. Adicionar ao array
         window.properties.unshift(newProperty);
         
-        // 2. SALVAR NO LOCALSTORAGE COM VERIFICAÇÃO
+        // 2. SALVAR NO localStorage COM VERIFICAÇÃO
         const saved = window.savePropertiesToStorage();
         
         if (!saved) {
@@ -1112,7 +1096,7 @@ window.updateProperty = async function(id, propertyData) {
             console.log(`🔄 Usando editingPropertyId: ${window.editingPropertyId}`);
             id = window.editingPropertyId;
         } else {
-            alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!');
+            alert('❌ ERGO: Não foi possível identificar o imóvel para atualização!');
             console.groupEnd();
             return { success: false, localOnly: true, error: 'ID inválido' };
         }
@@ -1264,7 +1248,7 @@ window.updateProperty = async function(id, propertyData) {
     } catch (error) {
         console.error('❌ ERRO ao atualizar imóvel:', error);
         console.groupEnd();
-        alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
+        alert(`❌ ERGO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
         return { success: false, localOnly: true, error: error.message };
     }
 };
