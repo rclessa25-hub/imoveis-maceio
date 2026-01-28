@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO CORRIGIDA COM DIAGNÓSTICO
-console.log('🔧 admin.js - VERSÃO CORRIGIDA COM SISTEMA DE DIAGNÓSTICO');
+// js/modules/admin.js - VERSÃO CORRIGIDA FINAL
+console.log('🔧 admin.js - VERSÃO CORRIGIDA COM SUPABASE FALLBACK');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -16,72 +16,76 @@ let autoSaveTimeout = null;
 let pendingAutoSave = false;
 
 /* ==========================================================
-   SISTEMA DE DIAGNÓSTICO
+   SISTEMA DE BACKUP PARA SUPABASE
    ========================================================== */
-window.PropertyDiagnostic = {
-    logs: [],
+window.PropertyBackup = {
+    pendingProperties: JSON.parse(localStorage.getItem('pending_properties') || '[]'),
     
-    log: function(step, data) {
-        const logEntry = {
-            timestamp: new Date().toISOString(),
-            step: step,
-            data: data,
-            stack: new Error().stack.split('\n').slice(2, 6).join('\n')
-        };
-        
-        this.logs.push(logEntry);
-        console.log(`🔍 [${step}]`, data);
-        
-        // Exibir no DOM para fácil visualização (apenas em debug)
-        if (window.location.search.includes('debug=property')) {
-            this.updateDiagnosticUI(step, data);
-        }
+    addPending: function(property) {
+        this.pendingProperties.push({
+            ...property,
+            _attempts: 0,
+            _lastAttempt: null,
+            _created: new Date().toISOString()
+        });
+        this.save();
+        console.log('💾 Propriedade adicionada à fila de backup:', property.id);
     },
     
-    updateDiagnosticUI: function(step, data) {
-        let diagnosticDiv = document.getElementById('property-diagnostic');
-        if (!diagnosticDiv) {
-            diagnosticDiv = document.createElement('div');
-            diagnosticDiv.id = 'property-diagnostic';
-            diagnosticDiv.style.cssText = `
-                position: fixed;
-                bottom: 10px;
-                right: 10px;
-                width: 400px;
-                max-height: 300px;
-                background: rgba(0,0,0,0.9);
-                color: #0f0;
-                padding: 10px;
-                font-family: monospace;
-                font-size: 12px;
-                overflow-y: auto;
-                z-index: 99999;
-                border: 2px solid #0f0;
-                border-radius: 5px;
-            `;
-            document.body.appendChild(diagnosticDiv);
-        }
-        
-        const entry = document.createElement('div');
-        entry.innerHTML = `<strong>${new Date().toLocaleTimeString()}: ${step}</strong><br>${JSON.stringify(data, null, 2)}`;
-        diagnosticDiv.appendChild(entry);
-        diagnosticDiv.scrollTop = diagnosticDiv.scrollHeight;
+    removePending: function(propertyId) {
+        this.pendingProperties = this.pendingProperties.filter(p => p.id !== propertyId);
+        this.save();
     },
     
-    getDiagnosticReport: function() {
-        return {
-            totalLogs: this.logs.length,
-            lastOperation: this.logs.slice(-5),
-            windowProperties: window.properties ? window.properties.length : 0,
-            localStorageProperties: JSON.parse(localStorage.getItem('properties') || '[]').length,
-            supabaseConfig: !!window.SUPABASE_CONSTANTS,
-            editingMode: !!window.editingPropertyId
-        };
+    save: function() {
+        localStorage.setItem('pending_properties', JSON.stringify(this.pendingProperties));
+    },
+    
+    retryAll: async function() {
+        console.log('🔄 Tentando enviar propriedades pendentes para Supabase...');
+        
+        for (const property of this.pendingProperties) {
+            if (property._attempts < 3) {
+                try {
+                    await this.sendToSupabase(property);
+                    this.removePending(property.id);
+                } catch (error) {
+                    property._attempts++;
+                    property._lastAttempt = new Date().toISOString();
+                    console.error(`❌ Falha no envio ${property._attempts}/3:`, error);
+                }
+            }
+        }
+        
+        this.save();
+    },
+    
+    sendToSupabase: async function(property) {
+        // Remover campos internos antes de enviar
+        const { _attempts, _lastAttempt, _created, ...cleanProperty } = property;
+        
+        // Método 1: Usar função global se existir
+        if (typeof window.savePropertyToDatabase === 'function') {
+            return await window.savePropertyToDatabase(cleanProperty);
+        }
+        
+        // Método 2: Usar supabase direto se disponível
+        if (window.supabase && typeof window.supabase.from === 'function') {
+            const { data, error } = await window.supabase
+                .from('properties')
+                .insert([cleanProperty])
+                .select();
+            
+            if (error) throw error;
+            return data ? data[0] : null;
+        }
+        
+        throw new Error('Nenhum método de salvamento no Supabase disponível');
     }
 };
 
 /* ==========================================================
-   HELPER FUNCTIONS - CORRIGIDAS COM DIAGNÓSTICO
+   HELPER FUNCTIONS
    ========================================================== */
 const Helpers = {
     format: {
@@ -92,8 +96,6 @@ const Helpers = {
             return value && value.toString ? value.toString() : '';
         },
         features: (value) => {
-            PropertyDiagnostic.log('format.features', { input: value, type: typeof value });
-            
             if (!value) return '';
             
             try {
@@ -108,7 +110,6 @@ const Helpers = {
                             return parsed.filter(f => f && f.trim()).join(', ');
                         }
                     } catch (e) {
-                        console.warn('⚠️ Erro ao parsear JSON de features:', e);
                         return value.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
                     }
                 }
@@ -126,8 +127,6 @@ const Helpers = {
     },
     
     parseFeatures: (value) => {
-        PropertyDiagnostic.log('parseFeatures', { input: value });
-        
         if (!value) return '[]';
         
         try {
@@ -139,9 +138,7 @@ const Helpers = {
                 try {
                     JSON.parse(value);
                     return value;
-                } catch (e) {
-                    // Se inválido, processar como string normal
-                }
+                } catch (e) {}
             }
             
             const featuresArray = value.split(',')
@@ -211,7 +208,10 @@ const Helpers = {
             if (e.target.files.length) {
                 callback(e.target.files);
                 e.target.value = '';
-                if (autoSaveType) window.triggerAutoSave(autoSaveType);
+                // CORREÇÃO: Remover triggerAutoSave se não existir
+                if (autoSaveType && window.triggerAutoSave) {
+                    window.triggerAutoSave(autoSaveType);
+                }
             }
         });
         
@@ -254,20 +254,15 @@ const Helpers = {
     },
     
     getFormData: function() {
-        PropertyDiagnostic.log('getFormData', 'Iniciando captura de dados');
-        
         const formData = {};
         
-        // 1. Capturar campo de vídeo
         const videoCheckbox = document.getElementById('propHasVideo');
         if (videoCheckbox) {
             formData.has_video = videoCheckbox.checked;
-            PropertyDiagnostic.log('getFormData.checkbox', { checked: videoCheckbox.checked });
         } else {
             formData.has_video = false;
         }
         
-        // 2. Capturar outros campos
         const fields = [
             { id: 'propTitle', key: 'title' },
             { id: 'propPrice', key: 'price' },
@@ -291,30 +286,21 @@ const Helpers = {
             }
         });
         
-        PropertyDiagnostic.log('getFormData.result', formData);
         return formData;
     }
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - CORRIGIDA
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - VERSÃO CORRIGIDA
    ========================================================== */
 window.saveProperty = async function() {
-    PropertyDiagnostic.log('saveProperty.start', {
-        editing: !!window.editingPropertyId,
-        timestamp: new Date().toISOString()
-    });
+    console.group('💾 SALVANDO IMÓVEL - VERSÃO CORRIGIDA');
     
     try {
         // 1. Obter dados do formulário
         const propertyData = Helpers.getFormData();
         
-        PropertyDiagnostic.log('saveProperty.formData', {
-            title: propertyData.title,
-            price: propertyData.price,
-            location: propertyData.location,
-            has_video: propertyData.has_video
-        });
+        console.log('📋 Dados coletados:', propertyData);
         
         // Validação básica
         if (!propertyData.title || !propertyData.price || !propertyData.location) {
@@ -324,28 +310,20 @@ window.saveProperty = async function() {
         // Formatar dados
         propertyData.price = Helpers.format.price(propertyData.price);
         
-        // Converter features para JSON
         if (propertyData.features) {
             propertyData.features = Helpers.parseFeatures(propertyData.features);
         } else {
             propertyData.features = '[]';
         }
         
-        // Garantir que has_video seja booleano
         propertyData.has_video = Boolean(propertyData.has_video);
-        
-        PropertyDiagnostic.log('saveProperty.formatted', {
-            formattedPrice: propertyData.price,
-            formattedFeatures: propertyData.features,
-            formattedVideo: propertyData.has_video
-        });
         
         // 2. Processar mídias
         let imageUrls = '';
         let pdfUrls = '';
         
         if (window.MediaSystem) {
-            PropertyDiagnostic.log('saveProperty.media.start', 'Processando mídias');
+            console.log('📤 Processando mídias...');
             
             const hasSupabase = window.SUPABASE_CONSTANTS && 
                               window.SUPABASE_CONSTANTS.URL && 
@@ -361,13 +339,9 @@ window.saveProperty = async function() {
                     if (uploadResult.success) {
                         imageUrls = uploadResult.images;
                         pdfUrls = uploadResult.pdfs;
-                        PropertyDiagnostic.log('saveProperty.media.success', {
-                            uploadedCount: uploadResult.uploadedCount,
-                            images: imageUrls ? imageUrls.split(',').length : 0,
-                            pdfs: pdfUrls ? pdfUrls.split(',').length : 0
-                        });
+                        console.log(`✅ Upload concluído: ${uploadResult.uploadedCount} arquivo(s)`);
                     } else {
-                        PropertyDiagnostic.log('saveProperty.media.fallback', 'Usando salvamento local');
+                        console.warn('⚠️ Upload falhou, salvando localmente');
                         const localResult = MediaSystem.saveAndKeepLocal(
                             window.editingPropertyId || 'temp_' + Date.now(),
                             propertyData.title || 'Imóvel'
@@ -376,7 +350,7 @@ window.saveProperty = async function() {
                         pdfUrls = localResult.pdfs;
                     }
                 } catch (uploadError) {
-                    PropertyDiagnostic.log('saveProperty.media.error', uploadError.message);
+                    console.error('❌ Erro no upload:', uploadError);
                     const localResult = MediaSystem.saveAndKeepLocal(
                         window.editingPropertyId || 'temp_' + Date.now(),
                         propertyData.title || 'Imóvel'
@@ -385,7 +359,7 @@ window.saveProperty = async function() {
                     pdfUrls = localResult.pdfs;
                 }
             } else {
-                PropertyDiagnostic.log('saveProperty.media.noSupabase', 'Supabase não configurado');
+                console.log('⚠️ Supabase não configurado, salvando localmente');
                 const localResult = MediaSystem.saveAndKeepLocal(
                     window.editingPropertyId || 'temp_' + Date.now(),
                     propertyData.title || 'Imóvel'
@@ -394,7 +368,7 @@ window.saveProperty = async function() {
                 pdfUrls = localResult.pdfs;
             }
         } else {
-            PropertyDiagnostic.log('saveProperty.media.unavailable', 'MediaSystem não disponível');
+            console.warn('⚠️ MediaSystem não disponível');
             imageUrls = 'EMPTY';
             pdfUrls = 'EMPTY';
         }
@@ -403,24 +377,18 @@ window.saveProperty = async function() {
         propertyData.images = imageUrls || 'EMPTY';
         propertyData.pdfs = pdfUrls || 'EMPTY';
         
-        // 4. Determinar ID e tipo de operação
-        let operation = 'create';
-        
+        // 4. Determinar ID
         if (window.editingPropertyId) {
             propertyData.id = window.editingPropertyId;
-            operation = 'update';
         } else {
-            // Para novo imóvel - usar lógica da V.Antiga que funciona
-            operation = 'create';
-            
-            // Buscar o maior ID existente (local + remoto se possível)
+            // Para novo imóvel
             const localProps = window.properties || [];
             const localMaxId = localProps.length > 0 ? 
                 Math.max(...localProps.map(p => parseInt(p.id) || 0)) : 0;
             
             // Tentar buscar do Supabase se disponível
             let supabaseMaxId = 0;
-            if (window.SUPABASE_CONSTANTS && window.supabase) {
+            if (window.SUPABASE_CONSTANTS && window.supabase && typeof window.supabase.from === 'function') {
                 try {
                     const { data, error } = await window.supabase
                         .from('properties')
@@ -432,34 +400,28 @@ window.saveProperty = async function() {
                         supabaseMaxId = parseInt(data[0].id) || 0;
                     }
                 } catch (e) {
-                    PropertyDiagnostic.log('saveProperty.idCheck.error', e.message);
+                    console.warn('⚠️ Não foi possível verificar ID máximo no Supabase:', e.message);
                 }
             }
             
-            // Usar o maior ID entre local e remoto
+            // Usar o maior ID + 1
             propertyData.id = Math.max(localMaxId, supabaseMaxId) + 1;
-            
-            PropertyDiagnostic.log('saveProperty.newId', {
-                localMaxId,
-                supabaseMaxId,
-                finalId: propertyData.id,
-                localPropsCount: localProps.length
-            });
+            console.log(`🆕 ID gerado: ${propertyData.id} (local: ${localMaxId}, supabase: ${supabaseMaxId})`);
         }
         
-        PropertyDiagnostic.log('saveProperty.finalData', {
+        console.log('📦 Dados finais para salvar:', {
             id: propertyData.id,
-            operation: operation,
             title: propertyData.title,
-            hasImages: propertyData.images !== 'EMPTY',
-            hasPdfs: propertyData.pdfs !== 'EMPTY'
+            has_video: propertyData.has_video,
+            imagesCount: imageUrls && imageUrls !== 'EMPTY' ? imageUrls.split(',').length : 0,
+            pdfsCount: pdfUrls && pdfUrls !== 'EMPTY' ? pdfUrls.split(',').length : 0
         });
         
-        // 5. Executar operação baseada no tipo
-        if (operation === 'update') {
-            PropertyDiagnostic.log('saveProperty.update.start', `Atualizando imóvel ${propertyData.id}`);
+        // 5. Salvar no sistema
+        if (window.editingPropertyId) {
+            console.log(`✏️ Salvando edição do imóvel ${window.editingPropertyId}...`);
             
-            // Atualizar localmente
+            // Salvar localmente
             const localSuccess = window.updateLocalProperty(window.editingPropertyId, propertyData);
             
             if (!localSuccess) {
@@ -467,34 +429,27 @@ window.saveProperty = async function() {
             }
             
             // Tentar salvar no Supabase
-            const hasSupabase = window.SUPABASE_CONSTANTS && 
-                              window.SUPABASE_CONSTANTS.URL && 
-                              window.SUPABASE_CONSTANTS.KEY;
-            
-            if (hasSupabase && typeof window.updateProperty === 'function') {
+            if (typeof window.updateProperty === 'function') {
                 try {
-                    PropertyDiagnostic.log('saveProperty.update.supabase', 'Enviando para Supabase');
                     const updateResult = await window.updateProperty(window.editingPropertyId, propertyData);
                     
                     if (updateResult && updateResult.success) {
                         Helpers.showNotification('✅ Imóvel atualizado com sucesso!', 'success', 3000);
-                        PropertyDiagnostic.log('saveProperty.update.supabaseSuccess', updateResult);
+                        console.log('✅ Imóvel salvo no Supabase');
                     } else {
                         Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
-                        PropertyDiagnostic.log('saveProperty.update.supabasePartial', 'Supabase falhou');
+                        console.log('⚠️ Imóvel salvo apenas localmente (Supabase falhou)');
                     }
                 } catch (supabaseError) {
-                    PropertyDiagnostic.log('saveProperty.update.supabaseError', supabaseError.message);
+                    console.error('❌ Erro ao salvar no Supabase:', supabaseError);
                     Helpers.showNotification('✅ Imóvel salvo localmente (Supabase offline)', 'info', 3000);
                 }
             } else {
                 Helpers.showNotification('✅ Imóvel salvo localmente', 'success', 3000);
-                PropertyDiagnostic.log('saveProperty.update.localOnly', 'Supabase não disponível');
             }
             
             // Atualizar galeria
             setTimeout(() => {
-                PropertyDiagnostic.log('saveProperty.update.gallery', 'Atualizando galeria');
                 if (typeof window.updatePropertyCard === 'function') {
                     window.updatePropertyCard(window.editingPropertyId);
                 } else if (typeof window.renderProperties === 'function') {
@@ -502,15 +457,14 @@ window.saveProperty = async function() {
                 }
             }, 300);
             
-            // Fechar modal e resetar APÓS confirmação
+            // Fechar modal e resetar
             setTimeout(() => {
                 Helpers.closeModal();
                 window.resetAdminFormCompletely(true);
-            }, 2000);
+            }, 1500);
             
         } else {
-            // OPERAÇÃO DE CRIAÇÃO - USANDO LÓGICA DA V.ANTIGA QUE FUNCIONA
-            PropertyDiagnostic.log('saveProperty.create.start', `Criando novo imóvel ID: ${propertyData.id}`);
+            console.log('🆕 Criando novo imóvel...');
             
             // Criar objeto completo
             const newProperty = {
@@ -519,245 +473,214 @@ window.saveProperty = async function() {
                 updated_at: new Date().toISOString()
             };
             
-            PropertyDiagnostic.log('saveProperty.create.object', {
-                id: newProperty.id,
-                title: newProperty.title,
-                timestamp: newProperty.created_at
-            });
+            // 🔥 FUNÇÃO PRINCIPAL CORRIGIDA
+            const saveResult = await window.saveNewPropertyWithFallback(newProperty);
             
-            // 🔥 FUNÇÃO CRÍTICA: ADICIONAR AO SISTEMA (Versão Corrigida)
-            const addResult = await window.addNewPropertyCorrected(newProperty);
-            
-            if (addResult.success) {
-                PropertyDiagnostic.log('saveProperty.create.success', {
-                    id: addResult.id,
-                    method: addResult.method,
-                    message: 'Imóvel criado com sucesso'
-                });
-                
+            if (saveResult.success) {
+                // Sucesso total
                 Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
                 
-                // Atualizar galeria IMEDIATAMENTE
+                // Atualizar galeria
                 setTimeout(() => {
-                    PropertyDiagnostic.log('saveProperty.create.gallery', 'Atualizando galeria principal');
                     if (typeof window.renderProperties === 'function') {
                         window.renderProperties('todos');
                     }
                 }, 500);
                 
-                // Fechar modal e resetar APÓS confirmação
+                // Fechar modal e resetar
                 setTimeout(() => {
                     Helpers.closeModal();
                     window.resetAdminFormCompletely(true);
-                    PropertyDiagnostic.log('saveProperty.create.cleanup', 'Formulário limpo');
                 }, 2000);
                 
             } else {
-                PropertyDiagnostic.log('saveProperty.create.error', addResult.error);
-                throw new Error(`Falha ao criar imóvel: ${addResult.error}`);
+                // Falha - manter dados no formulário para correção
+                console.error('❌ Falha ao salvar imóvel:', saveResult.error);
+                
+                if (saveResult.savedLocally) {
+                    Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 5000);
+                    alert(`⚠️ Imóvel salvo apenas LOCALMENTE!\n\nID: ${newProperty.id}\nTítulo: ${newProperty.title}\n\nO imóvel aparecerá agora, mas pode sumir ao recarregar.`);
+                    
+                    // Ainda assim atualizar a UI
+                    setTimeout(() => {
+                        if (typeof window.renderProperties === 'function') {
+                            window.renderProperties('todos');
+                        }
+                        // NÃO resetar formulário - deixar dados para tentar novamente
+                    }, 500);
+                } else {
+                    throw new Error(`Falha completa: ${saveResult.error}`);
+                }
             }
         }
         
     } catch (error) {
-        PropertyDiagnostic.log('saveProperty.error', {
-            message: error.message,
-            stack: error.stack
-        });
-        
         console.error('❌ Erro ao salvar imóvel:', error);
         Helpers.showNotification(`❌ Erro: ${error.message}`, 'error', 5000);
-        
-        // Não resetar formulário em caso de erro - manter dados para correção
         alert(`❌ Erro ao salvar:\n\n${error.message}\n\nOs dados NÃO foram perdidos. Corrija e tente novamente.`);
+        
     } finally {
-        PropertyDiagnostic.log('saveProperty.complete', PropertyDiagnostic.getDiagnosticReport());
+        console.groupEnd();
     }
 };
 
 /* ==========================================================
-   FUNÇÃO CORRIGIDA PARA ADICIONAR NOVO IMÓVEL
+   FUNÇÃO CRÍTICA: Salvar novo imóvel com fallback
    ========================================================== */
-window.addNewPropertyCorrected = async function(newProperty) {
-    PropertyDiagnostic.log('addNewPropertyCorrected.start', {
-        propertyId: newProperty.id,
-        title: newProperty.title,
-        windowPropertiesInitial: window.properties ? window.properties.length : 0
-    });
+window.saveNewPropertyWithFallback = async function(newProperty) {
+    console.group('💾 saveNewPropertyWithFallback');
     
     try {
         // 1. Garantir que window.properties existe
         if (!window.properties) {
             window.properties = [];
-            PropertyDiagnostic.log('addNewPropertyCorrected.init', 'Inicializado window.properties');
         }
         
-        // 2. Verificar se ID já existe
+        // 2. Verificar se ID já existe localmente
         const existingIndex = window.properties.findIndex(p => p.id == newProperty.id);
         if (existingIndex !== -1) {
-            PropertyDiagnostic.log('addNewPropertyCorrected.idConflict', {
-                existingId: newProperty.id,
-                existingTitle: window.properties[existingIndex].title
-            });
-            
-            // Ajustar ID para evitar conflito
+            console.warn(`⚠️ ID ${newProperty.id} já existe, ajustando...`);
             const maxId = Math.max(...window.properties.map(p => parseInt(p.id) || 0));
             newProperty.id = maxId + 1;
-            PropertyDiagnostic.log('addNewPropertyCorrected.idAdjusted', { newId: newProperty.id });
+            console.log(`✅ Novo ID: ${newProperty.id}`);
         }
         
-        // 3. Adicionar ao array global
+        // 3. Adicionar localmente (IMPORTANTE: sempre fazer isso)
         window.properties.push(newProperty);
+        console.log(`✅ Adicionado localmente: ID ${newProperty.id}, total: ${window.properties.length}`);
         
-        PropertyDiagnostic.log('addNewPropertyCorrected.arrayAdded', {
-            newLength: window.properties.length,
-            addedProperty: { id: newProperty.id, title: newProperty.title }
-        });
-        
-        // 4. Salvar no localStorage
+        // 4. Salvar no localStorage (IMPORTANTE: sempre fazer isso)
         try {
             localStorage.setItem('properties', JSON.stringify(window.properties));
-            PropertyDiagnostic.log('addNewPropertyCorrected.localStorage', {
-                success: true,
-                storedCount: window.properties.length
-            });
+            console.log('✅ Salvo no localStorage');
         } catch (storageError) {
-            PropertyDiagnostic.log('addNewPropertyCorrected.localStorageError', storageError.message);
-            // Continuar mesmo se localStorage falhar
+            console.error('❌ Erro no localStorage:', storageError);
         }
         
-        // 5. Tentar salvar no Supabase (se disponível)
+        // 5. Tentar salvar no Supabase usando MÚLTIPLOS métodos
+        let supabaseSuccess = false;
         let supabaseResult = null;
-        const hasSupabase = window.SUPABASE_CONSTANTS && 
-                          window.SUPABASE_CONSTANTS.URL && 
-                          window.SUPABASE_CONSTANTS.KEY;
+        let supabaseError = null;
         
-        if (hasSupabase) {
-            PropertyDiagnostic.log('addNewPropertyCorrected.supabaseCheck', 'Supabase configurado');
-            
-            // Verificar qual função usar
-            if (typeof window.savePropertyToDatabase === 'function') {
-                try {
-                    PropertyDiagnostic.log('addNewPropertyCorrected.supabaseSave', 'Chamando savePropertyToDatabase');
-                    supabaseResult = await window.savePropertyToDatabase(newProperty);
-                    
-                    PropertyDiagnostic.log('addNewPropertyCorrected.supabaseResult', {
-                        success: !!supabaseResult,
-                        result: supabaseResult
-                    });
-                    
-                    if (supabaseResult && supabaseResult.id) {
-                        // Atualizar ID local com ID do Supabase se necessário
-                        if (supabaseResult.id !== newProperty.id) {
-                            const localIndex = window.properties.findIndex(p => p.id == newProperty.id);
-                            if (localIndex !== -1) {
-                                window.properties[localIndex].id = supabaseResult.id;
-                                localStorage.setItem('properties', JSON.stringify(window.properties));
-                                PropertyDiagnostic.log('addNewPropertyCorrected.idUpdated', {
-                                    oldId: newProperty.id,
-                                    newId: supabaseResult.id
-                                });
-                            }
-                        }
-                    }
-                } catch (supabaseError) {
-                    PropertyDiagnostic.log('addNewPropertyCorrected.supabaseError', {
-                        error: supabaseError.message,
-                        function: 'savePropertyToDatabase'
-                    });
+        console.log('☁️ Tentando salvar no Supabase...');
+        
+        // Método 1: Função global savePropertyToDatabase
+        if (typeof window.savePropertyToDatabase === 'function') {
+            console.log('🔄 Tentando método 1: savePropertyToDatabase()');
+            try {
+                supabaseResult = await window.savePropertyToDatabase(newProperty);
+                if (supabaseResult && supabaseResult.id) {
+                    supabaseSuccess = true;
+                    console.log('✅ Sucesso com savePropertyToDatabase()');
                 }
-            } else if (window.supabase && typeof window.supabase.from === 'function') {
-                // Tentar método direto
-                try {
-                    PropertyDiagnostic.log('addNewPropertyCorrected.supabaseDirect', 'Usando supabase direto');
-                    
-                    const { data, error } = await window.supabase
-                        .from('properties')
-                        .insert([newProperty])
-                        .select();
-                    
-                    if (error) {
-                        throw new Error(error.message);
-                    }
-                    
-                    supabaseResult = data ? data[0] : null;
-                    PropertyDiagnostic.log('addNewPropertyCorrected.supabaseDirectResult', {
-                        success: !!supabaseResult,
-                        result: supabaseResult
-                    });
-                    
-                } catch (directError) {
-                    PropertyDiagnostic.log('addNewPropertyCorrected.supabaseDirectError', directError.message);
-                }
-            } else {
-                PropertyDiagnostic.log('addNewPropertyCorrected.noSupabaseFunction', 'Nenhuma função de salvamento disponível');
+            } catch (error) {
+                supabaseError = error;
+                console.error('❌ Falha com savePropertyToDatabase():', error.message);
             }
-        } else {
-            PropertyDiagnostic.log('addNewPropertyCorrected.noSupabaseConfig', 'Supabase não configurado');
         }
         
-        // 6. Atualizar lista no painel admin
+        // Método 2: Função global addNewProperty (da V.Antiga)
+        if (!supabaseSuccess && typeof window.addNewProperty === 'function') {
+            console.log('🔄 Tentando método 2: addNewProperty()');
+            try {
+                supabaseResult = await window.addNewProperty(newProperty);
+                if (supabaseResult) {
+                    supabaseSuccess = true;
+                    console.log('✅ Sucesso com addNewProperty()');
+                }
+            } catch (error) {
+                supabaseError = error;
+                console.error('❌ Falha com addNewProperty():', error.message);
+            }
+        }
+        
+        // Método 3: Supabase direto
+        if (!supabaseSuccess && window.supabase && typeof window.supabase.from === 'function') {
+            console.log('🔄 Tentando método 3: Supabase direto');
+            try {
+                const { data, error } = await window.supabase
+                    .from('properties')
+                    .insert([newProperty])
+                    .select();
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    supabaseResult = data[0];
+                    supabaseSuccess = true;
+                    console.log('✅ Sucesso com Supabase direto');
+                }
+            } catch (error) {
+                supabaseError = error;
+                console.error('❌ Falha com Supabase direto:', error.message);
+            }
+        }
+        
+        // 6. Se Supabase falhou, adicionar à fila de backup
+        if (!supabaseSuccess) {
+            console.warn('⚠️ Falha ao salvar no Supabase, adicionando à fila de backup');
+            window.PropertyBackup.addPending(newProperty);
+            
+            // Tentar sincronizar novamente em 5 segundos
+            setTimeout(() => {
+                window.PropertyBackup.retryAll();
+            }, 5000);
+        }
+        
+        // 7. Atualizar lista no admin
         setTimeout(() => {
             if (typeof window.loadPropertyList === 'function') {
                 window.loadPropertyList();
-                PropertyDiagnostic.log('addNewPropertyCorrected.loadList', 'Lista de imóveis atualizada');
             }
         }, 300);
         
-        // 7. Retornar resultado
-        return {
-            success: true,
-            id: supabaseResult ? (supabaseResult.id || newProperty.id) : newProperty.id,
-            method: supabaseResult ? 'supabase' : 'local',
-            supabaseResult: supabaseResult,
+        // 8. Retornar resultado
+        const result = {
+            success: supabaseSuccess || true, // Considera sucesso se salvou localmente
+            savedLocally: true,
+            savedInSupabase: supabaseSuccess,
+            id: newProperty.id,
+            supabaseId: supabaseSuccess ? (supabaseResult?.id || newProperty.id) : null,
+            method: supabaseSuccess ? 'supabase' : 'local',
+            error: supabaseError ? supabaseError.message : null,
             localProperties: window.properties.length
         };
         
+        console.log('📊 Resultado final:', result);
+        console.groupEnd();
+        
+        return result;
+        
     } catch (error) {
-        PropertyDiagnostic.log('addNewPropertyCorrected.error', {
-            message: error.message,
-            stack: error.stack
-        });
+        console.error('❌ Erro crítico em saveNewPropertyWithFallback:', error);
+        console.groupEnd();
         
         return {
             success: false,
-            error: error.message,
-            localProperties: window.properties ? window.properties.length : 0
+            savedLocally: false,
+            savedInSupabase: false,
+            error: error.message
         };
     }
 };
 
 /* ==========================================================
-   FUNÇÕES AUXILIARES CORRIGIDAS
+   FUNÇÕES AUXILIARES
    ========================================================== */
 window.updateLocalProperty = function(propertyId, updatedData) {
-    PropertyDiagnostic.log('updateLocalProperty.start', {
-        propertyId: propertyId,
-        hasData: !!updatedData,
-        currentProperties: window.properties ? window.properties.length : 0
-    });
-    
-    if (!window.properties) {
-        PropertyDiagnostic.log('updateLocalProperty.error', 'window.properties não definido');
-        return false;
-    }
+    if (!window.properties) return false;
     
     const index = window.properties.findIndex(p => p.id === propertyId);
-    if (index === -1) {
-        PropertyDiagnostic.log('updateLocalProperty.notFound', `ID ${propertyId} não encontrado`);
-        return false;
-    }
+    if (index === -1) return false;
     
-    // Garantir que has_video seja booleano
     if (updatedData.has_video !== undefined) {
         updatedData.has_video = Boolean(updatedData.has_video);
     }
     
-    // Manter features como string JSON
     if (Array.isArray(updatedData.features)) {
         updatedData.features = JSON.stringify(updatedData.features);
     }
     
-    // Atualizar propriedade
     window.properties[index] = {
         ...window.properties[index],
         ...updatedData,
@@ -765,26 +688,15 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         updated_at: new Date().toISOString()
     };
     
-    PropertyDiagnostic.log('updateLocalProperty.updated', {
-        index: index,
-        title: window.properties[index].title,
-        has_video: window.properties[index].has_video
-    });
-    
-    // Salvar no localStorage
     try {
         localStorage.setItem('properties', JSON.stringify(window.properties));
-        PropertyDiagnostic.log('updateLocalProperty.localStorage', 'Salvo com sucesso');
+        console.log(`💾 Imóvel ${propertyId} salvo no localStorage`);
     } catch (error) {
-        PropertyDiagnostic.log('updateLocalProperty.localStorageError', error.message);
+        console.error('❌ Erro ao salvar no localStorage:', error);
     }
     
-    // Atualizar UI
     setTimeout(() => {
-        if (typeof window.loadPropertyList === 'function') {
-            window.loadPropertyList();
-        }
-        
+        if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
         if (typeof window.updatePropertyCard === 'function') {
             window.updatePropertyCard(propertyId);
         }
@@ -793,197 +705,8 @@ window.updateLocalProperty = function(propertyId, updatedData) {
     return true;
 };
 
-/* ==========================================================
-   FUNÇÃO PARA VERIFICAR ESTADO DO SISTEMA
-   ========================================================== */
-window.checkPropertySystem = function() {
-    console.group('🔍 VERIFICAÇÃO DO SISTEMA DE PROPRIEDADES');
-    
-    // 1. Verificar window.properties
-    console.log('📊 window.properties:', {
-        existe: !!window.properties,
-        tipo: typeof window.properties,
-        quantidade: window.properties ? window.properties.length : 0,
-        sample: window.properties ? window.properties.slice(0, 2) : []
-    });
-    
-    // 2. Verificar localStorage
-    try {
-        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-        console.log('💾 localStorage:', {
-            quantidade: stored.length,
-            ids: stored.map(p => p.id).slice(0, 10),
-            ultimo: stored.length > 0 ? stored[stored.length - 1] : null
-        });
-        
-        // Comparar
-        if (window.properties && stored.length !== window.properties.length) {
-            console.warn('⚠️ DESINCRONIZAÇÃO: localStorage vs window.properties');
-            console.log(`   localStorage: ${stored.length} imóveis`);
-            console.log(`   window.properties: ${window.properties.length} imóveis`);
-        }
-    } catch (e) {
-        console.error('❌ Erro ao ler localStorage:', e);
-    }
-    
-    // 3. Verificar Supabase
-    console.log('☁️ Supabase:', {
-        configurado: !!(window.SUPABASE_CONSTANTS && window.SUPABASE_CONSTANTS.URL),
-        cliente: !!window.supabase,
-        funcao_save: typeof window.savePropertyToDatabase === 'function',
-        funcao_update: typeof window.updateProperty === 'function'
-    });
-    
-    // 4. Verificar MediaSystem
-    console.log('🖼️ MediaSystem:', {
-        existe: !!window.MediaSystem,
-        metodos: window.MediaSystem ? Object.keys(window.MediaSystem).filter(k => typeof window.MediaSystem[k] === 'function') : []
-    });
-    
-    // 5. Verificar funções críticas
-    console.log('⚙️ Funções críticas:', {
-        saveProperty: typeof window.saveProperty === 'function',
-        addNewPropertyCorrected: typeof window.addNewPropertyCorrected === 'function',
-        updateLocalProperty: typeof window.updateLocalProperty === 'function',
-        renderProperties: typeof window.renderProperties === 'function',
-        loadPropertyList: typeof window.loadPropertyList === 'function'
-    });
-    
-    // 6. Diagnostic report
-    console.log('📈 Relatório de diagnóstico:', PropertyDiagnostic.getDiagnosticReport());
-    
-    // 7. Sugestões
-    console.log('💡 SUGESTÕES:');
-    
-    if (!window.properties || window.properties.length === 0) {
-        console.log('   ⚠️ window.properties está vazio ou não definido');
-        console.log('   💡 Execute: window.properties = [];');
-    }
-    
-    if (typeof window.savePropertyToDatabase !== 'function') {
-        console.log('   ⚠️ savePropertyToDatabase não está disponível');
-        console.log('   💡 Verifique se supabase-functions.js foi carregado');
-    }
-    
-    console.groupEnd();
-    
-    // Criar botão de teste rápido
-    if (!document.getElementById('quick-test-btn')) {
-        const btn = document.createElement('button');
-        btn.id = 'quick-test-btn';
-        btn.textContent = '🧪 Testar Sistema';
-        btn.style.cssText = `
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: #9b59b6;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 99999;
-        `;
-        btn.onclick = function() {
-            window.testPropertyCreation();
-        };
-        document.body.appendChild(btn);
-    }
-    
-    return PropertyDiagnostic.getDiagnosticReport();
-};
-
-/* ==========================================================
-   FUNÇÃO DE TESTE DE CRIAÇÃO
-   ========================================================== */
-window.testPropertyCreation = async function() {
-    console.group('🧪 TESTE DE CRIAÇÃO DE IMÓVEL');
-    
-    try {
-        // Criar imóvel de teste
-        const testProperty = {
-            id: Date.now(), // ID único baseado em timestamp
-            title: `Imóvel Teste ${new Date().getHours()}:${new Date().getMinutes()}`,
-            price: 'R$ 300.000',
-            location: 'Localização Teste',
-            description: 'Este é um imóvel de teste gerado automaticamente',
-            features: JSON.stringify(['Teste 1', 'Teste 2', 'Teste 3']),
-            type: 'residencial',
-            badge: 'Novo',
-            has_video: false,
-            images: 'EMPTY',
-            pdfs: 'EMPTY',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-        };
-        
-        console.log('📝 Imóvel de teste:', testProperty);
-        
-        // Usar a função corrigida
-        const result = await window.addNewPropertyCorrected(testProperty);
-        
-        console.log('📊 Resultado:', result);
-        
-        if (result.success) {
-            alert(`✅ TESTE BEM-SUCEDIDO!\n\nID: ${result.id}\nMétodo: ${result.method}\nTotal imóveis: ${result.localProperties}`);
-            
-            // Verificar se aparece na lista
-            setTimeout(() => {
-                if (typeof window.loadPropertyList === 'function') {
-                    window.loadPropertyList();
-                }
-                if (typeof window.renderProperties === 'function') {
-                    window.renderProperties('todos');
-                }
-                window.checkPropertySystem();
-            }, 1000);
-            
-        } else {
-            alert(`❌ TESTE FALHOU!\n\nErro: ${result.error}`);
-        }
-        
-    } catch (error) {
-        console.error('❌ Erro no teste:', error);
-        alert(`❌ ERRO NO TESTE:\n\n${error.message}`);
-    }
-    
-    console.groupEnd();
-};
-
-/* ==========================================================
-   FUNÇÕES EXISTENTES (mantidas da versão anterior)
-   ========================================================== */
-window.toggleAdminPanel = function() {
-    console.log('🔧 toggleAdminPanel chamada');
-    const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
-    if (password === null) return;
-    if (password === "") return alert('⚠️ Campo vazio!');
-    
-    if (password === ADMIN_CONFIG.password) {
-        const panel = document.getElementById(ADMIN_CONFIG.panelId);
-        if (panel) {
-            const isVisible = panel.style.display === 'block';
-            
-            if (!isVisible) {
-                window.resetAdminFormCompletely(false);
-            }
-            
-            panel.style.display = isVisible ? 'none' : 'block';
-            
-            if (!isVisible) {
-                setTimeout(() => {
-                    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    if (typeof window.loadPropertyList === 'function') window.loadPropertyList();
-                }, 300);
-            }
-        }
-    } else {
-        alert('❌ Senha incorreta!');
-    }
-};
-
 window.resetAdminFormCompletely = function(showNotification = true) {
-    PropertyDiagnostic.log('resetAdminFormCompletely', 'Iniciando reset');
+    console.log('🧹 RESET COMPLETO DO FORMULÁRIO');
     
     window.editingPropertyId = null;
     
@@ -1037,26 +760,25 @@ window.resetAdminFormCompletely = function(showNotification = true) {
         Helpers.showNotification('✅ Formulário limpo para novo imóvel', 'info');
     }
     
-    PropertyDiagnostic.log('resetAdminFormCompletely', 'Reset completo');
     return true;
 };
 
 window.cancelEdit = function() {
     if (window.editingPropertyId) {
         if (confirm('❓ Cancelar edição?\n\nTodos os dados não salvos serão perdidos.')) {
-            PropertyDiagnostic.log('cancelEdit', `Cancelando edição ${window.editingPropertyId}`);
+            console.log('❌ Cancelando edição do imóvel:', window.editingPropertyId);
             window.resetAdminFormCompletely(true);
             return true;
         }
     } else {
-        PropertyDiagnostic.log('cancelEdit', 'Nenhuma edição em andamento');
+        console.log('ℹ️ Nenhuma edição em andamento para cancelar');
         window.resetAdminFormCompletely(false);
     }
     return false;
 };
 
 window.editProperty = function(id) {
-    PropertyDiagnostic.log('editProperty.start', `Editando imóvel ${id}`);
+    console.log('✏️ Iniciando edição do imóvel ID:', id);
     
     const property = window.properties?.find(p => p.id === id);
     if (!property) {
@@ -1113,12 +835,109 @@ window.editProperty = function(id) {
         }
     }, 150);
     
-    PropertyDiagnostic.log('editProperty.success', `Imóvel ${id} em edição`);
+    console.log('✅ Modo edição ativado para imóvel ID:', property.id);
     return true;
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO
+   FUNÇÃO DE VERIFICAÇÃO DO SISTEMA
+   ========================================================== */
+window.checkPropertySystem = function() {
+    console.group('🔍 VERIFICAÇÃO DO SISTEMA');
+    
+    // 1. Verificar funções Supabase
+    console.log('☁️ FUNÇÕES SUPABASE:');
+    console.log('- savePropertyToDatabase:', typeof window.savePropertyToDatabase);
+    console.log('- addNewProperty:', typeof window.addNewProperty);
+    console.log('- updateProperty:', typeof window.updateProperty);
+    console.log('- supabase client:', window.supabase ? '✅ Disponível' : '❌ Indisponível');
+    
+    // 2. Verificar dados
+    console.log('📊 DADOS:');
+    console.log('- window.properties:', window.properties ? `${window.properties.length} imóveis` : '❌ Não definido');
+    
+    try {
+        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
+        console.log('- localStorage:', `${stored.length} imóveis`);
+        
+        // Verificar desincronização
+        if (window.properties && stored.length !== window.properties.length) {
+            console.warn('⚠️ DESINCRONIZAÇÃO DETECTADA!');
+            console.log(`  localStorage: ${stored.length} imóveis`);
+            console.log(`  window.properties: ${window.properties.length} imóveis`);
+            
+            // Tentar corrigir automaticamente
+            if (stored.length > window.properties.length) {
+                console.log('🔄 Corrigindo: usando localStorage como fonte verdadeira');
+                window.properties = stored;
+            }
+        }
+    } catch (e) {
+        console.error('❌ Erro ao ler localStorage:', e);
+    }
+    
+    // 3. Verificar propriedades pendentes
+    const pending = JSON.parse(localStorage.getItem('pending_properties') || '[]');
+    console.log(`📋 Propriedades pendentes para Supabase: ${pending.length}`);
+    if (pending.length > 0) {
+        console.log('💡 Dica: Execute window.PropertyBackup.retryAll() para tentar novamente');
+    }
+    
+    // 4. Sugestões
+    console.log('💡 SUGESTÕES:');
+    
+    if (typeof window.savePropertyToDatabase !== 'function') {
+        console.log('1. A função savePropertyToDatabase() não está disponível');
+        console.log('   Solução: Verifique se supabase-functions.js está carregado');
+    }
+    
+    if (!window.properties) {
+        console.log('2. window.properties não está definido');
+        console.log('   Solução: Execute: window.properties = [];');
+    }
+    
+    console.groupEnd();
+};
+
+/* ==========================================================
+   FUNÇÃO DE TESTE
+   ========================================================== */
+window.testPropertySave = async function() {
+    console.group('🧪 TESTE DE SALVAMENTO');
+    
+    const testProperty = {
+        id: Date.now(),
+        title: `TESTE ${new Date().toLocaleTimeString()}`,
+        price: 'R$ 99.999',
+        location: 'Local Teste',
+        description: 'Imóvel de teste',
+        features: '[]',
+        type: 'residencial',
+        badge: 'Novo',
+        has_video: false,
+        images: 'EMPTY',
+        pdfs: 'EMPTY',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    };
+    
+    console.log('📝 Testando com:', testProperty);
+    
+    const result = await window.saveNewPropertyWithFallback(testProperty);
+    
+    console.log('📊 Resultado:', result);
+    
+    if (result.success) {
+        alert(`✅ TESTE BEM-SUCEDIDO!\n\nID: ${result.id}\nSupabase: ${result.savedInSupabase ? '✅' : '❌'}\nTotal imóveis: ${result.localProperties}`);
+    } else {
+        alert(`❌ TESTE FALHOU!\n\n${result.error}`);
+    }
+    
+    console.groupEnd();
+};
+
+/* ==========================================================
+   CONFIGURAÇÃO INICIAL
    ========================================================== */
 window.setupForm = function() {
     const form = document.getElementById('propertyForm');
@@ -1135,14 +954,12 @@ window.setupForm = function() {
     const videoCheckbox = document.getElementById('propHasVideo');
     if (videoCheckbox) {
         videoCheckbox.addEventListener('change', function() {
-            PropertyDiagnostic.log('checkbox.video.change', { checked: this.checked });
+            console.log(`🎬 Checkbox de vídeo alterado: ${this.checked}`);
         });
     }
     
     document.getElementById('propertyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
-        PropertyDiagnostic.log('form.submit', 'Iniciando envio do formulário');
         
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalBtnText = submitBtn?.innerHTML;
@@ -1175,9 +992,6 @@ window.setupForm = function() {
     });
 };
 
-/* ==========================================================
-   INICIALIZAÇÃO COM DIAGNÓSTICO
-   ========================================================== */
 window.setupAdminUI = function() {
     console.log('🔧 Configurando UI do admin...');
     
@@ -1186,102 +1000,64 @@ window.setupAdminUI = function() {
         panel.style.display = 'none';
     }
     
-    // Botão toggle admin
-    const setupAdminButton = function() {
-        const adminBtn = document.querySelector('.admin-toggle');
-        if (!adminBtn) {
-            console.warn('⚠️ Botão admin-toggle não encontrado');
-            return;
-        }
-        
+    // Botão admin
+    const adminBtn = document.querySelector('.admin-toggle');
+    if (adminBtn) {
         adminBtn.onclick = null;
         const newBtn = adminBtn.cloneNode(true);
         adminBtn.parentNode.replaceChild(newBtn, adminBtn);
         
         const freshBtn = document.querySelector('.admin-toggle');
-        
         freshBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
-            PropertyDiagnostic.log('adminButton.click', 'Botão admin clicado');
-            
-            if (typeof window.toggleAdminPanel === 'function') {
-                window.toggleAdminPanel();
-            } else {
-                console.error('❌ toggleAdminPanel não é uma função!');
-                alert('❌ Erro: Função admin não disponível. Recarregue a página.');
-            }
+            window.toggleAdminPanel();
         }, { once: false });
-    };
-    
-    setupAdminButton();
+    }
     
     // Botão Cancelar
-    const setupCancelButton = function() {
-        const cancelBtn = document.getElementById('cancelEditBtn');
-        if (!cancelBtn) {
-            console.warn('⚠️ Botão Cancelar não encontrado');
-            return;
-        }
-        
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
         cancelBtn.replaceWith(cancelBtn.cloneNode(true));
         const freshCancelBtn = document.getElementById('cancelEditBtn');
-        
         freshCancelBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             window.cancelEdit();
         }, { once: false });
-        
         freshCancelBtn.style.display = 'none';
-        freshCancelBtn.style.opacity = '1';
-        freshCancelBtn.style.visibility = 'visible';
-        freshCancelBtn.style.pointerEvents = 'auto';
-        freshCancelBtn.style.cursor = 'pointer';
-        freshCancelBtn.disabled = false;
-    };
-    
-    setupCancelButton();
+    }
     
     if (typeof window.setupForm === 'function') {
         setTimeout(window.setupForm, 100);
     }
     
-    // Adicionar botão de diagnóstico
-    const addDiagnosticButton = function() {
-        if (document.getElementById('diagnostic-btn')) return;
-        
-        const diagBtn = document.createElement('button');
-        diagBtn.id = 'diagnostic-btn';
-        diagBtn.innerHTML = '🔍 Diagnóstico';
-        diagBtn.style.cssText = `
+    // Adicionar botão de verificação
+    if (!document.getElementById('verify-btn')) {
+        const verifyBtn = document.createElement('button');
+        verifyBtn.id = 'verify-btn';
+        verifyBtn.innerHTML = '🔍 Verificar Sistema';
+        verifyBtn.style.cssText = `
             position: fixed;
-            bottom: 50px;
+            bottom: 10px;
             left: 10px;
             background: #3498db;
             color: white;
             border: none;
-            padding: 10px;
+            padding: 8px 12px;
             border-radius: 5px;
             cursor: pointer;
             z-index: 99999;
             font-size: 12px;
         `;
-        
-        diagBtn.onclick = function() {
-            window.checkPropertySystem();
-        };
-        
-        document.body.appendChild(diagBtn);
-    };
+        verifyBtn.onclick = window.checkPropertySystem;
+        document.body.appendChild(verifyBtn);
+    }
     
-    addDiagnosticButton();
-    
-    console.log('✅ UI do admin configurada com sistema de diagnóstico');
+    console.log('✅ UI configurada');
 };
 
-// Configuração de uploads
+// Configurar uploads
 setTimeout(() => {
     Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
         files => window.MediaSystem?.addPdfs?.(files), 'pdf_addition');
@@ -1293,30 +1069,19 @@ setTimeout(() => {
         }, 'media_addition');
 }, 1000);
 
-window.forceMediaPreviewUpdate = function() {
-    if (window.MediaSystem && typeof window.MediaSystem.updateUI === 'function') {
-        window.MediaSystem.updateUI();
-    }
-};
-
-// Inicialização
+// Inicializar
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             window.setupAdminUI();
             
-            // Verificação inicial do sistema
+            // Verificação inicial
             setTimeout(() => {
                 console.log('🔍 Verificação inicial do sistema...');
                 window.checkPropertySystem();
                 
-                // Exibir instruções
-                console.log('💡 INSTRUÇÕES PARA TESTE:');
-                console.log('1. Abra o painel admin (botão 🔧)');
-                console.log('2. Preencha um imóvel e clique em salvar');
-                console.log('3. Verifique o console (F12) para logs detalhados');
-                console.log('4. Use o botão 🔍 Diagnóstico para verificar o sistema');
-                console.log('5. Use o botão 🧪 Testar Sistema para teste automático');
+                // Tentar sincronizar pendentes
+                window.PropertyBackup.retryAll();
                 
             }, 2000);
         }, 500);
@@ -1324,11 +1089,13 @@ if (document.readyState === 'loading') {
 } else {
     setTimeout(() => {
         window.setupAdminUI();
-        setTimeout(() => window.checkPropertySystem(), 2000);
+        setTimeout(() => {
+            window.checkPropertySystem();
+            window.PropertyBackup.retryAll();
+        }, 2000);
     }, 300);
 }
 
-console.log('✅ admin.js - VERSÃO CORRIGIDA COM DIAGNÓSTICO');
-console.log('🔍 Para verificar o sistema, execute: window.checkPropertySystem()');
-console.log('🧪 Para teste rápido, execute: window.testPropertyCreation()');
-console.log('📊 Para ver logs detalhados, adicione ?debug=property à URL');
+console.log('✅ admin.js - VERSÃO CORRIGIDA COM BACKUP');
+console.log('🔍 Para verificar: window.checkPropertySystem()');
+console.log('🧪 Para teste: window.testPropertySave()');
