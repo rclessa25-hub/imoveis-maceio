@@ -1,5 +1,5 @@
 // js/modules/gallery.js - Sistema de galeria de fotos MOBILE FIRST
-console.log('🚀 gallery.js carregado - Sistema de Galeria');
+console.log('🚀 gallery.js carregado - Sistema de Galeria (CSS otimizado)');
 
 // ========== VARIÁVEIS GLOBAIS DA GALERIA ==========
 window.currentGalleryImages = [];
@@ -7,285 +7,6 @@ window.currentGalleryIndex = 0;
 window.touchStartX = 0;
 window.touchEndX = 0;
 window.SWIPE_THRESHOLD = 50;
-
-// ========== ESTILOS DA GALERIA (MOBILE FIRST) ==========
-window.galleryStyles = `
-    /* Estilos específicos da galeria - MOBILE FIRST */
-    .property-gallery-container {
-        position: relative;
-        width: 100%;
-        height: 250px;
-        overflow: hidden;
-        cursor: pointer;
-    }
-    
-    .property-gallery-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-    
-    .property-gallery-image:hover {
-        transform: scale(1.02);
-    }
-    
-    /* Controles da galeria MOBILE */
-    .gallery-controls {
-        position: absolute;
-        bottom: 10px;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        z-index: 5;
-        padding: 0 10px;
-    }
-    
-    .gallery-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.5);
-        border: 1px solid rgba(0, 0, 0, 0.3);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        flex-shrink: 0;
-    }
-    
-    .gallery-dot.active {
-        background: white;
-        transform: scale(1.2);
-    }
-    
-    /* Indicador de múltiplas fotos (MOBILE) */
-    .gallery-indicator-mobile {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        z-index: 5;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    /* Modal da galeria FULLSCREEN - MOBILE FIRST */
-    .gallery-modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.95);
-        z-index: 10000;
-        touch-action: pan-y pinch-zoom;
-    }
-    
-    .gallery-modal-content {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    /* Imagem principal no modal */
-    .gallery-modal-image {
-        max-width: 100%;
-        max-height: 70vh;
-        object-fit: contain;
-        margin: 0 auto;
-        display: block;
-        -webkit-user-select: none;
-        user-select: none;
-        touch-action: manipulation;
-    }
-    
-    /* Controles do modal MOBILE */
-    .gallery-modal-controls {
-        position: absolute;
-        bottom: 20px;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 15px;
-        z-index: 10;
-        padding: 0 20px;
-    }
-    
-    .gallery-modal-btn {
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        color: #333;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    }
-    
-    .gallery-modal-btn:active {
-        transform: scale(0.95);
-        background: white;
-    }
-    
-    .gallery-modal-close {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        background: rgba(255, 255, 255, 0.9);
-        border: none;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        color: #333;
-        cursor: pointer;
-        z-index: 10;
-        transition: all 0.3s ease;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    }
-    
-    .gallery-modal-close:active {
-        transform: scale(0.95);
-        background: white;
-    }
-    
-    /* Contador no modal */
-    .gallery-counter {
-        color: white;
-        font-size: 0.9rem;
-        font-weight: 600;
-        background: rgba(0, 0, 0, 0.5);
-        padding: 6px 12px;
-        border-radius: 20px;
-        min-width: 70px;
-        text-align: center;
-    }
-    
-    /* Swipe para mobile */
-    .gallery-swipe-area {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 5;
-    }
-    
-    /* Ícone de expansão na imagem principal */
-    .gallery-expand-icon {
-        position: absolute;
-        bottom: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.7);
-        color: white;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-        z-index: 5;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .gallery-expand-icon:hover {
-        background: rgba(0, 0, 0, 0.9);
-        transform: scale(1.1);
-    }
-    
-    /* Para Desktop - ajustes */
-    @media (min-width: 768px) {
-        .gallery-indicator-mobile {
-            top: 15px;
-            right: 15px;
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-        
-        .gallery-controls {
-            bottom: 15px;
-            gap: 10px;
-        }
-        
-        .gallery-dot {
-            width: 10px;
-            height: 10px;
-        }
-        
-        .gallery-modal-btn {
-            width: 50px;
-            height: 50px;
-            font-size: 1.3rem;
-        }
-        
-        .gallery-modal-close {
-            width: 50px;
-            height: 50px;
-            font-size: 1.5rem;
-            top: 30px;
-            right: 30px;
-        }
-        
-        .gallery-counter {
-            font-size: 1rem;
-            padding: 8px 16px;
-        }
-    }
-    
-    /* Animações */
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    
-    .gallery-modal {
-        animation: fadeIn 0.3s ease;
-    }
-    
-    /* Melhorias de acessibilidade */
-    .gallery-modal-btn:focus,
-    .gallery-modal-close:focus {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-    }
-    
-    /* Prevenção de seleção de texto */
-    .gallery-modal-content {
-        -webkit-user-select: none;
-        user-select: none;
-    }
-`;
 
 // ========== FUNÇÕES BÁSICAS DA GALERIA ==========
 
@@ -722,10 +443,8 @@ window.validateGalleryModule = function() {
 window.initializeGalleryModule = function() {
     console.log('🚀 Inicializando módulo da galeria...');
     
-    // Adicionar estilos da galeria
-    const styleSheet = document.createElement("style");
-    styleSheet.textContent = window.galleryStyles;
-    document.head.appendChild(styleSheet);
+    // NOTA: Estilos agora são carregados somente pelo gallery.css
+    // window.galleryStyles foi REMOVIDO para eliminar duplicação
     
     // Configurar eventos da galeria
     window.setupGalleryEvents();
@@ -740,8 +459,27 @@ window.initializeGalleryModule = function() {
     // Validar módulo
     setTimeout(window.validateGalleryModule, 500);
     
-    console.log('✅ Módulo da galeria inicializado');
+    console.log('✅ Módulo da galeria inicializado (CSS otimizado)');
 };
 
+// ========== VERIFICAÇÃO DE CSS (NOVA ADIÇÃO) ==========
+
+setTimeout(() => {
+    console.group('🔍 VERIFICAÇÃO DE CSS DA GALERIA');
+    console.log('✅ CSS carregado externamente:', !!document.querySelector('link[href*="gallery.css"]'));
+    console.log('✅ Estilos inline removidos:', !window.galleryStyles);
+    
+    // Teste de seletor crítico
+    const testElement = document.createElement('div');
+    testElement.className = 'video-indicator';
+    document.body.appendChild(testElement);
+    
+    const computedStyle = window.getComputedStyle(testElement);
+    console.log('✅ video-indicator tem top 35px?', computedStyle.top.includes('35'));
+    
+    testElement.remove();
+    console.groupEnd();
+}, 1000);
+
 // ========== EXPORT DO MÓDULO ==========
-console.log('✅ gallery.js completamente carregado e pronto');
+console.log('✅ gallery.js completamente carregado e pronto (CSS otimizado)');
