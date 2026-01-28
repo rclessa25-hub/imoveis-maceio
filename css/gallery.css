@@ -72,7 +72,7 @@
 /* ========== CORREÇÃO: INDICADOR DE VÍDEO REBAIXADO ========== */
 .video-indicator {
     position: absolute !important;
-    top: 35px !important; /* REBAIXADO: estava 10px, agora 100px */
+    top: 35px !important; /* REBAIXADO: estava 10px, agora 35px */
     right: 10px !important;
     background: rgba(0, 0, 0, 0.7) !important;
     color: white !important;
@@ -95,6 +95,11 @@
     100% { opacity: 0.8; transform: scale(1); }
 }
 
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 /* Modal da galeria FULLSCREEN - MOBILE FIRST */
 .gallery-modal {
     display: none;
@@ -106,15 +111,6 @@
     background: rgba(0, 0, 0, 0.95);
     z-index: 10000;
     touch-action: pan-y pinch-zoom;
-}
-
-/* Animação */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.gallery-modal {
     animation: fadeIn 0.3s ease;
 }
 
