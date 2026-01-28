@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO COMPLETA E FUNCIONAL
-console.log('🔧 admin.js - VERSÃO COMPLETA COM TODAS FUNÇÕES');
+// js/modules/admin.js - VERSÃO COMPLETA COM FUNÇÕES CENTRALIZADAS NO SHAREDCORE
+console.log('🔧 admin.js - VERSÃO COMPLETA COM TODAS FUNÇÕES (USANDO SHAREDCORE)');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -14,7 +14,7 @@ const ADMIN_CONFIG = {
 window.editingPropertyId = null;
 
 /* ==========================================================
-   HELPER FUNCTIONS
+   HELPER FUNCTIONS (AGORA USANDO SHAREDCORE)
    ========================================================== */
 const Helpers = {
     format: {
@@ -25,60 +25,22 @@ const Helpers = {
             return value && value.toString ? value.toString() : '';
         },
         features: (value) => {
-            if (!value) return '';
-            
-            try {
-                if (Array.isArray(value)) {
-                    return value.filter(f => f && f.trim()).join(', ');
-                }
-                
-                if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
-                    try {
-                        const parsed = JSON.parse(value);
-                        if (Array.isArray(parsed)) {
-                            return parsed.filter(f => f && f.trim()).join(', ');
-                        }
-                    } catch (e) {
-                        return value.replace(/[\[\]"]/g, '').replace(/\s*,\s*/g, ', ');
-                    }
-                }
-                
-                let cleaned = value.toString();
-                cleaned = cleaned.replace(/[\[\]"]/g, '');
-                cleaned = cleaned.replace(/\s*,\s*/g, ', ');
-                
-                return cleaned;
-            } catch (error) {
-                console.error('❌ Erro ao formatar features:', error);
-                return '';
+            // DELEGAR PARA SHAREDCORE
+            if (window.SharedCore?.formatFeaturesForDisplay) {
+                return window.SharedCore.formatFeaturesForDisplay(value);
             }
+            // Fallback básico
+            return value || '';
         }
     },
     
     parseFeatures: (value) => {
-        if (!value) return '[]';
-        
-        try {
-            if (Array.isArray(value)) {
-                return JSON.stringify(value.filter(f => f && f.trim()));
-            }
-            
-            if (typeof value === 'string' && value.trim().startsWith('[') && value.trim().endsWith(']')) {
-                try {
-                    JSON.parse(value);
-                    return value;
-                } catch (e) {}
-            }
-            
-            const featuresArray = value.split(',')
-                .map(f => f.trim())
-                .filter(f => f && f !== '');
-            
-            return JSON.stringify(featuresArray);
-        } catch (error) {
-            console.error('❌ Erro ao parsear features:', error);
-            return '[]';
+        // DELEGAR PARA SHAREDCORE
+        if (window.SharedCore?.parseFeaturesForStorage) {
+            return window.SharedCore.parseFeaturesForStorage(value);
         }
+        // Fallback básico
+        return value ? JSON.stringify(value.split(',').map(f => f.trim()).filter(f => f)) : '[]';
     },
     
     updateUI: {
@@ -183,7 +145,8 @@ const Helpers = {
         
         const videoCheckbox = document.getElementById('propHasVideo');
         if (videoCheckbox) {
-            formData.has_video = videoCheckbox.checked;
+            // Usar SharedCore para garantir formato booleano correto
+            formData.has_video = window.SharedCore?.ensureBooleanVideo?.(videoCheckbox.checked) || false;
         } else {
             formData.has_video = false;
         }
@@ -347,10 +310,7 @@ window.editProperty = function(id) {
         'propFeatures': Helpers.format.features(property.features) || '',
         'propType': property.type || 'residencial',
         'propBadge': property.badge || 'Novo',
-        'propHasVideo': property.has_video === true || 
-                       property.has_video === 'true' || 
-                       property.has_video === 1 || 
-                       property.has_video === '1'
+        'propHasVideo': window.SharedCore?.ensureBooleanVideo?.(property.has_video) || false
     };
     
     Object.entries(fieldMappings).forEach(([fieldId, value]) => {
@@ -407,7 +367,7 @@ window.saveProperty = async function() {
             throw new Error('Preencha Título, Preço e Localização!');
         }
         
-        // Formatar dados
+        // Formatar dados usando SharedCore
         propertyData.price = Helpers.format.price(propertyData.price);
         
         if (propertyData.features) {
@@ -416,7 +376,8 @@ window.saveProperty = async function() {
             propertyData.features = '[]';
         }
         
-        propertyData.has_video = Boolean(propertyData.has_video);
+        // Já está formatado pelo getFormData usando SharedCore
+        console.log('✅ Vídeo já processado pelo SharedCore:', propertyData.has_video);
         
         // 2. Processar mídias
         let imageUrls = '';
@@ -742,6 +703,7 @@ window.setupForm = function() {
     if (videoCheckbox) {
         videoCheckbox.addEventListener('change', function() {
             console.log(`🎬 Checkbox de vídeo alterado: ${this.checked}`);
+            console.log(`🔍 Processado pelo SharedCore: ${window.SharedCore?.ensureBooleanVideo?.(this.checked)}`);
         });
     }
     
@@ -969,6 +931,6 @@ if (document.readyState === 'loading') {
     initializeAdmin();
 }
 
-console.log('✅ admin.js - VERSÃO COMPLETA E FUNCIONAL CARREGADA');
+console.log('✅ admin.js - VERSÃO COMPLETA E FUNCIONAL CARREGADA (USANDO SHAREDCORE)');
 console.log('🔍 Para verificar: window.checkPropertySystem()');
 console.log('🔧 Para abrir painel: window.toggleAdminPanel()');
