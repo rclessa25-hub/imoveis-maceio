@@ -36,12 +36,12 @@
     border-left: 4px solid var(--primary);
 }
 
-/* GARANTIR POSICIONAMENTO CONSISTENTE DO BOTÃO PDF */
+/* GARANTIR CONSISTÊNCIA DO BOTÃO PDF EM TODOS OS CARDS */
 .pdf-access {
     position: absolute !important;
     bottom: 10px !important;
     right: 10px !important;
-    background: rgba(220, 53, 69, 0.9) !important;
+    background: rgba(220, 53, 69, 0.9) !important; /* VERMELHO */
     color: white !important;
     border: none !important;
     border-radius: 50% !important;
@@ -63,31 +63,29 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
 }
 
-/* GARANTIR POSICIONAMENTO CONSISTENTE DO INDICADOR DE VÍDEO */
+/* GARANTIR CONSISTÊNCIA DO INDICADOR DE VÍDEO EM TODOS OS CARDS */
 .video-indicator {
     position: absolute !important;
-    top: 35px !important; /* AJUSTADO: estava 10px, agora 35px para não sobrepor contador */
+    top: 35px !important; /* ABAIXO DO CONTADOR DE IMAGENS */
     right: 10px !important;
-    background: rgba(0, 0, 0, 0.8) !important;
-    color: white !important;
-    padding: 6px 12px !important;
-    border-radius: 6px !important;
+    background: rgba(0, 0, 0, 0.7) !important; /* PRETO */
+    color: white !important; /* TEXTO BRANCO */
+    padding: 5px 10px !important;
+    border-radius: 4px !important;
     font-size: 12px !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 5px !important;
     z-index: 9 !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.4) !important;
-    border: 1px solid rgba(255,255,255,0.3) !important;
-    backdrop-filter: blur(5px) !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    backdrop-filter: blur(4px) !important;
 }
 
+/* GARANTIR QUE O ÍCONE DO VÍDEO SEJA BRANCO (NÃO AMARELO) */
 .video-indicator i {
-    color: #FFD700 !important;
-    font-size: 14px !important;
+    color: white !important;
+    font-size: 12px !important;
 }
 
 /* ÍCONE DO PDF (ESTILO LEGADO - MANTIDO PARA COMPATIBILIDADE) */
