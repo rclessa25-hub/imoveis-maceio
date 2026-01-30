@@ -36,60 +36,8 @@
     border-left: 4px solid var(--primary);
 }
 
-/* GARANTIR CONSISTÊNCIA DO BOTÃO PDF EM TODOS OS CARDS */
+/* ÍCONE DO PDF - PADRÃO DESEJADO */
 .pdf-access {
-    position: absolute !important;
-    bottom: 10px !important;
-    right: 10px !important;
-    background: rgba(220, 53, 69, 0.9) !important; /* VERMELHO */
-    color: white !important;
-    border: none !important;
-    border-radius: 50% !important;
-    width: 40px !important;
-    height: 40px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    z-index: 8 !important;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-    transition: all 0.3s ease !important;
-    font-size: 18px !important;
-}
-
-.pdf-access:hover {
-    background: rgba(220, 53, 69, 1) !important;
-    transform: scale(1.1) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
-}
-
-/* GARANTIR CONSISTÊNCIA DO INDICADOR DE VÍDEO EM TODOS OS CARDS */
-.video-indicator {
-    position: absolute !important;
-    top: 35px !important; /* ABAIXO DO CONTADOR DE IMAGENS */
-    right: 10px !important;
-    background: rgba(0, 0, 0, 0.7) !important; /* PRETO */
-    color: white !important; /* TEXTO BRANCO */
-    padding: 5px 10px !important;
-    border-radius: 4px !important;
-    font-size: 12px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 5px !important;
-    z-index: 9 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
-    border: 1px solid rgba(255,255,255,0.2) !important;
-    backdrop-filter: blur(4px) !important;
-}
-
-/* GARANTIR QUE O ÍCONE DO VÍDEO SEJA BRANCO (NÃO AMARELO) */
-.video-indicator i {
-    color: white !important;
-    font-size: 12px !important;
-}
-
-/* ÍCONE DO PDF (ESTILO LEGADO - MANTIDO PARA COMPATIBILIDADE) */
-.pdf-access.legacy {
     position: absolute;
     bottom: 2px;
     right: 35px;
@@ -110,11 +58,35 @@
     border: 1px solid rgba(0,0,0,0.15);
 }
 
-.pdf-access.legacy:hover {
+.pdf-access:hover {
     background: white;
     transform: scale(1.1);
     box-shadow: 0 3px 12px rgba(0,0,0,0.4);
     color: #1a5276;
+}
+
+/* INDICADOR DE VÍDEO CONSISTENTE */
+.video-indicator {
+    position: absolute !important;
+    top: 35px !important;
+    right: 10px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    padding: 5px 10px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    z-index: 9 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+.video-indicator i {
+    color: white !important;
+    font-size: 12px !important;
 }
 
 .pdf-modal {
