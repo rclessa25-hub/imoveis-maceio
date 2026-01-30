@@ -31,20 +31,69 @@ window.createPropertyGallery = function(property) {
     if (imageUrls.length <= 1) {
         return `
             <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-                <img src="${firstImageUrl}" 
-                     style="width: 100%; height: 100%; object-fit: cover;"
-                     alt="${property.title}"
-                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
-                ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-                ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
-                ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
+                <div class="property-gallery-container" onclick="openGallery(${property.id})">
+                    <img src="${firstImageUrl}" 
+                         class="property-gallery-image"
+                         alt="${property.title}"
+                         onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
+                </div>
                 
+                ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                
+                <!-- INDICADOR DE VÍDEO COM MESMA CLASSE DO TEMPLATE DE MÚLTIPLAS IMAGENS -->
+                ${property.has_video ? `
+                    <div class="video-indicator pulsing" style="
+                        position: absolute;
+                        top: 35px !important;
+                        right: 10px !important;
+                        background: rgba(0, 0, 0, 0.8);
+                        color: white;
+                        padding: 6px 12px;
+                        border-radius: 6px;
+                        font-size: 12px;
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        z-index: 9;
+                        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+                        border: 1px solid rgba(255,255,255,0.3);
+                        backdrop-filter: blur(5px);
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    ">
+                        <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
+                        <span>TEM VÍDEO</span>
+                    </div>
+                ` : ''}
+                
+                <!-- BOTÃO PDF COM MESMA POSIÇÃO DO TEMPLATE DE MÚLTIPLAS IMAGENS -->
                 ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                     `<button class="pdf-access" 
-                            onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})" 
+                            onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})"
+                            style="
+                                position: absolute;
+                                bottom: 10px;
+                                right: 10px;
+                                background: rgba(220, 53, 69, 0.9);
+                                color: white;
+                                border: none;
+                                border-radius: 50%;
+                                width: 40px;
+                                height: 40px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                z-index: 8;
+                                box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                                transition: all 0.3s ease;
+                            "
                             title="Documentos do imóvel (senha: doc123)">
-                        <i class="fas fa-file-pdf"></i>
+                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
                     </button>` : ''}
+                
+                ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
             </div>
         `;
     }
@@ -80,14 +129,58 @@ window.createPropertyGallery = function(property) {
             </div>
             
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
-            ${property.has_video ? `<div class="video-indicator"><i class="fas fa-video"></i> TEM VÍDEO</div>` : ''}
             
-            <!-- Botão PDF CORRIGIDO - SEM CONFLITO DE EVENTOS -->
+            <!-- INDICADOR DE VÍDEO COM MESMA CLASSE DO TEMPLATE DE UMA IMAGEM -->
+            ${property.has_video ? `
+                <div class="video-indicator pulsing" style="
+                    position: absolute;
+                    top: 35px !important;
+                    right: 10px !important;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    z-index: 9;
+                    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+                    border: 1px solid rgba(255,255,255,0.3);
+                    backdrop-filter: blur(5px);
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                ">
+                    <i class="fas fa-video" style="color: #FFD700; font-size: 14px;"></i>
+                    <span>TEM VÍDEO</span>
+                </div>
+            ` : ''}
+            
+            <!-- Botão PDF COM ESTILO EXPLÍCITO (garantir consistência) -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
                     onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id});"
+                    style="
+                        position: absolute;
+                        bottom: 10px;
+                        right: 10px;
+                        background: rgba(220, 53, 69, 0.9);
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        z-index: 8;
+                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                        transition: all 0.3s ease;
+                    "
                     title="Documentos do imóvel (senha: doc123)">
-                    <i class="fas fa-file-pdf"></i>
+                    <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
                 </button>` : ''}
         </div>
     `;
