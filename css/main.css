@@ -306,12 +306,12 @@ body {
     box-shadow: 0 5px 15px rgba(0, 119, 182, 0.3);
 }
 
-/* ========== INDICADOR DE VÍDEO (PADRÃO CORRETO - BRANCO, NÃO AMARELO) ========== */
+/* ========== INDICADOR DE VÍDEO (PADRÃO CORRETO) ========== */
 .video-indicator {
     position: absolute !important;
     top: 35px !important;
     right: 10px !important;
-    background: rgba(0, 0, 0, 0.7) !important; /* PRETO - não amarelo */
+    background: rgba(0, 0, 0, 0.7) !important;
     color: white !important;
     padding: 5px 10px !important;
     border-radius: 4px !important;
@@ -326,7 +326,7 @@ body {
 }
 
 .video-indicator i {
-    color: white !important; /* ÍCONE BRANCO - não amarelo */
+    color: white !important;
     font-size: 12px !important;
 }
 
@@ -491,32 +491,6 @@ body {
 
 .image-preview-container {
     pointer-events: auto;
-}
-
-/* ========== BOTÃO PDF CONSISTENTE ========== */
-.pdf-access {
-    position: absolute !important;
-    bottom: 10px !important;
-    right: 10px !important;
-    background: rgba(220, 53, 69, 0.9) !important; /* VERMELHO */
-    color: white !important;
-    border: none !important;
-    border-radius: 50% !important;
-    width: 40px !important;
-    height: 40px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    z-index: 8 !important;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.3) !important;
-    transition: all 0.3s ease !important;
-}
-
-.pdf-access:hover {
-    background: rgba(220, 53, 69, 1) !important;
-    transform: scale(1.1) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
 }
 
 /* ========== RESPONSIVIDADE GERAL ========== */
