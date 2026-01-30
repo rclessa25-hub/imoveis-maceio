@@ -64,30 +64,32 @@ window.createPropertyGallery = function(property) {
                     </div>
                 ` : ''}
                 
-                <!-- BOTÃO PDF COM PADRÃO IDÊNTICO AO DE MÚLTIPLAS IMAGENS -->
+                <!-- BOTÃO PDF COM PADRÃO DESEJADO (branco com ícone azul) -->
                 ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                     `<button class="pdf-access" 
                             onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})"
                             style="
                                 position: absolute;
-                                bottom: 10px;
-                                right: 10px;
-                                background: rgba(220, 53, 69, 0.9);
-                                color: white;
+                                bottom: 2px;
+                                right: 35px;
+                                background: rgba(255, 255, 255, 0.95);
                                 border: none;
                                 border-radius: 50%;
-                                width: 40px;
-                                height: 40px;
+                                width: 28px;
+                                height: 28px;
+                                cursor: pointer;
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                cursor: pointer;
-                                z-index: 8;
-                                box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                                font-size: 0.75rem;
+                                color: #1a5276;
                                 transition: all 0.3s ease;
+                                z-index: 15;
+                                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                                border: 1px solid rgba(0,0,0,0.15);
                             "
                             title="Documentos do imóvel (senha: doc123)">
-                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                        <i class="fas fa-file-pdf"></i>
                     </button>` : ''}
                 
                 ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
@@ -127,7 +129,7 @@ window.createPropertyGallery = function(property) {
             
             ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
             
-            <!-- INDICADOR DE VÍDEO COM PADRÃO CORRETO (ÍCONE BRANCO, NÃO AMARELO) -->
+            <!-- INDICADOR DE VÍDEO COM PADRÃO CORRETO (ÍCONE BRANCO) -->
             ${property.has_video ? `
                 <div class="video-indicator" style="
                     position: absolute;
@@ -151,30 +153,32 @@ window.createPropertyGallery = function(property) {
                 </div>
             ` : ''}
             
-            <!-- Botão PDF COM ESTILO EXPLÍCITO (garantir consistência) -->
+            <!-- BOTÃO PDF COM PADRÃO DESEJADO (branco com ícone azul) -->
             ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
                 `<button class="pdf-access"
                     onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id});"
                     style="
                         position: absolute;
-                        bottom: 10px;
-                        right: 10px;
-                        background: rgba(220, 53, 69, 0.9);
-                        color: white;
+                        bottom: 2px;
+                        right: 35px;
+                        background: rgba(255, 255, 255, 0.95);
                         border: none;
                         border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
+                        width: 28px;
+                        height: 28px;
+                        cursor: pointer;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        cursor: pointer;
-                        z-index: 8;
-                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                        font-size: 0.75rem;
+                        color: #1a5276;
                         transition: all 0.3s ease;
+                        z-index: 15;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                        border: 1px solid rgba(0,0,0,0.15);
                     "
                     title="Documentos do imóvel (senha: doc123)">
-                    <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                    <i class="fas fa-file-pdf"></i>
                 </button>` : ''}
         </div>
     `;
