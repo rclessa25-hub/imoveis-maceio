@@ -29,90 +29,153 @@ window.createPropertyGallery = function(property) {
     
     // Se só tem uma imagem, mostrar imagem estática
     if (imageUrls.length <= 1) {
-        const badgeHtml = property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : '';
-        
-        const videoIndicatorHtml = property.has_video ? `
-            <div class="video-indicator pulsing" style="position:absolute;top:35px !important;right:10px !important;background:rgba(0,0,0,0.8);color:white;padding:6px 12px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px;z-index:9;box-shadow:0 3px 10px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.3);backdrop-filter:blur(5px);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
-                <i class="fas fa-video" style="color:#FFD700;font-size:14px;"></i>
-                <span>TEM VÍDEO</span>
-            </div>
-        ` : '';
-        
-        const pdfButtonHtml = hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-            `<button class="pdf-access" 
-                    onclick="event.stopPropagation();event.preventDefault();if(window.PdfSystem){window.PdfSystem.showModal(${property.id});}"
-                    style="position:absolute;bottom:10px;right:10px;background:rgba(220,53,69,0.9);color:white;border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:8;box-shadow:0 3px 8px rgba(0,0,0,0.3);transition:all 0.3s ease;"
-                    title="Documentos do imóvel">
-                <i class="fas fa-file-pdf" style="font-size:18px;"></i>
-            </button>` : '';
-        
-        const imageCountHtml = imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : '';
-        
         return `
-            <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position:relative;height:250px;">
+            <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
                 <div class="property-gallery-container" onclick="openGallery(${property.id})">
                     <img src="${firstImageUrl}" 
                          class="property-gallery-image"
-                         alt="${property.title.replace(/"/g, '&quot;')}"
+                         alt="${property.title}"
                          onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                 </div>
-                ${badgeHtml}
-                ${videoIndicatorHtml}
-                ${pdfButtonHtml}
-                ${imageCountHtml}
+                
+                ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+                
+                <!-- INDICADOR DE VÍDEO COM PADRÃO IDÊNTICO AO DE MÚLTIPLAS IMAGENS -->
+                ${property.has_video ? `
+                    <div class="video-indicator" style="
+                        position: absolute;
+                        top: 35px;
+                        right: 10px;
+                        background: rgba(0, 0, 0, 0.7);
+                        color: white;
+                        padding: 5px 10px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        display: flex;
+                        align-items: center;
+                        gap: 5px;
+                        z-index: 10;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                        border: 1px solid rgba(255,255,255,0.2);
+                        backdrop-filter: blur(4px);
+                    ">
+                        <i class="fas fa-video"></i>
+                        <span>TEM VÍDEO</span>
+                    </div>
+                ` : ''}
+                
+                <!-- BOTÃO PDF COM PADRÃO IDÊNTICO AO DE MÚLTIPLAS IMAGENS -->
+                ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
+                    `<button class="pdf-access" 
+                            onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id})"
+                            style="
+                                position: absolute;
+                                bottom: 10px;
+                                right: 10px;
+                                background: rgba(220, 53, 69, 0.9);
+                                color: white;
+                                border: none;
+                                border-radius: 50%;
+                                width: 40px;
+                                height: 40px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                z-index: 8;
+                                box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                                transition: all 0.3s ease;
+                            "
+                            title="Documentos do imóvel (senha: doc123)">
+                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                    </button>` : ''}
+                
+                ${imageUrls.length > 0 ? `<div class="image-count">${imageUrls.length}</div>` : ''}
             </div>
         `;
     }
     
     // Se tem múltiplas imagens, criar galeria
-    const galleryDotsHtml = imageUrls.map((_, index) => `
-        <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
-             data-index="${index}"
-             onclick="event.stopPropagation();event.preventDefault();showGalleryImage(${property.id},${index})"></div>
-    `).join('');
-    
-    const badgeHtml = property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : '';
-    
-    const videoIndicatorHtml = property.has_video ? `
-        <div class="video-indicator pulsing" style="position:absolute;top:35px !important;right:10px !important;background:rgba(0,0,0,0.8);color:white;padding:6px 12px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px;z-index:9;box-shadow:0 3px 10px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.3);backdrop-filter:blur(5px);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">
-            <i class="fas fa-video" style="color:#FFD700;font-size:14px;"></i>
-            <span>TEM VÍDEO</span>
-        </div>
-    ` : '';
-    
-    const pdfButtonHtml = hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
-        `<button class="pdf-access"
-            onclick="event.stopPropagation();event.preventDefault();if(window.PdfSystem){window.PdfSystem.showModal(${property.id});}"
-            style="position:absolute;bottom:10px;right:10px;background:rgba(220,53,69,0.9);color:white;border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:8;box-shadow:0 3px 8px rgba(0,0,0,0.3);transition:all 0.3s ease;"
-            title="Documentos do imóvel">
-            <i class="fas fa-file-pdf" style="font-size:18px;"></i>
-        </button>` : '';
-    
     return `
-        <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position:relative;height:250px;">
+        <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
             <div class="property-gallery-container" onclick="openGallery(${property.id})">
                 <img src="${firstImageUrl}" 
                      class="property-gallery-image"
-                     alt="${property.title.replace(/"/g, '&quot;')}"
+                     alt="${property.title}"
                      onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                 
+                <!-- Indicador de galeria MOBILE -->
                 <div class="gallery-indicator-mobile">
                     <i class="fas fa-images"></i>
                     <span>${imageUrls.length}</span>
                 </div>
                 
+                <!-- Pontos indicadores -->
                 <div class="gallery-controls">
-                    ${galleryDotsHtml}
+                    ${imageUrls.map((_, index) => `
+                        <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
+                             data-index="${index}"
+                             onclick="event.stopPropagation(); event.preventDefault(); showGalleryImage(${property.id}, ${index})"></div>
+                    `).join('')}
                 </div>
                 
-                <div class="gallery-expand-icon" onclick="event.stopPropagation();openGallery(${property.id})">
+                <!-- Ícone de expansão -->
+                <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
                     <i class="fas fa-expand"></i>
                 </div>
             </div>
             
-            ${badgeHtml}
-            ${videoIndicatorHtml}
-            ${pdfButtonHtml}
+            ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
+            
+            <!-- INDICADOR DE VÍDEO COM PADRÃO CORRETO (ÍCONE BRANCO, NÃO AMARELO) -->
+            ${property.has_video ? `
+                <div class="video-indicator" style="
+                    position: absolute;
+                    top: 35px;
+                    right: 10px;
+                    background: rgba(0, 0, 0, 0.7);
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    z-index: 9;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    backdrop-filter: blur(4px);
+                ">
+                    <i class="fas fa-video"></i>
+                    <span>TEM VÍDEO</span>
+                </div>
+            ` : ''}
+            
+            <!-- Botão PDF COM ESTILO EXPLÍCITO (garantir consistência) -->
+            ${hasImages && property.pdfs && property.pdfs !== 'EMPTY' ? 
+                `<button class="pdf-access"
+                    onclick="event.stopPropagation(); event.preventDefault(); window.PdfSystem.showModal(${property.id});"
+                    style="
+                        position: absolute;
+                        bottom: 10px;
+                        right: 10px;
+                        background: rgba(220, 53, 69, 0.9);
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 40px;
+                        height: 40px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        z-index: 8;
+                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                        transition: all 0.3s ease;
+                    "
+                    title="Documentos do imóvel (senha: doc123)">
+                    <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                </button>` : ''}
         </div>
     `;
 };
@@ -121,7 +184,7 @@ window.createPropertyGallery = function(property) {
 window.openGallery = function(propertyId) {
     console.log('📸 Abrindo galeria para imóvel ID:', propertyId);
     
-    const property = window.properties ? window.properties.find(p => p.id === propertyId) : null;
+    const property = window.properties.find(p => p.id === propertyId);
     if (!property) {
         console.error('❌ Imóvel não encontrado:', propertyId);
         return;
@@ -148,14 +211,17 @@ window.openGallery = function(propertyId) {
         galleryModal.className = 'gallery-modal';
         galleryModal.innerHTML = `
             <div class="gallery-modal-content">
+                <!-- Área para swipe -->
                 <div class="gallery-swipe-area" 
                      ontouchstart="handleTouchStart(event)"
                      ontouchend="handleTouchEnd(event)"></div>
                 
+                <!-- Imagem -->
                 <img id="galleryCurrentImage" class="gallery-modal-image" 
                      src="${window.currentGalleryImages[0]}"
-                     alt="Imagem 1 de ${window.currentGalleryImages.length}">
+                     alt="Imagem ${window.currentGalleryIndex + 1} de ${window.currentGalleryImages.length}">
                 
+                <!-- Controles -->
                 <div class="gallery-modal-controls">
                     <button class="gallery-modal-btn" onclick="prevGalleryImage()" 
                             aria-label="Imagem anterior">
@@ -163,7 +229,7 @@ window.openGallery = function(propertyId) {
                     </button>
                     
                     <div id="galleryCounter" class="gallery-counter">
-                        1 / ${window.currentGalleryImages.length}
+                        ${window.currentGalleryIndex + 1} / ${window.currentGalleryImages.length}
                     </div>
                     
                     <button class="gallery-modal-btn" onclick="nextGalleryImage()" 
@@ -172,6 +238,7 @@ window.openGallery = function(propertyId) {
                     </button>
                 </div>
                 
+                <!-- Botão fechar -->
                 <button class="gallery-modal-close" onclick="closeGallery()" 
                         aria-label="Fechar galeria">
                     <i class="fas fa-times"></i>
@@ -184,17 +251,14 @@ window.openGallery = function(propertyId) {
         document.addEventListener('keydown', window.handleGalleryKeyboard);
     } else {
         // Atualizar imagem atual
-        const imageElement = document.getElementById('galleryCurrentImage');
-        const counterElement = document.getElementById('galleryCounter');
-        if (imageElement && counterElement) {
-            imageElement.src = window.currentGalleryImages[0];
-            counterElement.textContent = `1 / ${window.currentGalleryImages.length}`;
-        }
+        document.getElementById('galleryCurrentImage').src = window.currentGalleryImages[0];
+        document.getElementById('galleryCounter').textContent = 
+            `${window.currentGalleryIndex + 1} / ${window.currentGalleryImages.length}`;
     }
     
     // Mostrar modal
     galleryModal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden'; // Prevenir scroll
     
     // Focar no botão fechar para acessibilidade
     setTimeout(() => {
@@ -212,7 +276,7 @@ window.closeGallery = function() {
     const galleryModal = document.getElementById('propertyGalleryModal');
     if (galleryModal) {
         galleryModal.style.display = 'none';
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = 'auto'; // Restaurar scroll
         
         // Remover listener de teclado
         document.removeEventListener('keydown', window.handleGalleryKeyboard);
@@ -229,7 +293,7 @@ window.closeGallery = function() {
 window.showGalleryImage = function(propertyId, index) {
     console.log('🖼️ Mostrando imagem', index, 'do imóvel', propertyId);
     
-    const property = window.properties ? window.properties.find(p => p.id === propertyId) : null;
+    const property = window.properties.find(p => p.id === propertyId);
     if (!property) return;
     
     const hasImages = property.images && 
@@ -242,7 +306,7 @@ window.showGalleryImage = function(propertyId, index) {
     if (index < 0 || index >= images.length) return;
     
     // Atualizar imagem no card
-    const container = document.querySelector(`[onclick*="openGallery(${propertyId})"]`);
+    const container = document.querySelector(`[onclick="openGallery(${propertyId})"]`);
     if (container) {
         const img = container.querySelector('.property-gallery-image');
         if (img) {
@@ -400,10 +464,8 @@ window.setupGalleryEvents = function() {
     });
     
     // Adicionar evento de toque para swipe
-    if (typeof document.addEventListener === 'function') {
-        document.addEventListener('touchstart', window.handleTouchStart, { passive: true });
-        document.addEventListener('touchend', window.handleTouchEnd, { passive: true });
-    }
+    document.addEventListener('touchstart', window.handleTouchStart, { passive: true });
+    document.addEventListener('touchend', window.handleTouchEnd, { passive: true });
     
     // Prevenir zoom com dois dedos na galeria
     document.addEventListener('gesturestart', function(event) {
@@ -419,21 +481,14 @@ window.setupGalleryEvents = function() {
 // ========== OTIMIZAÇÃO MOBILE ==========
 
 window.optimizeGalleryForMobile = function() {
-    if (!window.isMobileDevice || typeof window.isMobileDevice !== 'function') return;
-    
-    try {
-        if (!window.isMobileDevice()) return;
-    } catch (e) {
-        console.log('⚠️ Erro ao verificar dispositivo mobile:', e);
-        return;
-    }
+    if (!window.isMobileDevice || !window.isMobileDevice()) return;
     
     console.log('📱 Otimizando galeria para mobile...');
     
     // Ajustar tamanho das imagens para mobile
     const galleryContainers = document.querySelectorAll('.property-gallery-container');
     galleryContainers.forEach(container => {
-        container.style.height = '300px';
+        container.style.height = '300px'; // Mais alto para mobile
     });
     
     // Ajustar botões para touch
@@ -475,26 +530,21 @@ window.validateGalleryModule = function() {
 window.initializeGalleryModule = function() {
     console.log('🚀 Inicializando módulo da galeria...');
     
+    // NOTA: Estilos agora são carregados somente pelo gallery.css
+    // window.galleryStyles foi REMOVIDO para eliminar duplicação
+    
     // Configurar eventos da galeria
     window.setupGalleryEvents();
     
     // Otimizar para mobile se necessário
     setTimeout(() => {
-        try {
+        if (window.isMobileDevice && window.isMobileDevice()) {
             window.optimizeGalleryForMobile();
-        } catch (e) {
-            console.log('⚠️ Erro ao otimizar para mobile:', e);
         }
     }, 1000);
     
     // Validar módulo
-    setTimeout(() => {
-        try {
-            window.validateGalleryModule();
-        } catch (e) {
-            console.log('⚠️ Erro na validação do módulo:', e);
-        }
-    }, 500);
+    setTimeout(window.validateGalleryModule, 500);
     
     console.log('✅ Módulo da galeria inicializado (CSS otimizado)');
 };
@@ -502,23 +552,20 @@ window.initializeGalleryModule = function() {
 // ========== VERIFICAÇÃO DE CSS (NOVA ADIÇÃO) ==========
 
 setTimeout(() => {
-    try {
-        console.group('🔍 VERIFICAÇÃO DE CSS DA GALERIA');
-        console.log('✅ CSS carregado externamente:', !!document.querySelector('link[href*="gallery.css"]'));
-        
-        // Teste de seletor crítico
-        const testElement = document.createElement('div');
-        testElement.className = 'video-indicator';
-        document.body.appendChild(testElement);
-        
-        const computedStyle = window.getComputedStyle(testElement);
-        console.log('✅ video-indicator está definido?', computedStyle.position !== 'static');
-        
-        testElement.remove();
-        console.groupEnd();
-    } catch (e) {
-        console.log('⚠️ Erro na verificação de CSS:', e);
-    }
+    console.group('🔍 VERIFICAÇÃO DE CSS DA GALERIA');
+    console.log('✅ CSS carregado externamente:', !!document.querySelector('link[href*="gallery.css"]'));
+    console.log('✅ Estilos inline removidos:', !window.galleryStyles);
+    
+    // Teste de seletor crítico
+    const testElement = document.createElement('div');
+    testElement.className = 'video-indicator';
+    document.body.appendChild(testElement);
+    
+    const computedStyle = window.getComputedStyle(testElement);
+    console.log('✅ video-indicator tem top 35px?', computedStyle.top.includes('35'));
+    
+    testElement.remove();
+    console.groupEnd();
 }, 1000);
 
 // ========== EXPORT DO MÓDULO ==========
