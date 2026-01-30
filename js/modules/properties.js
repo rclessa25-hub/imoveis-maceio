@@ -1246,7 +1246,7 @@ window.updateProperty = async function(id, propertyData) {
     } catch (error) {
         console.error('❌ ERRO ao atualizar imóvel:', error);
         console.groupEnd();
-        alert(`❌ ERGO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
+        alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
         return { success: false, localOnly: true, error: error.message };
     }
 };
