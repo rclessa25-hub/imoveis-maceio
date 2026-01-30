@@ -320,6 +320,34 @@ body {
     gap: 5px;
 }
 
+/* ========== ANIMAÇÕES DO SISTEMA ========== */
+@keyframes highlightUpdate {
+    0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
+    50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+}
+
+@keyframes pulseVideo {
+    0% { opacity: 0.8; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 0.8; transform: scale(1); }
+}
+
+/* Classes para animações programáticas */
+.property-card.highlighted {
+    animation: highlightUpdate 1s ease;
+}
+
+.video-indicator.pulsing {
+    animation: pulseVideo 2s infinite;
+}
+
+/* Estilos para campos atualizáveis */
+[data-title-field], [data-price-field], [data-location-field], 
+[data-description-field], [data-features-field] {
+    transition: all 0.3s ease;
+}
+
 /* ========== SOBRE SECTION ========== */
 .about {
     background: white;
