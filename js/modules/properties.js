@@ -1094,7 +1094,7 @@ window.updateProperty = async function(id, propertyData) {
             console.log(`🔄 Usando editingPropertyId: ${window.editingPropertyId}`);
             id = window.editingPropertyId;
         } else {
-            alert('❌ ERGO: Não foi possível identificar o imóvel para atualização!');
+            alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!');
             console.groupEnd();
             return { success: false, localOnly: true, error: 'ID inválido' };
         }
