@@ -124,11 +124,11 @@ class PropertyTemplateEngine {
                      onerror="this.src='${this.imageFallback}'">
                 ${property.badge ? `<div class="property-badge ${property.rural ? 'rural-badge' : ''}">${property.badge}</div>` : ''}
                 
-                <!-- CORREÇÃO: Indicador de vídeo AJUSTADO (posição mais baixa) -->
+                <!-- CORREÇÃO: Indicador de vídeo com classe CSS -->
                 ${hasVideo ? `
-                    <div class="video-indicator" style="
+                    <div class="video-indicator pulsing" style="
                         position: absolute;
-                        top: 85px;  <!-- ALTERADO: estava 10px, agora 85px -->
+                        top: 85px;
                         right: 10px;
                         background: rgba(0, 0, 0, 0.8);
                         color: white;
@@ -138,8 +138,7 @@ class PropertyTemplateEngine {
                         display: flex;
                         align-items: center;
                         gap: 6px;
-                        z-index: 9;  <!-- z-index reduzido para ficar atrás da contagem -->
-                        animation: pulseVideo 2s infinite;
+                        z-index: 9;
                         box-shadow: 0 3px 10px rgba(0,0,0,0.4);
                         border: 1px solid rgba(255,255,255,0.3);
                         backdrop-filter: blur(5px);
@@ -155,7 +154,7 @@ class PropertyTemplateEngine {
                 ${hasGallery ? `
                     <div class="image-count" style="
                         position: absolute;
-                        top: 10px;  <!-- Mantido no topo -->
+                        top: 10px;
                         right: 10px;
                         background: rgba(0, 0, 0, 0.9);
                         color: white;
@@ -163,7 +162,7 @@ class PropertyTemplateEngine {
                         border-radius: 4px;
                         font-size: 13px;
                         font-weight: bold;
-                        z-index: 10;  <!-- z-index maior que o do vídeo -->
+                        z-index: 10;
                         box-shadow: 0 2px 6px rgba(0,0,0,0.5);
                     ">
                         <i class="fas fa-images" style="margin-right: 5px;"></i>${imageCount}
@@ -276,7 +275,7 @@ class PropertyTemplateEngine {
                         const topPosition = imageCount ? '35px' : '10px';
                         
                         imageSection.innerHTML += `
-                            <div class="video-indicator" style="
+                            <div class="video-indicator pulsing" style="
                                 position: absolute;
                                 top: ${topPosition};
                                 right: 10px;
@@ -289,7 +288,6 @@ class PropertyTemplateEngine {
                                 align-items: center;
                                 gap: 6px;
                                 z-index: 9;
-                                animation: pulseVideo 2s infinite;
                                 box-shadow: 0 3px 10px rgba(0,0,0,0.4);
                                 border: 1px solid rgba(255,255,255,0.3);
                                 backdrop-filter: blur(5px);
@@ -308,10 +306,10 @@ class PropertyTemplateEngine {
                 }
             }
             
-            // Adicionar efeito visual de atualização
-            card.style.animation = 'highlightUpdate 1s ease';
+            // Adicionar efeito visual de atualização COM CLASSE CSS
+            card.classList.add('highlighted');
             setTimeout(() => {
-                card.style.animation = '';
+                card.classList.remove('highlighted');
             }, 1000);
             
             console.log(`✅ Conteúdo do card ${propertyId} atualizado com sucesso`);
@@ -392,13 +390,13 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
             window.properties[index] = propertyToRender;
         }
         
-        // Adicionar animação para destacar a atualização
+        // Adicionar animação para destacar a atualização COM CLASSE CSS
         setTimeout(() => {
             const updatedCard = document.querySelector(`[data-property-id="${propertyId}"]`);
             if (updatedCard) {
-                updatedCard.style.animation = 'highlightUpdate 1s ease';
+                updatedCard.classList.add('highlighted');
                 setTimeout(() => {
-                    updatedCard.style.animation = '';
+                    updatedCard.classList.remove('highlighted');
                 }, 1000);
             }
         }, 50);
@@ -1757,53 +1755,10 @@ window.testIndicatorPosition = function() {
     console.groupEnd();
 };
 
-// ========== 16. ADICIONAR ESTILOS CSS PARA ANIMAÇÕES ==========
-const videoUpdateStyles = `
-    @keyframes highlightUpdate {
-        0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
-        50% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
-    }
-    
-    @keyframes pulseVideo {
-        0% { opacity: 0.8; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.05); }
-        100% { opacity: 0.8; transform: scale(1); }
-    }
-    
-    .property-card.updating {
-        animation: highlightUpdate 1s ease;
-    }
-    
-    /* Estilos para os campos atualizáveis */
-    [data-title-field], [data-price-field], [data-location-field], 
-    [data-description-field], [data-features-field] {
-        transition: all 0.3s ease;
-    }
-    
-    .property-card.updated {
-        animation: highlightUpdate 1s ease;
-    }
-    
-    /* Estilos específicos para os indicadores */
-    .video-indicator {
-        animation: pulseVideo 2s infinite !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    .image-count {
-        z-index: 10 !important;
-        font-weight: bold !important;
-    }
-`;
-
-// Adicionar estilos dinamicamente
-if (!document.querySelector('#video-update-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'video-update-styles';
-    styleEl.textContent = videoUpdateStyles;
-    document.head.appendChild(styleEl);
-}
+// ========== 16. ESTILOS CSS PARA ANIMAÇÕES (REMOVIDOS - MOVIDOS PARA main.css) ==========
+// NOTA: Estilos movidos para main.css - linhas após propriedades
+// Animations: highlightUpdate, pulseVideo (agora em main.css)
+// Classes: .property-card.highlighted, .video-indicator.pulsing (definidas em main.css)
 
 // ========== 17. FUNÇÃO DE DIAGNÓSTICO DE SINCRONIZAÇÃO ==========
 window.debugSyncIssue = function() {
