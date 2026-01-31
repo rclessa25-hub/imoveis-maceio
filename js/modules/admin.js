@@ -1,5 +1,11 @@
-// js/modules/admin.js - VERSÃO COMPLETA COM FUNÇÕES CENTRALIZADAS NO SHAREDCORE
-console.log('🔧 admin.js - VERSÃO COMPLETA COM TODAS FUNÇÕES (USANDO SHAREDCORE)');
+// js/modules/admin.js - VERSÃO COMPACTA COM FUNÇÕES CENTRALIZADAS NO SHAREDCORE
+console.log('🔧 admin.js - VERSÃO COMPACTA');
+
+// Sistema de logs otimizado
+const logAdmin = (message, data) => {
+    if (!window.location.search.includes('debug=true')) return;
+    console.log(`🔧 ${message}`, data || '');
+};
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -25,21 +31,17 @@ const Helpers = {
             return value && value.toString ? value.toString() : '';
         },
         features: (value) => {
-            // DELEGAR PARA SHAREDCORE
             if (window.SharedCore?.formatFeaturesForDisplay) {
                 return window.SharedCore.formatFeaturesForDisplay(value);
             }
-            // Fallback básico
             return value || '';
         }
     },
     
     parseFeatures: (value) => {
-        // DELEGAR PARA SHAREDCORE
         if (window.SharedCore?.parseFeaturesForStorage) {
             return window.SharedCore.parseFeaturesForStorage(value);
         }
-        // Fallback básico
         return value ? JSON.stringify(value.split(',').map(f => f.trim()).filter(f => f)) : '[]';
     },
     
@@ -145,7 +147,6 @@ const Helpers = {
         
         const videoCheckbox = document.getElementById('propHasVideo');
         if (videoCheckbox) {
-            // Usar SharedCore para garantir formato booleano correto
             formData.has_video = window.SharedCore?.ensureBooleanVideo?.(videoCheckbox.checked) || false;
         } else {
             formData.has_video = false;
@@ -182,7 +183,7 @@ const Helpers = {
    FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL
    ========================================================== */
 window.toggleAdminPanel = function() {
-    console.log('🔧 toggleAdminPanel chamada');
+    logAdmin('toggleAdminPanel chamada');
     const password = prompt("🔒 Acesso ao Painel do Corretor\n\nDigite a senha:");
     if (password === null) return;
     if (password === "") return alert('⚠️ Campo vazio!');
@@ -214,7 +215,7 @@ window.toggleAdminPanel = function() {
    FUNÇÃO PARA LIMPAR FORMULÁRIO
    ========================================================== */
 window.resetAdminFormCompletely = function(showNotification = true) {
-    console.log('🧹 RESET COMPLETO DO FORMULÁRIO');
+    logAdmin('RESET COMPLETO DO FORMULÁRIO');
     
     window.editingPropertyId = null;
     
@@ -277,12 +278,12 @@ window.resetAdminFormCompletely = function(showNotification = true) {
 window.cancelEdit = function() {
     if (window.editingPropertyId) {
         if (confirm('❓ Cancelar edição?\n\nTodos os dados não salvos serão perdidos.')) {
-            console.log('❌ Cancelando edição do imóvel:', window.editingPropertyId);
+            logAdmin(`Cancelando edição do imóvel: ${window.editingPropertyId}`);
             window.resetAdminFormCompletely(true);
             return true;
         }
     } else {
-        console.log('ℹ️ Nenhuma edição em andamento para cancelar');
+        logAdmin('Nenhuma edição em andamento para cancelar');
         window.resetAdminFormCompletely(false);
     }
     return false;
@@ -292,7 +293,7 @@ window.cancelEdit = function() {
    FUNÇÃO EDIT PROPERTY
    ========================================================== */
 window.editProperty = function(id) {
-    console.log('✏️ Iniciando edição do imóvel ID:', id);
+    logAdmin(`Iniciando edição do imóvel ID: ${id}`);
     
     const property = window.properties?.find(p => p.id === id);
     if (!property) {
@@ -346,46 +347,29 @@ window.editProperty = function(id) {
         }
     }, 150);
     
-    console.log('✅ Modo edição ativado para imóvel ID:', property.id);
+    logAdmin(`Modo edição ativado para imóvel ID: ${property.id}`);
     return true;
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - USANDO addNewProperty
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - OTIMIZADA
    ========================================================== */
 window.saveProperty = async function() {
-    console.group('💾 SALVANDO IMÓVEL');
+    const startTime = Date.now();
     
     try {
-        // 1. Obter dados do formulário
         const propertyData = Helpers.getFormData();
-        
-        console.log('📋 Dados coletados:', propertyData);
-        
-        // Validação básica
-        if (!propertyData.title || !propertyData.price || !propertyData.location) {
+        if (!propertyData.title?.trim() || !propertyData.price || !propertyData.location?.trim()) {
             throw new Error('Preencha Título, Preço e Localização!');
         }
         
-        // Formatar dados usando SharedCore
         propertyData.price = Helpers.format.price(propertyData.price);
+        propertyData.features = propertyData.features ? Helpers.parseFeatures(propertyData.features) : '[]';
         
-        if (propertyData.features) {
-            propertyData.features = Helpers.parseFeatures(propertyData.features);
-        } else {
-            propertyData.features = '[]';
-        }
-        
-        // Já está formatado pelo getFormData usando SharedCore
-        console.log('✅ Vídeo já processado pelo SharedCore:', propertyData.has_video);
-        
-        // 2. Processar mídias
         let imageUrls = '';
         let pdfUrls = '';
         
         if (window.MediaSystem) {
-            console.log('📤 Processando mídias...');
-            
             const hasSupabase = window.SUPABASE_CONSTANTS && 
                               window.SUPABASE_CONSTANTS.URL && 
                               window.SUPABASE_CONSTANTS.KEY;
@@ -400,9 +384,8 @@ window.saveProperty = async function() {
                     if (uploadResult.success) {
                         imageUrls = uploadResult.images;
                         pdfUrls = uploadResult.pdfs;
-                        console.log(`✅ Upload concluído: ${uploadResult.uploadedCount} arquivo(s)`);
+                        logAdmin(`Upload concluído: ${uploadResult.uploadedCount} arquivo(s)`);
                     } else {
-                        console.warn('⚠️ Upload falhou, salvando localmente');
                         const localResult = MediaSystem.saveAndKeepLocal(
                             window.editingPropertyId || 'temp_' + Date.now(),
                             propertyData.title || 'Imóvel'
@@ -420,7 +403,6 @@ window.saveProperty = async function() {
                     pdfUrls = localResult.pdfs;
                 }
             } else {
-                console.log('⚠️ Supabase não configurado, salvando localmente');
                 const localResult = MediaSystem.saveAndKeepLocal(
                     window.editingPropertyId || 'temp_' + Date.now(),
                     propertyData.title || 'Imóvel'
@@ -429,30 +411,24 @@ window.saveProperty = async function() {
                 pdfUrls = localResult.pdfs;
             }
         } else {
-            console.warn('⚠️ MediaSystem não disponível');
             imageUrls = 'EMPTY';
             pdfUrls = 'EMPTY';
         }
         
-        // 3. Atualizar dados com URLs
         propertyData.images = imageUrls || 'EMPTY';
         propertyData.pdfs = pdfUrls || 'EMPTY';
         
-        // 4. Salvar no sistema
-        if (window.editingPropertyId) {
-            console.log(`✏️ Salvando edição do imóvel ${window.editingPropertyId}...`);
-            
-            // Usar a função que já existe e funciona
+        const isEditing = !!window.editingPropertyId;
+        
+        if (isEditing) {
             if (typeof window.updateProperty === 'function') {
                 try {
                     const updateResult = await window.updateProperty(window.editingPropertyId, propertyData);
                     
-                    if (updateResult && updateResult.success) {
+                    if (updateResult?.success) {
                         Helpers.showNotification('✅ Imóvel atualizado com sucesso!', 'success', 3000);
-                        console.log('✅ Imóvel salvo no Supabase');
                     } else {
                         Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
-                        console.log('⚠️ Imóvel salvo apenas localmente (Supabase falhou)');
                     }
                 } catch (supabaseError) {
                     console.error('❌ Erro ao salvar no Supabase:', supabaseError);
@@ -462,7 +438,6 @@ window.saveProperty = async function() {
                 Helpers.showNotification('✅ Imóvel salvo localmente', 'success', 3000);
             }
             
-            // Atualizar galeria
             setTimeout(() => {
                 if (typeof window.updatePropertyCard === 'function') {
                     window.updatePropertyCard(window.editingPropertyId);
@@ -471,46 +446,35 @@ window.saveProperty = async function() {
                 }
             }, 300);
             
-            // Fechar modal e resetar
             setTimeout(() => {
                 Helpers.closeModal();
                 window.resetAdminFormCompletely(true);
             }, 1500);
             
         } else {
-            console.log('🆕 Criando novo imóvel...');
-            
-            // Criar objeto completo
             const newProperty = {
                 ...propertyData,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
             
-            // 🔥 USAR A FUNÇÃO QUE JÁ EXISTE E FUNCIONA (addNewProperty)
             if (typeof window.addNewProperty === 'function') {
-                console.log('✅ Usando addNewProperty() que já funciona');
-                
                 try {
                     const result = await window.addNewProperty(newProperty);
                     
                     if (result) {
                         Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
-                        console.log(`✅ Novo imóvel criado: ${result.id}`);
                         
-                        // Atualizar galeria
                         setTimeout(() => {
                             if (typeof window.renderProperties === 'function') {
                                 window.renderProperties('todos');
                             }
                         }, 300);
                         
-                        // Fechar modal e resetar
                         setTimeout(() => {
                             Helpers.closeModal();
                             window.resetAdminFormCompletely(true);
                         }, 1500);
-                        
                     } else {
                         throw new Error('addNewProperty retornou null');
                     }
@@ -518,8 +482,6 @@ window.saveProperty = async function() {
                 } catch (error) {
                     console.error('❌ Erro em addNewProperty:', error);
                     
-                    // Fallback: salvar localmente
-                    console.log('🔄 Tentando fallback local...');
                     const fallbackResult = await window.savePropertyLocally(newProperty);
                     
                     if (fallbackResult.success) {
@@ -535,10 +497,7 @@ window.saveProperty = async function() {
                         throw new Error(`Falha completa: ${fallbackResult.error}`);
                     }
                 }
-                
             } else {
-                // Fallback se addNewProperty não existir
-                console.warn('⚠️ addNewProperty não disponível, usando fallback local');
                 const fallbackResult = await window.savePropertyLocally(newProperty);
                 
                 if (fallbackResult.success) {
@@ -556,13 +515,13 @@ window.saveProperty = async function() {
             }
         }
         
-    } catch (error) {
-        console.error('❌ Erro ao salvar imóvel:', error);
-        Helpers.showNotification(`❌ Erro: ${error.message}`, 'error', 5000);
-        alert(`❌ Erro ao salvar:\n\n${error.message}\n\nOs dados NÃO foram perdidos. Corrija e tente novamente.`);
+        return { success: true, isEditing };
         
+    } catch (error) {
+        Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
+        throw error;
     } finally {
-        console.groupEnd();
+        logAdmin(`Operação concluída em ${Date.now() - startTime}ms`);
     }
 };
 
@@ -570,34 +529,27 @@ window.saveProperty = async function() {
    FUNÇÃO DE FALLBACK LOCAL
    ========================================================== */
 window.savePropertyLocally = async function(newProperty) {
-    console.log('💾 Salvando localmente como fallback...');
+    logAdmin('Salvando localmente como fallback...');
     
     try {
-        // Garantir que window.properties existe
         if (!window.properties) {
             window.properties = [];
         }
         
-        // Gerar ID se não existir
         if (!newProperty.id) {
             const maxId = window.properties.length > 0 ? 
                 Math.max(...window.properties.map(p => parseInt(p.id) || 0)) : 0;
             newProperty.id = maxId + 1;
         }
         
-        // Adicionar ao array
         window.properties.push(newProperty);
-        console.log(`✅ Adicionado localmente: ID ${newProperty.id}, total: ${window.properties.length}`);
         
-        // Salvar no localStorage (chave unificada)
         try {
             localStorage.setItem('properties', JSON.stringify(window.properties));
-            console.log('✅ Salvo no localStorage (chave unificada)');
         } catch (storageError) {
             console.error('❌ Erro no localStorage:', storageError);
         }
         
-        // Atualizar lista no admin
         setTimeout(() => {
             if (typeof window.loadPropertyList === 'function') {
                 window.loadPropertyList();
@@ -625,14 +577,12 @@ window.savePropertyLocally = async function(newProperty) {
 window.checkPropertySystem = function() {
     console.group('🔍 VERIFICAÇÃO DO SISTEMA');
     
-    // 1. Verificar funções essenciais
     console.log('⚙️ FUNÇÕES ESSENCIAIS:');
     console.log('- toggleAdminPanel:', typeof window.toggleAdminPanel);
     console.log('- saveProperty:', typeof window.saveProperty);
     console.log('- addNewProperty:', typeof window.addNewProperty);
     console.log('- updateProperty:', typeof window.updateProperty);
     
-    // 2. Verificar dados
     console.log('📊 DADOS:');
     console.log('- window.properties:', window.properties ? `${window.properties.length} imóveis` : '❌ Não definido');
     
@@ -640,13 +590,11 @@ window.checkPropertySystem = function() {
         const stored = JSON.parse(localStorage.getItem('properties') || '[]');
         console.log('- localStorage (chave unificada):', `${stored.length} imóveis`);
         
-        // 🔥 CORREÇÃO: DECISÃO DO USUÁRIO EM CASO DE DESINCRONIZAÇÃO
         if (window.properties && stored.length !== window.properties.length) {
             console.warn(`⚠️ DESINCRONIZAÇÃO DETECTADA!`);
             console.warn(`   localStorage: ${stored.length} imóveis`);
             console.warn(`   window.properties: ${window.properties.length} imóveis`);
             
-            // DECISÃO BASEADA EM REGRAS CLARAS
             const useStorageData = confirm(
                 `⚠️ INCONSISTÊNCIA DETECTADA!\n\n` +
                 `Storage: ${stored.length} imóveis\n` +
@@ -658,30 +606,16 @@ window.checkPropertySystem = function() {
             if (useStorageData) {
                 console.log('🔄 Usando dados do localStorage');
                 window.properties = stored;
-                window.savePropertiesToStorage(); // Forçar sincronização
+                window.savePropertiesToStorage?.();
             } else {
                 console.log('🔄 Salvando dados da memória no localStorage');
-                window.savePropertiesToStorage();
+                window.savePropertiesToStorage?.();
             }
         }
     } catch (e) {
         console.error('❌ Erro ao ler localStorage:', e);
     }
     
-    // 3. Sugestões
-    console.log('💡 SUGESTÕES:');
-    
-    if (typeof window.addNewProperty !== 'function') {
-        console.log('1. A função addNewProperty() não está disponível');
-        console.log('   Isso pode impedir o salvamento no Supabase');
-    }
-    
-    if (!window.properties) {
-        console.log('2. window.properties não está definido');
-        console.log('   Execute: window.properties = [];');
-    }
-    
-    // 4. Testar botão admin
     console.log('🔧 BOTÃO ADMIN:');
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
@@ -697,6 +631,35 @@ window.checkPropertySystem = function() {
 };
 
 /* ==========================================================
+   FUNÇÃO AUXILIAR: Configurar uploads
+   ========================================================== */
+const setupMediaUploads = () => {
+    const uploadConfigs = [
+        {
+            inputId: 'pdfFileInput',
+            areaId: 'pdfUploadArea',
+            handler: files => window.MediaSystem?.addPdfs?.(files)
+        },
+        {
+            inputId: 'fileInput',
+            areaId: 'uploadArea',
+            handler: files => {
+                if (window.MediaSystem?.addFiles) {
+                    window.MediaSystem.addFiles(files);
+                    setTimeout(() => {
+                        window.forceMediaPreviewUpdate?.();
+                    }, 300);
+                }
+            }
+        }
+    ];
+    
+    uploadConfigs.forEach(({inputId, areaId, handler}) => {
+        Helpers.setupUpload(inputId, areaId, handler);
+    });
+};
+
+/* ==========================================================
    CONFIGURAÇÃO DO FORMULÁRIO
    ========================================================== */
 window.setupForm = function() {
@@ -706,16 +669,15 @@ window.setupForm = function() {
         return;
     }
     
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
+    form.parentNode.replaceChild(form.cloneNode(true), form);
     
     if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
     
     const videoCheckbox = document.getElementById('propHasVideo');
     if (videoCheckbox) {
         videoCheckbox.addEventListener('change', function() {
-            console.log(`🎬 Checkbox de vídeo alterado: ${this.checked}`);
-            console.log(`🔍 Processado pelo SharedCore: ${window.SharedCore?.ensureBooleanVideo?.(this.checked)}`);
+            logAdmin(`Checkbox de vídeo alterado: ${this.checked}`);
+            logAdmin(`Processado pelo SharedCore: ${window.SharedCore?.ensureBooleanVideo?.(this.checked)}`);
         });
     }
     
@@ -751,45 +713,39 @@ window.setupForm = function() {
             if (loading) loading.hide();
         }
     });
+    
+    setTimeout(setupMediaUploads, 100);
 };
 
 /* ==========================================================
    SETUP ADMIN UI
    ========================================================== */
 window.setupAdminUI = function() {
-    console.log('🔧 Configurando UI do admin...');
+    logAdmin('Configurando UI do admin...');
     
-    // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
     if (panel) {
         panel.style.display = 'none';
     }
     
-    // 2. Botão toggle admin - CONFIGURAÇÃO SIMPLES E DIRETA
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
-        console.log('✅ Botão admin encontrado, configurando...');
+        logAdmin('Botão admin encontrado, configurando...');
         
-        // Remover qualquer evento antigo
         const newBtn = adminBtn.cloneNode(true);
         adminBtn.parentNode.replaceChild(newBtn, adminBtn);
         
-        // Pegar o botão fresco
         const freshBtn = document.querySelector('.admin-toggle');
-        
-        // Configurar evento DIRETO
         freshBtn.onclick = function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🟢 Botão admin clicado via onclick direto');
             window.toggleAdminPanel();
         };
         
-        console.log('✅ Botão admin configurado com onclick direto');
+        logAdmin('Botão admin configurado com onclick direto');
     } else {
         console.error('❌ Botão admin-toggle não encontrado!');
         
-        // Tentar criar botão de emergência
         setTimeout(() => {
             if (!document.getElementById('emergency-admin-btn')) {
                 const emergencyBtn = document.createElement('button');
@@ -827,7 +783,6 @@ window.setupAdminUI = function() {
         }, 1000);
     }
     
-    // 3. Configurar botão Cancelar
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.replaceWith(cancelBtn.cloneNode(true));
@@ -840,12 +795,10 @@ window.setupAdminUI = function() {
         freshCancelBtn.style.display = 'none';
     }
     
-    // 4. Configurar formulário
     if (typeof window.setupForm === 'function') {
         setTimeout(window.setupForm, 100);
     }
     
-    // 5. Adicionar botão de verificação
     if (!document.getElementById('verify-btn')) {
         const verifyBtn = document.createElement('button');
         verifyBtn.id = 'verify-btn';
@@ -867,92 +820,65 @@ window.setupAdminUI = function() {
         document.body.appendChild(verifyBtn);
     }
     
-    console.log('✅ UI do admin configurada');
+    logAdmin('UI do admin configurada');
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DE UPLOADS
+   CONFIGURAR FILTROS (VERSÃO UNIFICADA)
    ========================================================== */
-setTimeout(() => {
-    // Configurar upload de PDFs
-    Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
-        files => {
-            if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
-                window.MediaSystem.addPdfs(files);
-            } else {
-                console.warn('MediaSystem não disponível para PDFs');
-            }
-        });
+window.setupFilters = window.configureFilters = window.setupFormFilters = function() {
+    if (!window.FilterManager) {
+        console.warn('⚠️ FilterManager não disponível');
+        return false;
+    }
     
-    // Configurar upload de imagens
-    Helpers.setupUpload('fileInput', 'uploadArea', 
-        files => {
-            if (window.MediaSystem && typeof window.MediaSystem.addFiles === 'function') {
-                window.MediaSystem.addFiles(files);
-                setTimeout(() => {
-                    if (typeof window.forceMediaPreviewUpdate === 'function') {
-                        window.forceMediaPreviewUpdate();
-                    }
-                }, 300);
-            } else {
-                console.warn('MediaSystem não disponível para imagens');
-            }
-        });
-}, 1000);
+    return window.FilterManager.setupWithFallback 
+        ? window.FilterManager.setupWithFallback()
+        : (window.FilterManager.init && window.FilterManager.init());
+};
 
 /* ==========================================================
    INICIALIZAÇÃO
    ========================================================== */
 
-// Função de inicialização
 function initializeAdmin() {
-    console.log('🚀 Inicializando sistema admin...');
+    logAdmin('Inicializando sistema admin...');
     
-    // 1. Verificar desincronização imediatamente
     try {
         const stored = JSON.parse(localStorage.getItem('properties') || '[]');
         if (!window.properties && stored.length > 0) {
             window.properties = stored;
-            console.log(`✅ Carregado ${stored.length} imóveis do localStorage (chave unificada)`);
+            logAdmin(`Carregado ${stored.length} imóveis do localStorage (chave unificada)`);
         }
         
-        // Verificar chave antiga e migrar se necessário
         const oldStored = localStorage.getItem('weberlessa_properties');
         if (oldStored && !stored) {
-            console.log('🔄 Migrando dados da chave antiga para unificada...');
+            logAdmin('Migrando dados da chave antiga para unificada...');
             localStorage.setItem('properties', oldStored);
             localStorage.removeItem('weberlessa_properties');
             window.properties = JSON.parse(oldStored);
-            console.log('✅ Migração concluída');
+            logAdmin('Migração concluída');
         }
     } catch (e) {
         console.error('Erro ao carregar do localStorage:', e);
     }
     
-    // 2. Configurar UI
     window.setupAdminUI();
     
-    // 3. Verificação inicial
     setTimeout(() => {
-        console.log('🔍 Verificação inicial do sistema...');
-        window.checkPropertySystem();
+        window.checkPropertySystem?.();
         
-        // Instruções para o usuário
-        console.log('💡 INSTRUÇÕES:');
-        console.log('1. Clique no botão 🔧 para abrir o painel admin');
-        console.log('2. Use o botão 🔍 para verificar o sistema');
-        console.log('3. Se o botão admin não funcionar, use o botão de emergência (vermelho)');
-        
+        logAdmin('INSTRUÇÕES:');
+        logAdmin('1. Clique no botão 🔧 para abrir o painel admin');
+        logAdmin('2. Use o botão 🔍 para verificar o sistema');
+        logAdmin('3. Se o botão admin não funcionar, use o botão de emergência (vermelho)');
     }, 2000);
 }
 
-// Iniciar quando o DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeAdmin);
 } else {
     initializeAdmin();
 }
 
-console.log('✅ admin.js - VERSÃO COMPLETA E FUNCIONAL CARREGADA (USANDO SHAREDCORE)');
-console.log('🔍 Para verificar: window.checkPropertySystem()');
-console.log('🔧 Para abrir painel: window.toggleAdminPanel()');
+logAdmin('admin.js - VERSÃO COMPACTA E FUNCIONAL CARREGADA');
