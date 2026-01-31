@@ -2,6 +2,82 @@
 console.log('🚀 main.js carregado - Sistema de Inicialização Otimizado');
 
 /**
+ * ========== MIGRAÇÃO E UNIFICAÇÃO DO LOCALSTORAGE ==========
+ * ELIMINA DESINCRONIZAÇÃO ENTRE CHAVES ANTIGAS E NOVAS
+ */
+function unifyLocalStorageKeys() {
+    console.group('🔄 UNIFICAÇÃO DE LOCALSTORAGE');
+    
+    const oldKey = 'weberlessa_properties';
+    const newKey = 'properties';
+    
+    try {
+        // 1. Verificar se existe chave antiga
+        const oldData = localStorage.getItem(oldKey);
+        const newData = localStorage.getItem(newKey);
+        
+        console.log('📊 Estado atual:');
+        console.log(`- "${oldKey}": ${oldData ? 'EXISTE' : 'NÃO EXISTE'}`);
+        console.log(`- "${newKey}": ${newData ? 'EXISTE' : 'NÃO EXISTE'}`);
+        
+        // 2. Se SÓ tem chave antiga, migrar
+        if (oldData && !newData) {
+            console.log(`🔄 Migrando de "${oldKey}" para "${newKey}"`);
+            localStorage.setItem(newKey, oldData);
+            localStorage.removeItem(oldKey);
+            console.log(`✅ Migração concluída`);
+        }
+        
+        // 3. Se tem AMBAS, consolidar (manter a com mais dados)
+        if (oldData && newData) {
+            try {
+                const oldArray = JSON.parse(oldData);
+                const newArray = JSON.parse(newData);
+                
+                console.log(`📊 Comparação:`);
+                console.log(`- "${oldKey}": ${oldArray.length} imóveis`);
+                console.log(`- "${newKey}": ${newArray.length} imóveis`);
+                
+                // Usar a que tem mais dados
+                if (oldArray.length > newArray.length) {
+                    console.log(`🔄 "${oldKey}" tem mais dados, substituindo...`);
+                    localStorage.setItem(newKey, oldData);
+                    console.log(`✅ Substituído por dados da chave antiga`);
+                }
+                
+                // Remover chave antiga
+                localStorage.removeItem(oldKey);
+                console.log(`🗑️ Chave antiga "${oldKey}" removida`);
+                
+            } catch (parseError) {
+                console.error('❌ Erro ao parsear dados:', parseError);
+            }
+        }
+        
+        // 4. Verificar consistência final
+        const finalData = localStorage.getItem(newKey);
+        if (finalData) {
+            const finalArray = JSON.parse(finalData);
+            console.log(`✅ Estado final: ${finalArray.length} imóveis em "${newKey}"`);
+            
+            // Garantir que window.properties esteja sincronizado
+            if (window.properties && window.properties.length !== finalArray.length) {
+                console.warn(`⚠️ Inconsistência detectada: memória tem ${window.properties.length}, storage tem ${finalArray.length}`);
+                console.log('🔄 Sincronizando window.properties...');
+                window.properties = finalArray;
+            }
+        }
+        
+        console.log('🎯 Unificação concluída');
+        
+    } catch (error) {
+        console.error('❌ Erro na unificação:', error);
+    }
+    
+    console.groupEnd();
+}
+
+/**
  * FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO OTIMIZADA
  * Aprimora o fluxo existente sem quebrar funcionalidades
  */
@@ -27,7 +103,11 @@ window.initializeWeberLessaSystem = async function() {
             initLoading?.updateMessage?.('Preparando módulos essenciais...');
         }, 400);
         
-        // ✅ 3. EXECUTAR CARREGAMENTO DE IMÓVEIS (SISTEMA EXISTENTE)
+        // ✅ 3. UNIFICAÇÃO DO LOCALSTORAGE (NOVO)
+        console.log('🔄 Executando unificação do localStorage...');
+        unifyLocalStorageKeys();
+        
+        // ✅ 4. EXECUTAR CARREGAMENTO DE IMÓVEIS (SISTEMA EXISTENTE)
         if (typeof window.loadPropertiesData === 'function') {
             console.log('🏠 Carregando imóveis via sistema existente...');
             await window.loadPropertiesData();
@@ -36,35 +116,35 @@ window.initializeWeberLessaSystem = async function() {
             console.error('❌ loadPropertiesData() não encontrado!');
         }
         
-        // ✅ 4. ATUALIZAR STATUS APÓS IMÓVEIS
+        // ✅ 5. ATUALIZAR STATUS APÓS IMÓVEIS
         initLoading?.updateMessage?.('Configurando interface...');
         
-        // ✅ 5. CONFIGURAR FILTROS
+        // ✅ 6. CONFIGURAR FILTROS
         if (typeof window.setupFilters === 'function') {
             console.log('🎛️ Configurando filtros...');
             window.setupFilters();
             console.log('✅ Filtros configurados');
         }
         
-        // ✅ 6. CONFIGURAR ADMIN
+        // ✅ 7. CONFIGURAR ADMIN
         if (typeof window.setupForm === 'function') {
             console.log('📝 Configurando formulário admin...');
             window.setupForm();
             console.log('✅ Formulário admin configurado');
         }
         
-        // ✅ 7. CONFIGURAR GALERIA
+        // ✅ 8. CONFIGURAR GALERIA
         if (typeof window.setupGalleryEvents === 'function') {
             console.log('🎮 Configurando eventos da galeria...');
             window.setupGalleryEvents();
             console.log('✅ Galeria configurada');
         }
         
-        // ✅ 8. OTIMIZAÇÃO: AGUARDAR IMAGENS PRINCIPAIS
+        // ✅ 9. OTIMIZAÇÃO: AGUARDAR IMAGENS PRINCIPAIS
         const imagesLoaded = await waitForCriticalImages();
         console.log(`🖼️ ${imagesLoaded} imagem(ns) principal(is) otimizada(s)`);
         
-        // ✅ 9. FEEDBACK FINAL
+        // ✅ 10. FEEDBACK FINAL
         const totalTime = Date.now() - loadingStartTime;
         const propertyCount = window.properties ? window.properties.length : 0;
         
@@ -86,7 +166,7 @@ window.initializeWeberLessaSystem = async function() {
             initLoading.updateMessage(finalMessage);
         }
         
-        // ✅ 10. TESTE DE INTEGRAÇÃO (APENAS DEBUG)
+        // ✅ 11. TESTE DE INTEGRAÇÃO (APENAS DEBUG)
         setTimeout(() => {
             if (window.location.search.includes('debug=true')) {
                 console.log('🧪 TESTE DE INTEGRAÇÃO OTIMIZADO:');
@@ -98,7 +178,8 @@ window.initializeWeberLessaSystem = async function() {
                     'Função renderProperties': typeof window.renderProperties === 'function',
                     'Função setupFilters': typeof window.setupFilters === 'function',
                     'Tempo total': `${totalTime}ms`,
-                    'Imagens otimizadas': imagesLoaded
+                    'Imagens otimizadas': imagesLoaded,
+                    'Chaves localStorage': Object.keys(localStorage).filter(k => k.includes('prop')).join(', ')
                 };
                 
                 console.table(testResults);
@@ -108,7 +189,7 @@ window.initializeWeberLessaSystem = async function() {
     } catch (error) {
         console.error('❌ Erro na inicialização otimizada:', error);
         
-        // ✅ 11. TRATAMENTO DE ERRO AMIGÁVEL
+        // ✅ 12. TRATAMENTO DE ERRO AMIGÁVEL
         if (initLoading) {
             initLoading.setVariant('error');
             initLoading.updateMessage('Sistema carregado com limitações');
@@ -116,7 +197,7 @@ window.initializeWeberLessaSystem = async function() {
         }
         
     } finally {
-        // ✅ 12. FECHAR LOADING COM TRANSIÇÃO SUAVE
+        // ✅ 13. FECHAR LOADING COM TRANSIÇÃO SUAVE
         setTimeout(() => {
             if (initLoading) {
                 initLoading.hide();
@@ -143,11 +224,12 @@ function ensureBasicFunctionality() {
     
     // Fallback para propriedades se não carregarem
     if (!window.properties || window.properties.length === 0) {
-        const stored = localStorage.getItem('weberlessa_properties');
+        // Primeiro tenta chave unificada
+        const stored = localStorage.getItem('properties');
         if (stored) {
             try {
                 window.properties = JSON.parse(stored);
-                console.log(`✅ Recuperado ${window.properties.length} imóveis do localStorage`);
+                console.log(`✅ Recuperado ${window.properties.length} imóveis do localStorage (chave unificada)`);
             } catch (e) {
                 console.warn('⚠️ Não foi possível recuperar imóveis do localStorage');
             }
@@ -251,5 +333,102 @@ setTimeout(() => {
         });
     }
 }, 1000);
+
+/**
+ * ========== FUNÇÕES DE DIAGNÓSTICO ==========
+ */
+window.diagnosticoStorage = function() {
+    console.group('🔍 DIAGNÓSTICO COMPLETO DO STORAGE');
+    
+    console.log('📊 CHAVES NO LOCALSTORAGE:');
+    Object.keys(localStorage).forEach(key => {
+        try {
+            const data = JSON.parse(localStorage.getItem(key));
+            if (Array.isArray(data)) {
+                console.log(`- "${key}": ${data.length} imóveis`);
+                if (data.length > 0) {
+                    console.log(`  Primeiro: "${data[0]?.title}" (ID: ${data[0]?.id})`);
+                }
+            } else {
+                console.log(`- "${key}": Não é array (${typeof data})`);
+            }
+        } catch {
+            console.log(`- "${key}": Não é JSON válido`);
+        }
+    });
+    
+    console.log('📊 window.properties:');
+    console.log(`- É array?`, Array.isArray(window.properties));
+    console.log(`- Quantidade:`, window.properties?.length || 0);
+    
+    console.log('💡 RECOMENDAÇÕES:');
+    const hasOldKey = localStorage.getItem('weberlessa_properties');
+    if (hasOldKey) {
+        console.log('❌ AINDA EXISTE CHAVE ANTIGA! Execute window.cleanupOldStorage()');
+    }
+    
+    if (!localStorage.getItem('properties')) {
+        console.log('❌ CHAVE UNIFICADA NÃO ENCONTRADA! O sistema pode não estar salvando.');
+    }
+    
+    console.groupEnd();
+};
+
+// Função de limpeza manual
+window.cleanupOldStorage = function() {
+    if (confirm('⚠️ LIMPAR CHAVES ANTIGAS DO LOCALSTORAGE?\n\nEsta ação removerá "weberlessa_properties" e outras chaves antigas.')) {
+        ['weberlessa_properties', 'properties_backup', 'weberlessa_backup'].forEach(key => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                console.log(`🗑️ Removido: ${key}`);
+            }
+        });
+        alert('✅ Limpeza concluída! Recarregue a página.');
+        location.reload();
+    }
+};
+
+// EMERGÊNCIA: Restaurar do Supabase se localStorage corrompido
+window.emergencyRestoreFromSupabase = async function() {
+    if (!confirm('🚨 RESTAURAÇÃO DE EMERGÊNCIA\n\nIsso substituirá TODOS os dados locais pelos do Supabase.\nContinuar?')) {
+        return;
+    }
+    
+    const loading = window.LoadingManager?.show?.('Restaurando dados...', 'Conectando ao servidor');
+    
+    try {
+        if (window.supabaseClient) {
+            const { data, error } = await window.supabaseClient
+                .from('properties')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                // Limpar TUDO
+                localStorage.clear();
+                
+                // Salvar novos dados na chave unificada
+                window.properties = data;
+                localStorage.setItem('properties', JSON.stringify(data));
+                
+                // Recarregar interface
+                if (window.renderProperties) window.renderProperties('todos');
+                if (window.loadPropertyList) window.loadPropertyList();
+                
+                alert(`✅ RESTAURAÇÃO CONCLUÍDA!\n\n${data.length} imóveis recuperados do servidor.`);
+            } else {
+                alert('ℹ️ Nenhum dado encontrado no servidor.');
+            }
+        } else {
+            alert('❌ Cliente Supabase não disponível.');
+        }
+    } catch (error) {
+        alert(`❌ ERRO: ${error.message}`);
+    } finally {
+        loading?.hide();
+    }
+};
 
 console.log('✅ main.js otimizado carregado - Sistema pronto para inicializar');
