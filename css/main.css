@@ -309,7 +309,7 @@ body {
 /* ========== INDICADOR DE VÍDEO (PADRÃO CORRETO) ========== */
 .video-indicator {
     position: absolute !important;
-    top: 35px !important;
+    top: 40px !important;
     right: 10px !important;
     background: rgba(0, 0, 0, 0.7) !important;
     color: white !important;
