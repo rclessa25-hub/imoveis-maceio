@@ -589,10 +589,10 @@ window.savePropertyLocally = async function(newProperty) {
         window.properties.push(newProperty);
         console.log(`✅ Adicionado localmente: ID ${newProperty.id}, total: ${window.properties.length}`);
         
-        // Salvar no localStorage
+        // Salvar no localStorage (chave unificada)
         try {
             localStorage.setItem('properties', JSON.stringify(window.properties));
-            console.log('✅ Salvo no localStorage');
+            console.log('✅ Salvo no localStorage (chave unificada)');
         } catch (storageError) {
             console.error('❌ Erro no localStorage:', storageError);
         }
@@ -620,7 +620,7 @@ window.savePropertyLocally = async function(newProperty) {
 };
 
 /* ==========================================================
-   FUNÇÃO DE VERIFICAÇÃO DO SISTEMA
+   FUNÇÃO DE VERIFICAÇÃO DO SISTEMA - ATUALIZADA
    ========================================================== */
 window.checkPropertySystem = function() {
     console.group('🔍 VERIFICAÇÃO DO SISTEMA');
@@ -638,18 +638,30 @@ window.checkPropertySystem = function() {
     
     try {
         const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-        console.log('- localStorage:', `${stored.length} imóveis`);
+        console.log('- localStorage (chave unificada):', `${stored.length} imóveis`);
         
-        // Corrigir desincronização
+        // 🔥 CORREÇÃO: DECISÃO DO USUÁRIO EM CASO DE DESINCRONIZAÇÃO
         if (window.properties && stored.length !== window.properties.length) {
-            console.warn('⚠️ DESINCRONIZAÇÃO DETECTADA! Corrigindo...');
-            console.log(`  localStorage: ${stored.length} imóveis`);
-            console.log(`  window.properties: ${window.properties.length} imóveis`);
+            console.warn(`⚠️ DESINCRONIZAÇÃO DETECTADA!`);
+            console.warn(`   localStorage: ${stored.length} imóveis`);
+            console.warn(`   window.properties: ${window.properties.length} imóveis`);
             
-            // Usar o que tem mais dados
-            if (stored.length > window.properties.length) {
+            // DECISÃO BASEADA EM REGRAS CLARAS
+            const useStorageData = confirm(
+                `⚠️ INCONSISTÊNCIA DETECTADA!\n\n` +
+                `Storage: ${stored.length} imóveis\n` +
+                `Memória: ${window.properties.length} imóveis\n\n` +
+                `Usar dados do storage (recomendado)?\n\n` +
+                `Cancelar = manter dados atuais em memória`
+            );
+            
+            if (useStorageData) {
+                console.log('🔄 Usando dados do localStorage');
                 window.properties = stored;
-                console.log('✅ Corrigido: usando localStorage');
+                window.savePropertiesToStorage(); // Forçar sincronização
+            } else {
+                console.log('🔄 Salvando dados da memória no localStorage');
+                window.savePropertiesToStorage();
             }
         }
     } catch (e) {
@@ -896,12 +908,22 @@ setTimeout(() => {
 function initializeAdmin() {
     console.log('🚀 Inicializando sistema admin...');
     
-    // 1. Corrigir desincronização imediatamente
+    // 1. Verificar desincronização imediatamente
     try {
         const stored = JSON.parse(localStorage.getItem('properties') || '[]');
         if (!window.properties && stored.length > 0) {
             window.properties = stored;
-            console.log(`✅ Carregado ${stored.length} imóveis do localStorage`);
+            console.log(`✅ Carregado ${stored.length} imóveis do localStorage (chave unificada)`);
+        }
+        
+        // Verificar chave antiga e migrar se necessário
+        const oldStored = localStorage.getItem('weberlessa_properties');
+        if (oldStored && !stored) {
+            console.log('🔄 Migrando dados da chave antiga para unificada...');
+            localStorage.setItem('properties', oldStored);
+            localStorage.removeItem('weberlessa_properties');
+            window.properties = JSON.parse(oldStored);
+            console.log('✅ Migração concluída');
         }
     } catch (e) {
         console.error('Erro ao carregar do localStorage:', e);
