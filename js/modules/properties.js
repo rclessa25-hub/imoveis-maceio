@@ -502,27 +502,14 @@ window.loadPropertiesData = async function () {
             // Estratégia 2: Supabase fetch
             () => window.supabaseFetch?.('/properties?select=*')?.then(r => r.ok ? r.data : null),
             
-            // Estratégia 3: localStorage com chave nova (PRIORIDADE)
+            // Estratégia 3: localStorage com chave UNIFICADA (PRIORIDADE)
             () => {
                 const stored = localStorage.getItem('properties');
-                console.log('💾 Tentando carregar da chave "properties":', stored ? 'ENCONTRADA' : 'NÃO ENCONTRADA');
+                console.log('💾 Tentando carregar da chave UNIFICADA "properties":', stored ? 'ENCONTRADA' : 'NÃO ENCONTRADA');
                 return stored ? JSON.parse(stored) : null;
             },
             
-            // Estratégia 4: localStorage com chave antiga (COMPATIBILIDADE)
-            () => {
-                const stored = localStorage.getItem('weberlessa_properties');
-                console.log('💾 Tentando carregar da chave "weberlessa_properties":', stored ? 'ENCONTRADA' : 'NÃO ENCONTRADA');
-                if (stored) {
-                    console.log('🔄 Migrando da chave antiga para nova...');
-                    // Migrar automaticamente para chave nova
-                    localStorage.setItem('properties', stored);
-                    return JSON.parse(stored);
-                }
-                return null;
-            },
-            
-            // Estratégia 5: Dados iniciais
+            // Estratégia 4: Dados iniciais
             () => getInitialProperties()
         ];
 
@@ -537,7 +524,7 @@ window.loadPropertiesData = async function () {
             try {
                 propertiesData = await loadStrategies[i]();
                 if (propertiesData && propertiesData.length > 0) {
-                    source = ['supabase-client', 'supabase-fetch', 'properties-key', 'weberlessa-key', 'initial-data'][i];
+                    source = ['supabase-client', 'supabase-fetch', 'properties-key', 'initial-data'][i];
                     console.log(`✅ Dados carregados da fonte: ${source} (${propertiesData.length} imóveis)`);
                     break;
                 }
@@ -699,9 +686,9 @@ window.filterProperties = function(properties, filter) {
     return filterFn ? properties.filter(filterFn) : properties;
 };
 
-// ========== 4. SALVAR NO STORAGE ==========
+// ========== 4. SALVAR NO STORAGE - VERSÃO UNIFICADA ==========
 window.savePropertiesToStorage = function() {
-    console.log('💾 Tentando salvar propriedades no localStorage...');
+    console.log('💾 Salvando propriedades NO LOCALSTORAGE UNIFICADO...');
     
     try {
         if (!window.properties || !Array.isArray(window.properties)) {
@@ -709,10 +696,19 @@ window.savePropertiesToStorage = function() {
             return false;
         }
         
+        // ✅ APENAS UMA CHAVE: 'properties'
         const propertiesToSave = JSON.stringify(window.properties);
         localStorage.setItem('properties', propertiesToSave);
         
-        // VERIFICAÇÃO CRÍTICA: Confirmar que salvou
+        // 🗑️ REMOVER QUALQUER CHAVE ANTIGA
+        ['weberlessa_properties', 'properties_backup', 'weberlessa_backup'].forEach(oldKey => {
+            if (localStorage.getItem(oldKey)) {
+                localStorage.removeItem(oldKey);
+                console.log(`🗑️ Chave antiga removida: ${oldKey}`);
+            }
+        });
+        
+        // ✅ VERIFICAÇÃO DE INTEGRIDADE
         const verify = localStorage.getItem('properties');
         if (!verify) {
             console.error('❌ VERIFICAÇÃO FALHOU: localStorage vazio após salvar!');
@@ -725,13 +721,18 @@ window.savePropertiesToStorage = function() {
             return false;
         }
         
-        console.log(`✅ Propriedades salvas no localStorage: ${window.properties.length} imóveis`);
+        console.log(`✅ ${window.properties.length} imóveis salvos em "properties"`);
         console.log(`   Primeiro imóvel salvo: "${window.properties[0]?.title || 'N/A'}"`);
+        
+        // ✅ LOG PARA DEBUG
+        if (window.location.search.includes('debug=true')) {
+            console.log('🔍 DEBUG - Todas as chaves do localStorage:', Object.keys(localStorage));
+        }
         
         return true;
         
     } catch (error) {
-        console.error('❌ ERRO CRÍTICO ao salvar no localStorage:', error);
+        console.error('❌ ERRO CRÍTICO ao salvar:', error);
         
         // Tentar fallback com dados menores
         try {
@@ -917,7 +918,7 @@ window.addNewProperty = async function(propertyData) {
         // 1. Adicionar ao array
         window.properties.unshift(newProperty);
         
-        // 2. SALVAR NO localStorage COM VERIFICAÇÃO
+        // 2. SALVAR NO localStorage UNIFICADO COM VERIFICAÇÃO
         const saved = window.savePropertiesToStorage();
         
         if (!saved) {
@@ -1096,7 +1097,7 @@ window.updateProperty = async function(id, propertyData) {
             console.log(`🔄 Usando editingPropertyId: ${window.editingPropertyId}`);
             id = window.editingPropertyId;
         } else {
-            alert('❌ ERRO: Não foi possível identificar o imóvel para atualização!');
+            alert('❌ ERGO: Não foi possível identificar o imóvel para atualização!');
             console.groupEnd();
             return { success: false, localOnly: true, error: 'ID inválido' };
         }
@@ -1290,7 +1291,7 @@ window.updateLocalProperty = function(propertyId, updatedData) {
         updated_at: new Date().toISOString()
     };
     
-    // ✅ CORREÇÃO CRÍTICA: SALVAR NO localStorage COM VERIFICAÇÃO
+    // ✅ CORREÇÃO CRÍTICA: SALVAR NO localStorage UNIFICADO COM VERIFICAÇÃO
     const saved = window.savePropertiesToStorage();
     
     if (!saved) {
@@ -1362,7 +1363,7 @@ window.addToLocalProperties = function(newProperty) {
     
     window.properties.unshift(propertyWithId);
     
-    // ✅ CORREÇÃO: SALVAMENTO GARANTIDO
+    // ✅ CORREÇÃO: SALVAMENTO GARANTIDO NO LOCALSTORAGE UNIFICADO
     const saved = window.savePropertiesToStorage();
     
     if (!saved) {
@@ -1443,7 +1444,7 @@ window.deleteProperty = async function(id) {
     const originalLength = window.properties.length;
     window.properties = window.properties.filter(p => p.id !== id);
     
-    // ✅ CORREÇÃO: SALVAR NO localStorage COM VERIFICAÇÃO
+    // ✅ CORREÇÃO: SALVAR NO localStorage UNIFICADO COM VERIFICAÇÃO
     const saved = window.savePropertiesToStorage();
     
     if (!saved) {
@@ -1546,15 +1547,17 @@ window.loadPropertyList = function() {
         if (!window.properties || window.properties.length === 0) {
             console.warn('⚠️ window.properties vazio após 3 segundos, tentando recuperação...');
             
-            // Estratégia 1: Verificar localStorage (chave nova)
+            // Estratégia 1: Verificar localStorage (chave UNIFICADA)
             let stored = localStorage.getItem('properties');
             
-            // Estratégia 2: Verificar localStorage (chave antiga - compatibilidade)
+            // Estratégia 2: Verificar localStorage (chave antiga - apenas para migração)
             if (!stored) {
                 stored = localStorage.getItem('weberlessa_properties');
                 if (stored) {
-                    console.log('🔄 Encontrado na chave antiga, migrando...');
+                    console.log('🔄 Encontrado na chave antiga, migrando para chave unificada...');
                     localStorage.setItem('properties', stored);
+                    localStorage.removeItem('weberlessa_properties');
+                    console.log('✅ Migração automática concluída');
                 }
             }
             
@@ -1584,7 +1587,7 @@ window.loadPropertyList = function() {
                 window.properties = getInitialProperties();
                 console.log(`✅ Usando dados iniciais: ${window.properties.length} imóveis`);
                 
-                // Salvar imediatamente
+                // Salvar imediatamente na chave unificada
                 window.savePropertiesToStorage();
                 
                 if (typeof window.renderProperties === 'function') {
@@ -1633,7 +1636,7 @@ window.testFullUpdate = function() {
     if (index !== -1) {
         window.properties[index] = testProperty;
         
-        // Salvar no localStorage
+        // Salvar no localStorage unificado
         const saved = window.savePropertiesToStorage();
         
         if (saved) {
@@ -1798,20 +1801,26 @@ window.debugSyncIssue = function() {
 
 // ========== 18. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
 setTimeout(() => {
-    // Verificar inconsistência entre array e localStorage
+    // Verificar inconsistência entre array e localStorage unificado
     if (window.properties && window.properties.length > 0) {
         try {
             const stored = localStorage.getItem('properties');
             if (!stored) {
-                console.warn('⚠️ localStorage vazio, salvando array atual...');
+                console.warn('⚠️ localStorage vazio (chave unificada), salvando array atual...');
                 window.savePropertiesToStorage();
             } else {
                 const parsed = JSON.parse(stored);
                 if (parsed.length !== window.properties.length) {
                     console.warn(`⚠️ INCONSISTÊNCIA: localStorage tem ${parsed.length}, array tem ${window.properties.length}`);
-                    console.warn('🔄 Corrigindo...');
+                    console.warn('🔄 Corrigindo automaticamente...');
                     window.savePropertiesToStorage();
                 }
+            }
+            
+            // Remover chave antiga se ainda existir
+            if (localStorage.getItem('weberlessa_properties')) {
+                console.log('🗑️ Removendo chave antiga residual...');
+                localStorage.removeItem('weberlessa_properties');
             }
         } catch (error) {
             console.error('❌ Erro na verificação automática:', error);
@@ -1884,7 +1893,7 @@ window.diagnosticoSincronizacao = function() {
     }
     
     // 2. Verificar localStorage
-    console.log('💾 LOCALSTORAGE:');
+    console.log('💾 LOCALSTORAGE (CHAVE UNIFICADA):');
     const chaves = Object.keys(localStorage);
     const chavesProp = chaves.filter(k => k.includes('prop') || k.includes('weber'));
     
@@ -1928,6 +1937,11 @@ window.diagnosticoSincronizacao = function() {
     const propsStorage = localStorage.getItem('properties');
     if (!propsStorage) {
         console.log('2. localStorage "properties" não encontrado - verifique salvamento');
+    }
+    
+    const hasOldKey = localStorage.getItem('weberlessa_properties');
+    if (hasOldKey) {
+        console.log('3. CHAVE ANTIGA DETECTADA! Execute localStorage.removeItem("weberlessa_properties")');
     }
     
     console.groupEnd();
