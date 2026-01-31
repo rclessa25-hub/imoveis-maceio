@@ -544,16 +544,26 @@ const PdfSystem = (function() {
         setupMainModalEvents() {
             console.log('🔧 Configurando eventos do modal principal...');
             
-            // Botão Acessar
-            const accessBtn = document.getElementById('pdfAccessBtn');
-            if (accessBtn) {
-                accessBtn.onclick = (e) => {
-                    e.preventDefault();
+            // ✅ 1. Formulário de senha (substituir botão onclick)
+            const passwordForm = document.getElementById('pdfPasswordForm');
+            if (passwordForm) {
+                passwordForm.addEventListener('submit', (e) => {
+                    e.preventDefault(); // Impedir envio tradicional
+                    e.stopPropagation();
                     this.validatePasswordAndShowList();
-                };
+                });
+            } else {
+                // Fallback para botão antigo
+                const accessBtn = document.getElementById('pdfAccessBtn');
+                if (accessBtn) {
+                    accessBtn.onclick = (e) => {
+                        e.preventDefault();
+                        this.validatePasswordAndShowList();
+                    };
+                }
             }
             
-            // Botão Fechar
+            // ✅ 2. Botão Fechar (mantém igual)
             const closeBtn = document.getElementById('pdfCloseBtn');
             if (closeBtn) {
                 closeBtn.onclick = (e) => {
@@ -562,7 +572,7 @@ const PdfSystem = (function() {
                 };
             }
             
-            // Permitir Enter no campo de senha
+            // ✅ 3. Permitir Enter no campo de senha (mantém igual)
             const passwordInput = document.getElementById('pdfPassword');
             if (passwordInput) {
                 passwordInput.onkeypress = (e) => {
@@ -619,16 +629,23 @@ const PdfSystem = (function() {
             }
             
             const password = passwordInput.value.trim();
+            
+            // ✅ VALIDAÇÃO MELHORADA
             if (!password) {
                 alert('Digite a senha para acessar os documentos!');
                 passwordInput.focus();
+                passwordInput.setAttribute('aria-invalid', 'true');
                 return;
             }
+            
+            // ✅ REMOVER ESTADO DE ERRO
+            passwordInput.removeAttribute('aria-invalid');
             
             if (password !== CONFIG.password) {
                 alert('❌ Senha incorreta!\n\nA senha correta é: doc123');
                 passwordInput.value = '';
                 passwordInput.focus();
+                passwordInput.setAttribute('aria-invalid', 'true');
                 return;
             }
             
