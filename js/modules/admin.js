@@ -1,5 +1,16 @@
-// js/modules/admin.js - VERSÃO COMPACTA COM FUNÇÕES CENTRALIZADAS NO SHAREDCORE
+// js/modules/admin.js - VERSÃO COMPACTA COM CONFIGURAÇÃO SUPABASE RESTAURADA
 console.log('🔧 admin.js - VERSÃO COMPACTA');
+
+// RESTAURAÇÃO DE CONFIGURAÇÃO SUPABASE (CRÍTICO)
+if (!window.SUPABASE_CONSTANTS) {
+    window.SUPABASE_CONSTANTS = {
+        URL: 'https://syztbxvpdaplpetmixmt.supabase.co',
+        KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5enRieHZwZGFwbHBldG1peG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxODY0OTAsImV4cCI6MjA3OTc2MjQ5MH0.SISlMoO1kLWbIgx9pze8Dv1O-kfQ_TAFDX6yPUxfJxo',
+        ADMIN_PASSWORD: "wl654",
+        PDF_PASSWORD: "doc123"
+    };
+    console.log('✅ SUPABASE_CONSTANTS restaurado em admin.js');
+}
 
 // Sistema de logs otimizado
 const logAdmin = (message, data) => {
@@ -352,9 +363,31 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - OTIMIZADA
+   FUNÇÃO PRINCIPAL DE SALVAMENTO - COM VERIFICAÇÃO SUPABASE
    ========================================================== */
 window.saveProperty = async function() {
+    console.group('💾 SALVANDO IMÓVEL - COM VERIFICAÇÃO SUPABASE');
+    
+    // VERIFICAÇÃO CRÍTICA: SUPABASE CONFIGURADO
+    if (!window.SUPABASE_CONSTANTS?.URL || !window.SUPABASE_CONSTANTS?.KEY) {
+        console.error('❌ SUPABASE_CONSTANTS não configurado!');
+        alert('⚠️ Erro de configuração: Supabase não configurado.\n\nO imóvel será salvo apenas localmente.');
+        
+        // Continuar apenas com salvamento local
+        const propertyData = Helpers.getFormData();
+        const result = window.editingPropertyId 
+            ? await window.updateProperty(window.editingPropertyId, propertyData)
+            : await window.addNewProperty(propertyData);
+            
+        console.groupEnd();
+        return result;
+    }
+    
+    console.log('✅ Supabase configurado:', {
+        hasURL: !!window.SUPABASE_CONSTANTS.URL,
+        hasKEY: !!window.SUPABASE_CONSTANTS.KEY
+    });
+    
     const startTime = Date.now();
     
     try {
@@ -521,6 +554,7 @@ window.saveProperty = async function() {
         Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
         throw error;
     } finally {
+        console.groupEnd();
         logAdmin(`Operação concluída em ${Date.now() - startTime}ms`);
     }
 };
@@ -631,19 +665,38 @@ window.checkPropertySystem = function() {
 };
 
 /* ==========================================================
-   FUNÇÃO AUXILIAR: Configurar uploads
+   FUNÇÃO AUXILIAR: Configurar uploads (CORRIGIDA)
    ========================================================== */
 const setupMediaUploads = () => {
+    console.log('🔧 Configurando uploads de mídia...');
+    
+    // VERIFICAR SE ELEMENTOS EXISTEM
+    const elementsExist = ['pdfFileInput', 'pdfUploadArea', 'fileInput', 'uploadArea']
+        .every(id => document.getElementById(id));
+    
+    if (!elementsExist) {
+        console.warn('⚠️ Elementos de upload não encontrados, tentando novamente em 500ms');
+        setTimeout(setupMediaUploads, 500);
+        return;
+    }
+    
+    // Configurar CADA upload INDIVIDUALMENTE (evitar duplicação)
     const uploadConfigs = [
         {
             inputId: 'pdfFileInput',
             areaId: 'pdfUploadArea',
-            handler: files => window.MediaSystem?.addPdfs?.(files)
+            handler: (files) => {
+                console.log('📄 PDFs selecionados:', files.length);
+                if (window.MediaSystem?.addPdfs) {
+                    window.MediaSystem.addPdfs(files);
+                }
+            }
         },
         {
             inputId: 'fileInput',
-            areaId: 'uploadArea',
-            handler: files => {
+            areaId: 'uploadArea', 
+            handler: (files) => {
+                console.log('🖼️ Arquivos selecionados:', files.length);
                 if (window.MediaSystem?.addFiles) {
                     window.MediaSystem.addFiles(files);
                     setTimeout(() => {
@@ -655,23 +708,62 @@ const setupMediaUploads = () => {
     ];
     
     uploadConfigs.forEach(({inputId, areaId, handler}) => {
-        Helpers.setupUpload(inputId, areaId, handler);
+        try {
+            // REMOVER EVENT LISTENERS ANTIGOS (evitar duplo clique)
+            const input = document.getElementById(inputId);
+            const area = document.getElementById(areaId);
+            
+            if (input && area) {
+                // Clonar elementos para remover listeners antigos
+                const newInput = input.cloneNode(true);
+                const newArea = area.cloneNode(true);
+                
+                input.parentNode.replaceChild(newInput, input);
+                area.parentNode.replaceChild(newArea, area);
+                
+                // Configurar NOVOS listeners
+                const freshInput = document.getElementById(inputId);
+                const freshArea = document.getElementById(areaId);
+                
+                freshArea.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation(); // IMPORTANTE: evitar propagação
+                    freshInput.click();
+                };
+                
+                freshInput.onchange = (e) => {
+                    if (e.target.files.length) {
+                        handler(e.target.files);
+                        e.target.value = ''; // Resetar input
+                    }
+                };
+                
+                console.log(`✅ ${inputId} configurado sem duplicação`);
+            }
+        } catch (error) {
+            console.error(`❌ Erro ao configurar ${inputId}:`, error);
+        }
     });
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DO FORMULÁRIO
+   CONFIGURAÇÃO DO FORMULÁRIO (CORRIGIDA)
    ========================================================== */
 window.setupForm = function() {
     const form = document.getElementById('propertyForm');
     if (!form) {
-        console.warn('⚠️ Formulário não encontrado');
+        console.warn('⚠️ Formulário não encontrado, tentando em 1s...');
+        setTimeout(window.setupForm, 1000);
         return;
     }
     
-    form.parentNode.replaceChild(form.cloneNode(true), form);
+    console.log('✅ Formulário encontrado, configurando...');
     
-    if (window.setupPriceAutoFormat) window.setupPriceAutoFormat();
+    // Configurar formatação automática de preço
+    if (window.SharedCore?.PriceFormatter?.setupAutoFormat) {
+        const priceField = document.getElementById('propPrice');
+        if (priceField) window.SharedCore.PriceFormatter.setupAutoFormat(priceField);
+    }
     
     const videoCheckbox = document.getElementById('propHasVideo');
     if (videoCheckbox) {
@@ -681,40 +773,56 @@ window.setupForm = function() {
         });
     }
     
-    document.getElementById('propertyForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
+    // Configurar evento de submit UNIFICADO (evitar múltiplos handlers)
+    const freshForm = document.getElementById('propertyForm');
+    if (freshForm) {
+        // Remover event listener antigo
+        const newForm = freshForm.cloneNode(true);
+        freshForm.parentNode.replaceChild(newForm, freshForm);
         
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn?.innerHTML;
-        
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-        }
-        
-        const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Por favor, aguarde...', { variant: 'processing' });
-        
-        try {
-            await window.saveProperty();
-        } catch (error) {
-            console.error('❌ Erro no salvamento:', error);
-            Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
-        } finally {
+        // Adicionar novo listener
+        document.getElementById('propertyForm').onsubmit = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn?.innerHTML;
+            
             if (submitBtn) {
-                setTimeout(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText || 
-                        (window.editingPropertyId ? 
-                            '<i class="fas fa-save"></i> Salvar Alterações' : 
-                            '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site');
-                }, 1000);
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             }
             
-            if (loading) loading.hide();
-        }
-    });
+            const loading = window.LoadingManager?.show?.('Salvando Imóvel...', 'Por favor, aguarde...', { variant: 'processing' });
+            
+            try {
+                await window.saveProperty();
+            } catch (error) {
+                console.error('❌ Erro no salvamento:', error);
+                Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
+            } finally {
+                if (submitBtn) {
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText || 
+                            (window.editingPropertyId ? 
+                                '<i class="fas fa-save"></i> Salvar Alterações' : 
+                                '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site');
+                    }, 1000);
+                }
+                
+                if (loading) loading.hide();
+            }
+            
+            return false;
+        };
+    }
     
-    setTimeout(setupMediaUploads, 100);
+    // Configurar uploads de mídia (com delay para garantir DOM)
+    setTimeout(() => {
+        setupMediaUploads();
+        console.log('✅ Uploads de mídia configurados');
+    }, 300);
 };
 
 /* ==========================================================
@@ -881,4 +989,5 @@ if (document.readyState === 'loading') {
     initializeAdmin();
 }
 
-logAdmin('admin.js - VERSÃO COMPACTA E FUNCIONAL CARREGADA');
+logAdmin('admin.js - VERSÃO COMPACTA COM SUPABASE RESTAURADO');
+console.log('✅ Configuração Supabase restaurada:', !!window.SUPABASE_CONSTANTS);
