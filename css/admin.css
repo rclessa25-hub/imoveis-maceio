@@ -796,3 +796,48 @@
         font-size: 0.5rem !important;
     }
 }
+
+/* ========== ESTILOS DE VALIDAÇÃO PARA CAMPO DE SENHA PDF ========== */
+/* Adicionado por correção do aviso "[DOM] Password field is not contained in a form" */
+#pdfPassword[aria-invalid="true"] {
+    border-color: #e74c3c !important;
+    background-color: #ffeaea !important;
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+#pdfPassword:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+#pdfPasswordForm {
+    position: relative;
+}
+
+/* Indicador visual de campo obrigatório */
+#pdfPasswordForm:after {
+    content: "*";
+    color: #e74c3c;
+    position: absolute;
+    top: 1rem;
+    right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Melhorar acessibilidade */
+#pdfPassword:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Feedback visual para campo correto */
+#pdfPassword:valid:not(:placeholder-shown) {
+    border-color: var(--success) !important;
+    background-color: #e8f8ef !important;
+}
