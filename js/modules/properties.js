@@ -172,23 +172,25 @@ class PropertyTemplateEngine {
                 ${hasPdfs ? `
                     <button class="pdf-access" onclick="event.stopPropagation(); window.PdfSystem.showModal(${property.id})" style="
                         position: absolute;
-                        bottom: 10px;
-                        right: 10px;
-                        background: rgba(220, 53, 69, 0.9);
-                        color: white;
+                        bottom: 2px;
+                        right: 35px;
+                        background: rgba(255, 255, 255, 0.95);
                         border: none;
                         border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
+                        width: 28px;
+                        height: 28px;
+                        cursor: pointer;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        cursor: pointer;
-                        z-index: 8;
-                        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+                        font-size: 0.75rem;
+                        color: #1a5276;
                         transition: all 0.3s ease;
+                        z-index: 15;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                        border: 1px solid rgba(0,0,0,0.15);
                     ">
-                        <i class="fas fa-file-pdf" style="font-size: 18px;"></i>
+                        <i class="fas fa-file-pdf"></i>
                     </button>
                 ` : ''}
             </div>
