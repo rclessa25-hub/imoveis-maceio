@@ -83,7 +83,7 @@
 /* ========== INDICADOR DE VÍDEO (CRÍTICO) ========== */
 .video-indicator {
     position: absolute;
-    top: 35px;
+    top: 40px;
     right: 10px;
     background: rgba(0, 0, 0, 0.7);
     color: white;
