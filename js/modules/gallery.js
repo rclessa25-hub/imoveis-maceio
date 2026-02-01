@@ -7,6 +7,7 @@ window.currentGalleryIndex = 0;
 window.touchStartX = 0;
 window.touchEndX = 0;
 window.SWIPE_THRESHOLD = 50;
+window.galleryInitialized = false; // *** ADICIONADO: Controle de inicialização ***
 
 // ========== FUNÇÕES BÁSICAS DA GALERIA ==========
 
@@ -31,7 +32,7 @@ window.createPropertyGallery = function(property) {
     if (imageUrls.length <= 1) {
         return `
             <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-                <div class="property-gallery-container" onclick="openGallery(${property.id})">
+                <div class="property-gallery-container" onclick="window.openGallery(${property.id}, event)">
                     <img src="${firstImageUrl}" 
                          class="property-gallery-image"
                          alt="${property.title}"
@@ -84,7 +85,7 @@ window.createPropertyGallery = function(property) {
     // Se tem múltiplas imagens, criar galeria
     return `
         <div class="property-image ${property.rural ? 'rural-image' : ''}" style="position: relative; height: 250px;">
-            <div class="property-gallery-container" onclick="openGallery(${property.id})">
+            <div class="property-gallery-container" onclick="window.openGallery(${property.id}, event)">
                 <img src="${firstImageUrl}" 
                      class="property-gallery-image"
                      alt="${property.title}"
@@ -101,12 +102,12 @@ window.createPropertyGallery = function(property) {
                     ${imageUrls.map((_, index) => `
                         <div class="gallery-dot ${index === 0 ? 'active' : ''}" 
                              data-index="${index}"
-                             onclick="event.stopPropagation(); event.preventDefault(); showGalleryImage(${property.id}, ${index})"></div>
+                             onclick="event.stopPropagation(); event.preventDefault(); window.showGalleryImage(${property.id}, ${index})"></div>
                     `).join('')}
                 </div>
                 
                 <!-- Ícone de expansão -->
-                <div class="gallery-expand-icon" onclick="event.stopPropagation(); openGallery(${property.id})">
+                <div class="gallery-expand-icon" onclick="event.stopPropagation(); window.openGallery(${property.id}, event)">
                     <i class="fas fa-expand"></i>
                 </div>
             </div>
@@ -153,7 +154,21 @@ window.createPropertyGallery = function(property) {
 };
 
 // Função para abrir a galeria - VERSÃO CORRIGIDA
-window.openGallery = function(propertyId) {
+window.openGallery = function(propertyId, event) {
+    // *** CORREÇÃO CRÍTICA: Prevenir abertura automática ***
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    } else {
+        // Se chamada sem evento, verificar se é uma chamada manual
+        console.log('⚠️ openGallery chamada sem evento - verificando contexto');
+        const modal = document.getElementById('propertyGalleryModal');
+        if (modal && modal.style.display === 'block') {
+            console.log('ℹ️ Galeria já está aberta - ignorando chamada duplicada');
+            return;
+        }
+    }
+    
     console.log('📸 Abrindo galeria para imóvel ID:', propertyId);
     
     const property = window.properties.find(p => p.id === propertyId);
@@ -181,21 +196,23 @@ window.openGallery = function(propertyId) {
         galleryModal = document.createElement('div');
         galleryModal.id = 'propertyGalleryModal';
         galleryModal.className = 'gallery-modal';
+        galleryModal.style.display = 'none'; // *** GARANTIR que começa oculto ***
         galleryModal.innerHTML = `
             <div class="gallery-modal-content">
                 <!-- Área para swipe -->
                 <div class="gallery-swipe-area" 
-                     ontouchstart="handleTouchStart(event)"
-                     ontouchend="handleTouchEnd(event)"></div>
+                     ontouchstart="window.handleTouchStart(event)"
+                     ontouchend="window.handleTouchEnd(event)"></div>
                 
                 <!-- Imagem -->
                 <img id="galleryCurrentImage" class="gallery-modal-image" 
                      src="${window.currentGalleryImages[0]}"
-                     alt="Imagem ${window.currentGalleryIndex + 1} de ${window.currentGalleryImages.length}">
+                     alt="Imagem ${window.currentGalleryIndex + 1} de ${window.currentGalleryImages.length}"
+                     onerror="this.src='https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'">
                 
                 <!-- Controles -->
                 <div class="gallery-modal-controls">
-                    <button class="gallery-modal-btn" onclick="prevGalleryImage()" 
+                    <button class="gallery-modal-btn" onclick="window.prevGalleryImage()" 
                             aria-label="Imagem anterior">
                         <i class="fas fa-chevron-left"></i>
                     </button>
@@ -204,7 +221,7 @@ window.openGallery = function(propertyId) {
                         ${window.currentGalleryIndex + 1} / ${window.currentGalleryImages.length}
                     </div>
                     
-                    <button class="gallery-modal-btn" onclick="nextGalleryImage()" 
+                    <button class="gallery-modal-btn" onclick="window.nextGalleryImage()" 
                             aria-label="Próxima imagem">
                         <i class="fas fa-chevron-right"></i>
                     </button>
@@ -262,25 +279,32 @@ window.openGallery = function(propertyId) {
             `${window.currentGalleryIndex + 1} / ${window.currentGalleryImages.length}`;
     }
     
-    // Mostrar modal
-    galleryModal.style.display = 'block';
-    document.body.style.overflow = 'hidden'; // Prevenir scroll
-    
-    // Focar no botão fechar para acessibilidade
-    setTimeout(() => {
-        const closeBtn = galleryModal.querySelector('.gallery-modal-close');
-        if (closeBtn) {
-            closeBtn.focus();
-            // Adicionar indicador visual de foco
-            closeBtn.style.outline = '2px solid #3498db';
-            closeBtn.style.outlineOffset = '2px';
-            setTimeout(() => {
-                closeBtn.style.outline = '';
-            }, 1000);
+    // *** APENAS MOSTRAR MODAL SE FOR UMA CHAMADA VÁLIDA ***
+    if (propertyId && property) {
+        galleryModal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevenir scroll
+        
+        // Focar no botão fechar para acessibilidade
+        setTimeout(() => {
+            const closeBtn = galleryModal.querySelector('.gallery-modal-close');
+            if (closeBtn) {
+                closeBtn.focus();
+                // Adicionar indicador visual de foco
+                closeBtn.style.outline = '2px solid #3498db';
+                closeBtn.style.outlineOffset = '2px';
+                setTimeout(() => {
+                    closeBtn.style.outline = '';
+                }, 1000);
+            }
+        }, 100);
+        
+        console.log('✅ Galeria aberta com', window.currentGalleryImages.length, 'imagens');
+    } else {
+        console.log('⚠️ Tentativa de abrir galeria inválida - mantendo fechado');
+        if (galleryModal) {
+            galleryModal.style.display = 'none';
         }
-    }, 100);
-    
-    console.log('✅ Galeria aberta com', window.currentGalleryImages.length, 'imagens');
+    }
 };
 
 // Função para fechar a galeria - VERSÃO REFORÇADA
@@ -332,7 +356,7 @@ window.showGalleryImage = function(propertyId, index) {
     if (index < 0 || index >= images.length) return;
     
     // Atualizar imagem no card
-    const container = document.querySelector(`[onclick="openGallery(${propertyId})"]`);
+    const container = document.querySelector(`[onclick="window.openGallery(${propertyId}, event)"]`);
     if (container) {
         const img = container.querySelector('.property-gallery-image');
         if (img) {
@@ -456,6 +480,12 @@ window.handleGalleryKeyboard = function(event) {
 // ========== CONFIGURAÇÃO DE EVENTOS DA GALERIA ==========
 
 window.setupGalleryEvents = function() {
+    // *** CORREÇÃO: Verificar se já foi inicializado ***
+    if (window.galleryInitialized) {
+        console.log('ℹ️ Eventos da galeria já configurados - ignorando');
+        return;
+    }
+    
     console.log('🎮 Configurando eventos da galeria...');
     
     // *** CORREÇÃO: Evento delegado para fechar galeria ***
@@ -516,7 +546,8 @@ window.setupGalleryEvents = function() {
         }
     });
     
-    console.log('✅ Eventos da galeria configurados (incluindo correção do botão fechar)');
+    window.galleryInitialized = true;
+    console.log('✅ Eventos da galeria configurados (com prevenção de inicialização duplicada)');
 };
 
 // ========== OTIMIZAÇÃO MOBILE ==========
@@ -548,6 +579,13 @@ window.optimizeGalleryForMobile = function() {
 window.validateGalleryModule = function() {
     console.log('🔍 Validação básica da galeria (core)...');
     
+    // Verificar se a galeria está aberta indevidamente
+    const galleryModal = document.getElementById('propertyGalleryModal');
+    if (galleryModal && galleryModal.style.display === 'block') {
+        console.warn('⚠️ ATENÇÃO: Galeria está aberta durante o carregamento! Fechando...');
+        window.closeGallery();
+    }
+    
     // Se ValidationSystem disponível, delega para ele
     if (window.ValidationSystem && typeof window.ValidationSystem.validateGalleryModule === 'function') {
         return window.ValidationSystem.validateGalleryModule();
@@ -557,7 +595,8 @@ window.validateGalleryModule = function() {
     const basicChecks = {
         'openGallery': typeof window.openGallery === 'function',
         'closeGallery': typeof window.closeGallery === 'function',
-        'currentGalleryImages': Array.isArray(window.currentGalleryImages)
+        'currentGalleryImages': Array.isArray(window.currentGalleryImages),
+        'galeriaIniciadaIndevidamente': !(galleryModal && galleryModal.style.display === 'block')
     };
     
     const allValid = Object.values(basicChecks).every(check => check === true);
@@ -566,25 +605,30 @@ window.validateGalleryModule = function() {
     return allValid;
 };
 
-// ========== INICIALIZAÇÃO AUTOMÁTICA ==========
+// ========== INICIALIZAÇÃO MANUAL (NÃO AUTOMÁTICA) ==========
 
 window.initializeGalleryModule = function() {
-    console.log('🚀 Inicializando módulo da galeria...');
+    console.log('🚀 Inicializando módulo da galeria (MANUAL)...');
     
-    // Configurar eventos da galeria (incluindo correção do botão fechar)
+    // *** CORREÇÃO CRÍTICA: Garantir que a galeria não abra automaticamente ***
+    
+    // 1. Fechar qualquer galeria que possa ter aberto automaticamente
+    const existingModal = document.getElementById('propertyGalleryModal');
+    if (existingModal) {
+        existingModal.style.display = 'none';
+        console.log('✅ Garantindo que galeria modal esteja fechada no início');
+    }
+    
+    // 2. Configurar eventos da galeria (incluindo correção do botão fechar)
     window.setupGalleryEvents();
     
-    // Otimizar para mobile se necessário
-    setTimeout(() => {
-        if (window.isMobileDevice && window.isMobileDevice()) {
-            window.optimizeGalleryForMobile();
-        }
-    }, 1000);
+    // 3. Otimizar para mobile se necessário (apenas quando solicitado)
+    // *** REMOVIDO: Não executar automaticamente ao carregar ***
     
-    // Validar módulo
-    setTimeout(window.validateGalleryModule, 500);
+    // 4. Validar módulo
+    setTimeout(window.validateGalleryModule, 100);
     
-    console.log('✅ Módulo da galeria inicializado (com correção do botão fechar)');
+    console.log('✅ Módulo da galeria inicializado manualmente (sem abertura automática)');
 };
 
 // ========== VALIDAÇÃO DA CORREÇÃO DO BOTÃO FECHAR ==========
@@ -602,31 +646,8 @@ setTimeout(() => {
             const hasImages = property.images && property.images !== 'EMPTY';
             
             if (hasImages) {
-                // Testar abertura
-                window.openGallery(property.id);
-                
-                setTimeout(() => {
-                    const modal = document.getElementById('propertyGalleryModal');
-                    const closeBtn = modal?.querySelector('.gallery-modal-close');
-                    
-                    if (modal && modal.style.display === 'block' && closeBtn) {
-                        console.log('1. Modal aberto:', '✅');
-                        console.log('2. Botão fechar encontrado:', '✅');
-                        console.log('3. Tem onclick?', closeBtn.onclick ? '✅' : '❌');
-                        console.log('4. Z-index:', window.getComputedStyle(closeBtn).zIndex);
-                        console.log('5. Cursor:', window.getComputedStyle(closeBtn).cursor);
-                        
-                        // Teste visual (borda verde por 2 segundos)
-                        closeBtn.style.border = '2px solid #00FF00';
-                        setTimeout(() => {
-                            closeBtn.style.border = '';
-                            // Fechar após teste
-                            window.closeGallery();
-                        }, 2000);
-                    } else {
-                        console.log('⚠️ Não foi possível testar - abra uma galeria manualmente');
-                    }
-                }, 500);
+                // Testar abertura (APENAS quando manualmente chamado)
+                console.log('ℹ️ Teste disponível: chame window.openGallery(property.id, event) manualmente');
             }
         }
     };
@@ -637,9 +658,10 @@ setTimeout(() => {
     console.log('• Fechar ao clicar fora: ✅ IMPLEMENTADO');
     console.log('• Prevenção de propagação: ✅ IMPLEMENTADO');
     console.log('• Suporte touch para mobile: ✅ IMPLEMENTADO');
+    console.log('• Inicialização automática: ✅ DESATIVADA');
     
-    // Executar teste após 2 segundos
-    setTimeout(testCloseButton, 2000);
+    // Executar teste de validação básica
+    testCloseButton();
     
     console.groupEnd();
 }, 3000);
@@ -676,5 +698,40 @@ setTimeout(() => {
     console.groupEnd();
 }, 4000);
 
+// ========== VERIFICAÇÃO DE INICIALIZAÇÃO INCORRETA ==========
+
+// *** CORREÇÃO CRÍTICA: Remover qualquer chamada automática de openGallery ***
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM carregado - verificando inicialização da galeria');
+    
+    // Garantir que não há galeria aberta
+    const galleryModal = document.getElementById('propertyGalleryModal');
+    if (galleryModal && galleryModal.style.display === 'block') {
+        console.warn('🚨 ALERTA: Galeria estava aberta durante o carregamento! Fechando...');
+        galleryModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+    
+    // NÃO inicializar automaticamente - apenas quando solicitado
+    // window.initializeGalleryModule(); // *** COMENTADO: Não executar automaticamente ***
+});
+
+// *** CORREÇÃO: Remover event listeners automáticos que possam abrir a galeria ***
+window.addEventListener('load', function() {
+    console.log('🌐 Página totalmente carregada - verificando estado da galeria');
+    
+    // Verificar se há algum modal de galeria visível
+    const allModals = document.querySelectorAll('.gallery-modal');
+    allModals.forEach(modal => {
+        if (modal.style.display === 'block') {
+            console.warn('⚠️ Modal de galeria visível durante o load - ocultando');
+            modal.style.display = 'none';
+        }
+    });
+});
+
 // ========== EXPORT DO MÓDULO ==========
-console.log('✅ gallery.js completamente carregado e pronto (com correção do botão fechar)');
+console.log('✅ gallery.js completamente carregado (INICIALIZAÇÃO MANUAL - não abre automaticamente)');
+
+// *** IMPORTANTE: NÃO EXECUTAR NENHUMA FUNÇÃO AUTOMATICAMENTE ***
+// O módulo deve ser inicializado manualmente chamando: window.initializeGalleryModule()
