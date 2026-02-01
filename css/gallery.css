@@ -83,7 +83,7 @@
 /* ========== INDICADOR DE VÍDEO (CRÍTICO) ========== */
 .video-indicator {
     position: absolute;
-    top: 40px;
+    top: 35px;
     right: 10px;
     background: rgba(0, 0, 0, 0.7);
     color: white;
@@ -172,6 +172,7 @@
     width: 44px;
     height: 44px;
     font-size: 1.2rem;
+    z-index: 10001; /* Garantir acima da swipe area */
 }
 
 .gallery-modal-close {
@@ -181,6 +182,17 @@
     width: 44px;
     height: 44px;
     font-size: 1.5rem;
+    z-index: 10002 !important; /* *** CORREÇÃO CRÍTICA: Garantir acima de tudo *** */
+}
+
+/* *** CORREÇÃO: Garantir que o botão seja clicável *** */
+.gallery-modal-close * {
+    pointer-events: none; /* Permite clique no botão inteiro */
+}
+
+.gallery-modal-close {
+    pointer-events: auto !important;
+    cursor: pointer !important;
 }
 
 .gallery-modal-btn:active, .gallery-modal-close:active {
@@ -225,14 +237,14 @@
     transform: scale(1.1);
 }
 
-/* Swipe area */
+/* Swipe area - *** CORREÇÃO: reduzir z-index para não sobrepor botões *** */
 .gallery-swipe-area {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 5;
+    z-index: 5; /* Reduzido para não interferir com botões */
 }
 
 /* ========== RESPONSIVIDADE ESSENCIAL ========== */
@@ -290,9 +302,20 @@
     }
 }
 
-/* Acessibilidade */
+/* Acessibilidade - *** MELHORIA: indicador visual de foco *** */
 .gallery-modal-btn:focus,
 .gallery-modal-close:focus {
     outline: 2px solid #3498db;
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+/* *** CORREÇÃO: Estilos específicos para garantir funcionalidade do botão fechar *** */
+.gallery-modal-close:hover {
+    background: rgba(255, 255, 255, 1) !important;
+    transform: scale(1.05);
+}
+
+.gallery-modal-close:active {
+    transform: scale(0.95) !important;
 }
