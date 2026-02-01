@@ -6,6 +6,48 @@ window.properties = [];
 window.editingPropertyId = null;
 window.currentFilter = 'todos';
 
+// ========== SISTEMA DE NOTIFICAÇÃO FALLBACK ==========
+if (!window.Helpers) {
+    window.Helpers = {
+        showNotification: function(message, type = 'info', duration = 3000) {
+            console.log(`[${type.toUpperCase()}] ${message}`);
+            
+            // Criar notificação básica apenas se for erro crítico
+            if (type === 'error' && !document.getElementById('simple-notification')) {
+                const notification = document.createElement('div');
+                notification.id = 'simple-notification';
+                notification.innerHTML = `<div style="position:fixed; top:20px; right:20px; background:#e74c3c; color:white; padding:12px 18px; border-radius:8px; z-index:10000; box-shadow:0 4px 12px rgba(0,0,0,0.15);">${message}</div>`;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    const el = document.getElementById('simple-notification');
+                    if (el) el.remove();
+                }, duration);
+            }
+        }
+    };
+}
+
+// ========== FUNÇÃO UNIFICADA PARA NOTIFICAÇÕES LOCAIS ==========
+window.notifyLocalOperation = function(operation, propertyTitle, hasVideo = false) {
+    const messages = {
+        'update': `✅ "${propertyTitle}" atualizado localmente`,
+        'delete': `🗑️ "${propertyTitle}" removido localmente`,
+        'create': `🏠 "${propertyTitle}" criado localmente`
+    };
+    
+    let msg = messages[operation] || '✅ Operação concluída localmente';
+    if (hasVideo) msg += ' • Vídeo marcado';
+    
+    if (window.Helpers?.showNotification) {
+        window.Helpers.showNotification(msg, 'info', 3500);
+    } else {
+        console.log(`📱 ${msg}`);
+    }
+    
+    return true;
+};
+
 // ========== FUNÇÃO PARA GARANTIR CREDENCIAIS SUPABASE ==========
 window.ensureSupabaseCredentials = function() {
     if (!window.SUPABASE_CONSTANTS) {
@@ -696,7 +738,13 @@ window.setupFilters = function() {
 window.contactAgent = function(id) {
     const property = window.properties.find(p => p.id === id);
     if (!property) {
-        alert('❌ Imóvel não encontrado!');
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Imóvel não encontrado',
+                'error',
+                3000
+            );
+        }
         return;
     }
     
@@ -710,7 +758,13 @@ window.addNewProperty = async function(propertyData) {
     console.group('➕ ADICIONANDO NOVO IMÓVEL - VERSÃO CORRIGIDA');
 
     if (!propertyData.title || !propertyData.price || !propertyData.location) {
-        alert('❌ Preencha Título, Preço e Localização!');
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Preencha Título, Preço e Localização!',
+                'error',
+                4000
+            );
+        }
         console.groupEnd();
         return null;
     }
@@ -831,7 +885,13 @@ window.addNewProperty = async function(propertyData) {
                 localStorage.setItem('properties_backup_' + Date.now(), JSON.stringify([newProperty]));
             } catch (backupError) {
                 console.error('❌ Backup também falhou!');
-                alert('⚠️ ATENÇÃO: Não foi possível salvar o imóvel localmente!\n\nO imóvel aparecerá agora mas pode desaparecer ao recarregar.');
+                if (window.Helpers?.showNotification) {
+                    window.Helpers.showNotification(
+                        '⚠️ ATENÇÃO: Não foi possível salvar o imóvel localmente!',
+                        'error',
+                        5000
+                    );
+                }
             }
         }
 
@@ -858,29 +918,17 @@ window.addNewProperty = async function(propertyData) {
             }
         }, 300);
 
-        const imageCount = newProperty.images
-            ? newProperty.images.split(',').filter(u => u.trim() && u !== 'EMPTY').length
-            : 0;
-
-        const pdfCount = newProperty.pdfs
-            ? newProperty.pdfs.split(',').filter(u => u.trim() && u !== 'EMPTY').length
-            : 0;
-
-        let message = `✅ Imóvel "${newProperty.title}" cadastrado com sucesso!\n\n`;
-        message += `💰 Preço: ${newProperty.price}\n`;
-        message += `📍 Local: ${newProperty.location}\n`;
-        
-        if (imageCount > 0) message += `📸 ${imageCount} foto(s)/vídeo(s) anexada(s)\n`;
-        if (pdfCount > 0) message += `📄 ${pdfCount} documento(s) PDF anexado(s)\n`;
-        if (newProperty.has_video) message += `🎬 Marcado como "Tem vídeo"\n`;
-        
-        if (!supabaseSuccess) {
-            message += `\n⚠️ Salvo apenas localmente (sem conexão com servidor)`;
+        if (supabaseSuccess) {
+            if (window.Helpers?.showNotification) {
+                window.Helpers.showNotification(
+                    `✅ Imóvel "${newProperty.title}" cadastrado no servidor!`,
+                    'success',
+                    4000
+                );
+            }
         } else {
-            message += `\n🌐 Salvo no servidor com ID: ${supabaseId}`;
+            window.notifyLocalOperation('create', newProperty.title, newProperty.has_video);
         }
-
-        alert(message);
 
         setTimeout(() => {
             if (typeof MediaSystem !== 'undefined') {
@@ -899,10 +947,13 @@ window.addNewProperty = async function(propertyData) {
     } catch (error) {
         console.error('❌ ERRO CRÍTICO ao adicionar imóvel:', error);
         
-        let errorMessage = '❌ Erro ao cadastrar imóvel:\n';
-        errorMessage += error.message || 'Erro desconhecido';
-        
-        alert(errorMessage);
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Erro ao cadastrar imóvel',
+                'error',
+                5000
+            );
+        }
         
         console.groupEnd();
         return null;
@@ -952,7 +1003,13 @@ window.updateProperty = async function(id, propertyData) {
             console.log(`🔄 Usando editingPropertyId: ${window.editingPropertyId}`);
             id = window.editingPropertyId;
         } else {
-            alert('❌ ERGO: Não foi possível identificar o imóvel para atualização!');
+            if (window.Helpers?.showNotification) {
+                window.Helpers.showNotification(
+                    '❌ Não foi possível identificar o imóvel para atualização',
+                    'error',
+                    3000
+                );
+            }
             console.groupEnd();
             return { success: false, localOnly: true, error: 'ID inválido' };
         }
@@ -961,7 +1018,13 @@ window.updateProperty = async function(id, propertyData) {
     const index = window.properties.findIndex(p => p.id == id || p.id === id);
     if (index === -1) {
         console.error('❌ Imóvel não encontrado! IDs disponíveis:', window.properties.map(p => p.id));
-        alert(`❌ Imóvel não encontrado!\n\nIDs disponíveis: ${window.properties.map(p => p.id).join(', ')}`);
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Imóvel não encontrado',
+                'error',
+                3000
+            );
+        }
         console.groupEnd();
         return { success: false, localOnly: true, error: 'Imóvel não encontrado' };
     }
@@ -1025,50 +1088,46 @@ window.updateProperty = async function(id, propertyData) {
                     body: JSON.stringify(updateData)
                 });
 
-                if (response.ok) {
-                    supabaseSuccess = true;
-                    supabaseResponse = await response.json();
-                } else {
-                    supabaseError = await response.text();
-                }
+                supabaseSuccess = response.ok;
+                supabaseResponse = supabaseSuccess ? await response.json() : null;
+                supabaseError = supabaseSuccess ? null : await response.text();
             } catch (error) {
                 supabaseError = error.message;
             }
         }
 
-        const imagesCount = updateData.images ? updateData.images.split(',').filter(p => p.trim()).length : 0;
-        
         if (supabaseSuccess) {
-            let msg = `✅ Imóvel "${updateData.title}" atualizado PERMANENTEMENTE!\n`;
-            msg += `💰 Preço: ${updateData.price}\n`;
-            msg += `📍 Local: ${updateData.location}\n`;
-            if (imagesCount > 0) msg += `📸 ${imagesCount} imagem(ns)\n`;
-            if (updateData.has_video) msg += `🎬 Agora tem vídeo\n`;
-            alert(msg);
+            if (window.Helpers?.showNotification) {
+                window.Helpers.showNotification(
+                    `✅ Imóvel "${updateData.title}" atualizado no servidor!`,
+                    'success',
+                    3000
+                );
+            } else {
+                console.log(`✅ Imóvel "${updateData.title}" atualizado no servidor`);
+            }
             return { success: true, localOnly: false, data: supabaseResponse };
         } else {
-            let msg = `⚠️ Imóvel "${updateData.title}" atualizado apenas LOCALMENTE.\n`;
-            msg += `💰 Preço: ${updateData.price}\n`;
-            msg += `📍 Local: ${updateData.location}\n\n`;
-            msg += `📱 As alterações foram salvas no seu navegador.\n`;
-            msg += `🌐 Para salvar no servidor, verifique a conexão com internet.`;
-            
-            if (updateData.has_video) {
-                msg += `\n\n✅ VÍDEO: Marcado como "Tem vídeo" (salvo localmente)`;
-            }
+            window.notifyLocalOperation('update', updateData.title, updateData.has_video);
             
             if (supabaseError) {
-                msg += `\n\n❌ Erro: ${supabaseError.substring(0, 150)}...`;
+                console.warn('⚠️ Supabase offline:', supabaseError.substring(0, 100));
             }
             
-            alert(msg);
             return { success: true, localOnly: true, error: supabaseError };
         }
 
     } catch (error) {
         console.error('❌ ERRO ao atualizar imóvel:', error);
         console.groupEnd();
-        alert(`❌ ERRO: Não foi possível atualizar o imóvel.\n\n${error.message}`);
+        
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Não foi possível atualizar o imóvel',
+                'error',
+                4000
+            );
+        }
         return { success: false, localOnly: true, error: error.message };
     }
 };
@@ -1200,7 +1259,13 @@ window.deleteProperty = async function(id) {
 
     const property = window.properties.find(p => p.id === id);
     if (!property) {
-        alert('❌ Imóvel não encontrado!');
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Imóvel não encontrado',
+                'error',
+                3000
+            );
+        }
         return false;
     }
 
@@ -1225,11 +1290,8 @@ window.deleteProperty = async function(id) {
                 }
             });
 
-            if (response.ok) {
-                supabaseSuccess = true;
-            } else {
-                supabaseError = await response.text();
-            }
+            supabaseSuccess = response.ok;
+            supabaseError = supabaseSuccess ? null : await response.text();
         } catch (error) {
             supabaseError = error.message;
         }
@@ -1241,7 +1303,13 @@ window.deleteProperty = async function(id) {
     
     if (!saved) {
         console.error('❌ Falha ao salvar após exclusão!');
-        alert('⚠️ Erro ao salvar alterações localmente!');
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '⚠️ Erro ao salvar alterações localmente!',
+                'error',
+                4000
+            );
+        }
         console.groupEnd();
         return false;
     }
@@ -1257,13 +1325,19 @@ window.deleteProperty = async function(id) {
     }
 
     if (supabaseSuccess) {
-        alert(`✅ Imóvel "${property.title}" excluído PERMANENTEMENTE do sistema!\n\nFoi removido do servidor e não voltará a aparecer.`);
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                `🗑️ Imóvel "${property.title}" excluído`,
+                'success',
+                3000
+            );
+        }
     } else {
-        let errorMessage = supabaseError ? 
-            `\n\nErro no servidor: ${supabaseError.substring(0, 100)}...` : 
-            '\n\nMotivo: Conexão com servidor falhou.';
-
-        alert(`⚠️ Imóvel "${property.title}" excluído apenas LOCALMENTE.${errorMessage}\n\nO imóvel ainda existe no servidor e reaparecerá ao sincronizar.`);
+        window.notifyLocalOperation('delete', property.title);
+        
+        if (supabaseError) {
+            console.warn('⚠️ Supabase offline na exclusão:', supabaseError.substring(0, 80));
+        }
     }
 
     console.groupEnd();
@@ -1378,7 +1452,13 @@ window.testFullUpdate = function() {
     console.group('🧪 TESTE DE ATUALIZAÇÃO COMPLETA');
     
     if (!window.properties || window.properties.length === 0) {
-        alert('❌ Nenhum imóvel disponível para teste');
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Nenhum imóvel disponível para teste',
+                'error',
+                3000
+            );
+        }
         return;
     }
     
@@ -1409,12 +1489,13 @@ window.testFullUpdate = function() {
                 });
             }
             
-            alert(`🧪 TESTE DE ATUALIZAÇÃO COMPLETA:\n\n` +
-                  `Imóvel: ${testProperty.title}\n` +
-                  `Preço: ${testProperty.price}\n` +
-                  `Local: ${testProperty.location}\n` +
-                  `Vídeo: ${testProperty.has_video ? 'SIM' : 'NÃO'}\n\n` +
-                  `Todos os campos devem atualizar IMEDIATAMENTE na galeria.`);
+            if (window.Helpers?.showNotification) {
+                window.Helpers.showNotification(
+                    '🧪 Teste de atualização completo realizado',
+                    'info',
+                    4000
+                );
+            }
             
             setTimeout(() => {
                 if (window.properties[index]) {
@@ -1436,7 +1517,13 @@ window.testFullUpdate = function() {
                 }
             }, 10000);
         } else {
-            alert('❌ Teste falhou! Não foi possível salvar no localStorage.');
+            if (window.Helpers?.showNotification) {
+                window.Helpers.showNotification(
+                    '❌ Teste falhou! Não foi possível salvar no localStorage.',
+                    'error',
+                    4000
+                );
+            }
         }
     }
     
@@ -1447,9 +1534,21 @@ window.forceFullGalleryUpdate = function() {
     console.log('🔄 Forçando atualização completa da galeria...');
     if (typeof window.renderProperties === 'function') {
         window.renderProperties(window.currentFilter || 'todos', true);
-        alert('✅ Galeria atualizada com cache limpo!');
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '✅ Galeria atualizada com cache limpo!',
+                'success',
+                3000
+            );
+        }
     } else {
-        alert('❌ Função renderProperties não disponível');
+        if (window.Helpers?.showNotification) {
+            window.Helpers.showNotification(
+                '❌ Função renderProperties não disponível',
+                'error',
+                3000
+            );
+        }
     }
 };
 
@@ -1617,6 +1716,16 @@ setTimeout(() => {
         }
     }
 }, 5000);
+
+// ========== VALIDAÇÃO SILENCIOSA ==========
+setTimeout(() => {
+    if (window.location.search.includes('test=notifications')) {
+        console.group('🧪 TESTE DE NOTIFICAÇÕES');
+        console.log('✅ Sistema de notificação:', window.Helpers?.showNotification ? 'Helpers disponível' : 'Fallback ativo');
+        console.log('✅ Função unificada:', typeof window.notifyLocalOperation);
+        console.groupEnd();
+    }
+}, 2000);
 
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js VERSÃO OTIMIZADA CARREGADA');
