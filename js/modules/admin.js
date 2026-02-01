@@ -620,81 +620,10 @@ window.savePropertyLocally = async function(newProperty) {
 };
 
 /* ==========================================================
-   FUNÇÃO DE VERIFICAÇÃO DO SISTEMA - ATUALIZADA
+   FUNÇÃO DE VERIFICAÇÃO DO SISTEMA - REMOVIDA (delegada para properties.js)
    ========================================================== */
-window.checkPropertySystem = function() {
-    console.group('🔍 VERIFICAÇÃO DO SISTEMA');
-    
-    // 1. Verificar funções essenciais
-    console.log('⚙️ FUNÇÕES ESSENCIAIS:');
-    console.log('- toggleAdminPanel:', typeof window.toggleAdminPanel);
-    console.log('- saveProperty:', typeof window.saveProperty);
-    console.log('- addNewProperty:', typeof window.addNewProperty);
-    console.log('- updateProperty:', typeof window.updateProperty);
-    
-    // 2. Verificar dados
-    console.log('📊 DADOS:');
-    console.log('- window.properties:', window.properties ? `${window.properties.length} imóveis` : '❌ Não definido');
-    
-    try {
-        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-        console.log('- localStorage (chave unificada):', `${stored.length} imóveis`);
-        
-        // 🔥 CORREÇÃO: DECISÃO DO USUÁRIO EM CASO DE DESINCRONIZAÇÃO
-        if (window.properties && stored.length !== window.properties.length) {
-            console.warn(`⚠️ DESINCRONIZAÇÃO DETECTADA!`);
-            console.warn(`   localStorage: ${stored.length} imóveis`);
-            console.warn(`   window.properties: ${window.properties.length} imóveis`);
-            
-            // DECISÃO BASEADA EM REGRAS CLARAS
-            const useStorageData = confirm(
-                `⚠️ INCONSISTÊNCIA DETECTADA!\n\n` +
-                `Storage: ${stored.length} imóveis\n` +
-                `Memória: ${window.properties.length} imóveis\n\n` +
-                `Usar dados do storage (recomendado)?\n\n` +
-                `Cancelar = manter dados atuais em memória`
-            );
-            
-            if (useStorageData) {
-                console.log('🔄 Usando dados do localStorage');
-                window.properties = stored;
-                window.savePropertiesToStorage(); // Forçar sincronização
-            } else {
-                console.log('🔄 Salvando dados da memória no localStorage');
-                window.savePropertiesToStorage();
-            }
-        }
-    } catch (e) {
-        console.error('❌ Erro ao ler localStorage:', e);
-    }
-    
-    // 3. Sugestões
-    console.log('💡 SUGESTÕES:');
-    
-    if (typeof window.addNewProperty !== 'function') {
-        console.log('1. A função addNewProperty() não está disponível');
-        console.log('   Isso pode impedir o salvamento no Supabase');
-    }
-    
-    if (!window.properties) {
-        console.log('2. window.properties não está definido');
-        console.log('   Execute: window.properties = [];');
-    }
-    
-    // 4. Testar botão admin
-    console.log('🔧 BOTÃO ADMIN:');
-    const adminBtn = document.querySelector('.admin-toggle');
-    if (adminBtn) {
-        console.log('✅ Botão encontrado no DOM');
-        console.log('- ID:', adminBtn.id);
-        console.log('- Classe:', adminBtn.className);
-        console.log('- Tem onclick:', !!adminBtn.onclick);
-    } else {
-        console.log('❌ Botão admin não encontrado!');
-    }
-    
-    console.groupEnd();
-};
+// NOTA: A função window.checkPropertySystem() agora está em properties.js
+// e não exibe mais alertas intrusivos. A função abaixo foi removida.
 
 /* ==========================================================
    CONFIGURAÇÃO DO FORMULÁRIO
@@ -845,27 +774,8 @@ window.setupAdminUI = function() {
         setTimeout(window.setupForm, 100);
     }
     
-    // 5. Adicionar botão de verificação
-    if (!document.getElementById('verify-btn')) {
-        const verifyBtn = document.createElement('button');
-        verifyBtn.id = 'verify-btn';
-        verifyBtn.innerHTML = '🔍 Verificar Sistema';
-        verifyBtn.style.cssText = `
-            position: fixed;
-            bottom: 50px;
-            left: 10px;
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 99999;
-            font-size: 14px;
-        `;
-        verifyBtn.onclick = window.checkPropertySystem;
-        document.body.appendChild(verifyBtn);
-    }
+    // 5. NÃO adicionar botão de verificação (removido para evitar duplicidade)
+    // O botão já existe em properties.js se debug=true
     
     console.log('✅ UI do admin configurada');
 };
@@ -932,15 +842,18 @@ function initializeAdmin() {
     // 2. Configurar UI
     window.setupAdminUI();
     
-    // 3. Verificação inicial
+    // 3. Verificação inicial silenciosa (usando a versão corrigida)
     setTimeout(() => {
-        console.log('🔍 Verificação inicial do sistema...');
-        window.checkPropertySystem();
+        console.log('🔍 Verificação silenciosa do sistema...');
+        // Usar a versão silenciosa da função
+        if (typeof window.checkPropertySystem === 'function') {
+            window.checkPropertySystem(true); // true = modo silencioso
+        }
         
         // Instruções para o usuário
         console.log('💡 INSTRUÇÕES:');
         console.log('1. Clique no botão 🔧 para abrir o painel admin');
-        console.log('2. Use o botão 🔍 para verificar o sistema');
+        console.log('2. Para verificação detalhada, adicione ?debug=true na URL');
         console.log('3. Se o botão admin não funcionar, use o botão de emergência (vermelho)');
         
     }, 2000);
@@ -954,5 +867,5 @@ if (document.readyState === 'loading') {
 }
 
 console.log('✅ admin.js - VERSÃO COMPLETA E FUNCIONAL CARREGADA (USANDO SHAREDCORE)');
-console.log('🔍 Para verificar: window.checkPropertySystem()');
+console.log('🔍 Para verificação silenciosa: window.checkPropertySystem(true)');
 console.log('🔧 Para abrir painel: window.toggleAdminPanel()');
