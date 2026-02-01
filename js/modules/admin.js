@@ -106,6 +106,10 @@ const Helpers = {
     },
     
     showNotification: (message, type = 'success', duration = 3000) => {
+        // GARANTIR QUE ESTA FUNÇÃO ESTEJA DISPONÍVEL GLOBALMENTE
+        window.Helpers = window.Helpers || {};
+        window.Helpers.showNotification = Helpers.showNotification;
+        
         const existing = document.querySelectorAll('.auto-save-notification');
         existing.forEach(n => n.remove());
         
@@ -296,7 +300,7 @@ window.editProperty = function(id) {
     
     const property = window.properties?.find(p => p.id === id);
     if (!property) {
-        alert('❌ Imóvel não encontrado!');
+        Helpers.showNotification('❌ Imóvel não encontrado!', 'error', 3000);
         return false;
     }
     
@@ -524,7 +528,6 @@ window.saveProperty = async function() {
                     
                     if (fallbackResult.success) {
                         Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
-                        alert('⚠️ Imóvel salvo apenas LOCALMENTE!\n\nAparecerá agora, mas pode sumir ao recarregar.');
                         
                         setTimeout(() => {
                             if (typeof window.renderProperties === 'function') {
@@ -543,7 +546,6 @@ window.saveProperty = async function() {
                 
                 if (fallbackResult.success) {
                     Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
-                    alert('⚠️ Imóvel salvo apenas LOCALMENTE!\n\nAparecerá agora, mas pode sumir ao recarregar.');
                     
                     setTimeout(() => {
                         if (typeof window.renderProperties === 'function') {
@@ -559,7 +561,6 @@ window.saveProperty = async function() {
     } catch (error) {
         console.error('❌ Erro ao salvar imóvel:', error);
         Helpers.showNotification(`❌ Erro: ${error.message}`, 'error', 5000);
-        alert(`❌ Erro ao salvar:\n\n${error.message}\n\nOs dados NÃO foram perdidos. Corrija e tente novamente.`);
         
     } finally {
         console.groupEnd();
@@ -618,12 +619,6 @@ window.savePropertyLocally = async function(newProperty) {
         };
     }
 };
-
-/* ==========================================================
-   FUNÇÃO DE VERIFICAÇÃO DO SISTEMA - REMOVIDA (delegada para properties.js)
-   ========================================================== */
-// NOTA: A função window.checkPropertySystem() agora está em properties.js
-// e não exibe mais alertas intrusivos. A função abaixo foi removida.
 
 /* ==========================================================
    CONFIGURAÇÃO DO FORMULÁRIO
@@ -773,9 +768,6 @@ window.setupAdminUI = function() {
     if (typeof window.setupForm === 'function') {
         setTimeout(window.setupForm, 100);
     }
-    
-    // 5. NÃO adicionar botão de verificação (removido para evitar duplicidade)
-    // O botão já existe em properties.js se debug=true
     
     console.log('✅ UI do admin configurada');
 };
