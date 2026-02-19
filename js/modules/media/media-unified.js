@@ -1103,30 +1103,6 @@ const MediaSystem = {
         this.state.lastUploadResult = null;
         
         return this;
-    },
-
-    // ========== FUNÇÃO DE DIAGNÓSTICO ==========
-    debugState: function() {
-        console.group('🐛 DEBUG - ESTADO DO MEDIA SYSTEM');
-        console.log('📊 Estado atual:');
-        console.log('- Arquivos novos:', this.state.files.length);
-        console.log('- Arquivos existentes:', this.state.existing.length);
-        console.log('- PDFs novos:', this.state.pdfs.length);
-        console.log('- PDFs existentes:', this.state.existingPdfs.length);
-        console.log('- Upload em andamento:', this.state.isUploading);
-        console.log('- Property ID atual:', this.state.currentPropertyId);
-        
-        console.log('📁 Arquivos novos:');
-        this.state.files.forEach((item, i) => {
-            console.log(`  ${i+1}. "${item.name}"`, {
-                isNew: item.isNew,
-                uploaded: item.uploaded,
-                hasFile: !!item.file,
-                previewType: item.preview ? item.preview.substring(0, 50) + '...' : 'sem preview'
-            });
-        });
-        
-        console.groupEnd();
     }
 };
 
@@ -1137,49 +1113,6 @@ window.MediaSystem = MediaSystem;
 setTimeout(() => {
     window.MediaSystem.init('vendas');
     console.log('✅ Sistema de mídia COMPLETO E FUNCIONAL pronto');
-    
-    // Adicionar função de debug global
-    window.debugMediaSystem = function() {
-        MediaSystem.debugState();
-    };
-    
-    // Adicionar função de teste de upload
-    window.testMediaUpload = async function() {
-        console.group('🧪 TESTE DE UPLOAD RÁPIDO');
-        
-        try {
-            // Criar arquivo de teste
-            const testBlob = new Blob(['test content'], { type: 'image/jpeg' });
-            const testFile = new File([testBlob], 'test_image.jpg', { type: 'image/jpeg' });
-            
-            console.log('📁 Arquivo de teste criado');
-            
-            // Adicionar ao sistema
-            MediaSystem.addFiles([testFile]);
-            
-            // Aguardar um pouco
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Testar upload
-            const testId = 'test_' + Date.now();
-            const result = await MediaSystem.uploadAll(testId, 'Teste de Upload');
-            
-            if (result.success) {
-                console.log('✅ TESTE DE UPLOAD BEM-SUCEDIDO!');
-                console.log('📊 URLs geradas:', result.images);
-                alert('✅ Upload funcionou! Verifique console para detalhes.');
-            } else {
-                console.error('❌ TESTE DE UPLOAD FALHOU!');
-                alert('❌ Upload falhou. Verifique console.');
-            }
-        } catch (error) {
-            console.error('❌ Erro no teste:', error);
-            alert(`❌ Erro: ${error.message}`);
-        }
-        
-        console.groupEnd();
-    };
-    
 }, 1000);
 
 console.log('✅ media-unified.js COMPLETO E FUNCIONAL carregado');
