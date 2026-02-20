@@ -1407,20 +1407,7 @@ if (document.readyState === 'loading') {
     setTimeout(window.autoSyncOnLoad, 1000);
 }
 
-// ========== 18. MONITORAMENTO SILENCIOSO CONTÍNUO ==========
-setInterval(() => {
-    if (window.location.search.includes('debug=true')) {
-        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-        const inMemory = window.properties?.length || 0;
-        
-        if (Math.abs(stored.length - inMemory) > 0) {
-            console.log(`📊 [MONITOR] Storage: ${stored.length} | Memória: ${inMemory}`);
-            if (Math.abs(stored.length - inMemory) <= 3) {
-                window.checkPropertySystem(true);
-            }
-        }
-    }
-}, 30000);
+// ========== 18. (SEÇÃO REMOVIDA - MONITORAMENTO CONTÍNUO MIGRADO PARA SUPORTE) ==========
 
 // ========== (SEÇÃO 19 REMOVIDA - FUNÇÃO DE DIAGNÓSTICO MIGRADA) ==========
 
@@ -1495,8 +1482,8 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 VERSÃO OTIMIZADA - TODAS AS FUNÇÕES DE DIAGNÓSTICO E TESTE MIGRADAS');
+console.log('🎯 VERSÃO OTIMIZADA - TODAS AS FUNÇÕES DE DIAGNÓSTICO, TESTE E MONITORAMENTO MIGRADAS');
 console.log('💡 Execute window.diagnosticoSincronizacao() no console (F12) para verificar o sistema');
 console.log('💡 Execute window.testFullUpdate() para testar atualização');
 console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
-console.log('💡 Adicione ?debug=true na URL para logs detalhados no console');
+console.log('💡 Adicione ?debug=true na URL para logs detalhados no console e monitoramento automático');
