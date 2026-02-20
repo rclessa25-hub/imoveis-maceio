@@ -1373,85 +1373,7 @@ window.loadPropertyList = function() {
     }, 3000);
 })();
 
-// ========== 15. FUNÇÕES DE TESTE (SIMPLIFICADAS) ==========
-window.testFullUpdate = function() {
-    console.group('🧪 TESTE DE ATUALIZAÇÃO COMPLETA');
-    
-    if (!window.properties || window.properties.length === 0) {
-        alert('❌ Nenhum imóvel disponível para teste');
-        return;
-    }
-    
-    const testProperty = window.properties[0];
-    const hasVideoBefore = testProperty.has_video;
-    const titleBefore = testProperty.title;
-    const priceBefore = testProperty.price;
-    const locationBefore = testProperty.location;
-    
-    testProperty.has_video = !hasVideoBefore;
-    testProperty.title = `${titleBefore} [TESTE ATUALIZADO]`;
-    testProperty.price = `R$ ${Math.floor(Math.random() * 1000000).toLocaleString()}`;
-    testProperty.location = `${locationBefore} [LOCAL ATUALIZADO]`;
-    
-    const index = window.properties.findIndex(p => p.id === testProperty.id);
-    if (index !== -1) {
-        window.properties[index] = testProperty;
-        
-        const saved = window.savePropertiesToStorage();
-        
-        if (saved) {
-            if (typeof window.updatePropertyCard === 'function') {
-                window.updatePropertyCard(testProperty.id, {
-                    title: testProperty.title,
-                    price: testProperty.price,
-                    location: testProperty.location,
-                    has_video: testProperty.has_video
-                });
-            }
-            
-            alert(`🧪 TESTE DE ATUALIZAÇÃO COMPLETA:\n\n` +
-                  `Imóvel: ${testProperty.title}\n` +
-                  `Preço: ${testProperty.price}\n` +
-                  `Local: ${testProperty.location}\n` +
-                  `Vídeo: ${testProperty.has_video ? 'SIM' : 'NÃO'}\n\n` +
-                  `Todos os campos devem atualizar IMEDIATAMENTE na galeria.`);
-            
-            setTimeout(() => {
-                if (window.properties[index]) {
-                    window.properties[index].title = titleBefore;
-                    window.properties[index].price = priceBefore;
-                    window.properties[index].location = locationBefore;
-                    window.properties[index].has_video = hasVideoBefore;
-                    
-                    window.savePropertiesToStorage();
-                    
-                    if (typeof window.updatePropertyCard === 'function') {
-                        window.updatePropertyCard(testProperty.id, {
-                            title: titleBefore,
-                            price: priceBefore,
-                            location: locationBefore,
-                            has_video: hasVideoBefore
-                        });
-                    }
-                }
-            }, 10000);
-        } else {
-            alert('❌ Teste falhou! Não foi possível salvar no localStorage.');
-        }
-    }
-    
-    console.groupEnd();
-};
-
-window.forceFullGalleryUpdate = function() {
-    console.log('🔄 Forçando atualização completa da galeria...');
-    if (typeof window.renderProperties === 'function') {
-        window.renderProperties(window.currentFilter || 'todos', true);
-        alert('✅ Galeria atualizada com cache limpo!');
-    } else {
-        alert('❌ Função renderProperties não disponível');
-    }
-};
+// ========== 15. (SEÇÃO REMOVIDA - FUNÇÕES DE TESTE MIGRADAS PARA SUPORTE) ==========
 
 // ========== 16. VERIFICAÇÃO DO SISTEMA DE PROPRIEDADES - VERSÃO SILENCIOSA ==========
 window.checkPropertySystem = function(silent = true) {
@@ -1615,6 +1537,8 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 VERSÃO OTIMIZADA - SEM BOTÕES DE DIAGNÓSTICO VISÍVEIS');
+console.log('🎯 VERSÃO OTIMIZADA - SEM FUNÇÕES DE TESTE NO CORE');
 console.log('💡 Execute window.diagnosticoSincronizacao() no console (F12) para verificar o sistema');
+console.log('💡 Execute window.testFullUpdate() para testar atualização');
+console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
 console.log('💡 Adicione ?debug=true na URL para logs detalhados no console');
