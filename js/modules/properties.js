@@ -1542,55 +1542,7 @@ setInterval(() => {
     }
 }, 30000);
 
-// ========== 19. FUNÇÃO DE DIAGNÓSTICO PÚBLICA (APENAS CONSOLE) ==========
-window.diagnosticoSincronizacao = function() {
-    console.group('🔍 DIAGNÓSTICO DE SINCRONIZAÇÃO - PROPERTIES.JS');
-    
-    console.log('📊 ESTADO ATUAL:');
-    console.log('- window.properties:', window.properties?.length || 0, 'imóveis');
-    console.log('- É array?', Array.isArray(window.properties));
-    
-    if (window.properties && window.properties.length > 0) {
-        console.log('- Primeiros 3 IDs:', window.properties.slice(0, 3).map(p => p.id));
-    }
-    
-    console.log('💾 LOCALSTORAGE (CHAVE UNIFICADA):');
-    const chaves = Object.keys(localStorage);
-    const chavesProp = chaves.filter(k => k.includes('prop') || k.includes('weber'));
-    
-    chavesProp.forEach(chave => {
-        try {
-            const valor = localStorage.getItem(chave);
-            const parsed = JSON.parse(valor || '[]');
-            console.log(`- "${chave}": ${parsed.length} imóveis`);
-        } catch (e) {
-            console.log(`- "${chave}": ERRO ao parsear`);
-        }
-    });
-    
-    console.log('⚙️ FUNÇÕES CRÍTICAS:');
-    ['savePropertiesToStorage', 'addNewProperty', 'loadPropertiesData'].forEach(fn => {
-        console.log(`- ${fn}:`, typeof window[fn] === 'function' ? '✅' : '❌');
-    });
-    
-    console.log('💡 RECOMENDAÇÕES:');
-    if (!window.properties || window.properties.length === 0) {
-        console.log('1. window.properties está vazio - execute window.loadPropertiesData()');
-    }
-    
-    const propsStorage = localStorage.getItem('properties');
-    if (!propsStorage) {
-        console.log('2. localStorage "properties" não encontrado - verifique salvamento');
-    }
-    
-    const hasOldKey = localStorage.getItem('weberlessa_properties');
-    if (hasOldKey) {
-        console.log('3. CHAVE ANTIGA DETECTADA! Execute localStorage.removeItem("weberlessa_properties")');
-    }
-    
-    console.groupEnd();
-    console.log('💡 Para diagnóstico detalhado, adicione ?debug=true na URL');
-};
+// ========== (SEÇÃO 19 REMOVIDA - FUNÇÃO DE DIAGNÓSTICO MIGRADA) ==========
 
 // ========== 20. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
 setTimeout(() => {
