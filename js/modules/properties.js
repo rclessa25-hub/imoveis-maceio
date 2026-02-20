@@ -1375,49 +1375,7 @@ window.loadPropertyList = function() {
 
 // ========== 15. (SEÇÃO REMOVIDA - FUNÇÕES DE TESTE MIGRADAS PARA SUPORTE) ==========
 
-// ========== 16. VERIFICAÇÃO DO SISTEMA DE PROPRIEDADES - VERSÃO SILENCIOSA ==========
-window.checkPropertySystem = function(silent = true) {
-    if (!silent) console.group('🔍 VERIFICAÇÃO DO SISTEMA');
-    
-    try {
-        const stored = JSON.parse(localStorage.getItem('properties') || '[]');
-        
-        if (stored.length > 0) {
-            if (!window.properties || window.properties.length === 0) {
-                window.properties = stored;
-                console.log(`✅ [AUTO] Carregados ${stored.length} imóveis do localStorage`);
-                return { action: 'loaded_from_storage', count: stored.length };
-            }
-            else if (Math.abs(stored.length - window.properties.length) > 2) {
-                if (stored.length > window.properties.length) {
-                    window.properties = stored;
-                    console.log(`✅ [AUTO] Sincronizado: storage tem +${stored.length - window.properties.length} imóveis`);
-                    return { action: 'synced_from_storage', difference: stored.length - window.properties.length };
-                } else {
-                    window.savePropertiesToStorage();
-                    console.log(`✅ [AUTO] Sincronizado: memória tem +${window.properties.length - stored.length} imóveis`);
-                    return { action: 'synced_to_storage', difference: window.properties.length - stored.length };
-                }
-            }
-        }
-        
-        if (!silent) {
-            console.log('⚙️ FUNÇÕES ESSENCIAIS:');
-            console.log('- toggleAdminPanel:', typeof window.toggleAdminPanel);
-            console.log('- saveProperty:', typeof window.saveProperty);
-            console.log('- addNewProperty:', typeof window.addNewProperty);
-            console.log('- updateProperty:', typeof window.updateProperty);
-        }
-        
-        return { action: 'no_sync_needed', status: 'ok' };
-        
-    } catch (error) {
-        console.error('❌ Erro na verificação automática:', error);
-        return { action: 'error', error: error.message };
-    } finally {
-        if (!silent) console.groupEnd();
-    }
-};
+// ========== 16. (SEÇÃO REMOVIDA - FUNÇÃO CHECKPROPERTYSYSTEM MIGRADA PARA SUPORTE) ==========
 
 // ========== 17. SISTEMA DE SINCRONIZAÇÃO AUTOMÁTICA INICIAL ==========
 window.autoSyncOnLoad = function() {
@@ -1537,7 +1495,7 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 VERSÃO OTIMIZADA - SEM FUNÇÕES DE TESTE NO CORE');
+console.log('🎯 VERSÃO OTIMIZADA - TODAS AS FUNÇÕES DE DIAGNÓSTICO E TESTE MIGRADAS');
 console.log('💡 Execute window.diagnosticoSincronizacao() no console (F12) para verificar o sistema');
 console.log('💡 Execute window.testFullUpdate() para testar atualização');
 console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
