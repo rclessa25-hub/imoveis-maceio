@@ -1377,35 +1377,7 @@ window.loadPropertyList = function() {
 
 // ========== 16. (SEÇÃO REMOVIDA - FUNÇÃO CHECKPROPERTYSYSTEM MIGRADA PARA SUPORTE) ==========
 
-// ========== 17. SISTEMA DE SINCRONIZAÇÃO AUTOMÁTICA INICIAL ==========
-window.autoSyncOnLoad = function() {
-    setTimeout(() => {
-        try {
-            const syncResult = window.checkPropertySystem(true);
-            
-            if (window.location.search.includes('debug=true')) {
-                console.log('🔄 Sincronização automática:', syncResult);
-            }
-            
-            if (syncResult.action !== 'no_sync_needed') {
-                setTimeout(() => {
-                    if (typeof window.renderProperties === 'function' && syncResult.count > 0) {
-                        window.renderProperties('todos');
-                    }
-                }, 500);
-            }
-        } catch (e) {
-            console.warn('⚠️ Sincronização automática falhou (não crítico):', e.message);
-        }
-    }, 3000);
-};
-
-// Executar automaticamente quando o sistema estiver pronto
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', window.autoSyncOnLoad);
-} else {
-    setTimeout(window.autoSyncOnLoad, 1000);
-}
+// ========== 17. (SEÇÃO REMOVIDA - AUTO SYNC ON LOAD MIGRADO PARA SUPORTE) ==========
 
 // ========== 18. (SEÇÃO REMOVIDA - MONITORAMENTO CONTÍNUO MIGRADO PARA SUPORTE) ==========
 
@@ -1482,7 +1454,7 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 VERSÃO OTIMIZADA - TODAS AS FUNÇÕES DE DIAGNÓSTICO, TESTE E MONITORAMENTO MIGRADAS');
+console.log('🎯 VERSÃO OTIMIZADA - TODAS AS FUNÇÕES DE DIAGNÓSTICO, TESTE, VERIFICAÇÃO, MONITORAMENTO E INICIALIZAÇÃO AUTOMÁTICA MIGRADAS');
 console.log('💡 Execute window.diagnosticoSincronizacao() no console (F12) para verificar o sistema');
 console.log('💡 Execute window.testFullUpdate() para testar atualização');
 console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
