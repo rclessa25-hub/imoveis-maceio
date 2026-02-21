@@ -434,12 +434,7 @@ async function waitForAllPropertyImages() {
 
 // ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO ==========
 window.loadPropertiesData = async function () {
-    // ✅ PRIMEIRO: Executar sincronização automática silenciosa
-    try {
-        window.checkPropertySystem(true);
-    } catch (e) {
-        // Ignorar erros na sincronização prévia
-    }
+    // ✅ PRIMEIRO: (NÃO HÁ MAIS CHAMADA A checkPropertySystem AQUI)
     
     const loading = window.LoadingManager?.show?.(
         'Carregando imóveis...', 
@@ -1324,91 +1319,6 @@ window.loadPropertyList = function() {
     console.log(`✅ ${window.properties.length} imóveis listados no admin`);
 };
 
-// ========== 14. SISTEMA DE RECUPERAÇÃO DE FALHAS CORRIGIDO ==========
-(function essentialPropertiesRecovery() {
-    setTimeout(() => {
-        if (!window.properties || window.properties.length === 0) {
-            console.warn('⚠️ window.properties vazio após 3 segundos, tentando recuperação...');
-            
-            let stored = localStorage.getItem('properties');
-            
-            if (!stored) {
-                stored = localStorage.getItem('weberlessa_properties');
-                if (stored) {
-                    console.log('🔄 Encontrado na chave antiga, migrando para chave unificada...');
-                    localStorage.setItem('properties', stored);
-                    localStorage.removeItem('weberlessa_properties');
-                }
-            }
-            
-            if (stored) {
-                try {
-                    window.properties = JSON.parse(stored);
-                    window.properties = window.properties.map(prop => ({
-                        ...prop,
-                        has_video: window.SharedCore?.ensureBooleanVideo?.(prop.has_video) || false,
-                        features: window.SharedCore?.parseFeaturesForStorage?.(prop.features) || '[]'
-                    }));
-                    
-                    console.log(`✅ Recuperado do localStorage: ${window.properties.length} imóveis`);
-                    
-                    if (typeof window.renderProperties === 'function' && document.readyState === 'complete') {
-                        setTimeout(() => window.renderProperties('todos', true), 300);
-                    }
-                    
-                } catch (e) {
-                    console.error('❌ Erro ao recuperar do localStorage:', e);
-                }
-            }
-            
-            if (!window.properties || window.properties.length === 0) {
-                window.properties = getInitialProperties();
-                window.savePropertiesToStorage();
-                
-                if (typeof window.renderProperties === 'function') {
-                    setTimeout(() => window.renderProperties('todos', true), 300);
-                }
-            }
-        }
-    }, 3000);
-})();
-
-// ========== 15. (SEÇÃO REMOVIDA - FUNÇÕES DE TESTE MIGRADAS PARA SUPORTE) ==========
-
-// ========== 16. (SEÇÃO REMOVIDA - FUNÇÃO CHECKPROPERTYSYSTEM MIGRADA PARA SUPORTE) ==========
-
-// ========== 17. (SEÇÃO REMOVIDA - AUTO SYNC ON LOAD MIGRADO PARA SUPORTE) ==========
-
-// ========== 18. (SEÇÃO REMOVIDA - MONITORAMENTO CONTÍNUO MIGRADO PARA SUPORTE) ==========
-
-// ========== (SEÇÃO 19 REMOVIDA - FUNÇÃO DE DIAGNÓSTICO MIGRADA) ==========
-
-// ========== 20. VERIFICAÇÃO AUTOMÁTICA AO INICIAR ==========
-setTimeout(() => {
-    if (window.properties && window.properties.length > 0) {
-        try {
-            const stored = localStorage.getItem('properties');
-            if (!stored) {
-                console.warn('⚠️ localStorage vazio (chave unificada), salvando array atual...');
-                window.savePropertiesToStorage();
-            } else {
-                const parsed = JSON.parse(stored);
-                if (parsed.length !== window.properties.length) {
-                    console.warn(`⚠️ INCONSISTÊNCIA: localStorage tem ${parsed.length}, array tem ${window.properties.length}`);
-                    console.warn('🔄 Corrigindo automaticamente...');
-                    window.savePropertiesToStorage();
-                }
-            }
-            
-            if (localStorage.getItem('weberlessa_properties')) {
-                localStorage.removeItem('weberlessa_properties');
-            }
-        } catch (error) {
-            console.error('❌ Erro na verificação automática:', error);
-        }
-    }
-}, 5000);
-
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js VERSÃO OTIMIZADA CARREGADA');
 
@@ -1454,8 +1364,6 @@ if (document.readyState === 'loading') {
 // Exportar funções necessárias
 window.getInitialProperties = getInitialProperties;
 
-console.log('🎯 VERSÃO OTIMIZADA - TODAS AS FUNÇÕES DE DIAGNÓSTICO, TESTE, VERIFICAÇÃO, MONITORAMENTO E INICIALIZAÇÃO AUTOMÁTICA MIGRADAS');
-console.log('💡 Execute window.diagnosticoSincronizacao() no console (F12) para verificar o sistema');
-console.log('💡 Execute window.testFullUpdate() para testar atualização');
-console.log('💡 Execute window.forceFullGalleryUpdate() para forçar atualização da galeria');
-console.log('💡 Adicione ?debug=true na URL para logs detalhados no console e monitoramento automático');
+console.log('🎯 VERSÃO OTIMIZADA - TODAS AS FUNÇÕES DE DIAGNÓSTICO, TESTE, VERIFICAÇÃO E MONITORAMENTO FORAM REMOVIDAS DO CORE SYSTEM.');
+console.log('💡 As funções de diagnóstico foram migradas para o Support System (storage-diagnostics.js).');
+console.log('💡 Adicione ?debug=true na URL para ativar as funcionalidades de diagnóstico no Support System.');
