@@ -1,5 +1,5 @@
-// js/modules/gallery.js - Sistema de galeria de fotos OTIMIZADO
-console.log('🚀 gallery.js carregado - Versão otimizada');
+// js/modules/gallery.js - Sistema de galeria de fotos (CORE)
+console.log('🚀 gallery.js carregado - Versão core');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 window.currentGalleryImages = [];
@@ -8,7 +8,7 @@ window.touchStartX = 0;
 window.touchEndX = 0;
 window.SWIPE_THRESHOLD = 50;
 
-// ========== FUNÇÕES DA GALERIA ==========
+// ========== FUNÇÕES ESSENCIAIS DA GALERIA ==========
 
 // Criar galeria no card do imóvel
 window.createPropertyGallery = function(property) {
@@ -76,8 +76,6 @@ window.createPropertyGallery = function(property) {
 
 // Abrir galeria
 window.openGallery = function(propertyId) {
-    console.log('📸 Abrindo galeria para imóvel ID:', propertyId);
-    
     const property = window.properties.find(p => p.id === propertyId);
     if (!property) return;
     
@@ -87,7 +85,6 @@ window.openGallery = function(propertyId) {
     window.currentGalleryImages = property.images.split(',').filter(url => url.trim() !== '');
     window.currentGalleryIndex = 0;
     
-    // Criar ou atualizar modal
     let galleryModal = document.getElementById('propertyGalleryModal');
     
     if (!galleryModal) {
@@ -113,7 +110,6 @@ window.openGallery = function(propertyId) {
                 <button class="gallery-modal-close" onclick="closeGallery()"><i class="fas fa-times"></i></button>
             </div>`;
         document.body.appendChild(galleryModal);
-        document.addEventListener('keydown', window.handleGalleryKeyboard);
     } else {
         document.getElementById('galleryCurrentImage').src = window.currentGalleryImages[0];
         document.getElementById('galleryCounter').textContent = `1 / ${window.currentGalleryImages.length}`;
@@ -128,15 +124,12 @@ window.openGallery = function(propertyId) {
     }, 100);
 };
 
-// Fechar galeria (CORRIGIDO - evento funciona)
+// Fechar galeria
 window.closeGallery = function() {
-    console.log('❌ Fechando galeria');
-    
     const galleryModal = document.getElementById('propertyGalleryModal');
     if (galleryModal) {
         galleryModal.style.display = 'none';
         document.body.style.overflow = 'auto';
-        document.removeEventListener('keydown', window.handleGalleryKeyboard);
         window.currentGalleryImages = [];
         window.currentGalleryIndex = 0;
     }
@@ -216,26 +209,8 @@ function handleSwipe() {
     }
 }
 
-// Teclado
-window.handleGalleryKeyboard = function(event) {
-    const galleryModal = document.getElementById('propertyGalleryModal');
-    if (!galleryModal || galleryModal.style.display !== 'block') return;
-    
-    switch(event.key) {
-        case 'ArrowLeft': event.preventDefault(); window.prevGalleryImage(); break;
-        case 'ArrowRight': event.preventDefault(); window.nextGalleryImage(); break;
-        case 'Escape': event.preventDefault(); window.closeGallery(); break;
-        case ' ':
-        case 'Enter':
-            if (event.target.tagName !== 'BUTTON') event.preventDefault();
-            break;
-    }
-};
-
 // Configurar eventos
 window.setupGalleryEvents = function() {
-    console.log('🎮 Configurando eventos da galeria...');
-    
     document.addEventListener('click', function(event) {
         const galleryModal = document.getElementById('propertyGalleryModal');
         if (galleryModal && galleryModal.style.display === 'block' && event.target === galleryModal) {
@@ -261,20 +236,11 @@ window.setupGalleryEvents = function() {
         const galleryModal = document.getElementById('propertyGalleryModal');
         if (galleryModal && galleryModal.style.display === 'block') event.preventDefault();
     });
-    
-    console.log('✅ Eventos configurados');
 };
 
-// Inicialização MANUAL (não automática)
-window.initializeGalleryModule = function() {
-    console.log('🚀 Inicializando módulo da galeria...');
-    window.setupGalleryEvents();
-    console.log('✅ Módulo inicializado');
-};
+// Inicialização automática (chamada pelo main.js)
+if (typeof window.setupGalleryEvents === 'function') {
+    // A configuração será feita pelo main.js
+}
 
-// Verificação simples
-setTimeout(() => {
-    console.log('🔍 Verificação: CSS carregado:', !!document.querySelector('link[href*="gallery.css"]'));
-}, 1000);
-
-console.log('✅ gallery.js carregado');
+console.log('✅ gallery.js core carregado');
