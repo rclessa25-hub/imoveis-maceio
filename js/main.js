@@ -1,90 +1,12 @@
-// js/main.js - SISTEMA DE INICIALIZAÇÃO OTIMIZADO
+// js/main.js - SISTEMA DE INICIALIZAÇÃO OTIMIZADO E ENXUTO
 console.log('🚀 main.js carregado - Sistema de Inicialização Otimizado');
 
 /**
- * ========== MIGRAÇÃO E UNIFICAÇÃO DO LOCALSTORAGE ==========
- * ELIMINA DESINCRONIZAÇÃO ENTRE CHAVES ANTIGAS E NOVAS
- */
-function unifyLocalStorageKeys() {
-    console.group('🔄 UNIFICAÇÃO DE LOCALSTORAGE');
-    
-    const oldKey = 'weberlessa_properties';
-    const newKey = 'properties';
-    
-    try {
-        // 1. Verificar se existe chave antiga
-        const oldData = localStorage.getItem(oldKey);
-        const newData = localStorage.getItem(newKey);
-        
-        console.log('📊 Estado atual:');
-        console.log(`- "${oldKey}": ${oldData ? 'EXISTE' : 'NÃO EXISTE'}`);
-        console.log(`- "${newKey}": ${newData ? 'EXISTE' : 'NÃO EXISTE'}`);
-        
-        // 2. Se SÓ tem chave antiga, migrar
-        if (oldData && !newData) {
-            console.log(`🔄 Migrando de "${oldKey}" para "${newKey}"`);
-            localStorage.setItem(newKey, oldData);
-            localStorage.removeItem(oldKey);
-            console.log(`✅ Migração concluída`);
-        }
-        
-        // 3. Se tem AMBAS, consolidar (manter a com mais dados)
-        if (oldData && newData) {
-            try {
-                const oldArray = JSON.parse(oldData);
-                const newArray = JSON.parse(newData);
-                
-                console.log(`📊 Comparação:`);
-                console.log(`- "${oldKey}": ${oldArray.length} imóveis`);
-                console.log(`- "${newKey}": ${newArray.length} imóveis`);
-                
-                // Usar a que tem mais dados
-                if (oldArray.length > newArray.length) {
-                    console.log(`🔄 "${oldKey}" tem mais dados, substituindo...`);
-                    localStorage.setItem(newKey, oldData);
-                    console.log(`✅ Substituído por dados da chave antiga`);
-                }
-                
-                // Remover chave antiga
-                localStorage.removeItem(oldKey);
-                console.log(`🗑️ Chave antiga "${oldKey}" removida`);
-                
-            } catch (parseError) {
-                console.error('❌ Erro ao parsear dados:', parseError);
-            }
-        }
-        
-        // 4. Verificar consistência final
-        const finalData = localStorage.getItem(newKey);
-        if (finalData) {
-            const finalArray = JSON.parse(finalData);
-            console.log(`✅ Estado final: ${finalArray.length} imóveis em "${newKey}"`);
-            
-            // Garantir que window.properties esteja sincronizado
-            if (window.properties && window.properties.length !== finalArray.length) {
-                console.warn(`⚠️ Inconsistência detectada: memória tem ${window.properties.length}, storage tem ${finalArray.length}`);
-                console.log('🔄 Sincronizando window.properties...');
-                window.properties = finalArray;
-            }
-        }
-        
-        console.log('🎯 Unificação concluída');
-        
-    } catch (error) {
-        console.error('❌ Erro na unificação:', error);
-    }
-    
-    console.groupEnd();
-}
-
-/**
  * FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO OTIMIZADA
- * Aprimora o fluxo existente sem quebrar funcionalidades
  */
 window.initializeWeberLessaSystem = async function() {
     console.log('⚙️ Inicializando Sistema Weber Lessa com otimizações...');
     
-    // ✅ 1. LOADING INICIAL RÁPIDO (se disponível)
     let initLoading = null;
     const loadingStartTime = Date.now();
     
@@ -98,16 +20,28 @@ window.initializeWeberLessaSystem = async function() {
     }
     
     try {
-        // ✅ 2. ATUALIZAR STATUS INTERMEDIÁRIO
         setTimeout(() => {
             initLoading?.updateMessage?.('Preparando módulos essenciais...');
         }, 400);
         
-        // ✅ 3. UNIFICAÇÃO DO LOCALSTORAGE (NOVO)
-        console.log('🔄 Executando unificação do localStorage...');
-        unifyLocalStorageKeys();
+        // ✅ PRIMEIRA CAMADA DE PROTEÇÃO: GARANTIR FUNCIONALIDADE BÁSICA
+        // Esta é a correção crítica apontada pelo outro agente
+        if (typeof window.ensureBasicFunctionality === 'function') {
+            console.log('🔧 Garantindo funcionalidade básica (camada 1)...');
+            window.ensureBasicFunctionality();
+        } else {
+            console.log('ℹ️ Função de compatibilidade não disponível');
+        }
         
-        // ✅ 4. EXECUTAR CARREGAMENTO DE IMÓVEIS (SISTEMA EXISTENTE)
+        // ✅ SEGUNDA CAMADA: UNIFICAÇÃO DO LOCALSTORAGE (se disponível)
+        if (typeof window.unifyLocalStorageKeys === 'function') {
+            console.log('🔄 Executando unificação do localStorage...');
+            window.unifyLocalStorageKeys();
+        } else {
+            console.log('ℹ️ Função de unificação não disponível (modo produção)');
+        }
+        
+        // ✅ CARREGAMENTO PRINCIPAL
         if (typeof window.loadPropertiesData === 'function') {
             console.log('🏠 Carregando imóveis via sistema existente...');
             await window.loadPropertiesData();
@@ -116,35 +50,36 @@ window.initializeWeberLessaSystem = async function() {
             console.error('❌ loadPropertiesData() não encontrado!');
         }
         
-        // ✅ 5. ATUALIZAR STATUS APÓS IMÓVEIS
         initLoading?.updateMessage?.('Configurando interface...');
         
-        // ✅ 6. CONFIGURAR FILTROS
+        // ✅ CONFIGURAÇÃO DA INTERFACE
         if (typeof window.setupFilters === 'function') {
             console.log('🎛️ Configurando filtros...');
             window.setupFilters();
             console.log('✅ Filtros configurados');
         }
         
-        // ✅ 7. CONFIGURAR ADMIN
         if (typeof window.setupForm === 'function') {
             console.log('📝 Configurando formulário admin...');
             window.setupForm();
             console.log('✅ Formulário admin configurado');
         }
         
-        // ✅ 8. CONFIGURAR GALERIA
         if (typeof window.setupGalleryEvents === 'function') {
             console.log('🎮 Configurando eventos da galeria...');
             window.setupGalleryEvents();
             console.log('✅ Galeria configurada');
         }
         
-        // ✅ 9. OTIMIZAÇÃO: AGUARDAR IMAGENS PRINCIPAIS
-        const imagesLoaded = await waitForCriticalImages();
-        console.log(`🖼️ ${imagesLoaded} imagem(ns) principal(is) otimizada(s)`);
+        // ✅ OTIMIZAÇÃO DE IMAGENS (se disponível)
+        let imagesLoaded = 0;
+        if (typeof window.waitForCriticalImages === 'function') {
+            imagesLoaded = await window.waitForCriticalImages();
+            console.log(`🖼️ ${imagesLoaded} imagem(ns) principal(is) otimizada(s)`);
+        } else {
+            console.log('ℹ️ Otimização de imagem não disponível (modo produção)');
+        }
         
-        // ✅ 10. FEEDBACK FINAL
         const totalTime = Date.now() - loadingStartTime;
         const propertyCount = window.properties ? window.properties.length : 0;
         
@@ -152,7 +87,6 @@ window.initializeWeberLessaSystem = async function() {
         console.log(`📊 ${propertyCount} imóveis disponíveis`);
         
         if (initLoading) {
-            // Mensagem final personalizada baseada no resultado
             let finalMessage = '';
             if (propertyCount === 0) {
                 finalMessage = 'Sistema pronto! Adicione seu primeiro imóvel 🏠';
@@ -166,30 +100,16 @@ window.initializeWeberLessaSystem = async function() {
             initLoading.updateMessage(finalMessage);
         }
         
-        // ✅ 11. TESTE DE INTEGRAÇÃO (APENAS DEBUG)
-        setTimeout(() => {
-            if (window.location.search.includes('debug=true')) {
-                console.log('🧪 TESTE DE INTEGRAÇÃO OTIMIZADO:');
-                const testResults = {
-                    'Imóveis carregados': !!window.properties && window.properties.length > 0,
-                    'Número de imóveis': window.properties ? window.properties.length : 0,
-                    'Container encontrado': !!document.getElementById('properties-container'),
-                    'Filtros ativos': document.querySelectorAll('.filter-btn.active').length > 0,
-                    'Função renderProperties': typeof window.renderProperties === 'function',
-                    'Função setupFilters': typeof window.setupFilters === 'function',
-                    'Tempo total': `${totalTime}ms`,
-                    'Imagens otimizadas': imagesLoaded,
-                    'Chaves localStorage': Object.keys(localStorage).filter(k => k.includes('prop')).join(', ')
-                };
-                
-                console.table(testResults);
-            }
-        }, 300);
+        // ✅ TESTE DE INTEGRAÇÃO (apenas debug)
+        if (typeof window.runIntegrationTest === 'function') {
+            setTimeout(() => {
+                window.runIntegrationTest(totalTime, imagesLoaded);
+            }, 300);
+        }
         
     } catch (error) {
         console.error('❌ Erro na inicialização otimizada:', error);
         
-        // ✅ 12. TRATAMENTO DE ERRO AMIGÁVEL
         if (initLoading) {
             initLoading.setVariant('error');
             initLoading.updateMessage('Sistema carregado com limitações');
@@ -197,7 +117,6 @@ window.initializeWeberLessaSystem = async function() {
         }
         
     } finally {
-        // ✅ 13. FECHAR LOADING COM TRANSIÇÃO SUAVE
         setTimeout(() => {
             if (initLoading) {
                 initLoading.hide();
@@ -208,69 +127,26 @@ window.initializeWeberLessaSystem = async function() {
 };
 
 /**
- * FUNÇÃO AUXILIAR: AGUARDAR IMAGENS CRÍTICAS
- * Utiliza o ImageLoader do SharedCore quando disponível
- */
-async function waitForCriticalImages() {
-    return window.SharedCore?.ImageLoader?.waitForCriticalImages?.() || 0;
-}
-
-/**
- * FUNÇÃO DE COMPATIBILIDADE
- * Garante que o site funcione mesmo se partes do sistema falharem
- */
-function ensureBasicFunctionality() {
-    console.log('🔧 Verificando funcionalidade básica...');
-    
-    // Fallback para propriedades se não carregarem
-    if (!window.properties || window.properties.length === 0) {
-        // Primeiro tenta chave unificada
-        const stored = localStorage.getItem('properties');
-        if (stored) {
-            try {
-                window.properties = JSON.parse(stored);
-                console.log(`✅ Recuperado ${window.properties.length} imóveis do localStorage (chave unificada)`);
-            } catch (e) {
-                console.warn('⚠️ Não foi possível recuperar imóveis do localStorage');
-            }
-        }
-    }
-    
-    // Fallback para renderização
-    if (typeof window.renderProperties !== 'function') {
-        console.warn('⚠️ renderProperties() não disponível - criando fallback básico');
-        window.renderProperties = function(filter = 'todos') {
-            const container = document.getElementById('properties-container');
-            if (container) {
-                container.innerHTML = '<p style="text-align:center;padding:2rem;color:#666;">Imóveis carregando...</p>';
-            }
-        };
-    }
-}
-
-/**
- * INICIALIZAÇÃO AUTOMÁTICA COM FALLBACKS ROBUSTOS
- * - Usa o sistema otimizado se disponível
- * - Tem fallbacks para garantir funcionalidade básica
- * - Totalmente compatível com o fluxo existente
+ * INICIALIZAÇÃO AUTOMÁTICA
  */
 function startOptimizedInitialization() {
     console.log('🏁 Iniciando inicialização otimizada...');
     
-    // Garantir funcionalidade básica primeiro
-    ensureBasicFunctionality();
+    // ✅ TERCEIRA CAMADA DE PROTEÇÃO: Fallback duplo por segurança
+    if (typeof window.ensureBasicFunctionality === 'function') {
+        console.log('🔧 Garantindo funcionalidade básica (camada 2 - fallback)...');
+        window.ensureBasicFunctionality();
+    }
     
-    // Se a função otimizada existe, usá-la
     if (typeof window.initializeWeberLessaSystem === 'function') {
         setTimeout(() => {
             window.initializeWeberLessaSystem();
         }, 200);
     } 
-    // Fallback para o fluxo original
+    // Fallback para o fluxo original (se a função principal não existir)
     else {
         console.log('⚠️ Usando inicialização fallback (fluxo original)...');
         
-        // Tentar carregar propriedades diretamente
         if (typeof window.loadPropertiesData === 'function') {
             setTimeout(() => {
                 window.loadPropertiesData().then(() => {
@@ -282,23 +158,15 @@ function startOptimizedInitialization() {
             }, 300);
         } else {
             console.error('❌ Nenhum sistema de inicialização disponível');
-            // Último recurso: mostrar conteúdo básico
             document.body.style.opacity = '1';
         }
     }
 }
 
-/**
- * DETECTAR QUANDO INICIAR
- * - Aguarda DOM estar pronto
- * - Dá tempo para módulos carregarem
- * - Inicia de forma não-bloqueante
- */
+// Inicialização
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🏠 DOM completamente carregado');
-        
-        // Pequeno delay para módulos essenciais carregarem
         setTimeout(startOptimizedInitialization, 150);
     });
 } else {
