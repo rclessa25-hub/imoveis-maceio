@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO COMPLETA COM FUNÇÕES CENTRALIZADAS NO SHAREDCORE
-console.log('🔧 admin.js - VERSÃO COMPLETA COM TODAS FUNÇÕES (USANDO SHAREDCORE)');
+// js/modules/admin.js - VERSÃO OTIMIZADA (CORE)
+console.log('🔧 admin.js - Versão core otimizada');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -12,175 +12,6 @@ const ADMIN_CONFIG = {
 
 // Estado global
 window.editingPropertyId = null;
-
-/* ==========================================================
-   HELPER FUNCTIONS (AGORA USANDO SHAREDCORE)
-   ========================================================== */
-const Helpers = {
-    format: {
-        price: (value) => {
-            if (window.SharedCore?.PriceFormatter?.formatForAdmin) {
-                return window.SharedCore.PriceFormatter.formatForAdmin(value);
-            }
-            return value && value.toString ? value.toString() : '';
-        },
-        features: (value) => {
-            // DELEGAR PARA SHAREDCORE
-            if (window.SharedCore?.formatFeaturesForDisplay) {
-                return window.SharedCore.formatFeaturesForDisplay(value);
-            }
-            // Fallback básico
-            return value || '';
-        }
-    },
-    
-    parseFeatures: (value) => {
-        // DELEGAR PARA SHAREDCORE
-        if (window.SharedCore?.parseFeaturesForStorage) {
-            return window.SharedCore.parseFeaturesForStorage(value);
-        }
-        // Fallback básico
-        return value ? JSON.stringify(value.split(',').map(f => f.trim()).filter(f => f)) : '[]';
-    },
-    
-    updateUI: {
-        formTitle: (text) => {
-            const el = document.getElementById('formTitle');
-            if (el) el.textContent = text;
-        },
-        submitButton: (isEditing = false) => {
-            const btn = document.querySelector('#propertyForm button[type="submit"]');
-            if (!btn) return;
-            btn.innerHTML = isEditing ? 
-                '<i class="fas fa-save"></i> Salvar Alterações' : 
-                '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
-            btn.style.background = isEditing ? 'var(--accent)' : 'var(--success)';
-            btn.disabled = false;
-        },
-        cancelButton: (show = true) => {
-            const btn = document.getElementById('cancelEditBtn');
-            if (btn) {
-                if (show) {
-                    btn.style.display = 'inline-block';
-                    btn.style.opacity = '1';
-                    btn.style.visibility = 'visible';
-                    btn.style.pointerEvents = 'auto';
-                    btn.disabled = false;
-                } else {
-                    btn.style.display = 'none';
-                    btn.style.opacity = '0';
-                    btn.style.visibility = 'hidden';
-                    btn.style.pointerEvents = 'none';
-                    btn.disabled = true;
-                }
-            }
-        }
-    },
-    
-    setupUpload: (inputId, areaId, callback) => {
-        const input = document.getElementById(inputId);
-        const area = document.getElementById(areaId);
-        if (!input || !area) return false;
-        
-        const cleanInput = input.cloneNode(true);
-        const cleanArea = area.cloneNode(true);
-        input.parentNode.replaceChild(cleanInput, input);
-        area.parentNode.replaceChild(cleanArea, area);
-        
-        const freshInput = document.getElementById(inputId);
-        const freshArea = document.getElementById(areaId);
-        
-        freshArea.addEventListener('click', (e) => {
-            e.preventDefault();
-            freshInput.click();
-        });
-        
-        freshInput.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                callback(e.target.files);
-                e.target.value = '';
-            }
-        });
-        
-        return true;
-    },
-    
-    showNotification: (message, type = 'success', duration = 3000) => {
-        // GARANTIR QUE ESTA FUNÇÃO ESTEJA DISPONÍVEL GLOBALMENTE
-        window.Helpers = window.Helpers || {};
-        window.Helpers.showNotification = Helpers.showNotification;
-        
-        const existing = document.querySelectorAll('.auto-save-notification');
-        existing.forEach(n => n.remove());
-        
-        const notification = document.createElement('div');
-        notification.className = `auto-save-notification ${type}`;
-        notification.innerHTML = `
-            <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-            <span>${message}</span>
-        `;
-        
-        notification.style.cssText = `
-            position: fixed; top: 20px; right: 20px;
-            background: ${type === 'error' ? '#e74c3c' : 'var(--success)'};
-            color: white; padding: 12px 18px; border-radius: 8px;
-            z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex; align-items: center; gap: 10px;
-            animation: slideInRight 0.3s ease;
-        `;
-        
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), duration);
-    },
-    
-    closeModal: function() {
-        const modal = document.getElementById('propertyModal');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.classList.remove('show');
-            document.body.classList.remove('modal-open');
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        }
-    },
-    
-    getFormData: function() {
-        const formData = {};
-        
-        const videoCheckbox = document.getElementById('propHasVideo');
-        if (videoCheckbox) {
-            // Usar SharedCore para garantir formato booleano correto
-            formData.has_video = window.SharedCore?.ensureBooleanVideo?.(videoCheckbox.checked) || false;
-        } else {
-            formData.has_video = false;
-        }
-        
-        const fields = [
-            { id: 'propTitle', key: 'title' },
-            { id: 'propPrice', key: 'price' },
-            { id: 'propLocation', key: 'location' },
-            { id: 'propDescription', key: 'description' },
-            { id: 'propFeatures', key: 'features' },
-            { id: 'propType', key: 'type' },
-            { id: 'propBadge', key: 'badge' }
-        ];
-        
-        fields.forEach(field => {
-            const element = document.getElementById(field.id);
-            if (element) {
-                if (element.type === 'select-one') {
-                    formData[field.key] = element.value;
-                } else {
-                    formData[field.key] = element.value.trim();
-                }
-            } else {
-                formData[field.key] = '';
-            }
-        });
-        
-        return formData;
-    }
-};
 
 /* ==========================================================
    FUNÇÃO PRINCIPAL: TOGGLE ADMIN PANEL
@@ -246,7 +77,7 @@ window.resetAdminFormCompletely = function(showNotification = true) {
                 window.MediaSystem.resetState();
             }
             
-            ['uploadPreview', 'pdfUploadPreview', 'newPdfsSection', 'existingPdfsSection'].forEach(id => {
+            ['uploadPreview', 'pdfUploadPreview'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = '';
             });
@@ -255,21 +86,29 @@ window.resetAdminFormCompletely = function(showNotification = true) {
         }
     }
     
-    if (window.adminPdfHandler && typeof window.adminPdfHandler.clear === 'function') {
-        window.adminPdfHandler.clear();
+    // Atualizar UI
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.textContent = 'Adicionar Novo Imóvel';
+    
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Adicionar Imóvel ao Site';
+        submitBtn.style.background = '#27ae60';
     }
     
-    Helpers.updateUI.formTitle('Adicionar Novo Imóvel');
-    Helpers.updateUI.submitButton(false);
-    Helpers.updateUI.cancelButton(false);
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'none';
+    }
     
     setTimeout(() => {
         const form = document.getElementById('propertyForm');
         if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
     
-    if (showNotification) {
-        Helpers.showNotification('✅ Formulário limpo para novo imóvel', 'info');
+    // Usar diagnóstico se disponível (opcional)
+    if (showNotification && window.AdminHelpers?.showNotification) {
+        window.AdminHelpers.showNotification('✅ Formulário limpo para novo imóvel', 'info');
     }
     
     return true;
@@ -300,18 +139,38 @@ window.editProperty = function(id) {
     
     const property = window.properties?.find(p => p.id === id);
     if (!property) {
-        Helpers.showNotification('❌ Imóvel não encontrado!', 'error', 3000);
+        if (window.AdminHelpers?.showNotification) {
+            window.AdminHelpers.showNotification('❌ Imóvel não encontrado!', 'error', 3000);
+        } else {
+            alert('❌ Imóvel não encontrado!');
+        }
         return false;
     }
     
     window.resetAdminFormCompletely(false);
     
+    // Formatar preço usando SharedCore
+    const formatPrice = (price) => {
+        if (window.SharedCore?.PriceFormatter?.formatForAdmin) {
+            return window.SharedCore.PriceFormatter.formatForAdmin(price);
+        }
+        return price || '';
+    };
+    
+    // Formatar features usando SharedCore
+    const formatFeatures = (features) => {
+        if (window.SharedCore?.formatFeaturesForDisplay) {
+            return window.SharedCore.formatFeaturesForDisplay(features);
+        }
+        return features || '';
+    };
+    
     const fieldMappings = {
         'propTitle': property.title || '',
-        'propPrice': Helpers.format.price(property.price) || '',
+        'propPrice': formatPrice(property.price) || '',
         'propLocation': property.location || '',
         'propDescription': property.description || '',
-        'propFeatures': Helpers.format.features(property.features) || '',
+        'propFeatures': formatFeatures(property.features) || '',
         'propType': property.type || 'residencial',
         'propBadge': property.badge || 'Novo',
         'propHasVideo': window.SharedCore?.ensureBooleanVideo?.(property.has_video) || false
@@ -328,18 +187,24 @@ window.editProperty = function(id) {
         }
     });
     
-    Helpers.updateUI.formTitle(`Editando: ${property.title}`);
-    Helpers.updateUI.submitButton(true);
-    Helpers.updateUI.cancelButton(true);
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) formTitle.textContent = `Editando: ${property.title}`;
+    
+    const submitBtn = document.querySelector('#propertyForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Salvar Alterações';
+        submitBtn.style.background = '#3498db';
+    }
+    
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.style.display = 'inline-block';
+    }
     
     window.editingPropertyId = property.id;
     
     if (window.MediaSystem && typeof window.MediaSystem.loadExisting === 'function') {
         window.MediaSystem.loadExisting(property);
-    }
-    
-    if (window.adminPdfHandler && typeof window.adminPdfHandler.load === 'function') {
-        window.adminPdfHandler.load(property);
     }
     
     setTimeout(() => {
@@ -355,14 +220,44 @@ window.editProperty = function(id) {
 };
 
 /* ==========================================================
-   FUNÇÃO PRINCIPAL DE SALVAMENTO - USANDO addNewProperty
+   FUNÇÃO PRINCIPAL DE SALVAMENTO
    ========================================================== */
 window.saveProperty = async function() {
     console.group('💾 SALVANDO IMÓVEL');
     
     try {
-        // 1. Obter dados do formulário
-        const propertyData = Helpers.getFormData();
+        // Obter dados do formulário
+        const propertyData = {};
+        
+        const videoCheckbox = document.getElementById('propHasVideo');
+        if (videoCheckbox) {
+            propertyData.has_video = window.SharedCore?.ensureBooleanVideo?.(videoCheckbox.checked) || false;
+        } else {
+            propertyData.has_video = false;
+        }
+        
+        const fields = [
+            { id: 'propTitle', key: 'title' },
+            { id: 'propPrice', key: 'price' },
+            { id: 'propLocation', key: 'location' },
+            { id: 'propDescription', key: 'description' },
+            { id: 'propFeatures', key: 'features' },
+            { id: 'propType', key: 'type' },
+            { id: 'propBadge', key: 'badge' }
+        ];
+        
+        fields.forEach(field => {
+            const element = document.getElementById(field.id);
+            if (element) {
+                if (element.type === 'select-one') {
+                    propertyData[field.key] = element.value;
+                } else {
+                    propertyData[field.key] = element.value.trim();
+                }
+            } else {
+                propertyData[field.key] = '';
+            }
+        });
         
         console.log('📋 Dados coletados:', propertyData);
         
@@ -372,18 +267,17 @@ window.saveProperty = async function() {
         }
         
         // Formatar dados usando SharedCore
-        propertyData.price = Helpers.format.price(propertyData.price);
+        if (window.SharedCore?.PriceFormatter?.formatForAdmin) {
+            propertyData.price = window.SharedCore.PriceFormatter.formatForAdmin(propertyData.price);
+        }
         
-        if (propertyData.features) {
-            propertyData.features = Helpers.parseFeatures(propertyData.features);
+        if (propertyData.features && window.SharedCore?.parseFeaturesForStorage) {
+            propertyData.features = window.SharedCore.parseFeaturesForStorage(propertyData.features);
         } else {
             propertyData.features = '[]';
         }
         
-        // Já está formatado pelo getFormData usando SharedCore
-        console.log('✅ Vídeo já processado pelo SharedCore:', propertyData.has_video);
-        
-        // 2. Processar mídias
+        // Processar mídias
         let imageUrls = '';
         let pdfUrls = '';
         
@@ -438,32 +332,34 @@ window.saveProperty = async function() {
             pdfUrls = 'EMPTY';
         }
         
-        // 3. Atualizar dados com URLs
         propertyData.images = imageUrls || 'EMPTY';
         propertyData.pdfs = pdfUrls || 'EMPTY';
         
-        // 4. Salvar no sistema
+        // Salvar no sistema
         if (window.editingPropertyId) {
             console.log(`✏️ Salvando edição do imóvel ${window.editingPropertyId}...`);
             
-            // Usar a função que já existe e funciona
             if (typeof window.updateProperty === 'function') {
                 try {
                     const updateResult = await window.updateProperty(window.editingPropertyId, propertyData);
                     
                     if (updateResult && updateResult.success) {
-                        Helpers.showNotification('✅ Imóvel atualizado com sucesso!', 'success', 3000);
+                        if (window.AdminHelpers?.showNotification) {
+                            window.AdminHelpers.showNotification('✅ Imóvel atualizado com sucesso!', 'success', 3000);
+                        }
                         console.log('✅ Imóvel salvo no Supabase');
                     } else {
-                        Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
+                        if (window.AdminHelpers?.showNotification) {
+                            window.AdminHelpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
+                        }
                         console.log('⚠️ Imóvel salvo apenas localmente (Supabase falhou)');
                     }
                 } catch (supabaseError) {
                     console.error('❌ Erro ao salvar no Supabase:', supabaseError);
-                    Helpers.showNotification('✅ Imóvel salvo localmente (Supabase offline)', 'info', 3000);
+                    if (window.AdminHelpers?.showNotification) {
+                        window.AdminHelpers.showNotification('✅ Imóvel salvo localmente (Supabase offline)', 'info', 3000);
+                    }
                 }
-            } else {
-                Helpers.showNotification('✅ Imóvel salvo localmente', 'success', 3000);
             }
             
             // Atualizar galeria
@@ -475,43 +371,38 @@ window.saveProperty = async function() {
                 }
             }, 300);
             
-            // Fechar modal e resetar
             setTimeout(() => {
-                Helpers.closeModal();
                 window.resetAdminFormCompletely(true);
             }, 1500);
             
         } else {
             console.log('🆕 Criando novo imóvel...');
             
-            // Criar objeto completo
             const newProperty = {
                 ...propertyData,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
             
-            // 🔥 USAR A FUNÇÃO QUE JÁ EXISTE E FUNCIONA (addNewProperty)
             if (typeof window.addNewProperty === 'function') {
-                console.log('✅ Usando addNewProperty() que já funciona');
+                console.log('✅ Usando addNewProperty()');
                 
                 try {
                     const result = await window.addNewProperty(newProperty);
                     
                     if (result) {
-                        Helpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
+                        if (window.AdminHelpers?.showNotification) {
+                            window.AdminHelpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
+                        }
                         console.log(`✅ Novo imóvel criado: ${result.id}`);
                         
-                        // Atualizar galeria
                         setTimeout(() => {
                             if (typeof window.renderProperties === 'function') {
                                 window.renderProperties('todos');
                             }
                         }, 300);
                         
-                        // Fechar modal e resetar
                         setTimeout(() => {
-                            Helpers.closeModal();
                             window.resetAdminFormCompletely(true);
                         }, 1500);
                         
@@ -522,12 +413,12 @@ window.saveProperty = async function() {
                 } catch (error) {
                     console.error('❌ Erro em addNewProperty:', error);
                     
-                    // Fallback: salvar localmente
-                    console.log('🔄 Tentando fallback local...');
                     const fallbackResult = await window.savePropertyLocally(newProperty);
                     
                     if (fallbackResult.success) {
-                        Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
+                        if (window.AdminHelpers?.showNotification) {
+                            window.AdminHelpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
+                        }
                         
                         setTimeout(() => {
                             if (typeof window.renderProperties === 'function') {
@@ -540,12 +431,13 @@ window.saveProperty = async function() {
                 }
                 
             } else {
-                // Fallback se addNewProperty não existir
                 console.warn('⚠️ addNewProperty não disponível, usando fallback local');
                 const fallbackResult = await window.savePropertyLocally(newProperty);
                 
                 if (fallbackResult.success) {
-                    Helpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
+                    if (window.AdminHelpers?.showNotification) {
+                        window.AdminHelpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
+                    }
                     
                     setTimeout(() => {
                         if (typeof window.renderProperties === 'function') {
@@ -560,7 +452,11 @@ window.saveProperty = async function() {
         
     } catch (error) {
         console.error('❌ Erro ao salvar imóvel:', error);
-        Helpers.showNotification(`❌ Erro: ${error.message}`, 'error', 5000);
+        if (window.AdminHelpers?.showNotification) {
+            window.AdminHelpers.showNotification(`❌ Erro: ${error.message}`, 'error', 5000);
+        } else {
+            alert(`❌ Erro: ${error.message}`);
+        }
         
     } finally {
         console.groupEnd();
@@ -574,23 +470,19 @@ window.savePropertyLocally = async function(newProperty) {
     console.log('💾 Salvando localmente como fallback...');
     
     try {
-        // Garantir que window.properties existe
         if (!window.properties) {
             window.properties = [];
         }
         
-        // Gerar ID se não existir
         if (!newProperty.id) {
             const maxId = window.properties.length > 0 ? 
                 Math.max(...window.properties.map(p => parseInt(p.id) || 0)) : 0;
             newProperty.id = maxId + 1;
         }
         
-        // Adicionar ao array
         window.properties.push(newProperty);
         console.log(`✅ Adicionado localmente: ID ${newProperty.id}, total: ${window.properties.length}`);
         
-        // Salvar no localStorage (chave unificada)
         try {
             localStorage.setItem('properties', JSON.stringify(window.properties));
             console.log('✅ Salvo no localStorage (chave unificada)');
@@ -598,7 +490,6 @@ window.savePropertyLocally = async function(newProperty) {
             console.error('❌ Erro no localStorage:', storageError);
         }
         
-        // Atualizar lista no admin
         setTimeout(() => {
             if (typeof window.loadPropertyList === 'function') {
                 window.loadPropertyList();
@@ -639,7 +530,6 @@ window.setupForm = function() {
     if (videoCheckbox) {
         videoCheckbox.addEventListener('change', function() {
             console.log(`🎬 Checkbox de vídeo alterado: ${this.checked}`);
-            console.log(`🔍 Processado pelo SharedCore: ${window.SharedCore?.ensureBooleanVideo?.(this.checked)}`);
         });
     }
     
@@ -660,7 +550,9 @@ window.setupForm = function() {
             await window.saveProperty();
         } catch (error) {
             console.error('❌ Erro no salvamento:', error);
-            Helpers.showNotification(`❌ ${error.message}`, 'error', 5000);
+            if (window.AdminHelpers?.showNotification) {
+                window.AdminHelpers.showNotification(`❌ ${error.message}`, 'error', 5000);
+            }
         } finally {
             if (submitBtn) {
                 setTimeout(() => {
@@ -683,75 +575,30 @@ window.setupForm = function() {
 window.setupAdminUI = function() {
     console.log('🔧 Configurando UI do admin...');
     
-    // 1. Painel oculto por padrão
     const panel = document.getElementById('adminPanel');
     if (panel) {
         panel.style.display = 'none';
     }
     
-    // 2. Botão toggle admin - CONFIGURAÇÃO SIMPLES E DIRETA
     const adminBtn = document.querySelector('.admin-toggle');
     if (adminBtn) {
         console.log('✅ Botão admin encontrado, configurando...');
         
-        // Remover qualquer evento antigo
         const newBtn = adminBtn.cloneNode(true);
         adminBtn.parentNode.replaceChild(newBtn, adminBtn);
         
-        // Pegar o botão fresco
         const freshBtn = document.querySelector('.admin-toggle');
         
-        // Configurar evento DIRETO
         freshBtn.onclick = function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('🟢 Botão admin clicado via onclick direto');
+            console.log('🟢 Botão admin clicado');
             window.toggleAdminPanel();
         };
         
-        console.log('✅ Botão admin configurado com onclick direto');
-    } else {
-        console.error('❌ Botão admin-toggle não encontrado!');
-        
-        // Tentar criar botão de emergência
-        setTimeout(() => {
-            if (!document.getElementById('emergency-admin-btn')) {
-                const emergencyBtn = document.createElement('button');
-                emergencyBtn.id = 'emergency-admin-btn';
-                emergencyBtn.innerHTML = '🔧 ADMIN (EMERGÊNCIA)';
-                emergencyBtn.style.cssText = `
-                    position: fixed;
-                    top: 10px;
-                    right: 10px;
-                    background: #e74c3c;
-                    color: white;
-                    border: none;
-                    padding: 10px 15px;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    z-index: 99999;
-                    font-weight: bold;
-                `;
-                emergencyBtn.onclick = function() {
-                    const password = prompt("🔒 Acesso de Emergência\n\nDigite a senha:");
-                    if (password === "wl654") {
-                        const panel = document.getElementById('adminPanel');
-                        if (panel) {
-                            panel.style.display = 'block';
-                            panel.scrollIntoView({ behavior: 'smooth' });
-                            if (typeof window.loadPropertyList === 'function') {
-                                window.loadPropertyList();
-                            }
-                        }
-                    }
-                };
-                document.body.appendChild(emergencyBtn);
-                console.log('🆘 Botão de emergência criado');
-            }
-        }, 1000);
+        console.log('✅ Botão admin configurado');
     }
     
-    // 3. Configurar botão Cancelar
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
         cancelBtn.replaceWith(cancelBtn.cloneNode(true));
@@ -764,7 +611,6 @@ window.setupAdminUI = function() {
         freshCancelBtn.style.display = 'none';
     }
     
-    // 4. Configurar formulário
     if (typeof window.setupForm === 'function') {
         setTimeout(window.setupForm, 100);
     }
@@ -773,82 +619,42 @@ window.setupAdminUI = function() {
 };
 
 /* ==========================================================
-   CONFIGURAÇÃO DE UPLOADS
-   ========================================================== */
-setTimeout(() => {
-    // Configurar upload de PDFs
-    Helpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
-        files => {
-            if (window.MediaSystem && typeof window.MediaSystem.addPdfs === 'function') {
-                window.MediaSystem.addPdfs(files);
-            } else {
-                console.warn('MediaSystem não disponível para PDFs');
-            }
-        });
-    
-    // Configurar upload de imagens
-    Helpers.setupUpload('fileInput', 'uploadArea', 
-        files => {
-            if (window.MediaSystem && typeof window.MediaSystem.addFiles === 'function') {
-                window.MediaSystem.addFiles(files);
-                setTimeout(() => {
-                    if (typeof window.forceMediaPreviewUpdate === 'function') {
-                        window.forceMediaPreviewUpdate();
-                    }
-                }, 300);
-            } else {
-                console.warn('MediaSystem não disponível para imagens');
-            }
-        });
-}, 1000);
-
-/* ==========================================================
    INICIALIZAÇÃO
    ========================================================== */
 
-// Função de inicialização
 function initializeAdmin() {
     console.log('🚀 Inicializando sistema admin...');
     
-    // 1. Verificar desincronização imediatamente
     try {
         const stored = JSON.parse(localStorage.getItem('properties') || '[]');
         if (!window.properties && stored.length > 0) {
             window.properties = stored;
-            console.log(`✅ Carregado ${stored.length} imóveis do localStorage (chave unificada)`);
-        }
-        
-        // Verificar chave antiga e migrar se necessário
-        const oldStored = localStorage.getItem('weberlessa_properties');
-        if (oldStored && !stored) {
-            console.log('🔄 Migrando dados da chave antiga para unificada...');
-            localStorage.setItem('properties', oldStored);
-            localStorage.removeItem('weberlessa_properties');
-            window.properties = JSON.parse(oldStored);
-            console.log('✅ Migração concluída');
+            console.log(`✅ Carregado ${stored.length} imóveis do localStorage`);
         }
     } catch (e) {
         console.error('Erro ao carregar do localStorage:', e);
     }
     
-    // 2. Configurar UI
     window.setupAdminUI();
     
-    // 3. Verificação inicial silenciosa (usando a versão corrigida)
+    // Configurar uploads usando helpers se disponíveis
     setTimeout(() => {
-        console.log('🔍 Verificação silenciosa do sistema...');
-        // Usar a versão silenciosa da função
-        if (typeof window.checkPropertySystem === 'function') {
-            window.checkPropertySystem(true); // true = modo silencioso
+        if (window.AdminHelpers?.setupUpload) {
+            window.AdminHelpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
+                files => {
+                    if (window.MediaSystem?.addPdfs) {
+                        window.MediaSystem.addPdfs(files);
+                    }
+                });
+            
+            window.AdminHelpers.setupUpload('fileInput', 'uploadArea', 
+                files => {
+                    if (window.MediaSystem?.addFiles) {
+                        window.MediaSystem.addFiles(files);
+                    }
+                });
         }
-        
-        // Instruções para o usuário
-        console.log('💡 INSTRUÇÕES:');
-        console.log('1. Clique no botão 🔧 para abrir o painel admin');
-        console.log('2. Para verificação detalhada, adicione ?debug=true na URL');
-        console.log('3. Se o botão admin não funcionar, use o botão de emergência (vermelho)');
-        
-    }, 2000);
+    }, 1000);
 }
 
 // Iniciar quando o DOM estiver pronto
@@ -858,6 +664,4 @@ if (document.readyState === 'loading') {
     initializeAdmin();
 }
 
-console.log('✅ admin.js - VERSÃO COMPLETA E FUNCIONAL CARREGADA (USANDO SHAREDCORE)');
-console.log('🔍 Para verificação silenciosa: window.checkPropertySystem(true)');
-console.log('🔧 Para abrir painel: window.toggleAdminPanel()');
+console.log('✅ admin.js - Versão core otimizada carregada');
