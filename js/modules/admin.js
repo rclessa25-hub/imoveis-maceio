@@ -1,5 +1,5 @@
-// js/modules/admin.js - VERSÃO OTIMIZADA (CORE)
-console.log('🔧 admin.js - Versão core otimizada');
+// js/modules/admin.js - VERSÃO OTIMIZADA (CORE PURIFICADO)
+console.log('🔧 admin.js - Versão core otimizada (funções não essenciais removidas)');
 
 /* ==========================================================
    CONFIGURAÇÃO E CONSTANTES
@@ -106,9 +106,9 @@ window.resetAdminFormCompletely = function(showNotification = true) {
         if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
     
-    // Usar diagnóstico se disponível (opcional)
-    if (showNotification && window.AdminHelpers?.showNotification) {
-        window.AdminHelpers.showNotification('✅ Formulário limpo para novo imóvel', 'info');
+    // Usar função do Support System se disponível (fallback silencioso)
+    if (showNotification && typeof window.showAdminNotification === 'function') {
+        window.showAdminNotification('✅ Formulário limpo para novo imóvel', 'info');
     }
     
     return true;
@@ -139,8 +139,8 @@ window.editProperty = function(id) {
     
     const property = window.properties?.find(p => p.id === id);
     if (!property) {
-        if (window.AdminHelpers?.showNotification) {
-            window.AdminHelpers.showNotification('❌ Imóvel não encontrado!', 'error', 3000);
+        if (typeof window.showAdminNotification === 'function') {
+            window.showAdminNotification('❌ Imóvel não encontrado!', 'error', 3000);
         } else {
             alert('❌ Imóvel não encontrado!');
         }
@@ -344,20 +344,20 @@ window.saveProperty = async function() {
                     const updateResult = await window.updateProperty(window.editingPropertyId, propertyData);
                     
                     if (updateResult && updateResult.success) {
-                        if (window.AdminHelpers?.showNotification) {
-                            window.AdminHelpers.showNotification('✅ Imóvel atualizado com sucesso!', 'success', 3000);
+                        if (typeof window.showAdminNotification === 'function') {
+                            window.showAdminNotification('✅ Imóvel atualizado com sucesso!', 'success', 3000);
                         }
                         console.log('✅ Imóvel salvo no Supabase');
                     } else {
-                        if (window.AdminHelpers?.showNotification) {
-                            window.AdminHelpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
+                        if (typeof window.showAdminNotification === 'function') {
+                            window.showAdminNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
                         }
                         console.log('⚠️ Imóvel salvo apenas localmente (Supabase falhou)');
                     }
                 } catch (supabaseError) {
                     console.error('❌ Erro ao salvar no Supabase:', supabaseError);
-                    if (window.AdminHelpers?.showNotification) {
-                        window.AdminHelpers.showNotification('✅ Imóvel salvo localmente (Supabase offline)', 'info', 3000);
+                    if (typeof window.showAdminNotification === 'function') {
+                        window.showAdminNotification('✅ Imóvel salvo localmente (Supabase offline)', 'info', 3000);
                     }
                 }
             }
@@ -391,8 +391,8 @@ window.saveProperty = async function() {
                     const result = await window.addNewProperty(newProperty);
                     
                     if (result) {
-                        if (window.AdminHelpers?.showNotification) {
-                            window.AdminHelpers.showNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
+                        if (typeof window.showAdminNotification === 'function') {
+                            window.showAdminNotification('✅ Imóvel criado com sucesso!', 'success', 3000);
                         }
                         console.log(`✅ Novo imóvel criado: ${result.id}`);
                         
@@ -413,101 +413,44 @@ window.saveProperty = async function() {
                 } catch (error) {
                     console.error('❌ Erro em addNewProperty:', error);
                     
-                    const fallbackResult = await window.savePropertyLocally(newProperty);
-                    
-                    if (fallbackResult.success) {
-                        if (window.AdminHelpers?.showNotification) {
-                            window.AdminHelpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
-                        }
+                    // Usar fallback do Support System se disponível
+                    if (typeof window.savePropertyLocalFallback === 'function') {
+                        const fallbackResult = await window.savePropertyLocalFallback(newProperty);
                         
-                        setTimeout(() => {
-                            if (typeof window.renderProperties === 'function') {
-                                window.renderProperties('todos');
+                        if (fallbackResult.success) {
+                            if (typeof window.showAdminNotification === 'function') {
+                                window.showAdminNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
                             }
-                        }, 500);
+                            
+                            setTimeout(() => {
+                                if (typeof window.renderProperties === 'function') {
+                                    window.renderProperties('todos');
+                                }
+                            }, 500);
+                        } else {
+                            throw new Error(`Falha completa: ${fallbackResult.error}`);
+                        }
                     } else {
-                        throw new Error(`Falha completa: ${fallbackResult.error}`);
+                        throw error;
                     }
                 }
                 
             } else {
-                console.warn('⚠️ addNewProperty não disponível, usando fallback local');
-                const fallbackResult = await window.savePropertyLocally(newProperty);
-                
-                if (fallbackResult.success) {
-                    if (window.AdminHelpers?.showNotification) {
-                        window.AdminHelpers.showNotification('⚠️ Imóvel salvo apenas localmente', 'info', 3000);
-                    }
-                    
-                    setTimeout(() => {
-                        if (typeof window.renderProperties === 'function') {
-                            window.renderProperties('todos');
-                        }
-                    }, 500);
-                } else {
-                    throw new Error(`Falha completa: ${fallbackResult.error}`);
-                }
+                console.warn('⚠️ addNewProperty não disponível');
+                throw new Error('Função addNewProperty não disponível');
             }
         }
         
     } catch (error) {
         console.error('❌ Erro ao salvar imóvel:', error);
-        if (window.AdminHelpers?.showNotification) {
-            window.AdminHelpers.showNotification(`❌ Erro: ${error.message}`, 'error', 5000);
+        if (typeof window.showAdminNotification === 'function') {
+            window.showAdminNotification(`❌ Erro: ${error.message}`, 'error', 5000);
         } else {
             alert(`❌ Erro: ${error.message}`);
         }
         
     } finally {
         console.groupEnd();
-    }
-};
-
-/* ==========================================================
-   FUNÇÃO DE FALLBACK LOCAL
-   ========================================================== */
-window.savePropertyLocally = async function(newProperty) {
-    console.log('💾 Salvando localmente como fallback...');
-    
-    try {
-        if (!window.properties) {
-            window.properties = [];
-        }
-        
-        if (!newProperty.id) {
-            const maxId = window.properties.length > 0 ? 
-                Math.max(...window.properties.map(p => parseInt(p.id) || 0)) : 0;
-            newProperty.id = maxId + 1;
-        }
-        
-        window.properties.push(newProperty);
-        console.log(`✅ Adicionado localmente: ID ${newProperty.id}, total: ${window.properties.length}`);
-        
-        try {
-            localStorage.setItem('properties', JSON.stringify(window.properties));
-            console.log('✅ Salvo no localStorage (chave unificada)');
-        } catch (storageError) {
-            console.error('❌ Erro no localStorage:', storageError);
-        }
-        
-        setTimeout(() => {
-            if (typeof window.loadPropertyList === 'function') {
-                window.loadPropertyList();
-            }
-        }, 300);
-        
-        return {
-            success: true,
-            id: newProperty.id,
-            localProperties: window.properties.length
-        };
-        
-    } catch (error) {
-        console.error('❌ Erro no salvamento local:', error);
-        return {
-            success: false,
-            error: error.message
-        };
     }
 };
 
@@ -550,8 +493,8 @@ window.setupForm = function() {
             await window.saveProperty();
         } catch (error) {
             console.error('❌ Erro no salvamento:', error);
-            if (window.AdminHelpers?.showNotification) {
-                window.AdminHelpers.showNotification(`❌ ${error.message}`, 'error', 5000);
+            if (typeof window.showAdminNotification === 'function') {
+                window.showAdminNotification(`❌ ${error.message}`, 'error', 5000);
             }
         } finally {
             if (submitBtn) {
@@ -619,12 +562,13 @@ window.setupAdminUI = function() {
 };
 
 /* ==========================================================
-   INICIALIZAÇÃO
+   INICIALIZAÇÃO (APENAS ESSENCIAL)
    ========================================================== */
 
 function initializeAdmin() {
     console.log('🚀 Inicializando sistema admin...');
     
+    // Apenas carregar dados do localStorage se necessário (essencial)
     try {
         const stored = JSON.parse(localStorage.getItem('properties') || '[]');
         if (!window.properties && stored.length > 0) {
@@ -637,24 +581,8 @@ function initializeAdmin() {
     
     window.setupAdminUI();
     
-    // Configurar uploads usando helpers se disponíveis
-    setTimeout(() => {
-        if (window.AdminHelpers?.setupUpload) {
-            window.AdminHelpers.setupUpload('pdfFileInput', 'pdfUploadArea', 
-                files => {
-                    if (window.MediaSystem?.addPdfs) {
-                        window.MediaSystem.addPdfs(files);
-                    }
-                });
-            
-            window.AdminHelpers.setupUpload('fileInput', 'uploadArea', 
-                files => {
-                    if (window.MediaSystem?.addFiles) {
-                        window.MediaSystem.addFiles(files);
-                    }
-                });
-        }
-    }, 1000);
+    // Configuração de upload AGORA é feita pelo Support System via carregamento condicional
+    // Não precisa mais de fallback aqui
 }
 
 // Iniciar quando o DOM estiver pronto
@@ -664,4 +592,4 @@ if (document.readyState === 'loading') {
     initializeAdmin();
 }
 
-console.log('✅ admin.js - Versão core otimizada carregada');
+console.log('✅ admin.js - Versão core otimizada carregada (funções não essenciais removidas)');
