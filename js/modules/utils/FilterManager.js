@@ -16,17 +16,12 @@ const FilterManager = (function() {
         currentFilter: CONFIG.defaultFilter,
         containers: new Map(),
         callbacks: new Map(),
-        initialized: false // Flag para evitar múltiplas inicializações
+        initialized: false
     };
 
     // API pública
     return {
-        /**
-         * Inicializa todos os filtros na página
-         * @param {Function} onFilterChange - Callback quando filtro muda
-         */
         init(onFilterChange = null) {
-            // Verificar se já foi inicializado
             if (state.initialized) {
                 console.log('⏭️ FilterManager já está inicializado, ignorando...');
                 return;
@@ -34,7 +29,6 @@ const FilterManager = (function() {
             
             console.log('🔧 Inicializando FilterManager...');
             
-            // Encontrar todos os containers de filtro
             const containers = document.querySelectorAll(`.${CONFIG.containerClass}`);
             if (containers.length === 0) {
                 console.warn('⚠️ Nenhum container de filtros encontrado');
@@ -51,31 +45,24 @@ const FilterManager = (function() {
                 this.setupContainer(container, containerId, onFilterChange);
             });
 
-            // Registrar callback se fornecido
             if (onFilterChange && typeof onFilterChange === 'function') {
                 state.callbacks.set('global', onFilterChange);
             }
 
-            // Ativar filtro padrão
             this.activateDefaultFilter();
             
-            state.initialized = true; // Marcar como inicializado
+            state.initialized = true;
             console.log(`✅ FilterManager inicializado: ${state.containers.size} container(s)`);
         },
 
-        /**
-         * Configura um container específico de filtros
-         */
         setupContainer(container, containerId, onFilterChange) {
             const buttons = container.querySelectorAll(`.${CONFIG.buttonClass}`);
             const containerState = state.containers.get(containerId);
 
             buttons.forEach((button, btnIndex) => {
-                // Clonar para remover listeners antigos
                 const newBtn = button.cloneNode(true);
                 button.parentNode.replaceChild(newBtn, button);
 
-                // Configurar evento
                 newBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -83,15 +70,12 @@ const FilterManager = (function() {
                     const filterText = newBtn.textContent.trim();
                     const filterValue = filterText === 'Todos' ? 'todos' : filterText;
                     
-                    // Atualizar todos os containers
                     this.setActiveFilter(filterValue, containerId);
                     
-                    // Executar callback
                     if (onFilterChange) {
                         onFilterChange(filterValue);
                     }
                     
-                    // Executar callbacks globais
                     state.callbacks.forEach(callback => {
                         if (typeof callback === 'function') {
                             callback(filterValue);
@@ -109,9 +93,6 @@ const FilterManager = (function() {
             state.containers.set(containerId, containerState);
         },
 
-        /**
-         * Define o filtro ativo em todos os containers
-         */
         setActiveFilter(filterValue, sourceContainerId = null) {
             state.currentFilter = filterValue;
             
@@ -119,10 +100,8 @@ const FilterManager = (function() {
                 containerState.buttons.forEach(button => {
                     const isActive = button.value === filterValue;
                     
-                    // Atualizar classes CSS
                     button.element.classList.toggle(CONFIG.activeClass, isActive);
                     
-                    // Aplicar estilos visuais
                     if (isActive) {
                         button.element.style.backgroundColor = 'var(--primary)';
                         button.element.style.color = 'white';
@@ -142,23 +121,14 @@ const FilterManager = (function() {
             console.log(`🎯 Filtro alterado para: ${filterValue}`);
         },
 
-        /**
-         * Ativa o filtro padrão (Todos)
-         */
         activateDefaultFilter() {
             this.setActiveFilter(CONFIG.defaultFilter);
         },
 
-        /**
-         * Retorna o filtro atual
-         */
         getCurrentFilter() {
             return state.currentFilter;
         },
 
-        /**
-         * Registra um callback para mudanças de filtro
-         */
         onFilterChange(callback, id = 'custom') {
             if (typeof callback === 'function') {
                 state.callbacks.set(id, callback);
@@ -167,11 +137,7 @@ const FilterManager = (function() {
             return false;
         },
 
-        /**
-         * Configura filtros com fallback automático
-         */
         setupWithFallback() {
-            // Verificar se já foi inicializado
             if (state.initialized) {
                 console.log('⏭️ setupWithFallback ignorado - FilterManager já inicializado');
                 return true;
@@ -179,7 +145,6 @@ const FilterManager = (function() {
             
             console.log('🎛️ Configurando filtros com fallback...');
             
-            // Usar sistema unificado se disponível
             if (this.init) {
                 this.init((filterValue) => {
                     window.currentFilter = filterValue;
@@ -194,9 +159,6 @@ const FilterManager = (function() {
             return false;
         },
 
-        /**
-         * Destroi todos os listeners (limpeza)
-         */
         destroy() {
             state.containers.forEach(containerState => {
                 containerState.buttons.forEach(button => {
@@ -207,29 +169,23 @@ const FilterManager = (function() {
             
             state.containers.clear();
             state.callbacks.clear();
-            state.initialized = false; // Resetar flag
+            state.initialized = false;
             console.log('🧹 FilterManager destruído');
         },
         
-        /**
-         * Verifica se o FilterManager já foi inicializado
-         */
         isInitialized() {
             return state.initialized;
         }
     };
 })();
 
-// Exportar para escopo global
 window.FilterManager = FilterManager;
 
-// Inicialização automática com compatibilidade - EXECUTAR APENAS UMA VEZ
 if (!window._filterManagerInitScheduled) {
     window._filterManagerInitScheduled = true;
     
     setTimeout(() => {
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            // Inicializar apenas se existirem filtros na página e ainda não foi inicializado
             if (document.querySelector('.filter-options') && !FilterManager.isInitialized()) {
                 FilterManager.setupWithFallback();
             }
