@@ -1,4 +1,4 @@
-// js/modules/properties.js - VERSÃO OTIMIZADA (SEM BOTÕES DE DIAGNÓSTICO)
+// js/modules/properties.js - VERSÃO OTIMIZADA (COM FALLBACKS CONDICIONAIS)
 console.log('🏠 properties.js - VERSÃO OTIMIZADA - FUNÇÕES CENTRALIZADAS NO SHAREDCORE');
 
 // ========== VARIÁVEIS GLOBAIS ==========
@@ -464,8 +464,12 @@ window.loadPropertiesData = async function () {
                 loading?.updateMessage?.(`${finalMessage} (${imagesLoaded} imagens carregadas)`);
             }
         } else {
-            // Fallback simples se a função de diagnóstico não estiver disponível
-            console.log('ℹ️ Função waitForAllPropertyImages não disponível (diagnóstico desativado)');
+            // Fallback simples - função não essencial do Support System
+            // O sistema continua funcionando normalmente sem ela
+            if (window.location.search.includes('debug=true')) {
+                console.log('ℹ️ waitForAllPropertyImages não disponível (modo debug: função do Support System não carregada)');
+            }
+            // Em produção, nenhuma mensagem é exibida
         }
         
     } catch (error) {
@@ -1293,8 +1297,11 @@ if (document.readyState === 'loading') {
                 });
             });
         } else {
-            // Fallback caso o Support System não esteja disponível
-            console.warn('⚠️ runLowPriority não encontrada, usando setTimeout como fallback');
+            // Fallback - função não essencial do Support System não disponível
+            if (window.location.search.includes('debug=true')) {
+                console.log('ℹ️ runLowPriority não disponível (modo debug: função do Support System não carregada)');
+            }
+            
             setTimeout(() => {
                 if (typeof window.loadPropertiesData === 'function') {
                     window.loadPropertiesData();
@@ -1322,8 +1329,11 @@ if (document.readyState === 'loading') {
             });
         });
     } else {
-        // Fallback caso o Support System não esteja disponível
-        console.warn('⚠️ runLowPriority não encontrada, usando setTimeout como fallback');
+        // Fallback - função não essencial do Support System não disponível
+        if (window.location.search.includes('debug=true')) {
+            console.log('ℹ️ runLowPriority não disponível (modo debug: função do Support System não carregada)');
+        }
+        
         setTimeout(() => {
             if (typeof window.loadPropertiesData === 'function') {
                 window.loadPropertiesData();
