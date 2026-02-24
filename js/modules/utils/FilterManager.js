@@ -15,7 +15,8 @@ const FilterManager = (function() {
     const state = {
         currentFilter: CONFIG.defaultFilter,
         containers: new Map(),
-        callbacks: new Map()
+        callbacks: new Map(),
+        initialized: false // Flag para evitar múltiplas inicializações
     };
 
     // API pública
@@ -25,6 +26,12 @@ const FilterManager = (function() {
          * @param {Function} onFilterChange - Callback quando filtro muda
          */
         init(onFilterChange = null) {
+            // Verificar se já foi inicializado
+            if (state.initialized) {
+                console.log('⏭️ FilterManager já está inicializado, ignorando...');
+                return;
+            }
+            
             console.log('🔧 Inicializando FilterManager...');
             
             // Encontrar todos os containers de filtro
@@ -52,6 +59,7 @@ const FilterManager = (function() {
             // Ativar filtro padrão
             this.activateDefaultFilter();
             
+            state.initialized = true; // Marcar como inicializado
             console.log(`✅ FilterManager inicializado: ${state.containers.size} container(s)`);
         },
 
@@ -163,6 +171,12 @@ const FilterManager = (function() {
          * Configura filtros com fallback automático
          */
         setupWithFallback() {
+            // Verificar se já foi inicializado
+            if (state.initialized) {
+                console.log('⏭️ setupWithFallback ignorado - FilterManager já inicializado');
+                return true;
+            }
+            
             console.log('🎛️ Configurando filtros com fallback...');
             
             // Usar sistema unificado se disponível
@@ -193,7 +207,15 @@ const FilterManager = (function() {
             
             state.containers.clear();
             state.callbacks.clear();
+            state.initialized = false; // Resetar flag
             console.log('🧹 FilterManager destruído');
+        },
+        
+        /**
+         * Verifica se o FilterManager já foi inicializado
+         */
+        isInitialized() {
+            return state.initialized;
         }
     };
 })();
@@ -201,23 +223,18 @@ const FilterManager = (function() {
 // Exportar para escopo global
 window.FilterManager = FilterManager;
 
-// Inicialização automática com compatibilidade
-setTimeout(() => {
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-        // Inicializar apenas se existirem filtros na página
-        if (document.querySelector('.filter-options')) {
-            if (FilterManager.setupWithFallback) {
+// Inicialização automática com compatibilidade - EXECUTAR APENAS UMA VEZ
+if (!window._filterManagerInitScheduled) {
+    window._filterManagerInitScheduled = true;
+    
+    setTimeout(() => {
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            // Inicializar apenas se existirem filtros na página e ainda não foi inicializado
+            if (document.querySelector('.filter-options') && !FilterManager.isInitialized()) {
                 FilterManager.setupWithFallback();
-            } else {
-                // Fallback para versão antiga
-                FilterManager.init((filterValue) => {
-                    if (window.renderProperties && typeof window.renderProperties === 'function') {
-                        window.renderProperties(filterValue);
-                    }
-                });
             }
         }
-    }
-}, 500);
+    }, 500);
+}
 
 console.log('✅ FilterManager carregado');
