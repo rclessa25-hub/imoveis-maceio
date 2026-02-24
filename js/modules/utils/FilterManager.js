@@ -160,22 +160,6 @@ const FilterManager = (function() {
         },
 
         /**
-         * Destroi todos os listeners (limpeza)
-         */
-        destroy() {
-            state.containers.forEach(containerState => {
-                containerState.buttons.forEach(button => {
-                    const newBtn = button.element.cloneNode(true);
-                    button.element.parentNode.replaceChild(newBtn, button.element);
-                });
-            });
-            
-            state.containers.clear();
-            state.callbacks.clear();
-            console.log('🧹 FilterManager destruído');
-        },
-
-        /**
          * Configura filtros com fallback automático
          */
         setupWithFallback() {
@@ -193,45 +177,23 @@ const FilterManager = (function() {
                 return true;
             }
             
-            // Fallback manual
-            return this.setupManualFallback();
+            return false;
         },
 
         /**
-         * Fallback manual para compatibilidade
+         * Destroi todos os listeners (limpeza)
          */
-        setupManualFallback() {
-            console.warn('⚠️ Usando fallback manual de filtros...');
-            const filterButtons = document.querySelectorAll('.filter-btn');
-            
-            if (!filterButtons || filterButtons.length === 0) {
-                console.error('❌ Botões de filtro não encontrados!');
-                return false;
-            }
-            
-            filterButtons.forEach(button => {
-                // Clonar para remover listeners antigos
-                const newBtn = button.cloneNode(true);
-                button.parentNode.replaceChild(newBtn, button);
-                
-                newBtn.addEventListener('click', function() {
-                    filterButtons.forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    const filterText = this.textContent.trim();
-                    const filterValue = filterText === 'Todos' ? 'todos' : filterText;
-                    
-                    window.currentFilter = filterValue;
-                    if (window.renderProperties) window.renderProperties(filterValue);
+        destroy() {
+            state.containers.forEach(containerState => {
+                containerState.buttons.forEach(button => {
+                    const newBtn = button.element.cloneNode(true);
+                    button.element.parentNode.replaceChild(newBtn, button.element);
                 });
             });
             
-            const todosBtn = Array.from(filterButtons).find(btn => 
-                btn.textContent.trim() === 'Todos' || btn.textContent.trim() === 'todos'
-            );
-            if (todosBtn) todosBtn.classList.add('active');
-            
-            return true;
+            state.containers.clear();
+            state.callbacks.clear();
+            console.log('🧹 FilterManager destruído');
         }
     };
 })();
@@ -258,69 +220,4 @@ setTimeout(() => {
     }
 }, 500);
 
-// ========== EVENT MANAGER SIMPLIFICADO ==========
-window.EventManager = {
-    listeners: new Map(),
-    
-    /**
-     * Registra um listener com debounce automático
-     */
-    on(element, event, handler, options = {}) {
-        const key = `${event}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Aplicar debounce se especificado
-        let finalHandler = handler;
-        if (options.debounce && options.debounce > 0) {
-            finalHandler = this.debounce(handler, options.debounce);
-        }
-        
-        // Registrar listener
-        element.addEventListener(event, finalHandler, options);
-        
-        // Armazenar para possível remoção
-        this.listeners.set(key, { element, event, handler: finalHandler });
-        
-        return key;
-    },
-    
-    /**
-     * Remove um listener específico
-     */
-    off(key) {
-        const listener = this.listeners.get(key);
-        if (listener) {
-            listener.element.removeEventListener(
-                listener.event, 
-                listener.handler
-            );
-            this.listeners.delete(key);
-        }
-    },
-    
-    /**
-     * Função de debounce para otimização
-     */
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    },
-    
-    /**
-     * Remove todos os listeners
-     */
-    cleanup() {
-        this.listeners.forEach((listener, key) => {
-            this.off(key);
-        });
-        this.listeners.clear();
-    }
-};
-
-console.log('✅ FilterManager e EventManager carregados');
+console.log('✅ FilterManager carregado');
