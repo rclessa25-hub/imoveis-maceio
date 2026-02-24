@@ -1,5 +1,5 @@
-// js/modules/supabase.js - Cliente Supabase Oficial CORRIGIDO
-console.log('🚀 Supabase.js carregado - Cliente Oficial CORRIGIDO');
+// js/modules/supabase.js - Cliente Supabase Oficial CORRIGIDO E OTIMIZADO
+console.log('🚀 Supabase.js carregado - Cliente Oficial CORRIGIDO E OTIMIZADO');
 
 // Configuração GLOBAL - disponível para todos os módulos
 window.SUPABASE_CONFIG = {
@@ -44,32 +44,12 @@ function setupSupabaseClient() {
         );
 
         console.log('✅ Cliente Supabase criado com sucesso');
-        testConnection();
+        
+        // Teste de conexão agora é feito via core-diagnostics.js quando necessário
+        console.log('ℹ️ Use window.testSupabaseConnection() para testar a conexão');
+        
     } catch (error) {
         console.error('❌ Erro ao criar cliente Supabase:', error);
-    }
-}
-
-// Teste de conexão
-async function testConnection() {
-    console.log('🔍 Testando conexão com Supabase...');
-
-    try {
-        const { data, error } = await window.supabaseClient
-            .from('properties')
-            .select('id')
-            .limit(1);
-
-        if (error) {
-            console.error('❌ Erro na conexão:', error.message);
-            return false;
-        }
-
-        console.log(`✅ Conexão estabelecida! ${data?.length || 0} registros encontrados`);
-        return true;
-    } catch (error) {
-        console.error('❌ Erro fatal na conexão:', error.message);
-        return false;
     }
 }
 
@@ -166,51 +146,6 @@ window.supabaseDeleteProperty = async function (id) {
     }
 };
 
-// ========== SINCRONIZAÇÃO ==========
-
-window.syncLocalWithSupabase = async function () {
-    const result = await window.supabaseLoadProperties();
-
-    if (result.error) {
-        return { success: false, error: result.error };
-    }
-
-    if (result.data?.length) {
-        window.properties = result.data;
-        window.savePropertiesToStorage?.();
-        window.renderProperties?.('todos');
-        window.loadPropertyList?.();
-
-        return { success: true, count: result.data.length };
-    }
-
-    return { success: false, error: 'Nenhum dado para sincronizar' };
-};
-
-// Forçar sincronização
-window.forceSyncProperties = async function () {
-    localStorage.removeItem('weberlessa_properties');
-
-    try {
-        const result = await window.supabaseLoadProperties();
-
-        if (result.data?.length) {
-            window.properties = result.data;
-            window.savePropertiesToStorage?.();
-            window.renderProperties?.('todos');
-            window.loadPropertyList?.();
-
-            alert(`✅ ${result.data.length} imóveis sincronizados!`);
-            return { success: true, count: result.data.length };
-        }
-    } catch (error) {
-        alert('❌ Erro na sincronização: ' + error.message);
-        return { success: false, error: error.message };
-    }
-
-    return { success: false, error: 'Nenhum dado encontrado' };
-};
-
 // Inicialização automática
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
@@ -224,4 +159,5 @@ if (document.readyState === 'loading') {
     }, 500);
 }
 
-console.log('✅ Módulo Supabase.js completamente carregado');
+console.log('✅ Módulo Supabase.js completamente carregado (versão otimizada)');
+console.log('ℹ️ Funções de sincronização movidas para core-diagnostics.js');
