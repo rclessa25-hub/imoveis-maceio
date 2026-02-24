@@ -376,62 +376,6 @@ window.updatePropertyCard = function(propertyId, updatedData = null) {
     }
 };
 
-/**
- * AGUARDA TODAS AS IMAGENS DOS IMÓVEIS CARREGAREM
- */
-async function waitForAllPropertyImages() {
-    console.log('🖼️ Aguardando carregamento completo de todas as imagens...');
-    
-    const propertyImages = document.querySelectorAll('.property-image img, .property-gallery-image');
-    
-    if (propertyImages.length === 0) {
-        console.log('ℹ️ Nenhuma imagem de imóvel encontrada');
-        return 0;
-    }
-    
-    console.log(`📸 ${propertyImages.length} imagem(ns) de imóveis para carregar`);
-    
-    return new Promise((resolve) => {
-        let loadedCount = 0;
-        const totalImages = propertyImages.length;
-        
-        propertyImages.forEach(img => {
-            if (img.complete && img.naturalWidth > 0) {
-                loadedCount++;
-            } else {
-                img.onload = () => {
-                    loadedCount++;
-                    checkCompletion();
-                };
-                
-                img.onerror = () => {
-                    loadedCount++;
-                    checkCompletion();
-                };
-            }
-        });
-        
-        const safetyTimeout = setTimeout(() => {
-            console.log(`⏰ Timeout: ${loadedCount}/${totalImages} imagens carregadas`);
-            resolve(loadedCount);
-        }, 10000);
-        
-        function checkCompletion() {
-            if (loadedCount >= totalImages) {
-                clearTimeout(safetyTimeout);
-                console.log(`🎉 TODAS ${totalImages} imagens dos imóveis carregadas!`);
-                resolve(loadedCount);
-            }
-        }
-        
-        if (loadedCount >= totalImages) {
-            clearTimeout(safetyTimeout);
-            console.log(`⚡ ${totalImages} imagens já estavam carregadas`);
-            resolve(loadedCount);
-        }
-    });
-}
-
 // ========== 1. FUNÇÃO OTIMIZADA: CARREGAMENTO UNIFICADO ==========
 window.loadPropertiesData = async function () {
     // ✅ PRIMEIRO: (NÃO HÁ MAIS CHAMADA A checkPropertySystem AQUI)
@@ -508,14 +452,20 @@ window.loadPropertiesData = async function () {
         loading?.updateMessage?.(finalMessage);
         window.renderProperties('todos');
 
-        const imagesLoaded = await waitForAllPropertyImages();
+        // AGORA USA A FUNÇÃO GLOBAL DO SUPPORT SYSTEM (se disponível)
+        if (typeof window.waitForAllPropertyImages === 'function') {
+            const imagesLoaded = await window.waitForAllPropertyImages();
 
-        if (imagesLoaded >= (document.querySelectorAll('.property-image img').length || 0)) {
-            loading?.setVariant?.('success');
-            loading?.updateMessage?.(finalMessage + ' 🖼️');
+            if (imagesLoaded >= (document.querySelectorAll('.property-image img').length || 0)) {
+                loading?.setVariant?.('success');
+                loading?.updateMessage?.(finalMessage + ' 🖼️');
+            } else {
+                loading?.setVariant?.('success');
+                loading?.updateMessage?.(`${finalMessage} (${imagesLoaded} imagens carregadas)`);
+            }
         } else {
-            loading?.setVariant?.('success');
-            loading?.updateMessage?.(`${finalMessage} (${imagesLoaded} imagens carregadas)`);
+            // Fallback simples se a função de diagnóstico não estiver disponível
+            console.log('ℹ️ Função waitForAllPropertyImages não disponível (diagnóstico desativado)');
         }
         
     } catch (error) {
@@ -1322,43 +1272,69 @@ window.loadPropertyList = function() {
 // ========== INICIALIZAÇÃO AUTOMÁTICA ==========
 console.log('✅ properties.js VERSÃO OTIMIZADA CARREGADA');
 
-function runLowPriority(task) {
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(task, { timeout: 1000 });
-    } else {
-        setTimeout(task, 100);
-    }
-}
+// DEFINÇÃO DA FUNÇÃO runLowPriority FOI REMOVIDA - AGORA USA A VERSÃO GLOBAL DO SUPPORT SYSTEM
 
 // Inicializar quando DOM estiver pronto
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🏠 DOM carregado - inicializando properties...');
 
-        runLowPriority(() => {
+        // AGORA USA A FUNÇÃO GLOBAL DO SUPPORT SYSTEM
+        if (typeof window.runLowPriority === 'function') {
+            window.runLowPriority(() => {
+                if (typeof window.loadPropertiesData === 'function') {
+                    window.loadPropertiesData();
+                }
+
+                window.runLowPriority(() => {
+                    if (typeof window.setupFilters === 'function') {
+                        window.setupFilters();
+                    }
+                });
+            });
+        } else {
+            // Fallback caso o Support System não esteja disponível
+            console.warn('⚠️ runLowPriority não encontrada, usando setTimeout como fallback');
+            setTimeout(() => {
+                if (typeof window.loadPropertiesData === 'function') {
+                    window.loadPropertiesData();
+                }
+                setTimeout(() => {
+                    if (typeof window.setupFilters === 'function') {
+                        window.setupFilters();
+                    }
+                }, 100);
+            }, 100);
+        }
+    });
+} else {
+    // AGORA USA A FUNÇÃO GLOBAL DO SUPPORT SYSTEM
+    if (typeof window.runLowPriority === 'function') {
+        window.runLowPriority(() => {
             if (typeof window.loadPropertiesData === 'function') {
                 window.loadPropertiesData();
             }
 
-            runLowPriority(() => {
+            window.runLowPriority(() => {
                 if (typeof window.setupFilters === 'function') {
                     window.setupFilters();
                 }
             });
         });
-    });
-} else {
-    runLowPriority(() => {
-        if (typeof window.loadPropertiesData === 'function') {
-            window.loadPropertiesData();
-        }
-
-        runLowPriority(() => {
-            if (typeof window.setupFilters === 'function') {
-                window.setupFilters();
+    } else {
+        // Fallback caso o Support System não esteja disponível
+        console.warn('⚠️ runLowPriority não encontrada, usando setTimeout como fallback');
+        setTimeout(() => {
+            if (typeof window.loadPropertiesData === 'function') {
+                window.loadPropertiesData();
             }
-        });
-    });
+            setTimeout(() => {
+                if (typeof window.setupFilters === 'function') {
+                    window.setupFilters();
+                }
+            }, 100);
+        }, 100);
+    }
 }
 
 // Exportar funções necessárias
