@@ -24,19 +24,39 @@ window.ensureSupabaseCredentials = function() {
     return !!window.SUPABASE_URL && !!window.SUPABASE_KEY;
 };
 
-// ========== TEMPLATE ENGINE COM CACHE AVANÇADO ==========
+// ========== TEMPLATE ENGINE COM CACHE AVANÇADO (COM SUPORTE A TEMPLATECACHE) ==========
 class PropertyTemplateEngine {
     constructor() {
-        this.cache = new Map();
         this.imageFallback = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
+        // Cache local como fallback (será usado apenas se TemplateCache não estiver disponível)
+        this._localCache = new Map();
     }
 
     generate(property) {
-        const cacheKey = `prop_${property.id}_${property.images?.length || 0}_${property.has_video}`;
-        if (this.cache.has(cacheKey)) {
-            this.cache.delete(cacheKey);
+        // Tentar usar TemplateCache do Support System primeiro
+        if (window.TemplateCache && typeof window.TemplateCache.getTemplate === 'function') {
+            return window.TemplateCache.getTemplate(property, (prop) => this._generateTemplate(prop));
         }
-
+        
+        // Fallback para cache local
+        const cacheKey = `prop_${property.id}_${property.images?.length || 0}_${property.has_video}`;
+        if (this._localCache.has(cacheKey)) {
+            return this._localCache.get(cacheKey);
+        }
+        
+        const html = this._generateTemplate(property);
+        this._localCache.set(cacheKey, html);
+        
+        // Limitar tamanho do cache local
+        if (this._localCache.size > 50) {
+            const keysToDelete = Array.from(this._localCache.keys()).slice(0, 10);
+            keysToDelete.forEach(key => this._localCache.delete(key));
+        }
+        
+        return html;
+    }
+    
+    _generateTemplate(property) {
         const displayFeatures = window.SharedCore?.formatFeaturesForDisplay?.(property.features) || '';
         
         const formatPrice = (price) => {
@@ -72,7 +92,6 @@ class PropertyTemplateEngine {
             </div>
         `;
 
-        this.cache.set(cacheKey, html);
         return html;
     }
 
@@ -280,6 +299,19 @@ class PropertyTemplateEngine {
                 }
             }
             
+            // Invalidar cache do template para esta propriedade
+            if (window.TemplateCache && typeof window.TemplateCache.invalidate === 'function') {
+                window.TemplateCache.invalidate(propertyId);
+            } else if (this._localCache) {
+                // Limpar cache local como fallback
+                const pattern = `prop_${propertyId}_`;
+                for (const key of this._localCache.keys()) {
+                    if (key.startsWith(pattern)) {
+                        this._localCache.delete(key);
+                    }
+                }
+            }
+            
             card.classList.add('highlighted');
             setTimeout(() => {
                 card.classList.remove('highlighted');
@@ -292,6 +324,16 @@ class PropertyTemplateEngine {
             console.error(`❌ Erro ao atualizar card ${propertyId}:`, error);
             return false;
         }
+    }
+    
+    // Método para limpar cache (útil para testes)
+    clearCache() {
+        if (window.TemplateCache && typeof window.TemplateCache.invalidateAll === 'function') {
+            return window.TemplateCache.invalidateAll();
+        }
+        const count = this._localCache.size;
+        this._localCache.clear();
+        return count;
     }
 }
 
@@ -522,8 +564,8 @@ function getInitialProperties() {
 window.renderProperties = function(filter = 'todos', forceClearCache = false) {
     console.log(`🎨 Renderizando propriedades (filtro: ${filter})${forceClearCache ? ' - CACHE LIMPO' : ''}`);
     
-    if (forceClearCache && window.propertyTemplates && window.propertyTemplates.cache) {
-        window.propertyTemplates.cache.clear();
+    if (forceClearCache && window.propertyTemplates && window.propertyTemplates.clearCache) {
+        window.propertyTemplates.clearCache();
     }
     
     const container = document.getElementById('properties-container');
@@ -858,38 +900,22 @@ window.addNewProperty = async function(propertyData) {
     }
 };
 
-// ========== 8. FUNÇÃO AUXILIAR: Validar ID para Supabase ==========
-window.validateIdForSupabase = function(propertyId) {
-    if (!propertyId) {
-        console.error('❌ ID não fornecido');
-        return null;
-    }
-    
-    if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) {
-        return propertyId;
-    }
-    
-    if (typeof propertyId === 'string') {
-        const cleanId = propertyId
-            .replace('test_id_', '')
-            .replace('temp_', '')
-            .replace(/[^0-9]/g, '');
-        
-        const numericId = parseInt(cleanId);
-        
-        if (!isNaN(numericId) && numericId > 0) {
-            return numericId;
+// ========== 8. FUNÇÃO AUXILIAR: Validar ID para Supabase (FALLBACK APENAS) ==========
+// A implementação real está no validation-essentials.js
+// Este é apenas um fallback caso o Support System não esteja disponível
+if (typeof window.validateIdForSupabase !== 'function') {
+    window.validateIdForSupabase = function(propertyId) {
+        console.warn('⚠️ Usando fallback local para validateIdForSupabase');
+        if (!propertyId) return null;
+        if (typeof propertyId === 'number' && !isNaN(propertyId) && propertyId > 0) return propertyId;
+        if (typeof propertyId === 'string') {
+            const cleanId = propertyId.replace(/[^0-9]/g, '');
+            const numericId = parseInt(cleanId);
+            if (!isNaN(numericId) && numericId > 0) return numericId;
         }
-    }
-    
-    const directConvert = parseInt(propertyId);
-    if (!isNaN(directConvert) && directConvert > 0) {
-        return directConvert;
-    }
-    
-    console.error('❌ Não foi possível converter ID para formato Supabase:', propertyId);
-    return null;
-};
+        return null;
+    };
+}
 
 // ========== 9. ATUALIZAR IMÓVEL - VERSÃO COMPLETA CORRIGIDA ==========
 window.updateProperty = async function(id, propertyData) {
@@ -961,7 +987,7 @@ window.updateProperty = async function(id, propertyData) {
         
         if (hasSupabase) {
             try {
-                const validId = this.validateIdForSupabase?.(id) || id;
+                const validId = window.validateIdForSupabase?.(id) || id;
                 
                 const response = await fetch(`${window.SUPABASE_URL}/rest/v1/properties?id=eq.${validId}`, {
                     method: 'PATCH',
